@@ -10,7 +10,12 @@ import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, P
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
-import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../../packages/presentation/server/presentation-package.mjs';
+import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
+import { assertAiTableChoiceFits } from './ai-table-publication-guard.mjs';
+import { partnerAllow } from './partner-assignment.mjs';
+import { mergeOperatorMaterialsForPublication, operatorMaterialFingerprint, presentationFits, publicationRooms } from './operator-material-publication.mjs';
+import { encodePresentationPackage } from '../../../packages/presentation/server/presentation-package.mjs';
+import { isExtendedPresentationEnvelope } from '../../../packages/presentation/server/presentation-storage.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
 // 8000 bytes, 200 nodes and depth 6. It has no key whitelist.
@@ -51,17 +56,6 @@ export function adjustableForPackage(laneIds, saved) {
   return ADJUSTABLE_ORDER.filter(item => found.has(item));
 }
 
-function gateKeys(branding, adjustable) {
-  if (!plainObject(branding)) fail(422);
-  const allowed = new Set(adjustable);
-  for (const key of Object.keys(branding)) {
-    if (key === PRESENTATION_PACKAGE_KEY) fail(422);
-    if (key === 'lane') continue;
-    const token = key === TABLE_COLOR_BRANDING_KEY ? 'table.color' : key === 'background' ? 'background' : key === 'dealer' ? 'dealer' : key === 'table' ? 'table' : 'branding';
-    if (!allowed.has(token)) fail(422);
-  }
-}
-
 function view(pack, adjustable) {
   return {
     operatorId: pack.operatorId,
@@ -72,7 +66,24 @@ function view(pack, adjustable) {
   };
 }
 
-export function createPartnerBrandingApi({ store, readProject, readAdministration, withWriteContext } = {}) {
+// The company's open (unpublished, not discarded) appearance draft, or null.
+// Shared with the room publication (room-release.mjs), which stops on an open draft.
+export async function cleanBrandingDraft(draft,pack,source) {
+  // Discard restores the current published choices in the existing immutable
+  // draft journal. Compare against that original package so a later publication
+  // cannot resurrect the discarded draft. Keep its revision for the next CAS.
+  const restoredCurrent=draft?.action==='draft.restore'&&draft.sourcePackageRevision===draft.basePackageRevision;
+  const restored=restoredCurrent?(draft.sourcePackageRevision===pack.revision?pack:await source.getPackage(pack.operatorId,draft.sourcePackageRevision)):null;
+  const discarded=restored?.operatorId===pack.operatorId&&restored.revision===draft.sourcePackageRevision
+    &&canonicalStudioJson(publicEditableBranding(draft.branding))===canonicalStudioJson(publicEditableBranding(restored.branding));
+  return !draft||draft.action==='draft.publish'||discarded?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
+    branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
+}
+
+// materials: optional store of the company's own material (Bolagets eget
+// material), read before SQL; the write context supplies the same store on its
+// locked client. Without it every branding publication keeps the frozen package.
+export function createPartnerBrandingApi({ store, readProject, readAdministration, withWriteContext, materials } = {}) {
   if (typeof store?.getCurrentPackage !== 'function' || typeof store?.publishPackage !== 'function' || typeof readProject !== 'function') fail(503);
   async function savedProject() {
     try {
@@ -103,42 +114,6 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     if (presentation) document ??= await administrationSnapshot();
     return { ...view(pack, adjustableForPackage(pack.lanes, saved)), ...(presentation ? { presentation, dealerChoices:choices(pack,presentation,document) } : {}) };
   }
-  async function prepareBranding(current, branding, document) {
-    if (!Array.isArray(current.lanes) || !current.lanes.length) fail(409);
-    const presentation = readPackagePresentation(current);
-    const source = presentation ? { lanes: presentation.lanes } : await savedProject();
-    const assigned = new Set(projectLanes(source).map(lane => lane.id));
-    if (current.lanes.some(id => !assigned.has(id))) fail(409);
-    const adjustable = adjustableForPackage(current.lanes, source);
-    gateKeys(branding, adjustable);
-    let nextBranding={...structuredClone(current.branding),...branding};
-    if (presentation) {
-      const laneId = branding.lane ?? current.branding.lane ?? presentation.lanes[0].id;
-      const lane = presentation.lanes.find(item => item.id === laneId);
-      if (!lane) fail(422);
-      const previous={...current.branding};
-      if((previous.lane??presentation.lanes[0].id)!==laneId) {
-        for(const key of ['dealer','table','background','color'])delete previous[key];
-      }
-      const base=normalizePresentationBranding({...previous,lane:laneId},presentation);
-      const merged = {...base,...branding};
-      const rights = new Set(effectivePartnerAdjustments(lane));
-      gateKeys(branding,[...rights]);
-      for (const role of ['background', 'table', 'dealer']) {
-        if (Object.hasOwn(branding,role) && !rights.has(role)) fail(422);
-        if (merged[role] !== undefined && merged[role] !== null && !partnerLayerChoices(lane, role).includes(merged[role])) fail(422);
-      }
-      if (Object.hasOwn(branding,'dealer') || merged.dealer !== undefined && merged.dealer !== null) {
-        const wanted = merged.dealer ?? lane.layers.dealer.default;
-        if (!choices(current,presentation,document)[lane.id].includes(wanted)) fail(409);
-      }
-      if (Object.hasOwn(branding,'color') && (!rights.has('table.color') || !/^#[a-f0-9]{6}$/.test(branding.color)
-        || lane.layers.table.colors?.length && !lane.layers.table.colors.includes(branding.color))) fail(422);
-      nextBranding={...merged,[PRESENTATION_PACKAGE_KEY]:current.branding[PRESENTATION_PACKAGE_KEY]};
-    } else if (Object.hasOwn(branding,'lane')) fail(422);
-    return nextBranding;
-  }
-
   function requireDraftStore(source) {
     if(!['getBrandingDraft','saveBrandingDraft','publishBrandingDraft','getPackage','listPackages'].every(key=>typeof source?.[key]==='function'))fail(503);
   }
@@ -149,17 +124,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
       && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
-  async function cleanDraft(draft,pack,source=store) {
-    // Discard restores the current published choices in the existing immutable
-    // draft journal. Compare against that original package so a later publication
-    // cannot resurrect the discarded draft. Keep its revision for the next CAS.
-    const restoredCurrent=draft?.action==='draft.restore'&&draft.sourcePackageRevision===draft.basePackageRevision;
-    const restored=restoredCurrent?(draft.sourcePackageRevision===pack.revision?pack:await source.getPackage(pack.operatorId,draft.sourcePackageRevision)):null;
-    const discarded=restored?.operatorId===pack.operatorId&&restored.revision===draft.sourcePackageRevision
-      &&canonicalStudioJson(publicEditableBranding(draft.branding))===canonicalStudioJson(publicEditableBranding(restored.branding));
-    return !draft||draft.action==='draft.publish'||discarded?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,
-      branding:publicEditableBranding(draft.branding),sourcePackageRevision:draft.sourcePackageRevision,updatedAt:draft.updatedAt};
-  }
+  // One room's view of the package: `tables` and the package's own `rooms` (Studio 023) together,
+  // or the package rooms would no longer match `tables` and read as a corrupt package (503).
+  const roomPackage=(pack,room)=>({...pack,tables:[room.id],rooms:pack.rooms?.filter(row=>row.id===room.id)??null});
+  const cleanDraft=(draft,pack,source=store)=>cleanBrandingDraft(draft,pack,source);
   async function state(operatorId,source=store,document=null) {
     requireDraftStore(source);
     const pack=await load(operatorId,source),draft=await source.getBrandingDraft(operatorId);
@@ -167,7 +135,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const history=await source.listPackages(operatorId,{limit:20});
     return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:await cleanDraft(draft,pack,source),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
-      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
+      roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices(roomPackage(pack,room),readPackagePresentation(pack),document)[room.presentationLaneId]])),
       rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
   }
   function assertEditable(branding) {
@@ -183,9 +151,14 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   // The Admin route carries the server-derived access class in the audit
   // context. An N1 administrator may choose any layer the frozen composition
-  // allows; partner sessions keep the company's operatorAdjustable gate.
-  function laneRights(lane,adminChoices) {
-    return new Set(adminChoices?adminLayerAdjustments(lane):effectivePartnerAdjustments(lane));
+  // allows; partner sessions keep the company's operatorAdjustable gate,
+  // narrowed by Admins `allow` i tilldelningen (partner-assignment.mjs): utan
+  // allow.dealer, allow.tableAsset eller allow.background ändrar bolaget inte
+  // det lagret, oavsett väg (dealer, branding save-draft, restore, publish).
+  const ALLOW_LAYERS=Object.freeze({dealer:'dealer',table:'tableAsset',background:'background'});
+  function laneRights(lane,adminChoices,allow) {
+    if(adminChoices)return new Set(adminLayerAdjustments(lane));
+    return new Set(effectivePartnerAdjustments(lane).filter(token=>!Object.hasOwn(ALLOW_LAYERS,token)||allow?.[ALLOW_LAYERS[token]]===true));
   }
   async function validateDraft(pack,branding,document,adminChoices=false) {
     assertEditable(branding);
@@ -196,8 +169,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const lane=presentation.lanes.find(row=>row.id===laneId);
     if(!lane)fail(422);
     const defaults={...branding};delete defaults.roomOverrides;
+    // Läses ur samma paket som valideringen, under bolagets lås i skrivvägen.
+    const allow=partnerAllow(pack,presentation);
     function checkedValues(value,baseline,selectedLane,allowedDealers) {
-      const rights=laneRights(selectedLane,adminChoices);
+      const rights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS){
         const changed=canonicalStudioJson(value[key]??null)!==canonicalStudioJson(baseline[key]??null);
         const token=key==='color'?'table.color':key;
@@ -206,21 +181,30 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         if(key==='color'){
           if(!/^#[a-f0-9]{6}$/.test(value.color)||selectedLane.layers.table.colors?.length&&!selectedLane.layers.table.colors.includes(value.color))fail(422);
         }else if(!partnerLayerChoices(selectedLane,key).includes(value[key]))fail(422);
+        if(key==='table')assertAiTableChoiceFits(selectedLane,presentation.assets,value.table);
         if(key==='dealer'&&!allowedDealers.includes(value[key]))fail(409);
       }
     }
     checkedValues(defaults,resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},null,laneId),lane,choices(pack,presentation,document)[laneId]);
-    for(const id of Object.keys(branding.roomOverrides??{}))if(!rooms.some(room=>room.id===id))fail(422);
+    // Ett pausat (eller annars inte redigerbart) spelbord som fortfarande hör
+    // till bolagets paket behåller sin publicerade override oförändrad: utkastet
+    // får bära den vidare, men aldrig lägga till eller ändra den. Ett arkiverat
+    // spelbord finns inte i paketets spelbord och nekas som förut.
+    const held=new Set(listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).map(room=>room.id));
+    for(const [id,value]of Object.entries(branding.roomOverrides??{})){
+      if(rooms.some(room=>room.id===id))continue;
+      if(!held.has(id)||!Object.hasOwn(base.roomOverrides??{},id)||canonicalStudioJson(value)!==canonicalStudioJson(base.roomOverrides[id]))fail(422);
+    }
     for(const room of rooms){
       const selectedLane=presentation.lanes.find(row=>row.id===room.presentationLaneId);
       // Explicit overrides change future inheritance even when today's rendered value is equal.
       const explicitBefore=base.roomOverrides?.[room.id]??{},explicitAfter=branding.roomOverrides?.[room.id]??{};
-      const roomRights=laneRights(selectedLane,adminChoices);
+      const roomRights=laneRights(selectedLane,adminChoices,allow);
       for(const key of PARTNER_ROOM_BRANDING_FIELDS)if(canonicalStudioJson(explicitBefore[key]??null)!==canonicalStudioJson(explicitAfter[key]??null)
         &&!roomRights.has(key==='color'?'table.color':key))fail(422);
       const value=resolveRoomBranding({...branding,lane:laneId},room.id,room.presentationLaneId);
       const baseline=resolveRoomBranding({...base,lane:base.lane??presentation.lanes[0].id},room.id,room.presentationLaneId);
-      const roomDealers=choices({...pack,tables:[room.id]},presentation,document)[selectedLane.id];
+      const roomDealers=choices(roomPackage(pack,room),presentation,document)[selectedLane.id];
       checkedValues(value,baseline,selectedLane,roomDealers);
     }
     // Keep all N1-owned metadata exactly, replacing only the public editable surface.
@@ -264,6 +248,29 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     const presentation=readPackagePresentation(pack);
     return [...nativeFilmedPlanningMutations(pack),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
   }
+  // Bolagets eget material. brandingFor(pack) is the exact branding this
+  // publication writes for a package; the merge is sized against that branding
+  // (never the old package's), then the choices are validated again against the
+  // merged package. No rows (no store, no 021, no material): the plain branding.
+  const mergesMaterials=typeof materials?.listMaterials==='function';
+  const materialRowsBeforeSql=operatorId=>mergesMaterials?materials.listMaterials(operatorId):[];
+  async function lockedMaterialRows(context,operatorId,fingerprint) {
+    if(!mergesMaterials)return [];
+    if(typeof context.materials?.listMaterials!=='function')fail(503);
+    const rows=await context.materials.listMaterials(operatorId);
+    // The negotiated candidate assumed these rows; a decision in between is a conflict.
+    if(operatorMaterialFingerprint(rows)!==fingerprint)fail(409);
+    return rows;
+  }
+  async function brandingWithMaterials(pack,rows,document,brandingFor) {
+    const plain=await brandingFor(pack),presentation=readPackagePresentation(pack);
+    if(!rows.length||!presentation)return plain;
+    const allowExtended=isExtendedPresentationEnvelope(pack.branding?.[PRESENTATION_PACKAGE_KEY]);
+    const merged=mergeOperatorMaterialsForPublication({presentation,rows,rooms:publicationRooms(document?.value,pack.operatorId,pack),
+      fits:presentationFits({branding:plain,base:presentation,allowExtended})});
+    if(!merged.changed)return plain;
+    return brandingFor({...pack,branding:{...pack.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(merged.presentation,{allowExtended})}});
+  }
   async function checkPublication(context,pack) {
     // Native callers already negotiated this exact operator before SQL. Check
     // the locked payload again; the mutation context forbids HTTP under lock.
@@ -279,15 +286,28 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     input=structuredClone(input);
     if(typeof withWriteContext!=='function')fail(503);
     // Partner changes retain N1's frozen presentation. Negotiate that package,
-    // never the latest project or a different operator's package, before SQL.
-    const presentationMutation=input.action==='publish'?publicationMutation(await load(input.operatorId)):undefined;
+    // never the latest project or a different operator's package, before SQL;
+    // with the company's material it is the merged candidate this publish writes.
+    let presentationMutation,materialFingerprint=operatorMaterialFingerprint([]);
+    const adminChoices=input.audit?.accessClass==='internal-admin';
+    if(input.action==='publish'){
+      const current=await load(input.operatorId),rows=await materialRowsBeforeSql(input.operatorId);
+      materialFingerprint=operatorMaterialFingerprint(rows);
+      let candidate=current;
+      if(rows.length) {
+        try {
+          const draft=await store.getBrandingDraft(input.operatorId),document=await administrationSnapshot();
+          candidate={...current,branding:await brandingWithMaterials(current,rows,document,pack=>validateDraft(pack,draft.branding,document,adminChoices))};
+        } catch { /* The locked publication validates again and fails with the real reason. */ }
+      }
+      presentationMutation=publicationMutation(candidate);
+    }
     return withWriteContext(async context=>{
       if(await context.reauthorize()!==true)fail(403);
       requireDraftStore(context.store);
       const pack=await load(input.operatorId,context.store),draft=await context.store.getBrandingDraft(input.operatorId);
       if(!Array.isArray(pack.lanes)||!pack.lanes.length||pack.revision!==input.expectedPackageRevision||(draft?.revision??0)!==input.expectedDraftRevision)fail(409);
       const document=await administrationSnapshot(context.readAdministration);
-      const adminChoices=input.audit?.accessClass==='internal-admin';
       if(input.action==='discard-draft'){
         if(!await cleanDraft(draft,pack,context.store))fail(409);
         await context.store.saveBrandingDraft({...input,branding:publicEditableBranding(pack.branding),sourcePackageRevision:pack.revision});
@@ -304,7 +324,10 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         await context.store.saveBrandingDraft({...input,branding});
       }else{
         if(!await cleanDraft(draft,pack,context.store)||draft.basePackageRevision!==pack.revision)fail(409);
-        const branding=await validateDraft(pack,draft.branding,document,adminChoices),review=reviewOf(pack,draft,document);
+        const brandingFor=source=>validateDraft(source,draft.branding,document,adminChoices);
+        const branding=input.action==='publish'
+          ?await brandingWithMaterials(pack,await lockedMaterialRows(context,input.operatorId,materialFingerprint),document,brandingFor)
+          :await brandingFor(pack),review=reviewOf(pack,draft,document);
         if(input.action==='review')return review;
         if(typeof input.reviewToken!=='string'||input.reviewToken!==review.reviewToken)fail(409);
         await checkPublication(context,{...pack,branding});
@@ -316,31 +339,5 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   return Object.freeze({
     readState:({operatorId})=>state(operatorId),
     command,
-    async read({ operatorId }) { return present(await load(operatorId)); },
-    async write({ operatorId, actor, audit, expectedRevision, branding }) {
-      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1) fail(400);
-      if (!plainObject(branding)) fail(422);
-      // Capture the request before any await; a caller cannot change the intent.
-      branding=structuredClone(branding);
-      const current=await load(operatorId), presentation=readPackagePresentation(current);
-      const captured=presentation?await administrationSnapshot():null;
-      await prepareBranding(current,branding,captured);
-      if (current.revision !== expectedRevision) fail(409);
-      if (typeof withWriteContext !== 'function') fail(503);
-      return withWriteContext(async context=>{
-        if (await context.reauthorize() !== true) fail(403);
-        const locked=await load(operatorId,context.store);
-        const document=presentation?await administrationSnapshot(context.readAdministration):null;
-        if (locked.revision !== current.revision || document?.revision !== captured?.revision) fail(409);
-        const nextBranding=await prepareBranding(locked,branding,document);
-        await checkPublication(context,{...locked,branding:nextBranding});
-        let published;
-        try {
-          published=await context.store.publishPackage({actor,audit,operatorId,expectedRevision:locked.revision,
-            lanes:[...locked.lanes],games:[...locked.games],tables:[...locked.tables],branding:nextBranding});
-        } catch(error) { if(Number.isInteger(error?.statusCode)) throw error; fail(503); }
-        return present(published,document);
-      },{presentationMutation:publicationMutation(current)});
-    },
   });
 }

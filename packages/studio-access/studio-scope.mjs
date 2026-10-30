@@ -1,5 +1,7 @@
 // Shared scope and safe error identity; no Studio, media or OpenClaw imports.
-const safeCode = /^(?:studio_|generated_speech_|operator_speech_|invalid_generated_|speech_|gpu_)[a-z0-9_]{1,100}$/;
+// operator_materials_ and operator_ai_: Bolagets eget material (021). partner_: Nyckel→bolag (012).
+// room_config_: the shared table's named refusal of an open room without published game settings.
+const safeCode = /^(?:studio_|generated_speech_|operator_speech_|invalid_generated_|speech_|gpu_|partner_|operator_materials_|operator_ai_|room_config_)[a-z0-9_]{1,100}$/;
 const id = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 
 // Public failures contain a fixed code only, never a database/provider message.

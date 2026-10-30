@@ -15,16 +15,15 @@ import { assertCloudAccessReady, main, openCheckedGateway } from '../start.mjs';
 
 const fixture = () => ({
   NODE_ENV: 'production', PORT: '10000',
-  CROUPIER_DATABASE:'postgres', CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
-  CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
+  CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+  BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-cloud-test-volume'),
   PUBLIC_URL: 'https://game.example.test', BO_URL: 'https://bo.example.test',
   LAB_PUBLIC_URL: 'https://lab.example.test',
   CROUPIER_GAME_ORIGIN: 'https://game.example.test',
   BETTALOTTO_PARTNER_BASE_URL: 'https://game.example.test',
-  CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
-  OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
+    OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
   OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-product-speech-token',
 });
 
@@ -61,21 +60,18 @@ test('chat deadline reaches only the product relay and does not extend Director 
 });
 
 test('private media credentials reach only the game and zones credentials stay outside it', () => {
-  const env = { ...fixture(), CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
+  const env = { ...fixture(), BLOB_READ_WRITE_TOKEN: 'fixture-private-blob-token',
     CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:fixture-password@zones.neon.tech/neondb?sslmode=require',
     DATABASE_URL: 'postgresql://game:never-forward@game.example/game', NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN: 'never-forward' };
   const specs = childSpecifications(validateCloudConfig(env), env);
   for (const server of Object.values(specs)) {
-    assert.equal(server.env.CROUPIER_MEDIA_STORAGE, 'blob');
     assert.equal(server.env.BLOB_READ_WRITE_TOKEN, env.BLOB_READ_WRITE_TOKEN);
     assert.equal(server.env.DATABASE_URL, undefined);
     assert.equal(server.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN, undefined);
   }
   assert.equal(specs.web.env.CROUPIER_ZONES_DATABASE_URL, undefined);
-  assert.throws(()=>validateCloudConfig({...fixture(),CROUPIER_MEDIA_STORAGE:'disk',BLOB_READ_WRITE_TOKEN:'staged-not-active'}));
   for (const change of [
-    { BLOB_READ_WRITE_TOKEN: '' }, { CROUPIER_MEDIA_STORAGE: 'public' },
-    { CROUPIER_MEDIA_STORAGE: 'disk' },
+    { BLOB_READ_WRITE_TOKEN: '' }, { BLOB_READ_WRITE_TOKEN: 'token with space' },
     { CROUPIER_ZONES_DATABASE_URL: 'https://zones.example.test/database' },
     { CROUPIER_ZONES_DATABASE_URL: 'postgresql://zones:secret@zones.neon.tech/neondb' },
   ]) {
@@ -107,8 +103,8 @@ test('shared tables reach the game process only through the validated cloud flag
   for (const value of ['', 'true', 'false', '01', '1 ', '2', true]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), [name]: value }), /CROUPIER_SHARED_TABLE_ENABLED/);
   }
-  for (const change of [{ CROUPIER_DATABASE: 'sqlite', CROUPIER_GAME_DATABASE_URL: undefined },
-    { CROUPIER_STUDIO_NEON_POLICY: '0' }, { CROUPIER_STUDIO_ENVIRONMENT_ID: '' }]) {
+  for (const change of [{ CROUPIER_GAME_DATABASE_URL: undefined },
+    { CROUPIER_STUDIO_ENVIRONMENT_ID: '' }]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change, [name]: '1' }));
   }
 });
@@ -181,17 +177,15 @@ test('configuration rejects local or ambiguous exposure and conflicting storage'
     { CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'speech') },
     { CROUPIER_CLOUD_DATA_ROOT: '.' },
     { CROUPIER_DATA_DIR: join(tmpdir(), 'players') },
-    { CROUPIER_DATABASE: undefined },
   ]) {
     assert.throws(() => validateCloudConfig({ ...fixture(), ...change }));
   }
 });
 
 test('Postgres, Neon and private Blob can start without a persistent product mount', async () => {
-  const env = { ...fixture(), CROUPIER_DATABASE:'postgres',
-    CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
-    CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token' };
+  const env = { ...fixture(),     CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+    CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+    BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token' };
   delete env.CROUPIER_CLOUD_DATA_ROOT;
   const config = validateCloudConfig(env);
   assert.equal(config.dataRoot, null); assert.deepEqual(config.paths, {});
@@ -204,8 +198,8 @@ test('Postgres, Neon and private Blob can start without a persistent product mou
   for(const server of Object.values(specs))assert.equal(server.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
   const obsolete={...env,CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'ignored-retired-index.json')};
   assert.equal(childSpecifications(validateCloudConfig(obsolete),obsolete).web.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
-  for (const patch of [{CROUPIER_MEDIA_STORAGE:'disk'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},{CROUPIER_DATABASE:'sqlite'},
+  for (const patch of [
+    {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},
     {BLOB_READ_WRITE_TOKEN:''},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
     assert.throws(() => validateCloudConfig({...env,...patch}));
     assert.throws(() => validateCloudConfig({...fixture(),...patch}),'a volume cannot enable the retired cloud fallback');
@@ -263,14 +257,14 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
   const config = validateCloudConfig(env);
   const specs = childSpecifications(config, env);
   assert.equal(config.streaming, true);
-  const ownProfiles={...env,CROUPIER_DEALER_SPEECH_PROFILES:'1',CROUPIER_STUDIO_NEON_POLICY:'1',ELEVENLABS_API_KEY:'fixture-own-voice-key'};
+  const ownProfiles={...env,CROUPIER_DEALER_SPEECH_PROFILES:'1',ELEVENLABS_API_KEY:'fixture-own-voice-key'};
   const ownSpecs=childSpecifications(validateCloudConfig(ownProfiles),ownProfiles);
   assert.equal(ownSpecs.web.env.CROUPIER_DEALER_SPEECH_PROFILES,'1');
   assert.equal(ownSpecs.web.env.ELEVENLABS_API_KEY,ownProfiles.ELEVENLABS_API_KEY);
   const off={...env,ELEVENLABS_API_KEY:'must-not-leak',ELEVENLABS_VIDEO_KEY:'different-account',ELEVENLABS_OC_API:'different-purpose'};
   const offSpecs=childSpecifications(validateCloudConfig(off),off);
   for(const key of ['ELEVENLABS_API_KEY','ELEVENLABS_VIDEO_KEY','ELEVENLABS_OC_API'])assert.equal(offSpecs.web.env[key],undefined);
-  for(const patch of [{CROUPIER_DEALER_SPEECH_PROFILES:'yes'},{CROUPIER_STUDIO_NEON_POLICY:'0'},{CROUPIER_GENERATED_SPEECH_STREAMING:'0'},{ELEVENLABS_API_KEY:'key\r\ninjection'}])assert.throws(()=>validateCloudConfig({...ownProfiles,...patch}));
+  for(const patch of [{CROUPIER_DEALER_SPEECH_PROFILES:'yes'},{CROUPIER_GENERATED_SPEECH_STREAMING:'0'},{ELEVENLABS_API_KEY:'key\r\ninjection'}])assert.throws(()=>validateCloudConfig({...ownProfiles,...patch}));
   assert.equal(specs.web.env.CROUPIER_GENERATED_SPEECH_STREAMING, '1');
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_WORKER_SECRET, env.CROUPIER_SPEECH_STREAM_WORKER_SECRET);
   assert.equal(specs.web.env.CROUPIER_SPEECH_STREAM_TICKET_SECRET, env.CROUPIER_SPEECH_STREAM_TICKET_SECRET);
@@ -291,7 +285,7 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
 });
 
 test('Neon fullfile budget must be explicit and reaches only the Web fullfile child', () => {
-  const env={...fixture(),CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',
+  const env={...fixture(),CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',
     CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-runpod',CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture-endpoint',
     CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.50',CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1'};
   const config=validateCloudConfig(env),specs=childSpecifications(config,env);
@@ -305,7 +299,7 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
   assert.equal(validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'20'}).fullfileBudget.dailyBudgetUsd,'20');
   for(const value of [undefined,'','0','0.49','20.000001','Infinity','1.0000001'])
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}),/CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
-  assert.throws(()=>validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}),/CROUPIER_STUDIO_NEON_POLICY/);
+  assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}),/CROUPIER_SPEECH_FULLFILE_RESERVE_USD/);
   const off={...env,CROUPIER_GENERATED_SPEECH:'0',CROUPIER_CLOUD_GENERATED_SPEECH:'0'};
   assert.equal(childSpecifications(validateCloudConfig(off),off).web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,undefined);
 });

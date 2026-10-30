@@ -1,7 +1,7 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
-import { designPreviewPages } from './design-preview-paths.mjs';
+import { isDesignPreviewPage } from './design-preview-paths.mjs';
 
 // Only fixed enums and booleans are exposed in transport diagnostics. Never
 // return header values, URLs, queries, cookies, identities or credentials.
@@ -28,7 +28,7 @@ export function studioDocumentNavigationHeaders(request) {
   const publicPath = pathname.startsWith('/studio/') ? pathname.slice('/studio'.length) : pathname;
   const adminDocument = publicPath === '/admin' || publicPath === '/admin/lobby'
     || publicPath === '/admin/login' || publicPath === '/admin/set-password'
-    || publicPath.startsWith('/admin/') && designPreviewPages.has(publicPath.slice('/admin/'.length));
+    || publicPath.startsWith('/admin/') && isDesignPreviewPage(publicPath.slice('/admin/'.length));
   // Vercel's fetch hop can replace navigate with cors before middleware too.
   // Accept that observed shape only without Origin and on known documents;
   // explicit Origin, API/action/body requests and frames keep their guards.
@@ -41,6 +41,22 @@ export function studioDocumentNavigationHeaders(request) {
 }
 
 const reject = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
+
+// Origins trusted by the assistant endpoints; the same rule as the native Admin
+// configuration. The one public origin (www) is the only trusted origin, so a legacy
+// alias host never becomes trusted; basePath is the fixed /studio. Returns null when
+// invalid (503).
+export function assistantRequestConfiguration(env = process.env) {
+  const origins = [env.CROUPIER_PUBLIC_ORIGIN];
+  for (const value of origins) {
+    let url; try { url = new URL(value); } catch { return null; }
+    if (url.origin !== value || url.protocol !== 'https:' || url.username || url.password
+      || ['localhost','127.0.0.1','[::1]'].includes(url.hostname)) return null;
+  }
+  return Object.freeze({ allowedOrigins: origins, unifiedUi: true,
+    publicHosts: origins.map(origin => new URL(origin).host),
+    apiBase: '/studio/api/admin', authBase: '/studio/api/auth' });
+}
 
 // Next's route Request may omit its configured basePath. Unified UI accepts
 // only its public origin. Separate deployments can retain the Lab transport

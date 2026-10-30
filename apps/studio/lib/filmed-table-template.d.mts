@@ -1,0 +1,25 @@
+export type FilmedTablePoint={x:number;y:number};
+export type FilmedTableRect={x:number;y:number;width:number;height:number};
+export type FilmedTableTemplate={
+  readonly dealerId:string;readonly profileId:string;
+  readonly canvas:{width:number;height:number};
+  readonly plane:{offset:FilmedTablePoint;scale:number};
+  readonly card:{width:number;height:number};
+  readonly seats:{id:string;center:FilmedTablePoint;box:FilmedTableRect}[];
+  readonly dealer:{center:FilmedTablePoint;box:FilmedTableRect};
+  readonly felt:{top:number;railInner:[number,number][];railOuter:[number,number][]};
+};
+export const FILMED_TABLE_BOX_PAD: number;
+export function filmedTableTemplate(dealerId:string,options?:{profileFor?:(dealerId:string)=>unknown;composition?:unknown;width?:number}):FilmedTableTemplate|null;
+export function filmedTableRequestSize(template:FilmedTableTemplate):{width:number;height:number};
+export type FilmedTableLook={felt:string;light:string;rail:string;railLight:string;inlay:[string,string];trim:string;apron:[string,string];metal:string;glow:string|null};
+export type FilmedTableBody={readonly exponent:number|null;readonly open:boolean;readonly centre:number;readonly top:number;readonly half:number;
+  readonly edge:[number,number][];readonly inlayEdge:[number,number][];readonly railEdge:[number,number][];readonly apronEdge:[number,number][];
+  readonly pedestal:{top:number;bottom:number;topHalf:number;bottomHalf:number;ring:number;ringHeight:number}|null};
+export const AI_TABLE_FILL: {readonly min:number;readonly target:number;readonly max:number};
+export function filmedTableReach(template:FilmedTableTemplate):{left:number;right:number;share:number};
+export function filmedTableFit(dealerId:string,composition?:unknown,options?:{profileFor?:(dealerId:string)=>unknown}):{readonly changed:boolean;
+  readonly current:{share:number;composition:import('../../../packages/presentation/contracts/composition-settings.mjs').CompositionSettings};
+  readonly suggested:{share:number;composition:import('../../../packages/presentation/contracts/composition-settings.mjs').CompositionSettings}}|null;
+export function filmedTableBody(template:FilmedTableTemplate):FilmedTableBody;
+export function filmedTableSvg(template:FilmedTableTemplate,part:'reference'|'surface'|'mask'|'boxes',options?:{stroke?:string;look?:Partial<FilmedTableLook>}):string;

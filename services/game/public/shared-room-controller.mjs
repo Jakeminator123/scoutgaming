@@ -6,7 +6,7 @@ const fail = () => { throw new TypeError('shared_room_invalid_controls'); };
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
 const messages = {
   STALE_COMMAND:'Bordet har ändrats. Använd de aktuella kontrollerna.', REQUEST_REUSED:'Kommandot kunde inte bekräftas. Ladda om sidan.',
-  PAUSED:'Din spelpaus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
+  PAUSED:'Din paus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
   INSUFFICIENT_BALANCE:'Ditt tillgängliga demosaldo räcker inte.', LIMITS:'Insatsen ligger utanför bordets gränser.',
   BETTING_CLOSED:'Insatsfönstret är stängt.', READY:'Du är redan redo. Vänta på de andra spelarna.',
   NO_BETS:'Lägg en insats först.', NO_REPEAT:'Det finns ingen tidigare insats att upprepa.',
@@ -21,6 +21,14 @@ const previous = s => Array.isArray(s.me.lastSettlement?.hands) && s.me.lastSett
 // A side bet needs the main bet of its own box (coordinator.mjs bet: NO_BETS).
 const sideOpen = (s, box) => s.bets[box]?.main > 0;
 export const SIGN_IN_EXPIRED = 'Din session har gått ut. Logga in igen.';
+// A partner key's company (docs/plans/NYCKEL-BOLAG.md): a reload cannot change these answers.
+export const PARTNER_REFUSED = new Map([
+  ['partner_operator_mismatch', 'Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.'],
+  ['partner_key_unbound', 'Nyckeln är inte kopplad till något spelbolag.'],
+]);
+// A live room without published game settings (shared-room-client.mjs ROOM_CONFIG_MISSING): no seat can be
+// taken until Admin publishes them, so the table says so instead of the generic reload text.
+export const ROOM_NOT_READY = 'Spelbordet är inte klart än (saknar spelinställningar).';
 function checked(raw, roomId) {
   const s = structuredClone(raw), cfg = s?.settings;
   if (s?.contract !== 'blackjack-table/1' || s.roomId !== roomId || !integer(s.version) || !integer(s.presentationVer)
@@ -40,7 +48,8 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation || (reconnect !== null && typeof reconnect !== 'function')) fail();
   let snapshot = null, chip = null, focusSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
   let closed = false, connected = false, presenting = false, sending = false, restoring = false, restoreGeneration = 0, waiting = null, notice = 'Ansluter till bordet…';
-  let offline = false, expired = false;
+  // lost: the socket of the shown state closed and the client reconnects by itself (K04 B2); offline: its budget is spent.
+  let offline = false, expired = false, lost = false;
   const serverTime = () => now() + clockOffset;
   function available() {
     const s = snapshot, result = { join:false, leave:false, bet:false, undo:false, clear:false, doubleBets:false, allSeats:false, repeat:false,
@@ -73,7 +82,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   // Why a betting control stays closed while betting is open: the same texts as the server's NO_BETS and NO_REPEAT.
   const hints = can => can.bet ? { ready:can.ready ? '' : messages.NO_BETS, repeat:can.repeat ? '' : messages.NO_REPEAT, side:messages.NO_BETS }
     : { ready:'', repeat:'', side:'' };
-  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, signIn:expired,
+  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, reconnecting:lost && !offline && !closed, signIn:expired,
     retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
@@ -142,8 +151,8 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       restoring = false;
       activeSignal?.removeEventListener('abort',disconnected);
       // Include time spent queued and checking the binding in the table clock.
-      snapshot = next; activeSignal = signal; connected = true; offline = false; clockOffset = next.serverNow-receivedAt;
-      disconnected = () => { connected = false; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
+      snapshot = next; activeSignal = signal; connected = true; offline = false; lost = false; clockOffset = next.serverNow-receivedAt;
+      disconnected = () => { connected = false; lost = true; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
       activeSignal?.addEventListener('abort',disconnected,{once:true});
       if (!next.settings.chips.includes(chip)) chip = next.settings.chips[0];
       if (!sending && !waiting && commands.state === 'idle') notice = '';
@@ -161,7 +170,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
     // K04 F8: a session the server refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
     fail(code) { if (!closed) { api.stop(); expired = code === 'shared_room_unauthorized';
-      notice = expired ? SIGN_IN_EXPIRED : 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
+      notice = expired ? SIGN_IN_EXPIRED : code === 'room_config_missing' ? ROOM_NOT_READY : PARTNER_REFUSED.get(code) ?? 'Bordet kunde inte uppdateras. Ladda om sidan för att fortsätta.'; draw(); } },
     // The socket's reconnect budget is spent: the last server state stays on screen without controls, and the
     // player reconnects here instead of reloading the page (the socket also does so when the page or network returns).
     offline() { if (closed) return; offline = true; connected = false; clearTimeout(clockTimer); notice = 'Anslutningen till bordet bröts.'; draw(); },

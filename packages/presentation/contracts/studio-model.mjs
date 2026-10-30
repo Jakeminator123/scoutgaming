@@ -13,6 +13,7 @@ import { validateLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
 import { validateRouletteIdleBinding } from './roulette-idle-contract.mjs';
 import { validateRouletteStartBinding } from './roulette-start-contract.mjs';
+import { validateStudioFilmedProfile } from './filmed-profiles/studio-profile.mjs';
 import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from './speech-slot-bindings.mjs';
 
 
@@ -43,6 +44,7 @@ export const OPERATOR_ADJUSTABLE = ['table.color', 'table', 'background', 'deale
 export const MAX_LANES = 32;
 // A lane stores zone identifiers only; zone assets have an independent lifecycle.
 const ZONE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
+const MATERIAL_ID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const PROBE_MODEL_IDS = new Set(PROBE_MODELS.map(model => model.id));
 const MAX_CLIP_LABELS = 2048;
@@ -125,7 +127,7 @@ const colorList = (value, at, fail) => {
 
 // Same id rule as packages/presentation/contracts/game-lane-id.mjs. The server catalogue is not imported or changed.
 export function defaultPresentationLane(dealerId) {
-  if (!isActiveDealerId(dealerId)) throw new StudioValidationError(['sammansättning: välj en aktiv dealer innan du skapar den']);
+  if (!isActiveDealerId(dealerId)) throw new StudioValidationError(['miljö: välj en aktiv dealer innan du skapar den']);
   return {
     id: 'mobile-phone',
     label: 'Standardsammansättning',
@@ -149,7 +151,8 @@ function laneErrors(lanes, projectDealerIds) {
   lanes.forEach((lane, index) => {
     const at = `lanes[${index}]`;
     // probe and idle may be absent. A missing probe leaves openclaw.probe in force; this check does not copy it.
-    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback'])) return;
+    if (!exactFields(lane, ['id', 'label', 'dealers', 'layers', 'openclaw', 'operatorAdjustable'], at, fail, ['probe', 'idle', 'renderer', 'composition', 'backgroundPlayback', 'tablePlayback', 'illustration'])) return;
+    if (Object.hasOwn(lane, 'illustration') && (typeof lane.illustration !== 'string' || !MATERIAL_ID.test(lane.illustration))) fail(`${at}.illustration`, 'ska vara ett material-id');
     if (Object.hasOwn(lane, 'backgroundPlayback')) {
       try { validateBackgroundPlayback(lane.backgroundPlayback); }
       catch { fail(`${at}.backgroundPlayback`, 'ogiltiga uppspelningsregler'); }
@@ -413,7 +416,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart'])) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart','filmedProfile'])) return;
+    if (Object.hasOwn(dealer,'filmedProfile')) {
+      try { validateStudioFilmedProfile(dealer.filmedProfile,{dealerId:dealer.id}); }
+      catch { error(at + '.filmedProfile', 'ogiltig filmad profil (landningar)'); }
+    }
     if (Object.hasOwn(dealer,'rouletteStart')) {
       try { validateRouletteStartBinding(dealer.rouletteStart); if(!dealer.rouletteIdle)throw Error('kräver roulette-idle för återgång'); }
       catch (cause) { error(at + '.rouletteStart', cause.message); }
@@ -517,6 +524,15 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
       }
     }
   }
+  // Miljöbild: a lane's illustration is an `illustration` material in the library, and such a material is
+  // never a layer. It cannot be allowed, selected or played as a background or a table.
+  const libraryRoles = new Map((Array.isArray(project.layerAssets) ? project.layerAssets : []).map(asset => [asset?.id, asset?.role]));
+  for (const [index, lane] of (Array.isArray(project.lanes) ? project.lanes : []).entries()) {
+    if (Object.hasOwn(lane ?? {}, 'illustration') && libraryRoles.get(lane.illustration) !== 'illustration') error(`lanes[${index}].illustration`, 'ska vara en miljöbild i materialbiblioteket');
+    const layerIds = ['background', 'table'].flatMap(role => [lane?.layers?.[role]?.default, ...(Array.isArray(lane?.layers?.[role]?.allowed) ? lane.layers[role].allowed : [])])
+      .concat([lane?.backgroundPlayback, lane?.tablePlayback].flatMap(policy => Array.isArray(policy?.rules) ? policy.rules.map(rule => rule?.assetId) : []));
+    if (layerIds.some(id => typeof id === 'string' && libraryRoles.get(id) === 'illustration')) error(`lanes[${index}].layers`, 'en miljöbild kan aldrig väljas som bakgrund eller bord');
+  }
   for (const [index, lane] of (Array.isArray(project.lanes) ? project.lanes : []).entries()) {
     if(lane?.composition){
       try{validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed??[],assets:project.layerAssets??[]});}
@@ -553,7 +569,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
         if(seen.has(entry.asset.id)||typeof entry.archivedAt!=='string'||!Number.isFinite(Date.parse(entry.archivedAt))||new Date(entry.archivedAt).toISOString()!==entry.archivedAt)throw Error();
         seen.add(entry.asset.id);
         for(const lane of [...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(row=>row.compositions??[])]){
-          if(['table','background'].some(role=>lane.layers[role].default===entry.asset.id||lane.layers[role].allowed.includes(entry.asset.id)))throw Error();
+          if(['table','background'].some(role=>lane.layers[role].default===entry.asset.id||lane.layers[role].allowed.includes(entry.asset.id))||lane.illustration===entry.asset.id)throw Error();
         }
       }catch{error('layerAssetTrash','ogiltig, dubblerad eller fortfarande ansluten lagerfil');}
     }

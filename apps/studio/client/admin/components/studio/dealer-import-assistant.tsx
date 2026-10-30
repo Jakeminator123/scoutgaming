@@ -224,7 +224,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
               <details><summary>Dealer-id</summary><label>Unikt dealer-id<input maxLength={40} value={newDealerId} onChange={event=>{setIdEdited(true);setNewDealerId(event.target.value);}}/></label></details>
               <button className="dealer-import-primary" type="submit">{busy==='register'?'Registrerar…':'Skapa dealer och fortsätt'}</button>
             </fieldset></form>
-            {registrationBlocked?<p role="status">Spara eller avsluta ändringarna i klippkartan först.</p>:pending?<p role="status">Spara eller töm den osparade fillistan innan du skapar en annan dealer.</p>:<p>Registrera namnet först. Lägg sedan till filmer; rum och uppspelning kopplas separat.</p>}
+            {registrationBlocked?<p role="status">Spara eller avsluta ändringarna i klippkartan först.</p>:pending?<p role="status">Spara eller töm den osparade fillistan innan du skapar en annan dealer.</p>:<p>Registrera namnet först. Lägg sedan till filmer; spelbord och uppspelning kopplas separat.</p>}
           </details>}
           <a href="/admin/dealers">Alla dealers · skapa och ta bort</a>
           {requestedDealerId&&dealerId!==requestedDealerId&&rows.length>0&&catalog.dealers.some(row=>row.id===requestedDealerId)&&<p>Din tidigare import är kvar. <button disabled={Boolean(busy)} onClick={()=>chooseDealer(requestedDealerId)}>Byt till {catalog.dealers.find(row=>row.id===requestedDealerId)?.label}</button></p>}
@@ -289,7 +289,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
         <form onSubmit={event=>void ask('chat',event)}><label>Meddelande till assistenten<textarea value={question} maxLength={2000} rows={3} disabled={Boolean(busy)} placeholder="Vad är skillnaden mellan vila och redo?" onChange={event=>setQuestion(event.target.value)}/></label>
           <button disabled={Boolean(busy)||!question.trim()} type="submit">{busy==='chat'?'Svarar…':'Fråga assistenten'}</button></form>
         <p className="dealer-import-help">De senaste fyra lyckade chattutbytena kan följa med som sammanhang. Samtalet och filvalen sparas inte när sidan laddas om.</p>
-        <details><summary>Detaljer</summary><p>Filnamn och textkontext ger förslag. Du kan granska början och slutet lokalt. Automatisk bildanalys, posebyte och skapande av rum ingår inte ännu.</p><p>Tal och läppsynk behöver matchande text, ljud, video och provspelning.</p></details>
+        <details><summary>Detaljer</summary><p>Filnamn och textkontext ger förslag. Du kan granska början och slutet lokalt. Automatisk bildanalys, posebyte och skapande av spelbord ingår inte ännu.</p><p>Tal och läppsynk behöver matchande text, ljud, video och provspelning.</p></details>
         <a href={'/admin/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>Öppna dealer, tal och läppsynk i Studio <ArrowUpRight size={14}/></a>
       </aside></div>
       {error && <p role="alert" className="dealer-import-error dealer-import-panel">{importErrorMessage(error)}</p>}

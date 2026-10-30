@@ -2,29 +2,38 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { suppliedDealerArtwork, isSuppliedPortraitVideo } from './dealer-artwork.mjs';
 
-test('PAOW (paow, paow-v2) has no supplied public.zip portrait pair and never inherits an approved clip', () => {
-  for (const id of ['paow', 'paow-v2']) assert.equal(suppliedDealerArtwork({ id, name: 'PAOW' }), undefined);
-  assert.equal(isSuppliedPortraitVideo('/admin/_assets/lobby/images/dealers/paow.jpg', { src: '/admin/_assets/lobby/videos/dealers/paow-hair.mp4', approved: true, source: 'supplied-portrait' }), false);
-});
+const lobby = '/admin/_assets/lobby';
 
-test('unverified identity, label mismatch and unpublished slots never inherit another person\'s portrait', () => {
-  for (const dealer of [{ id: 'other', name: 'PAOW' }, { id: 'paow-v2', name: 'Johanna' },
-    { id: '__proto__', name: 'PAOW' }, { id: 'unpublished-1', name: 'Ej publicerad' },
-    { id: 'dragge', name: 'Dragge' }, { id: 'marten', name: 'Mårten' }, { id: 'paow', name: 'PAOW' }]) {
-    assert.equal(suppliedDealerArtwork(dealer), undefined);
+test('registered lobby dealers receive their portrait and clip when both id and name match', () => {
+  const expected = [
+    [{ id: 'paow', name: 'PAOW' }, 'paow.jpg', 'paow-hair.mp4'],
+    [{ id: 'paow', name: 'Paow' }, 'paow.jpg', 'paow-hair.mp4'],
+    [{ id: 'paow-v2', name: ' paow ' }, 'paow.jpg', 'paow-hair.mp4'],
+    [{ id: 'anna', name: 'Anna' }, 'anna.png', 'anna.mp4'],
+    [{ id: 'dragge', name: 'Dragge' }, 'dragge.jpg', 'dragge-shirt.mp4'],
+    [{ id: 'dragan', name: 'Dragan' }, 'dragge.jpg', 'dragge-shirt.mp4'],
+    [{ id: 'marten', name: 'Mårten' }, 'marten.jpg', 'marten-look.mp4'],
+    [{ id: 'marten', name: 'MÅRTEN' }, 'marten.jpg', 'marten-look.mp4'],
+  ];
+  for (const [dealer, image, video] of expected) {
+    const artwork = suppliedDealerArtwork(dealer);
+    assert.equal(artwork?.image, `${lobby}/images/dealers/${image}`, dealer.id + ' ' + dealer.name);
+    assert.equal(artwork.approvedVideo.src, `${lobby}/videos/dealers/${video}`);
+    assert.equal(isSuppliedPortraitVideo(artwork.image, artwork.approvedVideo), true);
   }
 });
 
-test('registered Astrid receives her supplied pair without creating a dealer or publication', () => {
-  const artwork = suppliedDealerArtwork({ id: 'astrid', name: 'Astrid' });
-  assert.equal(artwork.image, '/admin/_assets/lobby/images/dealers/astrid.jpg');
-  assert.equal(artwork.approvedVideo.src, '/admin/_assets/lobby/videos/dealers/astrid-look.mp4');
-  assert.equal(isSuppliedPortraitVideo(artwork.image, artwork.approvedVideo), true);
+test('unverified identity, label mismatch and unpublished slots never inherit another person\'s portrait', () => {
+  for (const dealer of [{ id: 'other', name: 'PAOW' }, { id: 'paow-v2', name: 'Johanna' }, { id: 'paow', name: 'Dragge' }, { id: 'astrid', name: 'Astrid' },
+    { id: '__proto__', name: 'PAOW' }, { id: 'constructor', name: 'Anna' }, { id: 'unpublished-1', name: 'Ej publicerad' },
+    { id: 'dragan', name: 'Anna' }, { id: 'anna', name: '' }, { id: 'viktor', name: 'Viktor' }, { id: 'new', name: 'Paow' }, null, undefined]) {
+    assert.equal(suppliedDealerArtwork(dealer), undefined, JSON.stringify(dealer));
+  }
 });
 
 test('portrait playback requires an explicit static poster/video pair, no arbitrary URL or private catalogue value', () => {
-  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'astrid', name: 'Astrid' });
-  assert.equal(isSuppliedPortraitVideo('/admin/_assets/lobby/images/dealers/dragge.jpg', approvedVideo), false);
+  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'paow', name: 'Paow' });
+  assert.equal(isSuppliedPortraitVideo(`${lobby}/images/dealers/dragge.jpg`, approvedVideo), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, src: 'https://private.invalid/take.mp4' }), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, approved: false }), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, source: 'private-catalogue' }), false);

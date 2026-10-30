@@ -114,21 +114,21 @@ export function CompositionMetadata({ project, onEdit: onModelEdit, selectedId, 
     onEdit(current => { const lane = current.lanes?.find(item => item.id === selected.id);
       return lane ? replaceLane(current, lane.id, { ...lane, label: value }) : current; });
   }
-  return <fieldset className={styles.editor} disabled={disabled} aria-label="Välj och namnge sammansättning">
+  return <fieldset className={styles.editor} disabled={disabled} aria-label="Välj och namnge miljö">
     <section className={styles.card}>
       {selected ? <div className={styles.create}>
-        {showSelector&&<label className={styles.field}>Sammansättning<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{compositionLabel(lane.label)}</option>)}</select></label>}
-        <label className={styles.field}>Sammansättningens namn<input disabled={!canRename} value={compositionLabel(selected.label)} maxLength={80} onChange={event => rename(event.target.value)} /></label>
+        {showSelector&&<label className={styles.field}>Miljö<select value={selected.id} onChange={event => { if (!disabled) onSelect(event.target.value); }}>{lanes.map(lane => <option key={lane.id} value={lane.id}>{compositionLabel(lane.label)}</option>)}</select></label>}
+        <label className={styles.field}>Miljöns namn<input disabled={!canRename} value={compositionLabel(selected.label)} maxLength={80} onChange={event => rename(event.target.value)} /></label>
       </div> : <div className={styles.suggestion}>
-        <p>Ingen scen vald. Välj en scen i arbetsytan eller skapa en ny nedan.</p>
+        <p>Ingen miljö vald. Välj en miljö eller skapa en ny nedan.</p>
         {!dealers.length ? <p>Registrera först en dealer under Dealers.</p> : null}
       </div>}
     </section>
-    <details className={styles.card} open={!selected || undefined}><summary>Ny sammansättning</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
-      <h2 id="new-lane-title">Skapa sammansättning</h2><div className={styles.create}>
-        <label className={styles.field}>Namn på ny sammansättning<input value={draftLabel} required maxLength={80} onChange={event => { creating.current = false; setDraftLabel(event.target.value); }} /></label>
-        <label className={styles.field}>Dealer för ny sammansättning<select value={draftDealer} required onChange={event => { creating.current = false; setDraftDealer(event.target.value); }}><option value="">Välj dealer</option>{dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
-        <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim() || !draftDealer}>Skapa sammansättning</button>
+    <details className={styles.card} open={!selected || undefined}><summary>Ny miljö</summary><form onSubmit={addNew} aria-labelledby="new-lane-title">
+      <h2 id="new-lane-title">Skapa miljö</h2><div className={styles.create}>
+        <label className={styles.field}>Namn på ny miljö<input value={draftLabel} required maxLength={80} onChange={event => { creating.current = false; setDraftLabel(event.target.value); }} /></label>
+        <label className={styles.field}>Dealer för ny miljö<select value={draftDealer} required onChange={event => { creating.current = false; setDraftDealer(event.target.value); }}><option value="">Välj dealer</option>{dealers.map(dealer => <option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
+        <button type="submit" className="sg-btn sg-btn-secondary" disabled={!draftLabel.trim() || !draftDealer}>Skapa miljö</button>
       </div><p className={styles.help}>Ett tekniskt ID skapas automatiskt och behålls när namnet ändras.</p>
     </form></details>
   </fieldset>;

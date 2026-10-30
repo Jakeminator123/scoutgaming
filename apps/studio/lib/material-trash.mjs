@@ -6,6 +6,7 @@ import { gameLaneConfiguration } from '../../../packages/presentation/contracts/
 import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {packageRoomsFor} from '../../../packages/presentation/server/package-rooms.mjs';
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
 import {retainBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
@@ -22,6 +23,8 @@ function detach(lane,id){
   if(playback)playback.rules=layer.enabled&&layer.default?playback.rules.filter(rule=>rule.assetId!==id):[];
  }
  retainBlackjackTableGeometry(lane.composition,lane.layers.table.allowed);
+ // A lane's miljöbild is cosmetic: archiving it clears the saved choice, never a room or a published package.
+ if(lane.illustration===id)delete lane.illustration;
 }
 export function changeMaterialTrash(project,{id,archived,now=Date.now}){
  const next=structuredClone(project),trash=next.layerAssetTrash??[];
@@ -49,7 +52,7 @@ export async function materialTrashPlan({repository,operators,id,archived,expect
  if(!asset)fail();
  const next=changeMaterialTrash(project.value,{id,archived,now});
  const compositions=[...(project.value.lanes??[]),...(project.value.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];
- const affected=archived?compositions.filter(lane=>materialUsedBy(lane,id)):[];
+ const affected=archived?compositions.filter(lane=>materialUsedBy(lane,id)||lane.illustration===id):[];
  const entries=[];
  for(const operator of [...await operators.listOperators()].sort((a,b)=>a.id.localeCompare(b.id))){
   const pack=await operators.getCurrentPackage(operator.id),presentation=readPackagePresentation(pack);
@@ -82,6 +85,7 @@ export async function materialTrashPlan({repository,operators,id,archived,expect
  const removedAdapters=new Set(administrationDocument.value.rooms.filter(room=>roomIds.has(room.id)).map(room=>room.gameLaneId));
  administration.gameLanes=config.gameLanes.filter(lane=>!removedAdapters.has(lane.id)||!lane.id.startsWith('room-lane-')||administration.rooms.some(room=>room.gameLaneId===lane.id));
  administration.gameLane=administration.gameLanes.some(lane=>lane.id===config.gameLane)?config.gameLane:administration.gameLanes[0]?.id??null;
+ for(const change of changes)change.rooms=packageRoomsFor(administration,change);
  const token=createHash('sha256').update(canonicalStudioJson({scope:repository.scope,id,archived,projectRevision:project.revision,administrationRevision:administrationDocument.revision,
   packages:entries.map(({operator,pack})=>({id:operator.id,status:operator.status,revision:pack?.revision??null}))})).digest('hex');
  const impact={token,id,archived,label:asset.label,role:asset.role,compositions:affected.map(lane=>({id:lane.id,label:compositionLabel(lane.label)})),rooms,

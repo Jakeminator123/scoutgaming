@@ -4,6 +4,7 @@ import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
+import {packageRoomsFor} from '../../../packages/presentation/server/package-rooms.mjs';
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
 import {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
 export {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
@@ -102,8 +103,9 @@ async function readWithin(repository,{dealerId,expectedRevision,now=Date.now}){
     // Historical lifecycle snapshots may reference the dealer by design.
     const { _scoutLifecycle:history,...activeBranding}=branding;
     if(brandingUsesDealer(activeBranding,dealerId))fail();
-    packageChanges.push({operatorId:operator.id,expectedRevision:pack.revision,lanes,games:[...pack.games],tables:pack.tables.filter(id=>!removedRoomIds.has(id)),branding,
-      ...(rooms.length?{lifecycle:{resourceType:'room',resourceId:rooms[0].id,archived:true}}:{})});
+    const change={operatorId:operator.id,expectedRevision:pack.revision,lanes,games:[...pack.games],tables:pack.tables.filter(id=>!removedRoomIds.has(id)),branding,
+      ...(rooms.length?{lifecycle:{resourceType:'room',resourceId:rooms[0].id,archived:true}}:{})};
+    packageChanges.push({...change,rooms:packageRoomsFor(administration,change)});
   }
   const token=createHash('sha256').update(canonicalStudioJson({scope:repository.scope,dealerId,projectRevision:projectDocument.revision,
     administrationRevision:administrationDocument.revision,media:records.map(row=>({id:row.id,revision:row.revision})),

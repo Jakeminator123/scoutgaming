@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLobbyCatalog, loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from './catalog.mjs';
+import { parseLobbyCatalog, loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor, roomIllustration } from './catalog.mjs';
 
 function publication(slug, dealerId, label) {
   return { schemaVersion: 1, operator: { slug, name: `Bolag ${slug}` }, packageRevision: 2, rooms: [{
@@ -57,7 +57,7 @@ test('room artwork comes from the published background the game starts with, nev
   const multiple = parseLobbyCatalog(payload([source])).rooms[0];
   assert.equal(multiple.environmentFixed, false);
   assert.equal(multiple.environmentKind, 'variable');
-  assert.equal(multiple.environmentLabel, 'Flera miljöer');
+  assert.equal(multiple.environmentLabel, 'Flera bakgrunder');
   assert.equal(multiple.image, '/api/presentation/layers/alpha/' + background.id, "several choices show the default dealer's default");
   source.rooms[0].dealers[0].background.default = lounge.id;
   assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, '/api/presentation/layers/alpha/' + lounge.id);
@@ -67,9 +67,58 @@ test('room artwork comes from the published background the game starts with, nev
   // Without a published default background the card keeps the design illustration.
   source.rooms[0].dealerDefault = 'elin';
   const baked = parseLobbyCatalog(payload([source])).rooms[0];
-  assert.equal(baked.image, undefined); assert.equal(baked.environmentLabel, 'Flera miljöer');
+  assert.equal(baked.image, undefined); assert.equal(baked.environmentLabel, 'Flera bakgrunder');
   source.rooms[0].dealerDefault = 'nora'; source.rooms[0].dealers[0].background.default = null;
   assert.equal(parseLobbyCatalog(payload([source])).rooms[0].image, undefined);
+});
+
+test('the room picture is the miljöbild, then the published background, then the design illustration; the bet profile picks none', async () => {
+  const lobby = '/admin/_assets/lobby/images/lobby/';
+  const fallback = { image: lobby + 'room-salongen.png', alt: 'Klassiskt blackjackrum i valnöt och mässing' };
+  assert.deepEqual(roomIllustration(), fallback);
+  const source = publication('alpha', 'nora', 'Nora Studio'), template = source.rooms[0];
+  // Every profile, an unknown one and none: the same design illustration, never a per-profile picture.
+  source.rooms = ['casual', 'prive', 'high', 'vip', null].map((limitPreset, i) => ({ ...template, id: `room-${i}`,
+    playUrl: `/play/blackjack?operator=alpha&table=room-${i}`, ...(limitPreset ? { limitPreset } : {}) }));
+  const loaded = await loadLobbyCatalog({ fetchImpl: async () => Response.json(payload([source])) });
+  assert.deepEqual(loaded.rooms.map(room => [room.limitPreset, room.illustration.image]),
+    [['casual', fallback.image], ['prive', fallback.image], ['high', fallback.image], ['vip', fallback.image], [undefined, fallback.image]]);
+  assert.equal(loaded.rooms.every(room => room.image === undefined), true, 'the illustration never becomes a published background');
+  // The published background comes before the design illustration, and the miljöbild before both.
+  const background = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
+  const layered = publication('alpha', 'nora', 'Nora Studio');
+  Object.assign(layered.rooms[0].dealers[0], { presentation: 'layered', independentLayers: true,
+    background: { enabled: true, default: background.id, allowed: [background], mode: 'image' } });
+  assert.equal(parseLobbyCatalog(payload([layered])).rooms[0].image, '/api/presentation/layers/alpha/' + background.id);
+  const illustration = '33333333-3333-3333-3333-333333333333';
+  layered.rooms[0].illustration = illustration;
+  const pictured = parseLobbyCatalog(payload([layered])).rooms[0];
+  assert.equal(pictured.image, '/api/presentation/layers/alpha/' + illustration);
+  assert.equal(pictured.environmentLabel, 'Salongen', 'the miljöbild changes the picture only, never the background facts');
+  // The public contract carries only a profile key and an illustration id; anything else closes the catalog.
+  for (const limitPreset of ['', 'High', 'https://example.invalid/x.png', 7, null]) {
+    assert.throws(() => parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, limitPreset }] }])));
+  }
+  for (const bad of ['', 'https://example.invalid/x.png', '../x', 7, null]) {
+    assert.throws(() => parseLobbyCatalog(payload([{ ...layered, rooms: [{ ...layered.rooms[0], illustration: bad }] }])));
+  }
+});
+
+// A room without published game settings (status 'preparing') is listed but offers no game start.
+test('a room being prepared is shown without a game start; an unknown status means no game start, a malformed one closes the catalog', () => {
+  const source = publication('alpha', 'nora', 'Nora Studio'), template = source.rooms[0];
+  const ready = parseLobbyCatalog(payload([source])), preparing = parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status: 'preparing' }] }]));
+  const pick = catalog => lobbySelection(catalog, { operatorId: 'alpha', roomKey: catalog.rooms[0].key, dealerId: catalog.dealers[0].id });
+  assert.equal(ready.rooms[0].preparing, undefined); assert.equal(typeof playUrlFor(pick(ready)), 'string');
+  assert.equal(preparing.rooms[0].preparing, true); assert.equal(playUrlFor(pick(preparing)), undefined);
+  // Granskning PR #642: a status a newer engine sends that this build does not know never takes the company's
+  // catalogue down (ROOM_OPTIONAL forward compatibility); it is treated as no game start.
+  for (const status of ['live', 'paused', 'closed-for-maintenance']) {
+    const unknown = parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status }] }]));
+    assert.equal(unknown.rooms.length, 1, status); assert.equal(unknown.rooms[0].preparing, true, status);
+    assert.equal(playUrlFor(pick(unknown)), undefined, status);
+  }
+  for (const status of ['Preparing', '', null, true, 7, 'x'.repeat(40)]) assert.throws(() => parseLobbyCatalog(payload([{ ...source, rooms: [{ ...template, status }] }])));
 });
 
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
@@ -151,7 +200,7 @@ test('registered Dragan shows the Dragge portrait under the published ID, by exa
   assert.equal(portraitFor(chosen.dealer).id, 'dragge');
   assert.equal(playUrlFor(chosen), '/game?game=blackjack&operator=alpha&table=shared-table&dealer=dragan');
   assert.deepEqual(dealerCards(chosen.availableDealers).map(row => [row.id, row.available]),
-    [['dragan', true], ['astrid', false], ['marten', false], ['anna', false], ['paow', false]], 'no second, locked Dragge card');
+    [['dragan', true], ['marten', false], ['anna', false], ['paow', false]], 'no second, locked Dragge card');
   assert.equal(portraitFor({ id: 'dragan-2', name: 'Dragan' }), undefined);
   assert.equal(portraitFor({ id: 'nora', name: 'Dragge' }), undefined);
   assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'dragge' }).dealer, null);
@@ -177,7 +226,7 @@ test('registered choices come first in publication order, then only the unpublis
   const registered = [{ id: 'new-dealer', name: 'New' }, { id: 'anna', name: 'Anna' }, { id: 'paow', name: 'Paow' }, { id: 'dragge', name: 'Dragge' }, { id: 'dragan', name: 'Dragan' }];
   const cards = dealerCards(registered);
   assert.deepEqual(cards.map(row => [row.id, row.available]), [
-    ...registered.map(row => [row.id, true]), ['astrid', false], ['marten', false],
+    ...registered.map(row => [row.id, true]), ['marten', false],
   ]);
   assert.equal(portraitFor(cards[0]), undefined);
   assert.equal(portraitFor(cards[1]).id, 'anna');

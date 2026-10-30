@@ -4,6 +4,7 @@ import { sharedRoomPresentationRead } from './shared-room-presentation-http.mjs'
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
+import { filmedProfileFor } from '../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from '../../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { selectRegisteredIdleRule, selectPresentation, createIdleAdviceServer } from './presentation-selection.mjs';
@@ -79,6 +80,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
   let adviceService;
+  const adviseIdle=async(adviceBody,options)=>{adviceService??=createIdleAdviceServer({settings,registryLoader});return (await adviceService)(adviceBody,options);};
   async function idleAdvice({req,playerId,body,signal,context=frozenDealerContext}) {
     let frozen=null;
     if(body.presentationContext!==undefined) {
@@ -93,12 +95,10 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
       adviceBody.mode=idleMode;
     }
     const ownInventory=!frozen&&isDealerId(body.dealerId)?registeredIdleInventory(await registryLoader(),{dealerId:body.dealerId,policy:registeredIdlePolicy(project,body.dealerId)}):null;
-    adviceService??=createIdleAdviceServer({settings,registryLoader});
-    const advise=await adviceService;
     const fetchImpl=directorFetchFactory?await directorFetchFactory({req,playerId,project,
       readProject:async()=>frozen?(await context.resolve(frozen.context)).project:store.load(),signal}):null;
     if(fetchImpl!==null&&typeof fetchImpl!=='function')fail('Director transport unavailable',503);
-    return {...await advise({...adviceBody,project},{signal,...(ownInventory?{videoRegistry:ownInventory}:{}),
+    return {...await adviseIdle({...adviceBody,project},{signal,...(ownInventory?{videoRegistry:ownInventory}:{}),
       ...(fetchImpl?{fetchImpl,...(fetchImpl.cacheScope===undefined?{}:{cacheScope:fetchImpl.cacheScope})}:{}),
       ...(frozen?{videoRegistry:frozen.idleInventory,cacheScope:createHash('sha256').update(JSON.stringify([playerId,frozen.context,fetchImpl?.cacheScope??null])).digest('hex')}:{}),
     }),projectRevision:project.revision,configurationSource:frozen?.configurationSource??configurationSource};
@@ -183,6 +183,8 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         json(200, { owner: 'web', revision: project.revision, projectRevision: project.revision, configurationSource, idlePolicy: ownPolicy, inventory,
           ...(ownPolicy ? {idleInventory:registeredIdleInventory(inventory,{dealerId:requestedDealer,policy:ownPolicy})} : {}),
           dealerIdle: Object.fromEntries(project.dealers.filter(dealer=>dealer.id===requestedDealer).map(dealer=>[dealer.id,publicVideo(ownDealerIdle(project,inventory,dealer.id))])),
+          // Admin's preview lays out the saved own landings of a new dealer (the code profile otherwise).
+          ...(project.dealers.find(dealer=>dealer.id===requestedDealer)?.filmedProfile ? {filmedProfile:structuredClone(project.dealers.find(dealer=>dealer.id===requestedDealer).filmedProfile)} : {}),
           defaultMode: env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane' ? 'active' : 'off' }); return true;
       }
       if (pathname === '/api/presentation/legacy-config' && req.method === 'GET') {
@@ -208,7 +210,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         try{
           controller.signal.throwIfAborted();
           const value=await withSharedCommittedReceipt({request:req,playerId,body,signal:controller.signal},(capture,{signal,frozenDealerContext:activeContext})=>
-            selectSharedRoomPresentation({capture,body,frozenDealerContext:activeContext,select,settings,directorFetchFactory,request:req,playerId,signal}));
+            selectSharedRoomPresentation({capture,body,frozenDealerContext:activeContext,select,settings,directorFetchFactory,request:req,playerId,signal,adviseIdle}));
           controller.signal.throwIfAborted();
           if(!value||Object.getPrototypeOf(value)!==Object.prototype)throw Object.assign(new Error('shared_room_presentation_unavailable'),{code:'shared_room_presentation_unavailable',statusCode:503});
           json(200,cloneStudioJson(value,{maxBytes:256*1024}));return true;
@@ -249,7 +251,7 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
             projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource});return true;
         }
         if (frozen.project) {
-          const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
+          const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,profile:frozen.filmedProfile,
             published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
           if(filmed){
             await frozenDealerContext.resolve(body.presentationContext);
@@ -310,7 +312,8 @@ export function createPresentationApi({ db, readNativeReceipt = playerId => db.p
         json(200,{video:null,standard:null,decision:{requestId,sourceEvent},
           idleRule:idleRuleFor(body,project,inventory,sourceEvent,requestId),projectRevision:project.revision,configurationSource});return true;
       }
-      const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
+      // Admin's preview (and the local lab) read the saved project: the dealer's own landings, else the code profile.
+      const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,profile:filmedProfileFor(body.dealerId,{project}),
         published:receipt?.version===body.version?JSON.parse(receipt.payload):[],shoeTransitions:body.shoeTransitions===true});
       if(filmed){
         const video=filmed.video?{...publicVideo(filmed.video),filmedTake:filmed.filmedTake}:null;

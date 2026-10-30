@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPublicAssistant,askPublicAssistant,publicLimiter,PUBLIC_AVATAR,PUBLIC_MODEL} from '../lib/public-assistant.mjs';
 import {installPublicAssistant} from '../browser/public-assistant.mjs';
+import {publicAssistantEndpoint} from '../lib/public-assistant.mjs';
+import {assistantRequestConfiguration} from '../lib/studio-native-request.mjs';
 const origin='https://www.example.invalid';
 const config={allowedOrigins:[origin,'https://lab.example.invalid'],publicHosts:['www.example.invalid','lab.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'};
 const input={message:'Var finns spelen?',history:[]};
@@ -43,6 +45,21 @@ test('public endpoint reconciles the configured Vercel same-origin rewrite',asyn
  const handle=createPublicAssistant({config,limit:publicLimiter(),ask:async()=> 'Svar'});
  const request=new Request('https://lab.example.invalid/api/public-assistant',{method:'POST',headers:{origin,'x-forwarded-host':'www.example.invalid','x-forwarded-proto':'https','sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(input)});
  assert.equal((await handle(request)).status,200);
+});
+
+test('unified assistant origins need only the public origin and trust no other origin',async()=>{
+ const lab='https://lab.example.invalid';
+ const unified=assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:origin});
+ assert.deepEqual({...unified},{allowedOrigins:[origin],unifiedUi:true,publicHosts:['www.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'});
+ for(const value of [undefined,'','http://www.example.invalid',origin+'/','https://www.example.invalid/x','https://user:pw@www.example.invalid','https://localhost','https://127.0.0.1'])
+  assert.equal(assistantRequestConfiguration({CROUPIER_PUBLIC_ORIGIN:value}),null);
+ const saved=process.env.CROUPIER_PUBLIC_ORIGIN;
+ try{
+  process.env.CROUPIER_PUBLIC_ORIGIN=origin;
+  assert.equal((await publicAssistantEndpoint(req(null))).status,200);
+  assert.equal((await publicAssistantEndpoint(new Request(lab+'/studio/api/public-assistant',{headers:{origin:lab,'sec-fetch-site':'same-origin'}}))).status,403);
+  delete process.env.CROUPIER_PUBLIC_ORIGIN;assert.equal((await publicAssistantEndpoint(req(null))).status,503);
+ }finally{if(saved===undefined)delete process.env.CROUPIER_PUBLIC_ORIGIN;else process.env.CROUPIER_PUBLIC_ORIGIN=saved;}
 });
 
 test('a fast model reply waits for avatar connection; closing during startup suppresses speech',async t=>{

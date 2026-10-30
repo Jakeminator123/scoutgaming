@@ -1,0 +1,41 @@
+name: Foreign branch guard
+
+# Required check in the rulesets for main and preview: a pull request whose head is someone else's
+# branch (kevin*, codex/kevin-*, john*, emil*, ...) or that another GitHub account than Jakob's
+# opened fails here, so it can never be merged, not even with GitHub's merge button.
+# pull_request_target runs this file and the policy from the base side and main, never from the
+# pull request itself; it checks out no pull request code and uses no secrets.
+on:
+  pull_request_target:
+    branches: [main, preview]
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foreign-branch-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Foreign branch guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: |
+            tools
+            inbox/people.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Refuse other people's branches and other authors
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: node tools/foreign-branch-guard.mjs

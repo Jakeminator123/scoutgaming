@@ -144,7 +144,7 @@ export function frozenImportProposal(match, catalog) {
 export function frozenImportWarnings(match) {
   const warnings = [], selection = match.k05?.selection ?? null;
   if (['pose-version', 'idle', 'recorded-speech'].includes(match.placement.category) && selection !== 'vald') {
-    warnings.push(`Utanför K05-urvalet (${selection ?? 'ej i K05-matrisen'}): sparas bara som alternativ, utan standard- eller runtimebindning.`);
+    warnings.push(`Utanför det valda klippurvalet (${selection ?? 'inte med i urvalet'}): sparas bara som alternativ, utan standard- eller runtimebindning.`);
   }
   if (match.clipList?.status === 'ej-godkand') warnings.push('Kevins klipplista 2026-10-22: ingen talgranskning gjord. Manus, ljud och läppsynk granskas separat under Tal-klipp & ljud.');
   if (match.placement.category === 'pose-version' && !match.placement.calibration?.runtimeProfile) {

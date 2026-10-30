@@ -88,10 +88,10 @@ function useLayerClips(role:LayerPlaybackRole,{policy,assets,enabled,sourceKey,l
 
 // Optional silent layer videos share playback controls. Only the dealer owns
 // the finite play count, preserving the exact clip chosen by Studio.
-export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode}) {
+export function CompositionPreview({dealer,background,table,settings,layout,show,compositing,framing,language='sv',backgroundPlayback,backgroundAssets=[],previewBackgroundRuleId,previewBackgroundRequest=0,tablePlayback,tableAssets=[],previewTableRuleId,previewTableRequest=0,overlay,minimal=false,autoplay=false,loopDealer=false}:{dealer:CompositionMedia|null;background:CompositionMedia|null;table:CompositionMedia|null;settings:CompositionSettings;layout:'mobile'|'desktop';show:Record<Role,boolean>;compositing?:VideoCompositing;framing?:DealerFraming;language?:string;backgroundPlayback?:BackgroundPlaybackPolicy;backgroundAssets?:ClipMedia[];previewBackgroundRuleId?:string;previewBackgroundRequest?:number;tablePlayback?:BackgroundPlaybackPolicy;tableAssets?:ClipMedia[];previewTableRuleId?:string;previewTableRequest?:number;overlay?:ReactNode;minimal?:boolean;autoplay?:boolean;loopDealer?:boolean}) {
   const t=(sv:string,en:string)=>language==='en'?en:sv;
   const canvas=useRef<HTMLCanvasElement>(null),videos=useRef<Partial<Record<Role,HTMLVideoElement>>>({}),renderer=useRef<Renderer|null>(null);
-  const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0);
+  const scene=useRef<unknown>(null),remaining=useRef(0),ready=useRef(false),generation=useRef(0),playAttempt=useRef(0),autoResume=useRef(false);
   const backgroundPlayer=useRef<LayerPlayer|null>(null),tablePlayer=useRef<LayerPlayer|null>(null),sceneAssets=useRef(new Map<string,Asset>()),baseAssets=useRef<Record<LayerPlaybackRole,Asset|null>>({background:null,table:null}),playbackActive=useRef(false);
   const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState(t('Välj ett klipp eller ett lager.','Choose a clip or layer.')),[error,setError]=useState(''),[loadedKey,setLoadedKey]=useState(''),[playing,setPlaying]=useState(false);
   const keyed=useMemo(()=>effectiveDealerCompositing(compositing),[compositing]);
@@ -109,7 +109,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     sceneAssets.current=assets;baseAssets.current={background:null,table:null};playbackActive.current=false;
     const actor=document.createElement('canvas') as CanvasActor;actor.width=1080;actor.height=1920;
     const context=actor.getContext('2d');
-    ready.current=false;setMediaInfo('');setLoadedKey('');setPlaying(false);setError('');setStatus(Object.values(sources).some(Boolean)?t('Laddar…','Loading…'):t('Välj ett klipp eller ett lager.','Choose a clip or layer.'));remaining.current=0;
+    ready.current=false;autoResume.current=false;setMediaInfo('');setLoadedKey('');setPlaying(false);setError('');setStatus(Object.values(sources).some(Boolean)?t('Laddar…','Loading…'):t('Välj ett klipp eller ett lager.','Choose a clip or layer.'));remaining.current=0;
     const pause=()=>{playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();tablePlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());if(active)setPlaying(false);};
     function decode(element:MediaElement,event:string) {
       return new Promise<void>((resolve,reject)=>{
@@ -122,7 +122,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     async function load(role:Role,media:CompositionMedia|null) {
       if(!media)return;
       const video=media.contentType.startsWith('video/'),element=video?document.createElement('video'):new Image();elements.push(element);
-      if(element instanceof HTMLVideoElement){element.playsInline=true;element.preload='auto';element.muted=role!=='dealer';element.loop=role!=='dealer';videos.current[role]=element;}
+      if(element instanceof HTMLVideoElement){element.playsInline=true;element.preload='auto';element.muted=role!=='dealer'||autoplay;element.loop=role!=='dealer'||loopDealer;videos.current[role]=element;}
       const promise=decode(element,video?'loadeddata':'load');element.src=media.url;if(element instanceof HTMLVideoElement)element.load();await promise;
       if(!active)return;
       const width=element instanceof HTMLVideoElement?element.videoWidth:element.naturalWidth,height=element instanceof HTMLVideoElement?element.videoHeight:element.naturalHeight;
@@ -132,7 +132,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
       element.addEventListener('error',()=>{pause();if(active)setError(t('Uppspelningen av '+media.label+' avbröts.','Playback of '+media.label+' stopped.'));},{signal:abort.signal});
       if(role==='dealer'&&element instanceof HTMLVideoElement)element.addEventListener('ended',()=>{
         if(remaining.current>1){remaining.current--;element.currentTime=0;void element.play().catch(()=>{pause();if(active)setError(t('Dealerklippet kunde inte starta igen.','The dealer clip could not restart.'));});}
-        else {remaining.current=0;pause();if(active)setStatus(t('Uppspelningen är klar.','Playback finished.'));}
+        else {remaining.current=0;autoResume.current=false;pause();if(active)setStatus(t('Uppspelningen är klar.','Playback finished.'));}
       },{signal:abort.signal});
     }
     const visibility=()=>{if(document.hidden){remaining.current=0;pause();}};document.addEventListener('visibilitychange',visibility);
@@ -157,7 +157,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
           }
           if(scene.current)renderer.current?.render(scene.current,actor,assets,[],undefined);
           if(time-lastInfo>400){lastInfo=time;setMediaInfo([...assets.entries()].map(([role,asset])=>{const title=role==='dealer'?'Dealer':role==='table'?t('Bord','Table'):t('Bakgrund','Background');return asset.el instanceof HTMLVideoElement?title+': '+(asset.el.paused?t('pausad','paused'):t('spelar','playing'))+' · '+asset.el.currentTime.toFixed(2)+' / '+asset.el.duration.toFixed(2)+' s · '+asset.width+' × '+asset.height:title+t(': bild · ',': image · ')+asset.width+' × '+asset.height;}).join('\n'));}
-        }catch(cause){pause();if(active)setError(cause instanceof Error?cause.message:t('Sammansättningen kunde inte visas.','The composition could not be displayed.'));return;}
+        }catch(cause){pause();if(active)setError(cause instanceof Error?cause.message:t('Miljön kunde inte visas.','The composition could not be displayed.'));return;}
         frame=requestAnimationFrame(render);
       }
       frame=requestAnimationFrame(render);
@@ -171,14 +171,32 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const backgroundStatus=useLayerClips('background',{policy:backgroundPlayback,assets:backgroundAssets,enabled:visible.background,sourceKey,loaded,language,previewRuleId:previewBackgroundRuleId,previewRequest:previewBackgroundRequest,refs:{player:backgroundPlayer,base:baseAssets,sceneAssets,renderer,playbackActive}});
   const tableStatus=useLayerClips('table',{policy:tablePlayback,assets:tableAssets,enabled:visible.table,sourceKey,loaded,language,previewRuleId:previewTableRuleId,previewRequest:previewTableRequest,refs:{player:tablePlayer,base:baseAssets,sceneAssets,renderer,playbackActive}});
 
-  async function play(count?:number){
+  // `autoplay` starts the channels once they are ready (muted, so the browser allows it) unless the viewer
+  // prefers reduced motion; `loopDealer` loops the dealer clip instead of stopping after its plays. Without
+  // the two props the preview waits for Spela and plays the dealer clip a counted number of times.
+  // A hidden tab pauses everything; with `autoplay` the preview starts again when the tab is shown, unless
+  // the viewer paused it or the browser refused the muted start (then Spela is shown, without an alert).
+  useEffect(()=>{
+    const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(!autoplay||!loaded||reduced||!Object.values(videos.current).length)return;
+    autoResume.current=true;if(!document.hidden)void play(undefined,true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[autoplay,loaded]);
+  useEffect(()=>{
+    if(!autoplay)return;
+    const resume=()=>{if(!document.hidden&&autoResume.current&&ready.current&&!playbackActive.current)void play(undefined,true);};
+    document.addEventListener('visibilitychange',resume);return()=>document.removeEventListener('visibilitychange',resume);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[autoplay]);
+
+  async function play(count?:number,auto=false){
     if(!ready.current)return;
     const token=generation.current,attempt=++playAttempt.current,channels=Object.values(videos.current);setError('');
     if(count){remaining.current=count;channels.forEach(video=>{video.currentTime=0;});}else if(!remaining.current)remaining.current=1;
     try{await Promise.all(channels.map(video=>video.play()));if(token!==generation.current||attempt!==playAttempt.current||document.hidden){if(attempt===playAttempt.current||!playbackActive.current)channels.forEach(video=>video.pause());return;}playbackActive.current=true;backgroundPlayer.current?.start();tablePlayer.current?.start();setPlaying(true);setStatus(count===2?t('Spelar två gånger.','Playing twice.'):t('Spelar.','Playing.'));}
-    catch{if(token!==generation.current||attempt!==playAttempt.current)return;channels.forEach(video=>video.pause());setPlaying(false);setError(t('Videorna kunde inte starta. Försök igen.','The videos could not start. Try again.'));}
+    catch{if(token!==generation.current||attempt!==playAttempt.current)return;channels.forEach(video=>video.pause());setPlaying(false);if(auto){autoResume.current=false;setStatus(t('Redo.','Ready.'));}else setError(t('Videorna kunde inte starta. Försök igen.','The videos could not start. Try again.'));}
   }
-  function pause(){playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();tablePlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
+  function pause(){autoResume.current=false;playAttempt.current++;playbackActive.current=false;backgroundPlayer.current?.pause();tablePlayer.current?.pause();Object.values(videos.current).forEach(video=>video.pause());setPlaying(false);setStatus(t('Pausad.','Paused.'));}
   return <div style={{containerType:'inline-size'}}>
     <div style={{background:'#111827',display:'flex',justifyContent:'center',overflow:'hidden',borderRadius:12}}>
       <div style={{position:'relative',height:layout==='mobile'?'min(640px, 72dvh, 177.777cqw)':'min(540px, 60dvh, 56.25cqw)',width:layout==='mobile'?'calc(min(640px, 72dvh, 177.777cqw) * 9 / 16)':'calc(min(540px, 60dvh, 56.25cqw) * 16 / 9)',maxWidth:'100%'}}>
@@ -187,13 +205,13 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
       </div>
     </div>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
-      <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>playing?pause():void play()}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>
+      <button className="sg-btn sg-btn-secondary" disabled={!loaded||!Object.values(sources).some(media=>media?.contentType.startsWith('video/'))} onClick={()=>{if(playing){pause();return;}autoResume.current=autoplay;void play();}}>{playing?t('Pausa','Pause'):t('Spela','Play')}</button>
 
     </div>
-    <p role="status">{status}</p>{error?<p role="alert">{error}</p>:null}
-    {backgroundStatus?<p role="status">{backgroundStatus}</p>:null}
-    {tableStatus?<p role="status">{tableStatus}</p>:null}
-    <details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer?.contentType.startsWith('video/')} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
-    <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small>
+    {minimal?null:<p role="status">{status}</p>}{error?<p role="alert">{error}</p>:null}
+    {!minimal&&backgroundStatus?<p role="status">{backgroundStatus}</p>:null}
+    {!minimal&&tableStatus?<p role="status">{tableStatus}</p>:null}
+    {minimal?null:<><details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer?.contentType.startsWith('video/')} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
+    <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small></>}
   </div>;
 }

@@ -33,6 +33,7 @@ test('admin method/path pairs explicitly cover the action policy without a catch
   }
   assert.equal(studioAdminEndpoint('GET', '/studio/api/admin/users').minimumRole, 'admin');
   assert.equal(studioAdminEndpoint('POST', '/studio/api/admin/players/create').minimumRole, 'admin');
+  assert.equal(studioAdminEndpoint('POST', '/studio/api/admin/room'), null, 'retired: room-state is the only state write');
 });
 
 test('auth contracts have exactly the planned verbs and retain non-role handler gates', () => {

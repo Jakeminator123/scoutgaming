@@ -31,10 +31,11 @@ test('legacy technical root bookmarks retain clip context and repeated query par
   await assert.rejects(page({searchParams:Promise.resolve({dealer:'vera',event:'a&b',tag:['one','two'],empty:undefined})}),error=>{
     assert.match(error.digest,/;308;$/);
     const destination=new URL(error.digest.split(';')[2]);
-    assert.equal(destination.pathname,"/admin/clips");
+    assert.equal(destination.pathname,"/admin/dealers/vera",'the dealer moves into the dealer nav path');
+    assert.equal(destination.searchParams.get('flik'),'klipp');
     assert.equal(destination.searchParams.get('event'),'a&b');
     assert.deepEqual(destination.searchParams.getAll('tag'),['one','two']);
-    assert.equal(destination.searchParams.get('dealer'),'vera');
+    assert.equal(destination.searchParams.has('dealer'),false);
     assert.equal(destination.searchParams.has('empty'),false);
     return true;
   });

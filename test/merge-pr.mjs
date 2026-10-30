@@ -1,34 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import {
-  BASELINE_FOREIGN_BRANCHES, PR_FIELDS, changedPaths, evaluateMerge, foreignBranchPatterns, main, matchesGlob, parseArgs,
-  readPrFiles, securityVerdict, SECURITY_RETRY_MS,
+  BASELINE_FOREIGN_BRANCHES, PR_FIELDS, REVIEW_MISSING, changedPaths, evaluateMerge, foreignBranchPatterns, freshnessVerdict, main,
+  matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readIsolation, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
-import { featurePatterns } from '../tools/check-push-target.mjs';
+import { environmentBranches, featurePatterns } from '../tools/check-push-target.mjs';
+import { foreignBranchGuard } from '../tools/foreign-branch-guard.mjs';
 
 // tools/merge-pr.mjs is the orchestrator's only merge path. Every refusal rule has a case
 // here, and gh/git/security-status are injected so the test never touches the network.
 const HEAD = 'a'.repeat(40);
 const OTHER = 'b'.repeat(40);
-const FREEZE = 'c'.repeat(40);
+const SECOND = 'c'.repeat(40);
+const MAIN = 'd'.repeat(40);
+const MERGE = 'e'.repeat(40);
+const OLD_MAIN = 'f'.repeat(40);
+const CI_URL = 'https://github.com/Jakeminator123/scoutgaming/actions/runs/7/job/9';
+const BODY = 'Sammanfattning\n\nBuggranskning: Claude Code /code-review medium, 2 fynd: 1 åtgärdat, 1 avvisat';
 const WORKFLOW = 'Croupier GitHub checks';
 const people = { jakob: { github: 'Jakeminator123', branch: 'main' }, kevin: { github: 'invoicesolv', branch: 'kevin' },
   john: { github: 'Johncleochile', branch: 'john' }, emil: { github: 'EmaCodeHero', branch: 'emil' } };
 const policy = JSON.parse(readFileSync(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
 const cleanSecurity = { status: 0, stdout: JSON.stringify({ purpose: 'gitguardian-combined-security-status-v1',
   attention: ['gitguardian_open_incidents'], incidentCounts: { open: 2 } }) };
-const ciRun = (overrides = {}) => ({ __typename: 'CheckRun', name: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW, ...overrides });
+const ciRun = (overrides = {}) => ({ __typename: 'CheckRun', name: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW, detailsUrl: CI_URL, ...overrides });
+const currentMain = { base: MAIN, main: MAIN, behind: 0, files: [] };
+const isolated = { ok: true, reason: 'head delar ingen historik med origin/preview utöver sin egen' };
 const goodFiles = [{ filename: 'tools/merge-pr.mjs', status: 'added', previous_filename: null },
   { filename: 'docs/README.md', status: 'modified', previous_filename: null }];
 const goodPr = (overrides = {}) => ({
   number: 42, author: { login: 'Jakeminator123' }, isCrossRepository: false, headRefName: 'jakob/claude-merge-guard',
-  headRefOid: HEAD, isDraft: false, baseRefName: 'main', state: 'OPEN', mergeable: 'MERGEABLE', changedFiles: 2,
+  headRefOid: HEAD, isDraft: false, baseRefName: 'main', state: 'OPEN', mergeable: 'MERGEABLE', changedFiles: 2, body: BODY,
   statusCheckRollup: [{ __typename: 'CheckRun', name: 'changes', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: WORKFLOW }, ciRun()],
   ...overrides,
 });
 const decide = (pr, extra = {}) => evaluateMerge({ pr, files: goodFiles, head: HEAD, jakobLogin: 'Jakeminator123',
-  featureBranches: featurePatterns(policy), foreignPatterns: foreignBranchPatterns({ policy, people }), security: cleanSecurity, ...extra });
+  featureBranches: featurePatterns(policy), environments: environmentBranches(policy), foreignPatterns: foreignBranchPatterns({ policy, people }),
+  security: cleanSecurity, freshness: currentMain, isolation: isolated, ...extra });
 const failed = verdict => verdict.checks.filter(entry => !entry.ok).map(entry => entry.name);
 const withFiles = (files, extra = {}) => decide(goodPr({ changedFiles: files.length }), { files, ...extra });
 
@@ -36,8 +49,7 @@ test('a verified Jakob PR with green CI on the exact head passes every check', (
   const verdict = decide(goodPr());
   assert.equal(verdict.ok, true, JSON.stringify(verdict.checks));
   assert.deepEqual(verdict.checks.map(entry => entry.name),
-    ['pr', 'state', 'draft', 'base', 'source', 'head', 'branch', 'author', 'ci', 'mergeable', 'files', 'workflow', 'security']);
-  assert.equal(decide(goodPr(), { freeze: FREEZE, freezeOnMain: true }).ok, true, 'non-runtime files pass the freeze');
+    ['pr', 'state', 'draft', 'base', 'source', 'head', 'branch', 'author', 'ci', 'mergeable', 'files', 'workflow', 'fresh', 'isolation', 'review', 'security']);
   assert.equal(decide(goodPr({ mergeable: 'UNKNOWN' })).ok, true, 'GitHub decides UNKNOWN at merge time');
 });
 
@@ -48,7 +60,8 @@ test('each refusal rule refuses on its own', () => {
     base: [goodPr({ baseRefName: 'kevin' })],
     source: [goodPr({ isCrossRepository: true })],
     head: [goodPr({ headRefOid: OTHER }), goodPr({ headRefOid: HEAD.slice(0, 12) })],
-    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: null })],
+    author: [goodPr({ author: { login: 'invoicesolv' } }), goodPr({ author: { login: 'Johncleochile' } }), goodPr({ author: { login: 'EmaCodeHero' } }),
+      goodPr({ author: { login: 'jakeminator123' } }), goodPr({ author: null })],
     ci: [goodPr({ statusCheckRollup: [] }),
       goodPr({ statusCheckRollup: [ciRun({ status: 'IN_PROGRESS', conclusion: '' })] }),
       goodPr({ statusCheckRollup: [ciRun({ conclusion: 'FAILURE' })] }),
@@ -59,6 +72,7 @@ test('each refusal rule refuses on its own', () => {
       goodPr({ statusCheckRollup: [ciRun(), ciRun({ workflowName: 'Shadow CI' })] }),
       goodPr({ statusCheckRollup: [ciRun(), { __typename: 'StatusContext', context: 'CI', state: 'SUCCESS' }] })],
     mergeable: [goodPr({ mergeable: 'CONFLICTING' })],
+    review: [goodPr({ body: '' }), goodPr({ body: undefined }), goodPr({ body: 'Buggranskning:' })],
   };
   // An incomplete file list also leaves the CI-file rule unproven.
   for (const pr of [goodPr({ changedFiles: 3 }), goodPr({ changedFiles: undefined })]) assert.deepEqual(failed(decide(pr)), ['files', 'workflow']);
@@ -72,6 +86,11 @@ test('each refusal rule refuses on its own', () => {
   assert.deepEqual(failed(decide(goodPr(), { head: 'not-a-sha' })), ['head']);
   assert.deepEqual(failed(decide(goodPr(), { jakobLogin: undefined })), ['author'], 'no trusted owner, no merge');
   assert.deepEqual(failed(decide(goodPr(), { files: null })), ['files', 'workflow'], 'an unreadable file list proves nothing');
+  assert.deepEqual(failed(decide(goodPr(), { freshness: null })), ['fresh'], 'an unknown CI base refuses');
+  // Into main, the head must be proven free of preview's own history; an unread isolation refuses.
+  assert.deepEqual(failed(decide(goodPr(), { isolation: null })), ['isolation']);
+  assert.deepEqual(failed(decide(goodPr(), { isolation: { ok: false, reason: 'head innehåller 2 commits från origin/preview' } })), ['isolation']);
+  assert.match(decide(goodPr(), { isolation: null }).checks.find(entry => entry.name === 'isolation').reason, /kunde inte prövas/);
   assert.ok(failed(decide(null)).length >= 11, 'an unreadable PR refuses everything');
 });
 
@@ -79,7 +98,7 @@ test('only Jakob\'s delivery branches pass, and other people\'s branches never d
   const patterns = foreignBranchPatterns({ policy, people });
   for (const pattern of BASELINE_FOREIGN_BRANCHES) assert.ok(patterns.includes(pattern), pattern);
   for (const branch of ['kevin', 'kevin-ks', 'kevin/port', 'Kevin/Port', 'codex/kevin-fix', 'john', 'john/design', 'codex/john-x',
-    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging',
+    'emil', 'emil-ui', 'codex/emil-y', 'roulette-on-kevin-staging', 'kevin-staging', 'kevin-merge-admin', 'emil/x',
     // Not a featureBranches pattern even though Jakob opened it.
     'codex/fix-foo', 'feature/x', 'codex/jakob-x', 'main', 'jakob', 'jakob/', 'jakob-export']) {
     assert.deepEqual(failed(decide(goodPr({ headRefName: branch }))), ['branch'], branch);
@@ -95,6 +114,41 @@ test('only Jakob\'s delivery branches pass, and other people\'s branches never d
   assert.equal(matchesGlob('codex/kevinx', 'codex/kevin-*'), false);
 });
 
+test('--base preview merges into the environment branch with the same gate, and preview is never a head', () => {
+  assert.deepEqual(environmentBranches(policy), ['preview']);
+  const intoPreview = (overrides = {}) => goodPr({ baseRefName: 'preview', ...overrides });
+  // The base must be named explicitly: a PR into preview is refused by the default main gate and vice versa.
+  assert.deepEqual(failed(decide(intoPreview())), ['base']);
+  assert.match(decide(intoPreview()).checks.find(entry => entry.name === 'base').reason, /^bas preview är inte main$/);
+  assert.deepEqual(failed(decide(goodPr(), { base: 'preview' })), ['base']);
+  const verdict = decide(intoPreview(), { base: 'preview', isolation: null });
+  assert.equal(verdict.ok, true, JSON.stringify(verdict.checks));
+  assert.ok(verdict.checks.some(entry => entry.name === 'base' && entry.reason === 'bas preview'));
+  assert.equal(verdict.checks.some(entry => entry.name === 'isolation'), false, 'preview takes its own history; isolation is a main-only rule');
+  assert.ok(verdict.checks.some(entry => entry.name === 'fresh' && entry.reason === `CI mot aktuell preview ${MAIN.slice(0, 12)}`));
+  // Only policy environment branches are bases; unknown names fail closed even when the PR agrees.
+  assert.deepEqual(failed(decide(goodPr({ baseRefName: 'kevin' }), { base: 'kevin' })), ['base']);
+  assert.match(decide(goodPr({ baseRefName: 'kevin' }), { base: 'kevin' }).checks.find(entry => entry.name === 'base').reason, /varken main eller en miljöbranch \(preview\)/);
+  assert.deepEqual(failed(decide(intoPreview(), { base: 'preview', environments: [] })), ['base']);
+  // main may be merged into preview (sync), never into main; preview is never a head anywhere.
+  assert.equal(decide(intoPreview({ headRefName: 'main' }), { base: 'preview' }).ok, true);
+  assert.deepEqual(failed(decide(goodPr({ headRefName: 'main' }))), ['branch']);
+  assert.deepEqual(failed(decide(intoPreview({ headRefName: 'preview' }), { base: 'preview' })), ['branch']);
+  assert.deepEqual(failed(decide(goodPr({ headRefName: 'preview' }))), ['branch']);
+  for (const branch of ['kevin', 'kevin/port', 'kevin-staging', 'kevin-merge-admin', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+    'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging']) {
+    assert.deepEqual(failed(decide(intoPreview({ headRefName: branch }), { base: 'preview' })), ['branch'], branch);
+  }
+  // Another GitHub account is refused into preview exactly as into main.
+  for (const login of ['invoicesolv', 'Johncleochile', 'EmaCodeHero']) {
+    assert.deepEqual(failed(decide(intoPreview({ author: { login } }), { base: 'preview' })), ['author'], login);
+  }
+  // The freshness diff names the base branch.
+  const stale = freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: 2, files: ['docs/x.md'] }, ['docs/x.md'], true, 'preview');
+  assert.equal(stale.ok, false);
+  assert.match(stale.reason, /^CI mot preview ffffffffffff, 2 commits bakåt; preview har sedan dess ändrat 1 av PR:ens filer, t\.ex\. docs\/x\.md; merga origin\/preview in i branchen/);
+});
+
 test('a PR that changes the CI that judges it needs --allow-workflow-change', () => {
   for (const files of [[{ filename: '.github/workflows/croupier.yml', status: 'modified' }],
     [{ filename: '.github/workflows/new.yml', status: 'added' }],
@@ -106,25 +160,154 @@ test('a PR that changes the CI that judges it needs --allow-workflow-change', ()
   assert.equal(withFiles([{ filename: '.github/CODEOWNERS', status: 'modified' }]).ok, true);
 });
 
-test('--freeze refuses runtime paths, moves out of runtime and a candidate off main', () => {
-  const runtime = [{ filename: 'docs/README.md', status: 'modified' }, { filename: 'services/game/server.mjs', status: 'modified' }];
-  assert.deepEqual(failed(withFiles(runtime, { freeze: FREEZE, freezeOnMain: true })), ['freeze']);
-  assert.equal(withFiles(runtime).ok, true, 'without --freeze runtime files are allowed');
-  for (const filename of ['apps/studio/lib/x.mjs', 'packages/director/a.mjs', 'ops/neon-game/1.sql', 'apps/web/app/page.tsx']) {
-    assert.deepEqual(failed(withFiles([{ filename, status: 'modified' }], { freeze: FREEZE, freezeOnMain: true })), ['freeze'], filename);
-  }
-  // gh pr view only shows docs/x.ts for apps/web/x.ts -> docs/x.ts; the REST list names the old path.
-  for (const status of ['renamed', 'copied']) {
-    const moved = [{ filename: 'docs/x.ts', status, previous_filename: 'apps/web/x.ts' }];
-    assert.deepEqual(failed(withFiles(moved, { freeze: FREEZE, freezeOnMain: true })), ['freeze'], status);
-    assert.deepEqual(failed(withFiles([{ filename: 'docs/x.ts', status }], { freeze: FREEZE, freezeOnMain: true })), ['files', 'workflow', 'freeze'],
-      `${status} without its old path proves nothing`);
-  }
-  assert.equal(withFiles([{ filename: 'docs/b.md', status: 'renamed', previous_filename: 'docs/a.md' }], { freeze: FREEZE, freezeOnMain: true }).ok, true);
-  assert.deepEqual(failed(decide(goodPr(), { freeze: FREEZE, freezeOnMain: false })), ['freeze'], 'the candidate must be on origin/main');
-  assert.deepEqual(failed(decide(goodPr({ changedFiles: 150 }), { freeze: FREEZE, freezeOnMain: true })), ['files', 'workflow', 'freeze'],
-    'an incomplete list cannot prove the freeze');
+test('a rename or copy counts its old path too', () => {
   assert.deepEqual(changedPaths([{ filename: 'b', status: 'renamed', previous_filename: 'a' }]), ['b', 'a']);
+  assert.equal(withFiles([{ filename: 'docs/b.md', status: 'renamed', previous_filename: 'docs/a.md' }]).ok, true);
+  assert.deepEqual(failed(withFiles([{ filename: 'docs/x.ts', status: 'renamed' }])), ['files', 'workflow'], 'a rename without its old path proves nothing');
+});
+
+test('fresh passes CI against current main, or an older main without shared files or package roots', () => {
+  const behind = files => ({ base: OLD_MAIN, main: MAIN, behind: 3, files });
+  const pr = ['apps/studio/app/admin/page.tsx', 'services/game/rules.mjs', 'docs/x.md'];
+  assert.deepEqual(freshnessVerdict(currentMain, pr, true), { ok: true, reason: `CI mot aktuell main ${MAIN.slice(0, 12)}` });
+  const quiet = freshnessVerdict(behind(['apps/studio/app/lobby/page.tsx', 'packages/director/a.mjs', 'tools/x.mjs']), pr, true);
+  assert.equal(quiet.ok, true);
+  assert.match(quiet.reason, /^CI mot main ffffffffffff, 3 commits bakåt, ingen överlappning/);
+  const same = freshnessVerdict(behind(['docs/x.md']), pr, true);
+  assert.equal(same.ok, false);
+  assert.match(same.reason, /ändrat 1 av PR:ens filer, t\.ex\. docs\/x\.md; merga origin\/main in i branchen och låt CI köra om/);
+  for (const [mainFile, root] of [['services/game/table.mjs', 'services/game/'], ['apps/web/app/page.tsx', 'apps/web/'],
+    ['apps/studio/lib/a.mjs', 'apps/studio/lib/'], ['packages/director/b.mjs', 'packages/director/']]) {
+    const prFile = root === 'services/game/' ? 'services/game/rules.mjs' : `${root}other.mjs`;
+    const verdict = freshnessVerdict(behind([mainFile]), [prFile], true);
+    assert.equal(verdict.ok, false, root);
+    assert.match(verdict.reason, new RegExp(`båda i ${root.replace(/\//g, '\\/')}`), root);
+  }
+  assert.equal(freshnessVerdict(behind(['packages/director/b.mjs']), ['packages/presentation/c.mjs'], true).ok, true, 'different packages');
+  assert.equal(freshnessVerdict(behind(['apps/studio/lib/a.mjs']), ['apps/studio/app/b.tsx'], true).ok, true, 'studio outside lib');
+  // Fail closed: unknown base, incomplete PR list, unreadable main diff.
+  assert.match(freshnessVerdict({ reason: 'x' }, pr, true).reason, /^CI-basen kunde inte avgöras: x/);
+  assert.equal(freshnessVerdict(null, pr, true).ok, false);
+  assert.equal(freshnessVerdict(behind([]), pr, false).ok, false);
+  assert.equal(freshnessVerdict({ base: OLD_MAIN, main: MAIN, behind: null, files: [] }, pr, true).ok, false);
+  assert.equal(packageRoot('packages/director'), null);
+  assert.equal(packageRoot('apps/studio/package.json'), null);
+});
+
+const mergeLog = (number = 42, merge = MERGE) => `2026 [command]/usr/bin/git fetch --depth=2 origin +${merge}:refs/remotes/pull/${number}/merge\n2026 HEAD is now at eeeeeee Merge ${HEAD} into ${OLD_MAIN}\n`;
+// Run 7 (jobs 9 and 10) is the PR's own CI run; `runs` adds or overrides runs by id, each with its own jobs and log.
+function ciGh({ jobs = [{ id: 9, name: 'changes', head_sha: HEAD, workflow_name: WORKFLOW }, { id: 10, name: 'CI', head_sha: HEAD, workflow_name: WORKFLOW }],
+  log = mergeLog(), parents = [OLD_MAIN, HEAD], fail = '', runs = {} } = {}) {
+  const calls = [];
+  const byRun = { 7: { jobs, log }, ...runs };
+  return { calls, gh: argv => {
+    calls.push(argv);
+    const url = argv.find(arg => arg.startsWith('repos/')) ?? '';
+    const kind = url.includes('/pulls/') ? 'files' : url.includes('/actions/runs/') ? 'jobs' : url.includes('/actions/jobs/') ? 'log' : url.includes('/commits/') ? 'commit' : 'other';
+    if (kind === fail) return { status: 1, stdout: '' };
+    if (kind === 'files') return { status: 0, stdout: goodFiles.map(file => JSON.stringify(file)).join('\n') };
+    if (kind === 'jobs') {
+      const run = byRun[/\/actions\/runs\/(\d+)\//.exec(url)[1]];
+      return run ? { status: 0, stdout: run.jobs.map(job => JSON.stringify(job)).join('\n') } : { status: 1, stdout: '' };
+    }
+    if (kind === 'log') {
+      const jobId = Number(/\/actions\/jobs\/(\d+)\//.exec(url)[1]);
+      const run = Object.values(byRun).find(entry => entry.jobs.some(job => job.id === jobId));
+      return run ? { status: 0, stdout: run.log } : { status: 1, stdout: '' };
+    }
+    if (kind === 'commit') return { status: 0, stdout: JSON.stringify(parents) };
+    return { status: 1, stdout: '' };
+  } };
+}
+const rollup = [ciRun()];
+const runUrl = id => CI_URL.replace('/7/', `/${id}/`);
+
+test('the CI base is the first parent of the merge commit named in the changes job log, and fails closed', () => {
+  const ok = ciGh();
+  assert.deepEqual(readCiBase(ok.gh, { number: 42, head: HEAD, rollup }), { base: OLD_MAIN, merge: MERGE, runId: '7' });
+  assert.deepEqual(ok.calls.map(argv => argv.find(arg => arg.startsWith('repos/'))), ['repos/Jakeminator123/scoutgaming/actions/runs/7/jobs?per_page=100',
+    'repos/Jakeminator123/scoutgaming/actions/jobs/9/logs', `repos/Jakeminator123/scoutgaming/commits/${MERGE}`]);
+  const refuses = (gh, extra = {}) => readCiBase(gh, { number: 42, head: HEAD, rollup, ...extra });
+  for (const [why, result, pattern] of [
+    ['no CI run url', refuses(ciGh().gh, { rollup: [ciRun({ detailsUrl: undefined })] }), /kunde inte identifieras/],
+    ['two CI runs, neither for this PR', refuses(ciGh({ log: mergeLog(43), runs: { 8: { jobs: [{ id: 19, name: 'changes', head_sha: HEAD, workflow_name: WORKFLOW }], log: mergeLog(44) } } }).gh,
+      { rollup: [ciRun(), ciRun({ detailsUrl: runUrl(8) })] }), /^CI saknas för bas main: ingen av 2 CI-körningar på head aaaaaaaaaaaa testade PR #42 \(körning 7: .*; körning 8: /],
+    ['no CI check', refuses(ciGh().gh, { rollup: [] }), /0 körningar/],
+    ['jobs unreadable', refuses(ciGh({ fail: 'jobs' }).gh), /jobben kunde inte läsas/],
+    ['no changes job', refuses(ciGh({ jobs: [{ id: 10, name: 'CI', head_sha: HEAD, workflow_name: WORKFLOW }] }).gh), /finns inte entydigt/],
+    ['changes job on another head', refuses(ciGh({ jobs: [{ id: 9, name: 'changes', head_sha: OTHER, workflow_name: WORKFLOW }] }).gh), /finns inte entydigt/],
+    ['log unreadable', refuses(ciGh({ fail: 'log' }).gh), /loggen för changes kunde inte läsas/],
+    ['log without merge ref', refuses(ciGh({ log: 'HEAD is now at 1234567 something' }).gh), /ingen merge-commit för PR #42/],
+    ['merge ref of another PR', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/43/merge` }).gh), /CI saknas för bas main/],
+    ['two merge refs', refuses(ciGh({ log: `+${MERGE}:refs/remotes/pull/42/merge\n+${SECOND}:refs/remotes/pull/42/merge` }).gh), /2 merge-commits för PR #42/],
+    ['commit unreadable', refuses(ciGh({ fail: 'commit' }).gh), /föräldrarna \[main, aaaaaaaaaaaa\]/],
+    ['second parent is not the head', refuses(ciGh({ parents: [OLD_MAIN, OTHER] }).gh), /föräldrarna/],
+    ['not a merge commit', refuses(ciGh({ parents: [OLD_MAIN] }).gh), /föräldrarna/],
+    ['base named in the refusal', refuses(ciGh({ log: mergeLog(43) }).gh, { base: 'preview' }), /^CI saknas för bas preview: ingen av 1 CI-körningar/]]) {
+    assert.equal(result.base, undefined, why);
+    assert.match(String(result.reason), pattern, why);
+  }
+});
+
+test('with several CI runs on one head, the run whose changes log names this PR\'s merge ref is used', () => {
+  // The same head has a PR against main (#42, run 7) and one against preview (#43, run 8): each gate picks its own run.
+  const previewMerge = 'c'.repeat(39) + '1';
+  const both = () => ciGh({ runs: { 8: { jobs: [{ id: 19, name: 'changes', head_sha: HEAD, workflow_name: WORKFLOW }, { id: 20, name: 'CI', head_sha: HEAD, workflow_name: WORKFLOW }], log: mergeLog(43, previewMerge) } } });
+  const twoRuns = [ciRun(), ciRun({ detailsUrl: runUrl(8) })];
+  const forMain = both();
+  assert.deepEqual(readCiBase(forMain.gh, { number: 42, head: HEAD, rollup: twoRuns }), { base: OLD_MAIN, merge: MERGE, runId: '7' });
+  const forPreview = both();
+  assert.deepEqual(readCiBase(forPreview.gh, { number: 43, head: HEAD, rollup: twoRuns, base: 'preview' }), { base: OLD_MAIN, merge: previewMerge, runId: '8' });
+  assert.ok(forPreview.calls.some(argv => argv.includes('repos/Jakeminator123/scoutgaming/actions/jobs/9/logs')), 'run 7 was tried first and skipped');
+  assert.ok(forPreview.calls.some(argv => argv.includes(`repos/Jakeminator123/scoutgaming/commits/${previewMerge}`)));
+  // The order of the rollup does not matter, and a push run (no PR merge ref at all) is skipped too.
+  assert.equal(readCiBase(both().gh, { number: 43, head: HEAD, rollup: [...twoRuns].reverse(), base: 'preview' }).runId, '8');
+  const pushRun = ciGh({ runs: { 8: { jobs: [{ id: 19, name: 'changes', head_sha: HEAD, workflow_name: WORKFLOW }], log: 'git checkout --progress --force refs/remotes/origin/main\n' } } });
+  assert.equal(readCiBase(pushRun.gh, { number: 42, head: HEAD, rollup: [ciRun({ detailsUrl: runUrl(8) }), ciRun()] }).runId, '7');
+  // Only the main PR ran CI (the preview trigger is missing): the preview gate refuses with the base named.
+  assert.match(readCiBase(ciGh().gh, { number: 43, head: HEAD, rollup, base: 'preview' }).reason, /^CI saknas för bas preview: ingen av 1 CI-körningar på head aaaaaaaaaaaa testade PR #43 \(körning 7: loggen nämner ingen merge-commit för PR #43\)$/);
+});
+
+test('readFreshness diffs origin/main against the CI base', () => {
+  // -z output: NUL-separated raw paths, so a path with å/ä/ö is never quoted.
+  const git = ({ main = MAIN, ancestor = true, diff = 'docs/a.md\0packages/director/läs mig.mjs\0', count = '4\n', diffStatus = 0 } = {}) => argv => {
+    if (argv[0] === 'rev-parse') return { status: 0, stdout: `${main}\n` };
+    if (argv[0] === 'merge-base') return { status: ancestor ? 0 : 1, stdout: '' };
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/main']); return { status: diffStatus, stdout: diff }; }
+    if (argv[0] === 'rev-list') return { status: 0, stdout: count };
+    return { status: 1, stdout: '' };
+  };
+  const args = { number: 42, head: HEAD, rollup };
+  assert.deepEqual(readFreshness(ciGh().gh, git(), args), { base: OLD_MAIN, main: MAIN, behind: 4, files: ['docs/a.md', 'packages/director/läs mig.mjs'] });
+  assert.deepEqual(readFreshness(ciGh().gh, git({ main: OLD_MAIN }), args), { base: OLD_MAIN, main: OLD_MAIN, behind: 0, files: [] });
+  assert.match(readFreshness(ciGh().gh, git({ ancestor: false }), args).reason, /ingår inte i origin\/main/);
+  assert.match(readFreshness(ciGh({ fail: 'log' }).gh, git(), args).reason, /loggen/);
+  assert.match(readFreshness(ciGh().gh, git({ diffStatus: 128 }), args).reason, /git diff mot CI-basen/);
+  // With --base preview every ref is origin/preview; main is not consulted for the diff.
+  const previewGit = argv => {
+    assert.ok(!argv.includes('origin/main') && !argv.some(arg => String(arg).endsWith('..origin/main')), argv.join(' '));
+    if (argv[0] === 'rev-parse') { assert.deepEqual(argv, ['rev-parse', 'origin/preview']); return { status: 0, stdout: `${MAIN}\n` }; }
+    if (argv[0] === 'merge-base') { assert.deepEqual(argv, ['merge-base', '--is-ancestor', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: '' }; }
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: 'docs/a.md\0' }; }
+    if (argv[0] === 'rev-list') { assert.deepEqual(argv, ['rev-list', '--count', `${OLD_MAIN}..origin/preview`]); return { status: 0, stdout: '1\n' }; }
+    return { status: 1, stdout: '' };
+  };
+  assert.deepEqual(readFreshness(ciGh().gh, previewGit, { ...args, base: 'preview' }), { base: OLD_MAIN, main: MAIN, behind: 1, files: ['docs/a.md'] });
+  assert.match(readFreshness(ciGh().gh, () => ({ status: 128, stdout: '' }), { ...args, base: 'preview' }).reason, /origin\/preview kunde inte läsas/);
+});
+
+test('review requires a non-empty Buggranskning line in the PR body', () => {
+  for (const body of [BODY, '- Buggranskning: Codex /review, medium, 0 fynd', '**Buggranskning:** Cursor Bugbot, 1 fynd: 1 åtgärdat',
+    '**Buggranskning**: Sonnet, låg, 0 fynd', 'Intro\r\n* buggranskning: x\r\n', '> BUGGRANSKNING: Claude Code /code-review medium']) {
+    assert.equal(reviewVerdict(body).ok, true, body);
+  }
+  assert.match(reviewVerdict('- Buggranskning: Codex /review').reason, /^Buggranskning: Codex \/review$/);
+  for (const body of [undefined, null, '', 'Ingen granskning', 'Buggranskning:', 'Buggranskning:   ', '**Buggranskning:**', '- Buggranskning: **',
+    'Ingen buggranskning: gjordes', 'Buggranskning saknas', 'Buggranskning: -', 'Buggranskning: ​',
+    // The unedited template, an HTML comment and fenced code are not a review.
+    'Buggranskning: <verktyg/modell>, <nivå>, <fynd>', '<!--\nBuggranskning: x\n-->', 'Text\n```\nBuggranskning: x\n```']) {
+    assert.deepEqual(reviewVerdict(body), { ok: false, reason: REVIEW_MISSING }, String(body));
+  }
 });
 
 test('security-status refuses failures and reports only safe counts', () => {
@@ -142,11 +325,16 @@ test('security-status refuses failures and reports only safe counts', () => {
 });
 
 test('arguments require a PR number and a full head SHA', () => {
-  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, freeze: null, allowWorkflowChange: false, dryRun: false });
-  assert.deepEqual(parseArgs(['--dry-run', '--freeze', FREEZE, '--head', HEAD, '7', '--allow-workflow-change']),
-    { number: 7, head: HEAD, freeze: FREEZE, allowWorkflowChange: true, dryRun: true });
+  assert.deepEqual(parseArgs(['42', '--head', HEAD]), { number: 42, head: HEAD, base: 'main', allowWorkflowChange: false, dryRun: false });
+  assert.deepEqual(parseArgs(['--dry-run', '--head', HEAD, '7', '--allow-workflow-change']),
+    { number: 7, head: HEAD, base: 'main', allowWorkflowChange: true, dryRun: true });
+  assert.deepEqual(parseArgs(['42', '--base', 'preview', '--head', HEAD]), { number: 42, head: HEAD, base: 'preview', allowWorkflowChange: false, dryRun: false });
+  assert.equal(parseArgs(['42', '--base', 'main', '--head', HEAD]).base, 'main');
   for (const args of [[], ['42'], ['42', '--head', HEAD.slice(0, 12)], ['42', '--head', HEAD.toUpperCase()], ['--head', HEAD],
-    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze'], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD]]) {
+    ['42', '--head', HEAD, '--admin'], ['42', '--head', HEAD, '--freeze', SECOND], ['42', '43', '--head', HEAD], ['-1', '--head', HEAD],
+    // --base needs a plain branch name, once; --freeze (O02) is gone.
+    ['42', '--head', HEAD, '--base'], ['42', '--head', HEAD, '--base', '--dry-run'], ['42', '--head', HEAD, '--base', 'a', '--base', 'b'],
+    ['42', '--head', HEAD, '--base', '../x']]) {
     assert.throws(() => parseArgs(args), /Usage/, args.join(' '));
   }
 });
@@ -162,8 +350,9 @@ test('the REST file list is read as JSON lines and fails closed', () => {
 
 function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { status: 0, stdout: '' }, fetch = { status: 0, stdout: '' },
   onMain = true, trusted = { 'inbox/people.json': people, 'tools/repository-policy.json': policy },
-  securityResults = [cleanSecurity] } = {}) {
+  securityResults = [cleanSecurity], testedMain = OLD_MAIN, mainChanged = ['tools/merge-pr.mjs'], sharedWithPreview = [] } = {}) {
   const calls = { gh: [], git: [], security: 0, sleeps: [] }, lines = [];
+  const ci = ciGh().gh;
   return {
     calls, lines,
     run: args => main({
@@ -171,13 +360,21 @@ function harness({ pr = goodPr(), view = null, files = goodFiles, merge = { stat
       gh: argv => {
         calls.gh.push(argv);
         if (argv[1] === 'view') return view ?? { status: 0, stdout: JSON.stringify(pr) };
-        if (argv[0] === 'api') return { status: 0, stdout: files.map(file => JSON.stringify(file)).join('\n') };
+        if (argv[0] === 'api' && argv[1].includes('/pulls/')) return { status: 0, stdout: files.map(file => JSON.stringify(file)).join('\n') };
+        if (argv[0] === 'api') return ci(argv);
         return merge;
       },
       git: argv => {
         calls.git.push(argv);
         if (argv[0] === 'fetch') return fetch;
         if (argv[0] === 'merge-base') return { status: onMain ? 0 : 1, stdout: '' };
+        if (argv[0] === 'rev-parse') return { status: 0, stdout: `${testedMain}\n` };
+        if (argv[0] === 'cat-file') return { status: 0, stdout: '' };
+        if (argv[0] === 'diff') return { status: 0, stdout: mainChanged.map(path => `${path}\0`).join('') };
+        if (argv[0] === 'rev-list' && argv[1] === '--count') return { status: 0, stdout: '2\n' };
+        // Isolation: the head's own commits are HEAD (on its first-parent line) and OTHER (off it, a merged-in
+        // commit); sharedWithPreview lists the preview-only commits.
+        if (argv[0] === 'rev-list') return { status: 0, stdout: argv.includes('origin/preview') ? sharedWithPreview.join('\n') : argv[1] === '--first-parent' ? `${HEAD}\n` : `${HEAD}\n${OTHER}\n` };
         const path = argv[1].replace(/^origin\/main:/, '');
         return trusted[path] ? { status: 0, stdout: JSON.stringify(trusted[path]) } : { status: 128, stdout: '' };
       },
@@ -191,17 +388,77 @@ test('main fetches main, then merges with gh, the exact head and no admin or aut
   const h = harness();
   assert.equal(h.run(['42', '--head', HEAD]), 0);
   assert.deepEqual(h.calls.git, [['fetch', '-q', 'origin', 'main'], ['show', 'origin/main:inbox/people.json'],
-    ['show', 'origin/main:tools/repository-policy.json']], 'owner and policy come from freshly fetched main, not the working copy');
+    ['show', 'origin/main:tools/repository-policy.json'], ['rev-parse', 'origin/main'],
+    // Isolation from preview: the environment branch is fetched explicitly, the head is local, histories compared.
+    ['fetch', '-q', 'origin', '+refs/heads/preview:refs/remotes/origin/preview'], ['cat-file', '-e', `${HEAD}^{commit}`],
+    ['rev-list', HEAD, '^origin/main'], ['rev-list', '--first-parent', HEAD, '^origin/main'], ['rev-list', 'origin/preview', '^origin/main']],
+    'owner, policy and main come from freshly fetched main');
+  assert.ok(h.lines.includes('ok  isolation: head delar ingen historik med origin/preview utöver sin egen'), h.lines.join('\n'));
   assert.deepEqual(h.calls.gh[0].slice(-2), ['--json', PR_FIELDS]);
   assert.equal(h.calls.gh[1][0], 'api');
-  assert.deepEqual(h.calls.gh[2], ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  assert.equal(h.calls.gh.length, 6, 'view, files, CI jobs, CI log, merge commit, merge');
+  assert.deepEqual(h.calls.gh.at(-1), ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  assert.ok(h.lines.includes(`ok  fresh: CI mot aktuell main ${OLD_MAIN.slice(0, 12)}`));
+  assert.ok(h.lines.some(line => /^ok  review: Buggranskning: /.test(line)));
   assert.ok(h.calls.gh.flat().every(arg => !['--admin', '--auto'].includes(arg)));
   assert.equal(h.calls.security, 1);
   assert.ok(h.lines.some(line => /^ok  ci: CI SUCCESS/.test(line)));
   assert.match(h.lines.at(-1), /^mergad: PR #42/);
-  const frozen = harness();
-  assert.equal(frozen.run(['42', '--head', HEAD, '--freeze', FREEZE, '--dry-run']), 0);
-  assert.deepEqual(frozen.calls.git.at(-1), ['merge-base', '--is-ancestor', FREEZE, 'origin/main']);
+  // CI tested an older main that changed one of the PR's files: refused, nothing merged.
+  const stale = harness({ testedMain: MAIN });
+  assert.equal(stale.run(['42', '--head', HEAD]), 1);
+  assert.ok(stale.lines.some(line => /^nej fresh: CI mot main ffffffffffff, 2 commits bakåt; main har sedan dess ändrat 1 av PR:ens filer/.test(line)), stale.lines.join('\n'));
+  assert.equal(stale.calls.gh.filter(argv => argv[1] === 'merge').length, 0);
+  const behind = harness({ testedMain: MAIN, mainChanged: ['apps/web/app/page.tsx'] });
+  assert.equal(behind.run(['42', '--head', HEAD, '--dry-run']), 0);
+  assert.ok(behind.lines.includes('ok  fresh: CI mot main ffffffffffff, 2 commits bakåt, ingen överlappning (1 filer ändrade på main sedan dess)'), behind.lines.join('\n'));
+  const unreviewed = harness({ pr: goodPr({ body: 'Inget här' }) });
+  assert.equal(unreviewed.run(['42', '--head', HEAD]), 1);
+  assert.ok(unreviewed.lines.includes(`nej review: ${REVIEW_MISSING}`));
+  // The head carries a commit that is on origin/preview, not on main, and off its own line: preview was merged in.
+  const tainted = harness({ sharedWithPreview: [MERGE, OTHER, HEAD] });
+  assert.equal(tainted.run(['42', '--head', HEAD]), 1);
+  assert.ok(tainted.lines.includes(`nej isolation: head innehåller 2 commits från origin/preview som inte ligger på branchens egen linje, t.ex. ${OTHER.slice(0, 12)}; origin/preview mergas aldrig in i en branch mot main, öppna i stället en PR mot preview`), tainted.lines.join('\n'));
+  assert.equal(tainted.calls.gh.filter(argv => argv[1] === 'merge').length, 0);
+  // Preview fast-forwarded to this branch earlier: the shared commit is the branch's own line, so the PR passes.
+  const forwarded = harness({ sharedWithPreview: [HEAD] });
+  assert.equal(forwarded.run(['42', '--head', HEAD, '--dry-run']), 0, forwarded.lines.join('\n'));
+});
+
+test('main with --base preview fetches preview too, diffs against origin/preview and merges the same way', () => {
+  const merges = h => h.calls.gh.filter(argv => argv[1] === 'merge').length;
+  const h = harness({ pr: goodPr({ baseRefName: 'preview' }) });
+  assert.equal(h.run(['42', '--head', HEAD, '--base', 'preview']), 0);
+  assert.deepEqual(h.calls.git, [['fetch', '-q', 'origin', 'main', '+refs/heads/preview:refs/remotes/origin/preview'], ['show', 'origin/main:inbox/people.json'],
+    ['show', 'origin/main:tools/repository-policy.json'], ['rev-parse', 'origin/preview']],
+    'owner and policy still come from main; origin/preview is updated explicitly, even with a main-only fetch mapping');
+  assert.ok(h.lines.includes('ok  base: bas preview'), h.lines.join('\n'));
+  assert.ok(h.lines.includes(`ok  fresh: CI mot aktuell preview ${OLD_MAIN.slice(0, 12)}`), h.lines.join('\n'));
+  assert.deepEqual(h.calls.gh.at(-1), ['pr', 'merge', '42', '-R', 'Jakeminator123/scoutgaming', '--merge', '--match-head-commit', HEAD]);
+  // The policy on origin/main decides which environment branches exist: without the field, preview is refused.
+  const unknown = harness({ pr: goodPr({ baseRefName: 'preview' }), trusted: { 'inbox/people.json': people, 'tools/repository-policy.json': { ...policy, environmentBranches: undefined } } });
+  assert.equal(unknown.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(unknown.lines.some(line => /^nej base: preview är varken main eller en miljöbranch \(inga\)/.test(line)), unknown.lines.join('\n'));
+  assert.equal(merges(unknown), 0);
+  // A PR into preview is not merged by the default main gate, and a main PR not by --base preview.
+  const wrongGate = harness({ pr: goodPr({ baseRefName: 'preview' }) });
+  assert.equal(wrongGate.run(['42', '--head', HEAD]), 1);
+  assert.ok(wrongGate.lines.includes('nej base: bas preview är inte main'));
+  assert.equal(merges(wrongGate), 0);
+  const mainPr = harness();
+  assert.equal(mainPr.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(mainPr.lines.includes('nej base: bas main är inte preview'));
+  assert.equal(merges(mainPr), 0);
+  // Syncing main into preview is allowed; a stale preview (changed one of the PR's files) is refused like main.
+  const sync = harness({ pr: goodPr({ baseRefName: 'preview', headRefName: 'main' }) });
+  assert.equal(sync.run(['42', '--head', HEAD, '--base', 'preview', '--dry-run']), 0);
+  assert.ok(sync.lines.includes('ok  branch: branch main in i miljöbranchen preview'));
+  assert.equal(merges(sync), 0);
+  const stale = harness({ pr: goodPr({ baseRefName: 'preview' }), testedMain: MAIN });
+  assert.equal(stale.run(['42', '--head', HEAD, '--base', 'preview']), 1);
+  assert.ok(stale.lines.some(line => /^nej fresh: CI mot preview ffffffffffff, 2 commits bakåt; preview har sedan dess ändrat 1 av PR:ens filer/.test(line)), stale.lines.join('\n'));
+  assert.equal(merges(stale), 0);
+  assert.throws(() => harness({ fetch: { status: 128, stdout: '' } }).run(['42', '--head', HEAD, '--base', 'preview']), /fetch origin main preview/);
 });
 
 test('main refuses without merging, and dry-run never merges', () => {
@@ -217,9 +474,6 @@ test('main refuses without merging, and dry-run never merges', () => {
   const stale = harness({ pr: goodPr({ headRefOid: OTHER }) });
   assert.equal(stale.run(['42', '--head', HEAD]), 1);
   assert.equal(merges(stale), 0);
-  const offMain = harness({ onMain: false });
-  assert.equal(offMain.run(['42', '--head', HEAD, '--freeze', FREEZE]), 1);
-  assert.equal(merges(offMain), 0);
   const workflow = harness({ files: [{ filename: '.github/workflows/croupier.yml', status: 'modified' }], pr: goodPr({ changedFiles: 1 }) });
   assert.equal(workflow.run(['42', '--head', HEAD]), 1);
   assert.equal(merges(workflow), 0);
@@ -262,4 +516,117 @@ test('an unreadable security-status is retried once after ~10 s; attention codes
   assert.equal(clean.run(['42', '--head', HEAD]), 0);
   assert.deepEqual(clean.calls.sleeps, []);
   assert.ok(clean.lines.every(line => !/omförsök/.test(line)));
+});
+
+test('readIsolation on a real repository: preview history never reaches main through a PR head', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'croupier-isolation-'));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  const remote = join(temp, 'origin.git'), work = join(temp, 'work');
+  const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null' };
+  for (const name of Object.keys(env)) if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(name)) delete env[name];
+  const run = (cwd, args) => {
+    const result = spawnSync('git', args, { cwd, env, encoding: 'utf8', timeout: 10000, windowsHide: true });
+    assert.ifError(result.error);
+    if (result.status !== 0) throw new Error(`git ${args.join(' ')}: ${result.stderr.trim()}`);
+    return result.stdout.trim();
+  };
+  run(temp, ['init', '-q', '--bare', '--initial-branch=main', remote]);
+  run(temp, ['init', '-q', '--initial-branch=main', work]);
+  const git = (...args) => run(work, ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args]);
+  const commit = message => { git('commit', '-q', '--allow-empty', '-m', message); return git('rev-parse', 'HEAD'); };
+  git('remote', 'add', 'origin', remote);
+  git('config', 'remote.origin.fetch', '+refs/heads/main:refs/remotes/origin/main');
+  commit('base');
+  git('push', '-q', 'origin', 'main', 'main:preview');
+  git('fetch', '-q', 'origin');
+  // Two fresh clones' worth of checks run against the one working copy; git() is the injected runner.
+  const injected = argv => spawnSync('git', argv, { cwd: work, env, encoding: 'utf8', windowsHide: true });
+  const isolation = head => readIsolation(injected, { head, environments: ['preview'] });
+  // A clean feature branch: nothing shared with preview.
+  git('switch', '-q', '-c', 'jakob/x');
+  const x1 = commit('x1');
+  assert.equal(isolation(x1).ok, true);
+  // Fast-forwarded to preview and continued: the shared commits are the branch's own line.
+  git('push', '-q', 'origin', 'jakob/x:preview');
+  const x2 = commit('x2');
+  assert.equal(isolation(x1).ok, true, 'head equals preview');
+  assert.deepEqual(isolation(x2), { ok: true, reason: 'head delar ingen historik med origin/preview utöver sin egen' });
+  // A merge of origin/main into the branch is main's history, not preview's.
+  git('switch', '-q', 'main');
+  const m1 = commit('m1');
+  git('push', '-q', 'origin', 'main');
+  git('switch', '-q', 'jakob/x');
+  git('merge', '-q', '--no-ff', '-m', 'merge main', m1);
+  assert.equal(isolation(git('rev-parse', 'HEAD')).ok, true, 'merged origin/main');
+  // Another branch that merges origin/preview (which is jakob/x at x1) carries x1 off its own line.
+  git('switch', '-q', '-c', 'jakob/y', m1);
+  commit('y1');
+  git('merge', '-q', '--no-ff', '-m', 'merge preview', 'origin/preview');
+  const tainted = isolation(git('rev-parse', 'HEAD'));
+  assert.equal(tainted.ok, false);
+  assert.match(tainted.reason, new RegExp(`^head innehåller 1 commits från origin/preview som inte ligger på branchens egen linje, t\\.ex\\. ${x1.slice(0, 12)}; origin/preview mergas aldrig in i en branch mot main, öppna i stället en PR mot preview$`));
+  // A PR merged into preview (what GitHub does), then a branch cut from preview: the merged PR's commit is off its line.
+  git('switch', '-q', '-c', 'preview', 'origin/preview');
+  git('switch', '-q', '-c', 'jakob/z', m1);
+  const z1 = commit('z1');
+  git('switch', '-q', 'preview');
+  git('merge', '-q', '--no-ff', '-m', 'Merge pull request #1 from jakob/z', z1);
+  git('push', '-q', 'origin', 'preview');
+  assert.equal(isolation(z1).ok, true, 'the PR branch itself stays clean after its merge into preview');
+  git('switch', '-q', '-c', 'jakob/w', 'preview');
+  const w1 = commit('w1');
+  const cut = isolation(w1);
+  assert.equal(cut.ok, false);
+  assert.match(cut.reason, new RegExp(`t\\.ex\\. ${z1.slice(0, 12)};`));
+  // Syncing main into preview (a merge commit on preview) does not taint a branch cut from main afterwards.
+  git('switch', '-q', 'preview');
+  git('merge', '-q', '--no-ff', '-m', 'Merge pull request #2 from main', 'main');
+  git('push', '-q', 'origin', 'preview');
+  git('switch', '-q', '-c', 'jakob/v', 'main');
+  assert.equal(isolation(commit('v1')).ok, true);
+  // A head that is not local is fetched from origin by SHA; one that does not exist fails closed.
+  const other = join(temp, 'other');
+  run(temp, ['clone', '-q', remote, other]);
+  run(other, ['switch', '-q', '-c', 'jakob/u']);
+  run(other, ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '--allow-empty', '-m', 'u1']);
+  const u1 = run(other, ['rev-parse', 'HEAD']);
+  run(other, ['push', '-q', 'origin', 'jakob/u']);
+  assert.equal(isolation(u1).ok, true, 'fetched by SHA');
+  assert.match(isolation('0'.repeat(39) + '1').reason, /finns inte lokalt och kunde inte hämtas/);
+  // The fetch of the environment branch always runs with an explicit refspec, so origin/preview is current.
+  assert.equal(run(work, ['rev-parse', 'origin/preview']), run(temp, ['-C', remote, 'rev-parse', 'preview']));
+  assert.match(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: ['preview'] }).reason, /origin\/preview kunde inte hämtas/);
+  assert.deepEqual(readIsolation(() => ({ status: 128, stdout: '' }), { head: HEAD, environments: [] }), { ok: true, reason: 'inga miljöbrancher i policyn' });
+});
+
+test('the Foreign branch guard check refuses other people\'s branches and other authors into main and preview', () => {
+  const guard = (overrides = {}) => foreignBranchGuard({ head: 'jakob/claude-x', author: 'Jakeminator123', base: 'main', policy, people, ...overrides });
+  for (const base of ['main', 'preview']) {
+    assert.equal(guard({ base }).ok, true, base);
+    assert.equal(guard({ base, head: 'main' }).ok, true, 'main into preview is not foreign');
+    for (const head of ['kevin', 'kevin/x', 'kevin-staging', 'kevin-merge-admin', 'Kevin-x', 'codex/kevin-fix', 'john', 'john/x', 'codex/john-x',
+      'emil', 'emil/x', 'codex/emil-y', 'roulette-on-kevin-staging', '']) {
+      const verdict = guard({ base, head });
+      assert.equal(verdict.ok, false, `${base} ${head}`);
+      assert.match(verdict.reasons.join('\n'), head ? /någon annans branch/ : /okänd/, head);
+    }
+    for (const author of ['invoicesolv', 'Johncleochile', 'EmaCodeHero', 'dependabot[bot]', '', undefined]) {
+      const verdict = guard({ base, author });
+      assert.equal(verdict.ok, false, `${base} ${author}`);
+      assert.match(verdict.reasons.join('\n'), /inte Jakeminator123/, String(author));
+    }
+  }
+  assert.equal(guard({ people: { ...people, jakob: {} } }).ok, false, 'no trusted owner, no pass');
+  assert.equal(guard({ base: 'kevin', head: 'kevin', author: 'invoicesolv' }).ok, true, 'other bases are not guarded');
+});
+
+test('the Foreign branch guard workflow runs from main on pull_request_target and is named for the ruleset', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/foreign-branch-guard.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  assert.match(yaml, /^name: Foreign branch guard$/m);
+  assert.match(yaml, /^ {4}name: Foreign branch guard$/m, 'the job name is the required check');
+  assert.match(yaml, /^ {2}pull_request_target:\n {4}branches: \[main, preview\]$/m);
+  assert.match(yaml, /^ {10}ref: main$/m, 'the policy is read from main, never from the pull request');
+  assert.doesNotMatch(yaml, /head\.sha|\$\{\{ *secrets\.|^ +pull_request:/m, 'no pull request code, no secrets');
+  assert.match(yaml, /HEAD_REF: \$\{\{ github\.event\.pull_request\.head\.ref \}\}/);
+  assert.match(yaml, /run: node tools\/foreign-branch-guard\.mjs$/m);
 });

@@ -1,8 +1,12 @@
 name: Render v3 container check
 
+# The Render croupier-v3 (game) image, not the OpenClaw Gateway image that
+# croupier.yml's gateway-container job builds. Advisory (not part of the CI
+# gate); it runs only when the image's own inputs change: its Dockerfile, the
+# root .dockerignore and the two locked package manifests it installs.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, preview]
     paths:
       - .github/workflows/product-container-check.yml
       - .dockerignore
@@ -58,9 +62,9 @@ jobs:
           # Read-only preflight with fixture-only values: no database, disk or Lab build is read.
           docker run --rm --network none \
             -e PORT=10000 -e CROUPIER_CLOUD_LAYOUT=single-origin -e RENDER_EXTERNAL_URL=https://croupier-game-check.onrender.com \
-            -e CROUPIER_DATABASE=postgres -e CROUPIER_GAME_DATABASE_URL='postgresql://fixture:fixture-password@fixture.neon.tech/fixture?sslmode=require' \
-            -e CROUPIER_STUDIO_NEON_POLICY=1 -e CROUPIER_STUDIO_ENVIRONMENT_ID=test -e CROUPIER_STUDIO_WORKSPACE_ID=container-check \
-            -e CROUPIER_MEDIA_STORAGE=blob -e BLOB_READ_WRITE_TOKEN=fixture-private-blob-token -e CROUPIER_STREAM_LANE=lissabon-stream-lane \
+            -e CROUPIER_GAME_DATABASE_URL='postgresql://fixture:fixture-password@fixture.neon.tech/fixture?sslmode=require' \
+            -e CROUPIER_STUDIO_ENVIRONMENT_ID=test -e CROUPIER_STUDIO_WORKSPACE_ID=container-check \
+            -e BLOB_READ_WRITE_TOKEN=fixture-private-blob-token \
             -e OPENCLAW_PRODUCT_SPEECH_URL=https://speech.example.test -e OPENCLAW_PRODUCT_SPEECH_TOKEN=fixture-token \
             -e CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER=fixture-admin -e CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD=fixture-bootstrap-password \
             croupier-game:check node ops/cloud/start.mjs --check

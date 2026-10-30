@@ -1,5 +1,6 @@
 import { nativeRoomFilmedPlanning } from '../../packages/presentation/contracts/native-room-filmed-planning.mjs';
 import { planFilmedDealSequence, orderFilmedPresentationEvents } from '../../packages/presentation/runtime/filmed-deal-sequence.mjs';
+import { nativeRoomSpeechClips } from '../../packages/presentation/server/native-room-speech-clips.mjs';
 
 // K04 F5c: a committed plan's filmed step choices travel with the plan itself.
 // POST /api/presentation/select took a median 3.3 s in staging (G lock and a frozen
@@ -51,34 +52,70 @@ export function withFilmedSteps(presentation, material) {
   return complete ? { ...presentation, events: enriched } : presentation;
 }
 
+// Speech lag (preview 28 Oct 2026): a spoken line of a plan or a betting window carries
+//   speechTake { id, sha256 }
+// the room's standard clip for the line (native-room-speech-clips.mjs), the same clip POST select
+// chooses in the 'off' mode. The client plays it without select only in that mode, and warms it in
+// every mode. A line without such a clip, or a clip the channel would refuse, is left as it was.
+export function withSpeechTakes(presentation, clips) {
+  if (!presentation || presentation.status !== 'ready' || !['plan', 'window'].includes(presentation.kind) || !Array.isArray(presentation.events)
+    || !clips || typeof clips !== 'object') return presentation;
+  let changed = false;
+  const events = presentation.events.map(event => {
+    const clip = event?.type === 'speak' && typeof event.line === 'string' && Object.hasOwn(clips, event.line) ? clips[event.line] : null;
+    if (!clip || !channelRef(clip)) return event;
+    changed = true;
+    return { ...event, speechTake: { id: clip.id, sha256: clip.sha256 } };
+  });
+  return changed ? { ...presentation, events } : presentation;
+}
+
 // The frozen config of a version never changes, and neither does a delivered plan version:
-// the material is cached per config version and the enriched plan per (room, ver, talk), so
-// the planning runs once per plan rather than per socket and update.
-// readConfig(roomId, configVersion) returns the stored config.
-export function createFilmedStepReader({ readConfig, maxEntries = 64 } = {}) {
-  if (typeof readConfig !== 'function' || !Number.isSafeInteger(maxEntries) || maxEntries < 1) throw new TypeError('Explicit config reader required');
-  const cache = new Map(), plans = new Map();
+// the config is cached per config version, its speech clips per config version, and the
+// enriched presentation per (room, ver, talk), so the planning runs once per presentation
+// rather than per socket and update.
+// readConfig(roomId, configVersion) returns the stored config. readPackage(operatorId, revision),
+// optional, returns the immutable package that config is bound to (for its speech clips).
+export function createFilmedStepReader({ readConfig, readPackage = null, maxEntries = 64 } = {}) {
+  if (typeof readConfig !== 'function' || readPackage !== null && typeof readPackage !== 'function'
+    || !Number.isSafeInteger(maxEntries) || maxEntries < 1) throw new TypeError('Explicit config reader required');
+  const cache = new Map(), speech = new Map(), reading = new Map(), plans = new Map();
   const remember = (map, key, value) => { map.set(key, value); if (map.size > maxEntries) map.delete(map.keys().next().value); return value; };
-  async function material(roomId, configVersion) {
+  async function frozenConfig(roomId, configVersion) {
     const key = `${roomId}\0${configVersion}`;
     if (cache.has(key)) return cache.get(key);
     const config = await readConfig(roomId, configVersion);
-    const value = config?.configVersion === configVersion && config.roomId === roomId ? config.material ?? null : null;
+    const value = config?.configVersion === configVersion && config.roomId === roomId && config.material ? config : null;
     if (value) remember(cache, key, value);
     return value;
   }
+  async function speechClips(roomId, config) {
+    if (!readPackage) return null;
+    const key = `${roomId}\0${config.configVersion}`;
+    if (speech.has(key)) return speech.get(key);
+    // Every socket reads the room's presentation: the sockets that meet a new config at once share one
+    // package read. A failed read (undefined) is not cached, nor is the presentation it leaves without
+    // clips: the next read asks again, and select remains meanwhile.
+    if (!reading.has(key)) reading.set(key, (async () => {
+      try { return remember(speech, key, nativeRoomSpeechClips({ package: await readPackage(config.operatorId, config.packageRevision), config })); }
+      catch { return undefined; } finally { reading.delete(key); }
+    })());
+    return reading.get(key);
+  }
   return async function enrich(roomId, presentation) {
-    if (!presentation || presentation.kind !== 'plan' || presentation.status !== 'ready' || typeof presentation.configVersion !== 'string') return presentation;
+    if (!presentation || !['plan', 'window'].includes(presentation.kind) || presentation.status !== 'ready' || typeof presentation.configVersion !== 'string') return presentation;
     const key = JSON.stringify([roomId, presentation.ver, presentation.talkId, presentation.configVersion]);
     const cached = plans.get(key);
     if (cached?.source === presentation) return cached.value;
-    let value;
+    let config;
     // Missing choices are never fatal: the plan still goes out and select remains (not cached).
-    try { value = await material(roomId, presentation.configVersion); } catch { return presentation; }
-    if (!value) return presentation;
+    try { config = await frozenConfig(roomId, presentation.configVersion); } catch { return presentation; }
+    if (!config) return presentation;
     // The receiver row is immutable per ver; a different object with the same key is the same plan,
     // so reuse its result only when the events are byte-equal.
     if (cached && JSON.stringify(cached.source.events) === JSON.stringify(presentation.events)) return cached.value;
-    return remember(plans, key, { source: presentation, value: withFilmedSteps(presentation, value) }).value;
+    const clips = presentation.events.some(event => event?.type === 'speak') ? await speechClips(roomId, config) : null;
+    const value = withSpeechTakes(withFilmedSteps(presentation, config.material), clips);
+    return clips === undefined ? value : remember(plans, key, { source: presentation, value }).value;
   };
 }

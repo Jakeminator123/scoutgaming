@@ -14,13 +14,18 @@ import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-i
 import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
 import {sceneLayoutPublication} from '../../../packages/presentation/contracts/scene-layout-publication.mjs';
 import {refreshFrozenDealerIdle} from '../../../packages/presentation/server/refresh-frozen-dealer-idle.mjs';
+import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
+import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
+import {createRoomRelease,ROOM_RELEASE_ACTION} from './room-release.mjs';
+import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
+import {adminAssignmentView,validateAdminAssignment,PARTNER_ASSIGNMENT_KEY} from './partner-assignment.mjs';
+import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
+import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
 
-export const SG_TEST_OPERATOR = Object.freeze({
-  id: 'sg-test',
-  slug: 'sg-test',
-  name: 'SG test game provider',
-});
+// Bolag › Tilldelat: Admins `assignment` i paketets branding (ADMIN-FORENKLING 5.3).
+export const ASSIGNMENT_ACTION='publish-assignment';
 
 const fail = statusCode => { throw Object.assign(new Error('operator_package_rejected'), { statusCode }); };
 
@@ -70,10 +75,6 @@ function selectedLanes(value, allowed) {
   return value;
 }
 
-function publicOperator(operator) {
-  return { id: operator.id, slug: operator.slug, name: operator.name, status: operator.status };
-}
-
 function sceneLayoutIntent(body){
   exactKeys(body,['action','operatorId','compositionId','expectedPackageRevision','expectedProjectRevision']);
   if(body.action!=='publish-scene-layout'||!isRoomOperatorId(body.operatorId)
@@ -98,10 +99,12 @@ function idleRefreshPresentation(current,administration,body){
   if((branding.dealer??lane.layers.dealer.default)!==body.dealerId)sceneConflict();
   return presentation;
 }
-function publishedScenePresentation(current,administration,projectDocument,body){
+// Company material is stripped first and merged again by the caller, so the
+// AI table guard and the geometry rules see only Admin's own frozen material.
+function publishedScenePresentation(current,administration,projectDocument,body,materialRows=[]){
   if(!current||current.operatorId!==body.operatorId||current.revision!==body.expectedPackageRevision)sceneConflict();
   if(projectDocument?.revision!==body.expectedProjectRevision||projectDocument.value?.revision!==body.expectedProjectRevision)sceneConflict();
-  const presentation=readPackagePresentation(current);
+  const frozen=readPackagePresentation(current),presentation=frozen&&materialRows.length?withoutOperatorMaterials(frozen,materialRows):frozen;
   const lane=presentation?.lanes.find(row=>row.id===body.compositionId);
   if(!lane||!current.lanes.includes(body.compositionId))sceneConflict();
   const saved=normalizeProject(projectDocument.value).lanes?.find(row=>row.id===body.compositionId);
@@ -110,6 +113,8 @@ function publishedScenePresentation(current,administration,projectDocument,body)
   if(!candidate.changed)fail(422);
   lane.composition=candidate.composition;
   const checked=validatePresentationPackage(presentation);
+  // A new placement must still fit the AI table graphics this template shows.
+  assertAiTablesFit(checked.lanes.filter(row=>row.id===body.compositionId),checked.assets);
   assertPublishedRoomBindings({administration,operatorId:body.operatorId,currentPackage:current,presentation:checked});
   const affectedRooms=listPackageRooms({administration,package:current,operatorId:body.operatorId})
     .filter(room=>room.presentationLaneId===body.compositionId).map(({id,name,state})=>({id,name,state}));
@@ -120,13 +125,34 @@ function freeze(value){
   return value;
 }
 
-export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory } = {}) {
+// materials: optional sql => operator material store (Bolagets eget material).
+// Without it, or without migration 021, every publication is unchanged.
+// resolveRoomMaterial: optional pure room-material resolver for the room publication
+// (room-release.mjs); the default is the native frozen-material producer, version 2.
+export function createOperatorPackageApi({ pool, scope, project, gameLanes, repository, videoRegistry, now = () => Date.now(), storeFactory, materials = null, resolveRoomMaterial } = {}) {
   const handlers = new Map();
   async function store() {
     return openWritableOperatorStore({ pool, scope, now, storeFactory });
   }
+  const materialRows = async (sql, operatorId) => materials ? readOperatorMaterialRows(materials(sql), operatorId) : [];
+  // The merge is negotiated before SQL; the transaction proves the same rows.
+  function mergedMaterials(presentation, rows, {administration, pack, branding, allowExtended}) {
+    if (!materials) return {presentation};
+    const merged = mergeOperatorMaterialsForPublication({presentation, rows, rooms:publicationRooms(administration, pack?.operatorId, pack),
+      fits:presentationFits({branding, base:presentation, allowExtended})});
+    return {presentation:merged.presentation, materialWarnings:merged.warnings, materialFingerprint:operatorMaterialFingerprint(rows)};
+  }
+  async function assertSameMaterials(client, operatorId, fingerprint) {
+    if (materials && operatorMaterialFingerprint(await materialRows(client, operatorId)) !== fingerprint) sceneConflict();
+  }
+  const warningsOf = prepared => prepared.materialWarnings?.length ? {materialWarnings:structuredClone(prepared.materialWarnings)} : {};
+  const canExtend = () => typeof repository?.withMutationContext === 'function';
   const preparedValues = new WeakSet();
   const preparations = new Map();
+  // En publicering per spelbord (steg D). Egen förberedelse och transaktion; övriga actions oförändrade.
+  const release = createRoomRelease({pool, scope, repository, videoRegistry, now, materials, store,
+    ...(resolveRoomMaterial ? {resolveMaterial:resolveRoomMaterial} : {})});
+  handlers.set('GET /studio/api/admin/room-release', release.read);
   async function prepareIdleRefresh(context){
     const body=idleRefreshIntent(context.body);
     if(!repository?.readPresentationSnapshot||!repository.transaction||!repository.withTransactionClient
@@ -139,8 +165,10 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const previous=idleRefreshPresentation(current,snapshot.administrationDocument.value,body);
     const captured=refreshFrozenDealerIdle({presentation:previous,snapshot,inventory:await videoRegistry.loadCaptured(snapshot),dealerId:body.dealerId});
     await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
+    const merged=mergedMaterials(captured.presentation,await materialRows(pool,body.operatorId),
+      {administration:snapshot.administrationDocument.value,pack:current,branding:current.branding,allowExtended:canExtend()});
     const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,expectedPackageRevision:body.expectedPackageRevision,
-      projectRevision:snapshot.projectDocument.revision,administrationRevision:snapshot.administrationDocument.revision,...captured});
+      projectRevision:snapshot.projectDocument.revision,administrationRevision:snapshot.administrationDocument.revision,...captured,...merged});
     preparedValues.add(value);return value;
   }
   async function prepareSceneLayout(context){
@@ -152,13 +180,48 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if(!operator||operator.status!=='active')sceneConflict();
     const current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
     if(!administration)sceneConflict();
-    const candidate=publishedScenePresentation(current,administration.value,projectDocument,body);
+    const rows=await materialRows(pool,body.operatorId);
+    const candidate=publishedScenePresentation(current,administration.value,projectDocument,body,rows);
+    const merged=mergedMaterials(candidate.presentation,rows,{administration:administration.value,pack:current,branding:current.branding,allowExtended:canExtend()});
+    assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation:merged.presentation});
     const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,
       expectedPackageRevision:body.expectedPackageRevision,projectRevision:body.expectedProjectRevision,
-      administrationRevision:administration.revision,...candidate});
+      administrationRevision:administration.revision,...candidate,...merged});
+    preparedValues.add(value);return value;
+  }
+  // Bara en N1-administratör med konto skriver tilldelningen, med samma policy som
+  // Utseende och rummets publicering (presentations.configure som internal-admin).
+  // Partnersessioner når aldrig Admins endpoint, och partnerns utseendeutkast kan
+  // inte skriva `assignment` (partner-branding-api.mjs tar bara bolagets fält).
+  function assignmentIntent(context) {
+    const body=context.body;
+    exactKeys(body,['action','operatorId','expectedPackageRevision','assignment']);
+    if(!isRoomOperatorId(body.operatorId)||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1)fail(400);
+    const actor=context.actor;
+    const internal=internalPartnerContext({accountId:actor?.accountId,role:actor?.role,scope},{id:body.operatorId,status:'active',scope});
+    if(!allowsWorkspaceResource(internal,'presentations.configure',{scope,operatorId:body.operatorId}))fail(403);
+    if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
+    return body;
+  }
+  function assignmentCandidate(operator,current,body) {
+    if(!operator||operator.status!=='active'||!current||current.operatorId!==body.operatorId)fail(404);
+    if(current.revision!==body.expectedPackageRevision)fail(409);
+    const presentation=readPackagePresentation(current);
+    if(!presentation)fail(409); // Tilldelningen bygger på paketets frysta miljöer.
+    return {presentation,assignment:validateAdminAssignment(body.assignment,presentation)};
+  }
+  async function prepareAssignment(context) {
+    const body=assignmentIntent(context);
+    if(!repository?.transaction||!repository.withTransactionClient)fail(503);
+    const operators=await store(),operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId);
+    const candidate=assignmentCandidate(operator,current,body);
+    const value=freeze({action:body.action,intent:canonicalStudioJson(body),operatorId:body.operatorId,expectedPackageRevision:body.expectedPackageRevision,
+      ...candidate,mutations:[...nativeFilmedPlanningMutations(current),{kind:'presentation-package',value:candidate.presentation}]});
     preparedValues.add(value);return value;
   }
   async function prepare(context) {
+    if(context.body?.action===ASSIGNMENT_ACTION)return prepareAssignment(context);
+    if([ROOM_RELEASE_ACTION,AI_ADOPT_ACTION].includes(context.body?.action))return release.prepare(context);
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
     if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
     const expectedPackageRevision = requestedPackageRevision(context.body);
@@ -172,6 +235,8 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const snapshot = await repository.readPresentationSnapshot();
     const saved = normalizeProject(snapshot.projectDocument.value);
     const lanes = selectedLanes(wanted, presentationLaneIds(saved));
+    // Refuse an AI table graphic drawn for another dealer or placement before any I/O or freezing.
+    assertAiTablesFit(saved.lanes.filter(lane => lanes.includes(lane.id)), saved.layerAssets ?? []);
     const source = saved;
     const hasDealers = source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.length || lane.layers.dealer.allowed.length);
     if (hasDealers && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) {
@@ -191,7 +256,9 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, blackjackLanes),
       requiredRouletteIdleDealerIds:selectedRegisteredIdleDefaults(source, rouletteLanes)});
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
-    const value = Object.freeze({operatorId, lanes:Object.freeze([...lanes]), ...captured, expectedPackageRevision:current?.revision ?? null});
+    const merged = mergedMaterials(captured.presentation, await materialRows(pool, operatorId),
+      {administration:snapshot.administrationDocument.value, pack:current, branding:current?.branding ?? {}, allowExtended:canExtend()});
+    const value = freeze({operatorId, lanes:[...lanes], ...captured, ...merged, expectedPackageRevision:current?.revision ?? null});
     preparedValues.add(value);
     return value;
   }
@@ -207,6 +274,24 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     return {allowExtended};
   }
   handlers.set('POST /studio/api/admin/operator-package', async context => {
+    if(context.body?.action===ASSIGNMENT_ACTION){
+      const body=assignmentIntent(context),prepared=context.prepared===undefined?await prepare(context):context.prepared;
+      if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
+      return repository.transaction(()=>repository.withTransactionClient(async client=>{
+        const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
+        const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId);
+        // Läses om under bolagets lås: samma revision och samma frysta presentation som förberedelsen.
+        const candidate=assignmentCandidate(operator,current,body);
+        if(canonicalStudioJson(candidate.presentation)!==canonicalStudioJson(prepared.presentation))fail(409);
+        // Bara tilldelningen byts; allt annat i paketet (presentation, val, spelbord) står kvar.
+        // Journalen: package.publish med tilldelningen före och efter (operator-store.mjs).
+        const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
+          expectedRevision:current.revision,lanes:current.lanes,games:current.games,tables:current.tables,
+          branding:{...current.branding,[PARTNER_ASSIGNMENT_KEY]:candidate.assignment}});
+        return {ok:true,operatorId:published.operatorId,packageRevision:published.revision,assignment:adminAssignmentView(published,candidate.presentation)};
+      }),{presentationMutation:prepared.mutations});
+    }
+    if([ROOM_RELEASE_ACTION,AI_ADOPT_ACTION].includes(context.body?.action))return release.publish(context);
     if(context.body?.action==='refresh-dealer-idle'){
       const body=idleRefreshIntent(context.body),prepared=context.prepared===undefined?await prepare(context):context.prepared;
       if(!preparedValues.has(prepared)||prepared.action!==body.action||prepared.intent!==canonicalStudioJson(body))fail(422);
@@ -218,12 +303,13 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const project=await repository.readDocument('project'),administration=await repository.readDocument('administration');
         if(!operator||operator.status!=='active'||project?.revision!==prepared.projectRevision||administration?.revision!==prepared.administrationRevision)sceneConflict();
         idleRefreshPresentation(current,administration.value,body);
+        await assertSameMaterials(client,body.operatorId,prepared.materialFingerprint);
         await assertCapturedPresentationMedia(repository,prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation:prepared.presentation});
         const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(prepared.presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-        return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId}};
+        return {...result(published,prepared.presentation),idleRefreshed:{dealerId:body.dealerId,roomId:body.roomId},...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     if(context.body?.action==='publish-scene-layout'){
@@ -235,14 +321,18 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const operators=await createOperatorStore({sql:client,scope,now,transaction:work=>repository.withTransactionClient(work)});
         const operator=await operators.getOperatorById(body.operatorId),current=await operators.getCurrentPackage(body.operatorId),administration=await repository.readDocument('administration'),projectDocument=await repository.readDocument('project');
         if(!operator||operator.status!=='active'||administration?.revision!==prepared.administrationRevision||projectDocument?.revision!==prepared.projectRevision)sceneConflict();
-        const {presentation,affectedRooms}=publishedScenePresentation(current,administration.value,projectDocument,body);
+        const rows=await materialRows(client,body.operatorId);
+        if(materials&&operatorMaterialFingerprint(rows)!==prepared.materialFingerprint)sceneConflict();
+        const candidate=publishedScenePresentation(current,administration.value,projectDocument,body,rows),affectedRooms=candidate.affectedRooms;
+        const {presentation}=mergedMaterials(candidate.presentation,rows,{administration:administration.value,pack:current,branding:current.branding,allowExtended:canExtend()});
         if(canonicalStudioJson(presentation)!==canonicalStudioJson(prepared.presentation))sceneConflict();
+        assertPublishedRoomBindings({administration:administration.value,operatorId:body.operatorId,currentPackage:current,presentation});
         // Preserve every other branding field, including unrelated published room choices.
         // A saved branding draft is neither read nor published.
         const branding={...current.branding,[PRESENTATION_PACKAGE_KEY]:encodePresentationPackage(presentation,encoding)};
         const published=await operators.publishPackage({actor:context.actor.user,audit:operatorAuditContext(context.actor),operatorId:body.operatorId,
           expectedRevision:body.expectedPackageRevision,lanes:current.lanes,games:current.games,tables:current.tables,branding});
-        return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms};
+        return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms,...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     const expectedPackageRevision = requestedPackageRevision(context.body);
@@ -258,6 +348,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         const current = await operators.getCurrentPackage(prepared.operatorId);
         if (projectDocument?.revision !== prepared.projectRevision || administrationDocument?.revision !== prepared.administrationRevision
           || (current?.revision ?? null) !== prepared.expectedPackageRevision) throw new StudioStorageError('studio_conflict', 409);
+        await assertSameMaterials(client, prepared.operatorId, prepared.materialFingerprint);
         await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administrationDocument.value, operatorId:prepared.operatorId,
           currentPackage:current, presentation:prepared.presentation});
@@ -265,13 +356,14 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
           expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
           games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
           branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation,encoding)});
-        return result(published, prepared.presentation);
+        return {...result(published, prepared.presentation), ...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
     // Local fixture/legacy adapters retain original-four behavior. A registered
     // extra dealer requires the native saved snapshot and immutable media path.
     const saved = normalizeProject(typeof project === 'function' ? await project() : project);
     const lanes = selectedLanes(context.body.lanes, presentationLaneIds(saved));
+    assertAiTablesFit(saved.lanes.filter(lane => lanes.includes(lane.id)), saved.layerAssets ?? []);
     const source = saved;
     if (source.lanes.filter(lane => lanes.includes(lane.id)).some(lane => lane.dealers.some(id => !BASE_DEALER_IDS.includes(id))))
       throw new StudioStorageError('studio_media_registry_unavailable');
@@ -284,16 +376,6 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
       expectedRevision:current?.revision ?? null, lanes, games:current?.games?.length ? [...current.games] : ['blackjack'],
       tables:current ? [...current.tables] : [], branding:withPackagePresentation(current?.branding ?? {}, presentation)});
     return result(published, presentation);
-  });
-  handlers.set('POST /studio/api/admin/operator-create-demo', async context => {
-    exactKeys(context.body, []);
-    const created = await (await store()).createOperator({
-      actor: context.actor.user, audit: operatorAuditContext(context.actor),
-      operatorId: SG_TEST_OPERATOR.id,
-      slug: SG_TEST_OPERATOR.slug,
-      name: SG_TEST_OPERATOR.name,
-    });
-    return { ok: true, operator: publicOperator(created) };
   });
   return Object.freeze({
     handlers, preparations,

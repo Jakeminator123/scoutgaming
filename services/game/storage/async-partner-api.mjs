@@ -6,10 +6,12 @@ import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from
 import { buildAssetsManifest, presentationEvents } from '../partner-presentation.mjs';
 
 import { normalizeDisplayName } from '../../../packages/studio-access/display-name.mjs';
+import { activeKeyOperator, keyOperator } from '../partner-operator.mjs';
+import { depositAmount } from './deposit-amount.mjs';
 
-export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/', readMetadata, hasPublicMedia,
-  nativeMode=process.env.CROUPIER_STUDIO_NEON_POLICY==='1'||process.env.CROUPIER_CLOUD_RUNTIME==='1',
-  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' }) {
+export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/', readMetadata, hasPublicMedia, operatorById,
+  // Neon is the one registry on every deployment, so native mode is on and legacy partner sessions are off.
+  nativeMode = true, allowLegacyPartnerSessions = false }) {
   if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
@@ -17,6 +19,14 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   // events = observe the SSE stream only; play implies it. A key with just events cannot launch or act.
   const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
   const keyStamp = key => createHash('sha256').update(key.secret).digest('hex');
+  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a key with a company launches only there. The
+  // signed claims carry its id and the address its slug; a key without one launches as today.
+  async function launchTarget(row) {
+    const operatorId = keyOperator(row);
+    if (operatorId === null) return { claims: {}, search: '' };
+    const operator = await activeKeyOperator(operatorId, operatorById);
+    return { claims: { operator: operatorId }, search: `operator=${encodeURIComponent(operator.slug)}&` };
+  }
   const keys = {
     async list() { return (await boDb.prepare('SELECT id, name, key, scopes, wallet_url, ip_allow, created_by, created_at, last_used, revoked_at FROM api_keys ORDER BY created_at DESC').all()).map(r => ({ ...r, scopes: JSON.parse(r.scopes), key: r.key.slice(0, 12) + '…' })); },
     async create({ name, scopes, walletUrl, ipAllow }, who) {
@@ -32,14 +42,15 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       const row = (await boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id));
       if (!row) throw new Error('unknown or revoked key');
       if (row.wallet_url) throw Object.assign(new Error('External wallet is not enabled for PostgreSQL'), {statusCode:503});
+      const target = await launchTarget(row);
       const pid = String(playerId || 'test-' + randomBytes(3).toString('hex'));
       const p = (await playerFor({ ...row, scopes: JSON.parse(row.scopes) }, pid, currency || 'EUR'));
       const presentedAs = normalizeDisplayName(displayName);
-      const tok = jwtSign({ sub: p.id, partner: row.id, partner_key_stamp: keyStamp(row), displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
+      const tok = jwtSign({ sub: p.id, partner: row.id, partner_key_stamp: keyStamp(row), ...target.claims, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: null });
       const ts = Math.floor(Date.now() / 1000), body = JSON.stringify({ playerId: pid, displayName: presentedAs, currency: currency || 'EUR' });
       const sig = createHmac('sha256', row.secret).update(`${ts}.POST./api/v1/launch.${body}`).digest('hex');
       return { playerId: pid, playerRef: p.id, balance: p.balance, currency: p.currency, expiresIn: 21600,
-        url: `${publicUrl}${publicGamePath}?launch=${tok}`,
+        url: `${publicUrl}${publicGamePath}?${target.search}launch=${tok}`,
         curlLines: [`curl -X POST ${publicUrl}/api/v1/launch`, `  -H 'Content-Type: application/json'`, `  -H 'X-Api-Key: ${row.key}'`, `  -H 'X-Timestamp: ${ts}'`, `  -H 'X-Signature: ${sig}'`, `  -d '${body}'`],
         signedString: `${ts}.POST./api/v1/launch.${body}`,
         curlNote: 'Signature valid 5 minutes. signedString is the exact input to HMAC-SHA256 with the key secret.' };
@@ -47,7 +58,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
     async credit(id, { playerId, amount }) {
       const row = (await boDb.prepare('SELECT * FROM api_keys WHERE id=? AND revoked_at IS NULL').get(id)); if (!row) throw new Error('unknown or revoked key');
       if (row.wallet_url) throw new Error('key uses a seamless wallet; fund the player in your own wallet');
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) throw new Error('amount 0-100000');
+      amount = depositAmount(amount);
+      if (amount === null) throw new Error('amount 0.01-100000 in whole cents');
       return db.transaction(async()=>{
       const p = (await playerFor({ ...row, scopes: JSON.parse(row.scopes) }, String(playerId), null));
       const nb = Math.round((p.balance + amount) * 100) / 100;
@@ -146,9 +158,10 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       if (pathname === '/api/v1/launch') { const e = need(k, 'launch'); if (e) return send(e.status, e);
         const { playerId, displayName, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         const presentedAs = normalizeDisplayName(displayName);
+        let target; try { target = await launchTarget(k); } catch (error) { if (error?.statusCode === 403) return send(403, { error: error.code }); throw error; }
         const p = (await playerFor(k, playerId, currency));
-        const tok = jwtSign({ sub: p.id, partner: k.id, partner_key_stamp: keyStamp(k), displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
-        return send(200, { url: `${publicUrl}${publicGamePath}?launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
+        const tok = jwtSign({ sub: p.id, partner: k.id, partner_key_stamp: keyStamp(k), ...target.claims, displayName: presentedAs, exp: Math.floor(Date.now() / 1000) + 6 * 3600, lang: language ?? 'en', returnUrl: returnUrl ?? null });
+        return send(200, { url: `${publicUrl}${publicGamePath}?${target.search}launch=${tok}`, expiresIn: 21600, playerRef: p.id }); }
       if (pathname === '/api/v1/table') {
         const e=need(k,'play');if(e)return send(e.status,e);
         const {playerId,requestId,...cmd}=input;
@@ -196,7 +209,8 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
           .all(k.id, ...[playerId, from, to].filter(Boolean), n)).map(r => ({ ...r, round: r.view ? JSON.parse(r.view) : null, view: undefined }));
         return send(200, { rounds: rows, count: rows.length }); }
       if (pathname === '/api/v1/demo-credit') { const e = need(k, 'wallet'); if (e) return send(e.status, e); if (k.wallet_url) return send(400, { error: 'not available with seamless wallet' });
-        const { playerId, amount } = input; if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) return send(400, { error: 'amount 0-100000' });
+        const { playerId } = input, amount = depositAmount(input.amount);
+        if (amount === null) return send(400, { error: 'amount 0.01-100000 in whole cents' });
         const value=await db.transaction(async()=>{const p = (await playerFor(k, playerId, input.currency)); const nb = Math.round((p.balance + amount) * 100) / 100; (await db.prepare('UPDATE players SET balance=? WHERE id=?').run(nb, p.id)); (await logTx(p.id, 'deposit', amount, p.currency, `partner-demo:${k.name}`)); return { playerId, balance: nb, currency: p.currency };});return send(200,value); }
       if (pathname === '/api/v1/balance') { const e = need(k, 'wallet'); if (e) return send(e.status, e);
         const { playerId } = input; const p = (await playerFor(k, playerId, input.currency)); return send(200, { playerId, balance: p.balance, currency: p.currency, note: k.wallet_url ? 'seamless wallet: partner is source of truth' : 'internal demo wallet' }); }

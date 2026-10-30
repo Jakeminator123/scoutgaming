@@ -87,14 +87,13 @@ test('the active UI helper enforces page authorization; API routes cannot use th
   const compiled = stripTypeScriptTypes(helperSource).replace(/from (['"])([^'"]+)\1/g, (_match, _quote, specifier) =>
     `from '${specifier.startsWith('.') ? new URL(specifier, new URL('../lib/ui-server.ts', import.meta.url)).href : pathToFileURL(require.resolve(specifier)).href}'`);
   const helper = await import('data:text/javascript;base64,' + Buffer.from(compiled).toString('base64'));
-  const previous = process.env.CROUPIER_LAB_REMOTE_UI;
-  process.env.CROUPIER_LAB_REMOTE_UI = '';
-  try {
-    await assert.doesNotReject(helper.authorizeUiPage(pageRequest({Origin: 'chrome-extension://fixture-extension'})));
-    await assert.rejects(helper.authorizeUiPage(pageRequest({'Sec-Fetch-Dest': 'iframe'})), status(403));
-    await assert.rejects(helper.studioUiInitialData(pageRequest({}, 'GET', 'https://external.example/openclaw')), status(403));
-    await assert.rejects(helper.studioUiInitialData(pageRequest({'Next-Action': 'forged-action'})), status(403));
-  } finally {if (previous === undefined) delete process.env.CROUPIER_LAB_REMOTE_UI; else process.env.CROUPIER_LAB_REMOTE_UI = previous;}
+  // Native Admin is fixed: the helper never falls back to the loopback page exception, and
+  // without the native configuration every page, also an otherwise valid local one, fails closed.
+  const unavailable = error => error?.statusCode === 503;
+  for (const request of [pageRequest({Origin: 'chrome-extension://fixture-extension'}), pageRequest({}), pageRequest({'Sec-Fetch-Dest': 'iframe'})])
+    await assert.rejects(helper.authorizeUiPage(request), unavailable);
+  await assert.rejects(helper.studioUiInitialData(pageRequest({}, 'GET', 'https://external.example/openclaw')), unavailable);
+  await assert.rejects(helper.studioUiInitialData(pageRequest({'Next-Action': 'forged-action'})), unavailable);
   const routes = await readdir(new URL('../app/api/', import.meta.url), { recursive: true, withFileTypes: true });
   for (const file of routes.filter(file => file.isFile() && file.name === 'route.ts')) {
     const source = await readFile(`${file.parentPath}/${file.name}`, 'utf8');

@@ -10,8 +10,9 @@ import {platformBackendHeaders} from '../packages/navigation/server/platform-rou
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
+import {withPackagePresentation,readPackagePresentation,publicPackageBranding,PARTNER_ASSIGNMENT_KEY} from '../packages/presentation/server/presentation-package.mjs';
 import {createPartnerBrandingApi as createApi} from '../apps/studio/lib/partner-branding-api.mjs';
+import {publishThroughDraft,withBrandingDrafts} from '../apps/studio/test/fixtures/branding-draft-store.mjs';
 import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
@@ -33,6 +34,34 @@ test('publication freezes lane data and only referenced assets; subsequent Studi
   project.lanes[0].layers.background.allowed=[];project.layerAssets[0].label='changed';
   assert.deepEqual(readPackagePresentation(pack),presentation);assert.equal(presentation.assets.length,2);
   assert.deepEqual(publicPackageBranding(pack.branding),{name:'North'});
+});
+test('Admins tilldelning följer med paketet men aldrig i den publika brandingen',()=>{
+  const {presentation}=fixture(),assignment={allow:{dealer:false,pause:true},limitPresets:['high'],languages:['sv']};
+  const branding=withPackagePresentation({name:'North',[PARTNER_ASSIGNMENT_KEY]:assignment},presentation);
+  assert.deepEqual(branding[PARTNER_ASSIGNMENT_KEY],assignment);
+  assert.deepEqual(publicPackageBranding(branding),{name:'North'});
+});
+// Dealern (roomOverrides) provas på PostgreSQL i apps/studio/test/partner-table-actions.test.mjs.
+test('Admins allow stänger bordsgrafik och bakgrund även i utseendets utkast för partnern, inte för Admin',async()=>{
+  const {pack,presentation}=fixture();presentation.lanes[0].composition=defaultCompositionSettings();
+  const choices={tableAsset:{table:presentation.assets[1].id,color:'#123456'},background:{background:presentation.assets[0].id}};
+  for(const [key,branding] of Object.entries(choices)){
+    const api=allow=>{
+      const current={...pack,branding:withPackagePresentation({...publicPackageBranding(pack.branding),[PARTNER_ASSIGNMENT_KEY]:{allow}},presentation)};
+      const store=withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async()=>{throw Error('no publication here');}});
+      return {store,api:createPartnerBrandingApi({store,readProject:async()=>{throw Error('not the mutable project');}})};
+    };
+    const command=(target,extra={})=>target.api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding,...extra});
+    // Utan Admins allow-flagga följer valet miljön och sparas.
+    const open=api({});await command(open);assert.equal((await open.store.getBrandingDraft('north')).revision,1,key);
+    // Med flaggan false nekas samma val, och inget utkast sparas.
+    const closed=api({[key]:false});
+    await assert.rejects(command(closed),error=>error.statusCode===422,key);
+    assert.equal(await closed.store.getBrandingDraft('north'),null,`${key}: inget sparat`);
+    // Admin (N1) påverkas inte av bolagets allow.
+    await command(closed,{audit:{actorId:'n1-admin',accessClass:'internal-admin',requestId:'00000000-0000-4000-8000-000000000001'}});
+    assert.equal((await closed.store.getBrandingDraft('north')).revision,1,`${key}: Admin`);
+  }
 });
 test('an incomplete three-layer Nora can be published and entered through her own compatible lane', async () => {
   const project = addDealer(fixture().project, 'nora', 'Nora'), lane = project.lanes[0];
@@ -66,10 +95,11 @@ test('corrupt, oversized or mismatched snapshots fail closed and cannot leak int
 });
 test('partner can choose only within the frozen lane and cannot replace the server-authored snapshot',async()=>{
   const {pack,presentation}=fixture();presentation.lanes[0].composition=defaultCompositionSettings();pack.branding=withPackagePresentation(publicPackageBranding(pack.branding),presentation);let current=pack;
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})},readProject:async()=>{throw Error('mutable project must not be read');}});
-  const view=await api.read({operatorId:'north'});assert.deepEqual(view.presentation,presentation);assert.equal(view.branding._scoutPresentation,undefined);
-  for(const branding of [{background:asset('background',3).id},{table:presentation.assets[0].id},{_scoutPresentation:{}},{lane:'unknown'},{color:'#ffffff'}])await assert.rejects(api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding}),error=>error.statusCode===422);
-  const result=await api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding:{table:presentation.assets[1].id,color:'#123456'}});
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})}),readProject:async()=>{throw Error('mutable project must not be read');}});
+  const view=await api.readState({operatorId:'north'});assert.deepEqual(view.presentation,presentation);assert.equal(view.branding._scoutPresentation,undefined);
+  for(const branding of [{background:asset('background',3).id},{table:presentation.assets[0].id},{_scoutPresentation:{}},{lane:'unknown'},{color:'#ffffff'}])
+    await assert.rejects(api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding}),error=>error.statusCode===422);
+  const result=await publishThroughDraft(api,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{table:presentation.assets[1].id,color:'#123456'}});
   assert.equal(result.packageRevision,2);assert.deepEqual(readPackagePresentation(current),presentation);
 });
 
@@ -79,12 +109,23 @@ test('switching or republishing a lane removes incompatible old design choices w
   second.layers.background={enabled:true,mode:'baked',default:null,allowed:[]};
   second.layers.table={enabled:true,default:null,allowed:[],colors:['#654321']};
   second.operatorAdjustable=['dealer'];
-  const expanded={...presentation,lanes:[...presentation.lanes,second]};
+  // The old lane has separate layers, so the company may clear its own choices there when it switches;
+  // the draft is checked per room, and a room may only change what its template lets the company change.
+  const first={...presentation.lanes[0],composition:defaultCompositionSettings()};
+  const expanded={...presentation,lanes:[first,second]};
+  // Baked variant: the old lane keeps its baked composition, so its room cannot drop the company's old
+  // choices and the same switch is refused before anything is drafted or published.
+  const baked={...presentation,lanes:[presentation.lanes[0],second]};let bakedWrites=0;
+  const bakedPack={...pack,tables:['room-main','room-vip'],lanes:baked.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},baked)};
+  const bakedApi=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>bakedPack,publishPackage:async()=>{bakedWrites++;return bakedPack;}}),readProject:async()=>{throw Error('not the mutable project');}});
+  await assert.rejects(publishThroughDraft(bakedApi,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{lane:'vip-table',dealer:'astrid'}}),error=>error.statusCode===422);
+  assert.equal(bakedWrites,0);
   let current={...pack,tables:['room-main','room-vip'],lanes:expanded.lanes.map(lane=>lane.id),branding:withPackagePresentation({name:'North',lane:'mobile-phone',background:presentation.assets[0].id,table:presentation.assets[1].id,color:'#123456'},expanded)};
-  const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})},readProject:async()=>{throw Error('not the mutable project');}});
-  await assert.rejects(api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding:{lane:'vip-table',background:presentation.assets[0].id}}),error=>error.statusCode===422);
-  const result=await api.write({operatorId:'north',actor:'actor',expectedRevision:1,branding:{lane:'vip-table',dealer:'astrid'}});
-  assert.deepEqual(result.branding,{name:'North',lane:'vip-table',dealer:'astrid'});
+  const api=createPartnerBrandingApi({store:withBrandingDrafts({getCurrentPackage:async()=>current,publishPackage:async value=>(current={...value,revision:current.revision+1})}),readProject:async()=>{throw Error('not the mutable project');}});
+  await assert.rejects(api.command({operatorId:'north',actor:'actor',action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding:{lane:'vip-table',background:presentation.assets[0].id}}),error=>error.statusCode===422);
+  const result=await publishThroughDraft(api,{operatorId:'north',actor:'actor',expectedPackageRevision:1,branding:{lane:'vip-table',dealer:'astrid'}});
+  assert.deepEqual(result.branding,{lane:'vip-table',dealer:'astrid'});
+  assert.deepEqual(publicPackageBranding(current.branding),{name:'North',lane:'vip-table',dealer:'astrid'});
   const published=withPackagePresentation({name:'North',lane:'gone',background:'unknown'},presentation);
   assert.deepEqual(publicPackageBranding(published),{name:'North'});
 });
@@ -108,7 +149,7 @@ test('published bytes revalidate without retransmission; withdrawn assets cannot
       blob:{pathname,url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,contentType:asset.contentType,size:bytes.length}};
   }})});
   const handle=createPublishedLayerAssets({packages:{resolve:async()=>{resolves++;return active?{operator:{id:'north'},package:pack}:null;}},
-    privateMedia:(record,request)=>{reads++;return store.getPrivateMedia(record,request,{env:{CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-only'}});}});
+    privateMedia:(record,request)=>{reads++;return store.getPrivateMedia(record,request,{env:{BLOB_READ_WRITE_TOKEN:'fixture-private-only'}});}});
   const url=`https://example.test/api/presentation/layers/north/${asset.id}`;
   const request=(headers={},method='GET')=>handle(new Request(url,{headers,method}));
   const first=await request();assert.equal(first.status,200);assert.deepEqual(Buffer.from(await first.arrayBuffer()),bytes);

@@ -2,8 +2,8 @@ import { ArrowRight } from "lucide-react";
 import { PLAY_URL } from "@/lib/lobby-data";
 
 const rows = [
-  { label: "Spelrum", value: "Spel och miljö i ett val", note: "Varje rum har en speltyp och en publicerad miljö." },
-  { label: "Dealers", value: "Utvalda av ditt spelbolag", note: "Du väljer bland de dealers som är tillåtna i rummet." },
+  { label: "Spelbord", value: "Spel och miljö i ett val", note: "Varje spelbord har en speltyp och en publicerad miljö." },
+  { label: "Dealers", value: "Utvalda av ditt spelbolag", note: "Du väljer bland de dealers som är tillåtna vid spelbordet." },
   { label: "Saldo", value: "Demokrediter, inga riktiga pengar", note: "Logga in för egen profil och historik." },
 ];
 
@@ -18,8 +18,8 @@ export function HowItWorksSection() {
               Tre steg. <span className="font-serif font-medium italic text-muted-foreground">Sedan sitter du.</span>
             </h2>
             <p className="mt-5 max-w-sm text-pretty leading-relaxed text-muted-foreground">
-              Välj bolag, sedan spelrum med dess miljö och till sist en tillåten dealer.
-              Spelknappen öppnar den befintliga spelvyn med ditt bolag, rum och dealer.
+              Välj bolag, sedan spelbord med dess miljö och till sist en tillåten dealer.
+              Spelknappen öppnar den befintliga spelvyn med ditt bolag, spelbord och dealer.
             </p>
             <a
               href={PLAY_URL}

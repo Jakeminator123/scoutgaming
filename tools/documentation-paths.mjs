@@ -5,8 +5,12 @@ const migrationReports = new Set([
   "migrering/status.json",
 ]);
 const guides = new Set([
+  ".cursor/rules/scoutgaming.mdc",
+  ".github/copilot-instructions.md",
+  ".windsurf/rules/scoutgaming.md",
   "AGENTS.md",
   "CLAUDE.md",
+  "GEMINI.md",
   "README.md",
   "START-HERE.md",
   "apps/studio/AGENTS.md",
@@ -26,13 +30,11 @@ const guides = new Set([
   "services/openclaw/lab/README.md",
   "tools/media/README.md"
 ]);
-// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, the cloud
-// runbooks directly in ops/cloud/, and dated history (Markdown, JSON receipts and plain-text notes)
-// under docs/history/; scripts or other files placed there stay strict.
+// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, and the cloud
+// runbooks directly in ops/cloud/; scripts or other files placed there stay strict.
 const proseFolders = [
   /^(?:docs|apps\/studio\/docs|migrering)\/.+\.md$/,
   /^ops\/cloud\/[^/]+\.md$/,
-  /^docs\/history\/.+\.(?:md|json|txt)$/,
 ];
 
 export function isDocumentationPath(path) {

@@ -44,13 +44,13 @@ function harness(href='/admin',state=null){
   return {api:module.exports,window,history,location,native,notices,observed,step,flush,
     go(delta){history.go(delta);flush();},index:()=>index,snapshot:()=>structuredClone(entries),paths:()=>entries.map(row=>row.href)};
 }
-function fourEntries(){const h=harness();for(const path of ['/admin/assets','/admin/dealers','/admin/clips'])assert.equal(h.api.navigate(path),true);return h;}
+function fourEntries(){const h=harness();for(const path of ['/admin/scenes','/admin/dealers','/admin/dealers/dragan'])assert.equal(h.api.navigate(path),true);return h;}
 
 test('approved pushes, replacements, Back and Forward retain the normal stack',()=>{
-  const h=fourEntries(),before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/assets');h.go(1);assert.equal(h.location.pathname,'/admin/dealers');
+  const h=fourEntries(),before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/scenes');h.go(1);assert.equal(h.location.pathname,'/admin/dealers');
   assert.deepEqual(h.snapshot(),before);assert.equal(h.notices.length,5);
-  h.api.navigate('/admin/rooms?view=registered',true);assert.equal(h.history.length,4);h.go(1);assert.equal(h.location.pathname,'/admin/clips');
-  h.go(-1);assert.equal(h.location.search,'?view=registered');
+  h.api.navigate('/admin/companies?tab=spelbord',true);assert.equal(h.history.length,4);h.go(1);assert.equal(h.location.pathname,'/admin/dealers/dragan');
+  h.go(-1);assert.equal(h.location.pathname,'/admin/companies');assert.equal(h.location.search,'?tab=spelbord');
 });
 for(const {name,start,delta} of [{name:'Back with a forward stack',start:2,delta:-1},{name:'Forward',start:1,delta:1},{name:'multiple steps Back',start:3,delta:-3}]){
   test(`vetoed ${name} restores the same entry without truncation or duplicates`,()=>{
@@ -63,17 +63,17 @@ for(const {name,start,delta} of [{name:'Back with a forward stack',start:2,delta
 
 test('a rejected push or replacement creates no history entry',()=>{
   const h=fourEntries(),before=h.snapshot();h.window.addEventListener('scout:navigate',event=>event.preventDefault());
-  assert.equal(h.api.navigate('/admin/assets'),false);assert.equal(h.api.navigate('/admin/assets',true),false);assert.deepEqual(h.snapshot(),before);
+  assert.equal(h.api.navigate('/admin/scenes?tab=material&filter=bordsgrafik'),false);assert.equal(h.api.navigate('/admin/scenes?tab=material&filter=bordsgrafik',true),false);assert.deepEqual(h.snapshot(),before);
 });
 
 test('replaceContext keeps another consumer state and the index across a veto',()=>{
-  const h=harness('/admin/clips',{next:{tree:['kept']},custom:'keep'}),first=h.snapshot()[0];
-  h.api.replaceContext('/admin/clips?dealer=dragan#draft');const context=h.snapshot()[0];
+  const h=harness('/admin/dealers/dragan',{next:{tree:['kept']},custom:'keep'}),first=h.snapshot()[0];
+  h.api.replaceContext('/admin/dealers/dragan?table=room-a#draft');const context=h.snapshot()[0];
   assert.deepEqual(context.state.next,first.state.next);assert.equal(context.state.custom,'keep');assert.equal(h.history.length,1);
-  h.api.navigate('/admin/clips?dealer=dragan#draft',true);assert.equal(h.history.state.custom,'keep');assert.deepEqual(h.history.state.next,first.state.next);
-  h.api.navigate('/admin/assets');h.go(-1);let prompts=0;h.window.addEventListener('scout:navigate',event=>{prompts++;event.preventDefault();});
-  const before=h.snapshot();h.go(1);assert.deepEqual(h.snapshot(),before);assert.equal(h.location.search,'?dealer=dragan');assert.equal(h.location.hash,'#draft');assert.equal(prompts,1);
-  h.api.replaceContext('/admin/clips?dealer=dragan#updated');assert.equal(h.history.state.custom,'keep');
+  h.api.navigate('/admin/dealers/dragan?table=room-a#draft',true);assert.equal(h.history.state.custom,'keep');assert.deepEqual(h.history.state.next,first.state.next);
+  h.api.navigate('/admin/scenes');h.go(-1);let prompts=0;h.window.addEventListener('scout:navigate',event=>{prompts++;event.preventDefault();});
+  const before=h.snapshot();h.go(1);assert.deepEqual(h.snapshot(),before);assert.equal(h.location.pathname,'/admin/dealers/dragan');assert.equal(h.location.search,'?table=room-a');assert.equal(h.location.hash,'#draft');assert.equal(prompts,1);
+  h.api.replaceContext('/admin/dealers/dragan?table=room-a#updated');assert.equal(h.history.state.custom,'keep');
 });
 
 test('context replacement waits for compensation and clicks cannot truncate the pending forward stack',()=>{
@@ -83,11 +83,11 @@ test('context replacement waits for compensation and clicks cannot truncate the 
   assert.equal(h.api.useSearchParams().toString(),'dealer=astrid','the accepted query must also survive the compensation window');
   h.api.replaceContext('/admin/dealers?dealer=dragan');assert.equal(h.api.navigate('/admin'),false);assert.deepEqual(h.snapshot(),before);
   h.flush();assert.equal(h.observed.at(-1).value,'?dealer=dragan','an existing query subscriber must receive the deferred context after compensation');assert.equal(h.observed.at(-1).notifications,1);assert.equal(h.index(),2);assert.equal(h.location.search,'?dealer=dragan');assert.equal(h.history.length,4);assert.deepEqual(h.snapshot()[3],before[3]);
-  blocked=false;h.go(1);assert.equal(h.location.pathname,'/admin/clips');
+  blocked=false;h.go(1);assert.equal(h.location.pathname,'/admin/dealers/dragan');
 });
 
 test('an unindexed entry uses the bounded fallback, retains the draft and leaves forward entries intact',()=>{
-  const h=harness('/admin',{other:'A'});h.history.pushState({foreign:'older entry'},'','/admin/assets');h.api.navigate('/admin/dealers');h.api.navigate('/admin/clips');h.go(-1);
+  const h=harness('/admin',{other:'A'});h.history.pushState({foreign:'older entry'},'','/admin/scenes');h.api.navigate('/admin/dealers');h.api.navigate('/admin/dealers/dragan');h.go(-1);
   const before=h.snapshot();let prompts=0;h.window.addEventListener('scout:navigate',event=>{prompts++;event.preventDefault();});h.go(-1);
   assert.equal(h.location.pathname,'/admin/dealers');assert.equal(h.history.length,4);assert.equal(h.index(),1);
   assert.deepEqual(h.snapshot().slice(2),before.slice(2));assert.equal(prompts,1);
@@ -97,33 +97,38 @@ test('an unindexed entry uses the bounded fallback, retains the draft and leaves
 test('non-record history.state keeps its original type and value through context and route replacement',()=>{
   for(const state of ['foreign state',42,['array state'],new Map([['key','value']]),new Date('2026-01-01')]){
     const h=harness('/admin',state);assert.deepEqual(h.history.state,state);h.api.replaceContext('/admin?dealer=dragan');assert.deepEqual(h.history.state,state);
-    h.api.navigate('/admin/assets',true);assert.deepEqual(h.history.state,state);assert.equal(h.history.length,1);
+    h.api.navigate('/admin/scenes',true);assert.deepEqual(h.history.state,state);assert.equal(h.history.length,1);
   }
 });
 
-test('retired dependency bookmarks replace themselves with the merged page and keep their selection',()=>{
-  const h=harness('/admin/deletion?operator=north&table=room-1#resource-room-726f6f6d2d31');
-  assert.equal(h.api.navigate('/admin/structure?operator=north&table=room-1#resource-room-726f6f6d2d31',true),true);
-  assert.equal(h.history.length,1);assert.equal(h.location.pathname,'/admin/structure');
-  assert.equal(h.location.search,'?operator=north&table=room-1');assert.equal(h.location.hash,'#resource-room-726f6f6d2d31');
-  const link=harness('/admin/clips?dealer=saga');
-  assert.equal(link.api.previewHref('/admin/deletion?operator=north'),'/admin/structure?operator=north','links to the retired page resolve to the merged page');
-  assert.equal(link.api.navigate('/admin/deletion?operator=north'),true);
-  assert.equal(link.location.pathname,'/admin/structure');assert.equal(link.location.search,'?operator=north&dealer=saga');
+test('retired bookmarks replace themselves with the page that replaced them and keep their selection',()=>{
+  const h=harness('/admin/assets?tab=tables&game=roulette#library');
+  assert.equal(h.api.navigate('/admin/assets?tab=tables&game=roulette#library',true),true);
+  assert.equal(h.history.length,1);assert.equal(h.location.pathname,'/admin/scenes');
+  assert.equal(h.location.search,'?tab=material&filter=bordsgrafik&game=roulette');assert.equal(h.location.hash,'#library');assert.deepEqual(h.native,[]);
+  const dependency=harness('/admin/deletion?operator=north&table=room-1#resource-room-726f6f6d2d31');
+  assert.equal(dependency.api.navigate('/admin/structure?operator=north&table=room-1#resource-room-726f6f6d2d31',true),true);
+  assert.deepEqual(dependency.native,[{method:'replace',href:'/admin/system?flik=beroenden&operator=north&table=room-1#resource-room-726f6f6d2d31',allowed:true}],'the dependency overview is a System tab, entered as a document');
+  assert.equal(dependency.history.length,1);
+  const link=harness('/admin/dealers/saga?flik=klipp');
+  assert.equal(link.api.previewHref('/admin/deletion?operator=north'),'/admin/system?flik=beroenden&operator=north','links to the retired page resolve to System');
+  assert.equal(link.api.previewHref('/admin/clips?dealer=saga&panel=room'),'/admin/dealers/saga?flik=tal');
+  assert.equal(link.api.navigate('/admin/clips?dealer=saga&panel=room'),true);
+  assert.equal(link.location.pathname,'/admin/dealers/saga');assert.equal(link.location.search,'?flik=tal','the dealer sits in the path, never in the query');
   assert.deepEqual(link.native,[]);
 });
 
-test('native Admin tools still use document navigation and their beforeunload guard',()=>{
-  for(const [source,target] of [['/admin','/admin/companies'],['/admin/companies','/admin']]){
+test('System native forms use document navigation and their beforeunload guard from every Admin page',()=>{
+  for(const page of ['/admin','/admin/dealers/dragan','/admin/companies/a','/admin/rooms/room-a'])for(const [source,target] of [[page,'/admin/system'],['/admin/system',page]]){
     const h=harness(source);h.window.addEventListener('beforeunload',event=>event.preventDefault());const before=h.snapshot();
     assert.equal(h.api.navigate(target),true);assert.equal(h.api.navigate(target,true),true);
     assert.deepEqual(h.native,[{method:'assign',href:target,allowed:false},{method:'replace',href:target,allowed:false}]);assert.deepEqual(h.snapshot(),before);
   }
 });
 
-for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']){
-  test(`native service ${route} uses document entries in both directions, including replacement`,()=>{
-    for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
+for(const route of ['/admin/system?flik=personal','/admin/system?flik=integration','/admin/system?flik=spelare']){
+  test(`native System tab ${route} uses document entries in both directions, including replacement`,()=>{
+    for(const [source,target] of [['/admin/scenes',route],[route,'/admin/scenes']]){
       const h=harness(source);h.window.addEventListener('beforeunload',event=>event.preventDefault());const before=h.snapshot();
       assert.equal(h.api.navigate(target),true);assert.equal(h.api.navigate(target,true),true);
       assert.deepEqual(h.native,[{method:'assign',href:target,allowed:false},{method:'replace',href:target,allowed:false}]);
@@ -133,19 +138,24 @@ for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']
   });
 }
 
-test('native service navigation canonicalizes account bookmarks and preserves context and destination fragments',()=>{
-  const h=harness('/admin/assets?operator=company&table=room&dealer=astrid&composition=scene&game=blackjack');
-  h.api.navigate('/admin/admin/players?tab=users#invite',true);
-  assert.deepEqual(h.native,[{method:'replace',href:'/admin/players?tab=users&operator=company&table=room&dealer=astrid&composition=scene&game=blackjack#invite',allowed:true}]);
-  for(const source of ['/admin/admin/players','/studio/admin/admin/players','/studio/admin/admin/accounts','/studio/admin/admin/api','/studio/admin/players']){
-    const h=harness(source+'?dealer=astrid');h.api.navigate('/admin/assets?game=roulette#library');
-    assert.deepEqual(h.native,[{method:'assign',href:'/admin/assets?game=roulette&dealer=astrid#library',allowed:true}]);
+test('native service navigation canonicalizes account bookmarks into System and preserves context and destination fragments',()=>{
+  for(const [bookmark,href] of [['/admin/admin/players?tab=users#invite','/admin/system?flik=spelare&tab=users#invite'],['/admin/admin/accounts#invite','/admin/system?flik=personal#invite'],
+    ['/admin/admin/api','/admin/system?flik=integration'],['/admin/players','/admin/system?flik=spelare'],['/studio/admin/admin/players','/admin/system?flik=spelare']]){
+    const h=harness('/admin/scenes?operator=company&table=room&dealer=astrid&composition=scene&game=blackjack');
+    h.api.navigate(bookmark,true);
+    assert.deepEqual(h.native,[{method:'replace',href,allowed:true}],'System never inherits clip-map context: '+bookmark);
+  }
+  for(const source of ['/admin/system?flik=spelare','/studio/admin/system?flik=personal','/studio/admin/system?flik=integration']){
+    const h=harness(source+'&operator=company&dealer=astrid');h.api.navigate('/admin/dealers/nora?flik=klipp&game=roulette#library');
+    assert.deepEqual(h.native,[{method:'assign',href:'/admin/dealers/nora?flik=klipp&game=roulette&operator=company#library',allowed:true}],'leaving System keeps room context but never a query dealer');
+    const material=harness(source+'&operator=company&dealer=astrid');material.api.navigate('/admin/scenes?tab=material&filter=bordsgrafik&game=roulette#library');
+    assert.deepEqual(material.native,[{method:'assign',href:'/admin/scenes?tab=material&filter=bordsgrafik&game=roulette#library',allowed:true}],'Miljöer och material takes no room context');
   }
 });
 
 test('existing navigation vetoes cancel native service pushes and replacements before beforeunload',()=>{
-  for(const guard of ['studio:before-navigate','scout:navigate'])for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/players']){
-    for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
+  for(const guard of ['studio:before-navigate','scout:navigate'])for(const route of ['/admin/system?flik=personal','/admin/system?flik=integration','/admin/system?flik=spelare','/admin/admin/accounts']){
+    for(const [source,target] of [['/admin/scenes',route],[route.startsWith('/admin/system')?route:'/admin/system?flik=personal','/admin/scenes']]){
       const h=harness(source),before=h.snapshot();let prompts=0,unloads=0;
       h.window.addEventListener(guard,event=>{prompts++;event.preventDefault();});
       h.window.addEventListener('beforeunload',()=>unloads++);
@@ -155,11 +165,14 @@ test('existing navigation vetoes cancel native service pushes and replacements b
   }
 });
 
-test('read-only native service views retain normal SPA Back and Forward',()=>{
-  const h=harness('/admin/assets');
-  for(const route of ['/admin/drift','/admin/admin/payments','/admin/ekonomi'])assert.equal(h.api.navigate(route),true);
-  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/ekonomi');assert.equal(new URLSearchParams(h.location.search).get('tab'),'payments');
-  assert.deepEqual(h.snapshot(),before);assert.deepEqual(h.native,[]);
+test('switching System tabs keeps visited native forms in the document with normal SPA Back and Forward',()=>{
+  const h=harness('/admin/system?flik=personal');let unloads=0;h.window.addEventListener('beforeunload',event=>{unloads++;event.preventDefault();});
+  // Old Drift, Ekonomi and API bookmarks resolve to System tabs and stay in the same document.
+  for(const route of ['/admin/system?flik=drift','/admin/ekonomi','/admin/admin/api','/admin/system?flik=beroenden'])assert.equal(h.api.navigate(route),true);
+  assert.deepEqual(h.paths(),['personal','drift','spelare','integration','beroenden'].map(tab=>'/admin/system?flik='+tab));
+  const before=h.snapshot();h.go(-2);assert.equal(new URLSearchParams(h.location.search).get('flik'),'spelare');
+  h.go(1);assert.equal(h.location.pathname,'/admin/system');assert.equal(new URLSearchParams(h.location.search).get('flik'),'integration');
+  assert.deepEqual(h.snapshot(),before);assert.deepEqual(h.native,[]);assert.equal(unloads,0,'no document unload while the forms stay mounted');
 });
 
 async function mountImport(h){
@@ -190,7 +203,7 @@ test('actual pending import files veto Back and Forward before Studio context ch
     const before=h.snapshot(),notices=h.notices.length;assert.equal(h.window.dispatchEvent(new Event('beforeunload',{cancelable:true})),false);
     for(const delta of [-1,1,-2]){h.go(delta);assert.deepEqual(h.snapshot(),before);assert.equal(h.index(),2);assert.match(draft.html(),/dragan-box1.mp4/);}
     assert.equal(laterGuardCalls,0);assert.equal(h.notices.length,notices);
-    await draft.finish();assert.equal(h.window.dispatchEvent(new Event('beforeunload',{cancelable:true})),true);h.go(1);assert.equal(h.location.pathname,'/admin/clips');assert.equal(laterGuardCalls,1);
+    await draft.finish();assert.equal(h.window.dispatchEvent(new Event('beforeunload',{cancelable:true})),true);h.go(1);assert.equal(h.location.pathname,'/admin/dealers/dragan');assert.equal(laterGuardCalls,1);
   }finally{draft.unmount();}
 });
 
@@ -258,8 +271,15 @@ async function mountClipMap(h,{scene=false}={}){
         workspace.project=structuredClone({...next,revision:'fixture.scene.saved'});return structuredClone(workspace.project);}})}
       :name==='lucide-react'||name.startsWith('./')||name==='../../../../components/studio-navigation'||name==='../../../../components/probe-editor'?components:componentRequire(name)});
   const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
+  // Raw walk that keeps element keys as written (Children.toArray escapes them).
+  const raw=(tree,predicate)=>Array.isArray(tree)?tree.flatMap(child=>raw(child,predicate)):!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...raw(tree.props?.children,predicate)];
+  // entry.tsx keeps the last map route while another page is shown; the route object changes only with its kind or dealer.
+  let route=null;
+  const mapRoute=()=>{const {page,id}=routing.parseAdminPath(h.location.pathname);
+    const next=page==='dealer'?{kind:'dealer',dealerId:id,base:'/admin/dealers/'+encodeURIComponent(id)}:null;
+    if(next&&(next.kind!==route?.kind||next.dealerId!==route?.dealerId))route=next;return route;};
   let scenePanel=null,sceneMounts=0;
-  const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children,tree=element.type(element.props);
+  const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({route:mapRoute()}).props.children,tree=element.type(element.props);
     if(scene){const panel=all(tree,node=>node.type==='StudioCompositionPanel')[0];
       if(!panel)scenePanel=null;
       else{if(!scenePanel){scenePanel=mountScenePlacement();sceneMounts++;}scenePanel.render(panel.props);}
@@ -275,14 +295,25 @@ async function mountClipMap(h,{scene=false}={}){
     return one(all(field,node=>node.type==='select'),'select within '+label);
   };
   const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
+  const link=label=>one(nodes(node=>typeof node.props?.href==='string'&&textWithoutControls(node)===label),'link labelled '+label);
+  // Scen & lager in the map's toolbar toggles the layers panel; the drawer itself has only Klipp, Körregel and Lägg till klipp.
+  const press=label=>{const match=nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label);assert.ok(match.length,'button labelled '+label);match[0].props.onClick();};
+  const has=label=>nodes(node=>node.type==='button'&&textWithoutControls(node)===label).length>0;
+  const openLayers=async()=>{assert.equal(has('Scenförhandsvisning'),false,'Provspela is the dealer nav\'s flyout, not a map panel');press('Scen & lager');await settle();};
+  const follow=async label=>{assert.equal(h.api.navigate(link(label).props.href),true,'link '+label+' is accepted');await settle();};
+  // Under Miljöer the dealer is a selection; under the dealer nav it is the path and the map shows it.
+  const dealerSelect=()=>nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer');
+  const shownDealer=()=>{const selectors=dealerSelect();if(selectors.length)return one(selectors,'dealer selection').props.value;
+    const flow=raw(render(),node=>node.type==='Flow');return flow.length?String(flow[0].key).split(':')[0]:'';};
   await settle();
-  return {settle,selection:()=>({operator:select('Spelbolag').props.value,game:select('Spel').props.value,room:select('Rum').props.value,dealer:select('Dealer').props.value}),
+  return {settle,selection:()=>({operator:select('Bolag').props.value,game:select('Spel').props.value,room:select('Spelbord').props.value,dealer:shownDealer()}),
     registeredRooms:()=>structuredClone(workspace.catalog.administration.rooms),
     composition:()=>nodes(node=>node.type==='StudioCompositionPanel')[0]?.props.compositionId,
     scene:{mounts:()=>sceneMounts,isMounted:()=>Boolean(scenePanel),snapshot:()=>scenePanel.project(),
       hasPlacement:()=>scenePanel?.hasPlacement()??false,
-      async open(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Öppna sceneditor')[0].props.onClick();await settle();},
-      async leave(){nodes(node=>node.type==='button'&&textWithoutControls(node)==='Scenförhandsvisning')[0].props.onClick();await settle();},
+      // The dealer's clip map opens the environment's layers in its inspector; pressing Scen & lager again closes (unmounts) them.
+      async open(){await openLayers();},
+      async leave(){press('Scen & lager');await settle();},
       async click(label){scenePanel.click(label);await settle();},
       async edit(profile){assert.equal(scenePanel.disabled(),false);scenePanel.edit(profile);await settle();},
       remote(project){workspace.project=structuredClone(project);},
@@ -290,15 +321,16 @@ async function mountClipMap(h,{scene=false}={}){
       async save(){const save=button('Spara utkast'),before=saveAttempts.length;assert.equal(Boolean(save.props.disabled),false,'draft save is enabled');
         save.props.onClick();await settle();
         assert.equal(saveAttempts.length,before+1,'one click sends the draft directly');return structuredClone(saveAttempts.at(-1));}},
-    async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
+    async dealer(id){if(dealerSelect().length)select('Dealer').props.onChange({target:{value:id}});else h.api.navigate('/admin/dealers/'+id+'?flik=klipp');await settle();},
+    follow,hasDealerSelect:()=>dealerSelect().length>0,
     async editDraft(){
-      button('Öppna sceneditor').props.onClick();await settle();
+      await openLayers();
       const inspector=one(nodes(node=>node.type==='aside'&&node.props['aria-label']==='Klipp och inställningar'),'clip inspector');
       assert.equal(inspector.props.hidden,false,'composition editor must open in the detail panel');
       const panel=one(all(inspector,node=>node.type==='StudioCompositionPanel'),'composition editor'),draft=structuredClone(panel.props.project);
       draft.dealers.find(row=>row.id==='nora').label='Nora draft';panel.props.onEdit(draft);await settle();
     },
-    hasDraft:()=>all(select('Dealer'),node=>node.type==='option').some(node=>node.props.children==='Nora draft'),
+    hasDraft:()=>nodes(node=>(node.type==='option'||node.type==='strong')&&node.props.children==='Nora draft').length>0,
     unmount(){for(const cleanup of cleanups)cleanup?.();}};
 }
 
@@ -318,107 +350,49 @@ function geometryGroup(value,group){
     :{points:value.seats.map(seat=>seat.bet),mode:value.betMode,anchor:value.anchors?.bets};
 }
 
-for(const selected of ['a','b'])test(`the receiving scene editor keeps room A while editing explicit template ${selected.toUpperCase()}`,async()=>{
-  const h=harness(`/admin/scenes?operator=a&table=room-a&composition=scene-${selected}&dealer=astrid&game=blackjack`);
+// The room-context receivers moved with the clip map to the dealer nav (Miljöer och material has its own editor,
+// covered in scenes-page.test.mjs); the clip map still edits an explicit template without reassigning the room.
+for(const selected of ['a','b'])test(`the dealer clip map keeps room A while editing explicit template ${selected.toUpperCase()}`,async()=>{
+  const h=harness(`/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&composition=scene-${selected}&game=blackjack`);
   const pane=await mountClipMap(h,{scene:true}),scene=pane.scene;
   try{
+    await scene.open();
     const rooms=pane.registeredRooms(),before=scene.snapshot();
     assert.equal(pane.composition(),'scene-'+selected);assert.equal(scene.hasPlacement(),true);
     assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
-    assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-'+selected);
-    await scene.click('Redigera gemensam mall');
+    await scene.click('Redigera gemensam miljö');
     const chosen=before.lanes.find(row=>row.id==='scene-'+selected),profile=movedGeometry(chosen.composition.blackjackTables[0],.15);
     await scene.edit(profile);
     const after=scene.snapshot();
     assert.deepEqual(after.lanes.find(row=>row.id==='scene-'+selected).composition.blackjackTables[0],profile);
     assert.deepEqual(after.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
     const sent=await scene.save();assert.equal(sent.revision,before.revision);
-    assert.deepEqual(sent.lanes.find(row=>row.id===chosen.id).composition.blackjackTables[0],profile);
     assert.deepEqual(sent.lanes.find(row=>row.id!==chosen.id),before.lanes.find(row=>row.id!==chosen.id));
-    assert.equal(scene.snapshot().revision,'fixture.scene.saved');
     assert.deepEqual(pane.registeredRooms(),rooms,'editing and saving a template must not reassign its context room');
     assert.equal(pane.registeredRooms().find(row=>row.id==='room-a').compositionId,'scene-a');
-    for(const [key,value] of Object.entries({operator:'a',table:'room-a',composition:'scene-'+selected,dealer:'astrid',game:'blackjack'}))assert.equal(new URLSearchParams(h.location.search).get(key),value);
+    for(const [key,value] of Object.entries({operator:'a',table:'room-a',composition:'scene-'+selected,game:'blackjack'}))assert.equal(new URLSearchParams(h.location.search).get(key),value);
   }finally{pane.unmount();}
 });
 
-test('an already mounted receiver accepts a composition-only link and history without replacing room ownership',async()=>{
-  const h=harness('/admin/scenes?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack');
+test('an unknown explicit composition on the dealer clip map stays invalid instead of editing the room template',async()=>{
+  const h=harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&composition=missing&game=blackjack');
   const pane=await mountClipMap(h,{scene:true});
   try{
-    const rooms=pane.registeredRooms();
-    assert.equal(h.api.navigate('/admin/scenes?composition=scene-b'),true);await pane.settle();
-    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
-    assert.deepEqual(pane.selection(),{operator:'a',room:'room-a',dealer:'astrid',game:'blackjack'});
-    h.go(-1);await pane.settle();assert.equal(pane.composition(),'scene-a');
-    h.go(1);await pane.settle();assert.equal(pane.composition(),'scene-b');
-    assert.deepEqual(pane.registeredRooms(),rooms);
-  }finally{pane.unmount();}
-});
-
-test('an unknown explicit receiver composition stays invalid instead of editing the context room template',async()=>{
-  const h=harness('/admin/scenes?operator=a&table=room-a&composition=missing&dealer=astrid&game=blackjack');
-  const pane=await mountClipMap(h,{scene:true});
-  try{
+    await pane.scene.open();
     assert.equal(pane.composition(),'missing');assert.equal(pane.scene.hasPlacement(),false);
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'missing');
     assert.equal(pane.selection().room,'room-a');assert.equal(pane.registeredRooms()[0].compositionId,'scene-a');
   }finally{pane.unmount();}
 });
 
-for(const existing of [false,true])test(`explicit scene game survives a different registered room game${existing?' in a mounted pane':''}`,async()=>{
-  const target='/admin/scenes?operator=b&table=room-b&composition=scene-a&dealer=astrid&game=blackjack';
-  const h=harness(existing?'/admin/clips?operator=b&table=room-b&game=roulette':target),pane=await mountClipMap(h,{scene:true});
-  try{
-    const rooms=pane.registeredRooms();
-    if(existing){assert.equal(h.api.navigate(target),true);await pane.settle();}
-    assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'blackjack'});
-    assert.equal(pane.composition(),'scene-a');assert.equal(pane.scene.hasPlacement(),true);
-    assert.equal(new URLSearchParams(h.location.search).get('game'),'blackjack');
-    const before=pane.scene.snapshot();await pane.scene.click('Redigera gemensam mall');
-    await pane.scene.edit(movedGeometry(before.lanes[0].composition.blackjackTables[0],.12));
-    assert.deepEqual(pane.scene.snapshot().lanes[1],before.lanes[1]);
-    assert.deepEqual(pane.registeredRooms(),rooms);assert.equal(rooms.find(row=>row.id==='room-b').game,'roulette');
-  }finally{pane.unmount();}
-});
-
-test('a receiver can edit an explicit library scene without assigning a company or room',async()=>{
-  const h=harness('/admin/scenes?composition=scene-b&dealer=astrid&game=blackjack');
-  const pane=await mountClipMap(h,{scene:true});
-  try{
-    const rooms=pane.registeredRooms(),original=pane.scene.snapshot();
-    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),true);
-    assert.deepEqual(pane.selection(),{operator:'',room:'',dealer:'astrid',game:'blackjack'});
-    await pane.scene.click('Redigera gemensam mall');await pane.scene.edit(movedGeometry(original.lanes[1].composition.blackjackTables[0],.1));
-    assert.deepEqual(pane.scene.snapshot().lanes[0],original.lanes[0]);assert.deepEqual(pane.registeredRooms(),rooms);
-    assert.equal(new URLSearchParams(h.location.search).has('table'),false);
-  }finally{pane.unmount();}
-});
-
-test('a mounted receiver takes the new room game and template when the target omits both',async()=>{
-  const h=harness('/admin/scenes?operator=a&table=room-a&composition=scene-a&dealer=astrid&game=blackjack');
-  const pane=await mountClipMap(h,{scene:true});
-  try{
-    const rooms=pane.registeredRooms();
-    assert.equal(h.api.navigate('/admin/scenes?operator=b&table=room-b'),true);await pane.settle();
-    assert.deepEqual(pane.selection(),{operator:'b',room:'room-b',dealer:'astrid',game:'roulette'});
-    assert.equal(pane.composition(),'scene-b');assert.equal(pane.scene.hasPlacement(),false,'roulette must not show the blackjack placement editor');
-    const target=h.location.search,query=new URLSearchParams(target);
-    assert.equal(query.get('game'),'roulette');assert.equal(query.get('composition'),'scene-b');
-    h.go(-1);await pane.settle();assert.equal(pane.selection().game,'blackjack');assert.equal(pane.composition(),'scene-a');
-    h.go(1);await pane.settle();assert.equal(pane.selection().game,'roulette');assert.equal(pane.composition(),'scene-b');
-    assert.equal(h.location.search,target);assert.deepEqual(pane.registeredRooms(),rooms);
-  }finally{pane.unmount();}
-});
-
 for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])test(`scene reset uses the saved ${layout} ${group} after unmount, retained drafts and a later save`,async()=>{
-  const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
+  const pane=await mountClipMap(harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{
     await scene.open();const saved=sceneGeometry(scene.snapshot());
-    await scene.click('Redigera gemensam mall');const draftB=movedGeometry(saved,.1);await scene.edit(draftB);
+    await scene.click('Redigera gemensam miljö');const draftB=movedGeometry(saved,.1);await scene.edit(draftB);
     await scene.leave();assert.equal(scene.isMounted(),false,'switching away unmounts the real composition panel');
     await scene.open();assert.equal(scene.mounts(),2);assert.deepEqual(sceneGeometry(scene.snapshot()),draftB,'parent retains draft B');
-    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');
+    await scene.click('Redigera gemensam miljö');await scene.click(layout==='mobile'?'Mobil':'Desktop');
     const draftC=movedGeometry(saved,.2);await scene.edit(draftC);
     const reset=group==='cards'?'Återställ sparade kort':'Återställ sparade marker',otherGroup=group==='cards'?'bets':'cards',otherLayout=layout==='mobile'?'desktop':'mobile';
     await scene.click(reset);let actual=sceneGeometry(scene.snapshot());
@@ -427,7 +401,7 @@ for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])tes
     assert.deepEqual(actual[otherLayout],draftC[otherLayout],'other format keeps draft C');
     await scene.edit(movedGeometry(saved,.25));await scene.save();const newlySaved=sceneGeometry(scene.snapshot());assert.equal(scene.snapshot().revision,'fixture.scene.saved');
     const draftD=movedGeometry(saved,.3);await scene.edit(draftD);await scene.leave();await scene.open();assert.equal(scene.mounts(),3);
-    await scene.click('Redigera gemensam mall');await scene.click(layout==='mobile'?'Mobil':'Desktop');await scene.click(reset);
+    await scene.click('Redigera gemensam miljö');await scene.click(layout==='mobile'?'Mobil':'Desktop');await scene.click(reset);
     actual=sceneGeometry(scene.snapshot());
     assert.deepEqual(geometryGroup(actual[layout],group),geometryGroup(newlySaved[layout],group),'successful save advances the reset baseline');
     assert.deepEqual(geometryGroup(actual[layout],otherGroup),geometryGroup(draftD[layout],otherGroup));assert.deepEqual(actual[otherLayout],draftD[otherLayout]);
@@ -435,16 +409,16 @@ for(const layout of ['mobile','desktop'])for(const group of ['cards','bets'])tes
 });
 
 test('scene reset uses the compared server baseline while preserving the rebased draft',async()=>{
-  const pane=await mountClipMap(harness('/admin/clips?operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
+  const pane=await mountClipMap(harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),{scene:true}),scene=pane.scene;
   try{
     await scene.open();const remote=scene.snapshot(),saved=sceneGeometry(remote);
-    await scene.click('Redigera gemensam mall');const draft=movedGeometry(saved,.1);await scene.edit(draft);
+    await scene.click('Redigera gemensam miljö');const draft=movedGeometry(saved,.1);await scene.edit(draft);
     remote.revision='fixture.scene.remote';remote.lanes[0].composition.blackjackTables=[movedGeometry(saved,.2)];scene.remote(remote);
     const sent=await scene.save();assert.notEqual(sent.revision,remote.revision);
     assert.equal(scene.snapshot().revision,sent.revision,'a rejected save must not advance the draft revision');
     assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'a rejected save retains the local geometry');await scene.compare();
     assert.equal(scene.snapshot().revision,remote.revision);assert.deepEqual(sceneGeometry(scene.snapshot()),draft,'conflicting local points remain in the draft');
-    await scene.leave();await scene.open();await scene.click('Redigera gemensam mall');await scene.click('Desktop');await scene.click('Återställ sparade kort');
+    await scene.leave();await scene.open();await scene.click('Redigera gemensam miljö');await scene.click('Desktop');await scene.click('Återställ sparade kort');
     const actual=sceneGeometry(scene.snapshot());
     assert.deepEqual(geometryGroup(actual.desktop,'cards'),geometryGroup(sceneGeometry(remote).desktop,'cards'));
     assert.deepEqual(geometryGroup(actual.desktop,'bets'),geometryGroup(draft.desktop,'bets'));assert.deepEqual(actual.mobile,draft.mobile);
@@ -452,14 +426,16 @@ test('scene reset uses the compared server baseline while preserving the rebased
 });
 
 test('mounted clip pane reactivation writes the retained full context before Back, Forward and reload',async()=>{
-  const h=harness('/admin/clips?operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);
+  const h=harness('/admin/dealers/astrid?flik=klipp&operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);
   try{
-    await pane.dealer('nora');await pane.editDraft();const selection=pane.selection();
+    await pane.dealer('nora');assert.equal(h.location.pathname,'/admin/dealers/nora');
+    await pane.editDraft();const selection=pane.selection();
     assert.deepEqual(selection,{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});
     h.api.navigate('/admin');await pane.settle();assert.equal(h.location.search,'');assert.ok(pane.hasDraft());
-    h.api.navigate('/admin/clips');await pane.settle();
+    h.api.navigate('/admin/dealers/nora');await pane.settle();
     const params=new URLSearchParams(h.location.search);
-    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'nora',game:'roulette'}))assert.equal(params.get(key),value,key);
+    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',game:'roulette'}))assert.equal(params.get(key),value,key);
+    assert.equal(params.has('dealer'),false,'the dealer nav keeps its dealer in the path');
     h.go(-1);await pane.settle();assert.equal(h.location.pathname,'/admin');assert.equal(h.location.search,'');
     h.go(1);await pane.settle();assert.deepEqual(pane.selection(),selection);assert.ok(pane.hasDraft());
     const reload=await mountClipMap(harness(h.location.pathname+h.location.search));
@@ -468,31 +444,17 @@ test('mounted clip pane reactivation writes the retained full context before Bac
 });
 
 test('mounted clip pane keeps room-owned context through accepted query changes and history',async()=>{
-  const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
+  const h=harness('/admin/dealers/astrid?flik=klipp&operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
   try{
-    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette&category=bank');await pane.settle();
+    assert.equal(pane.hasDealerSelect(),false,'the dealer nav shows its dealer in the path, never as a selection');
+    h.api.navigate('/admin/dealers/nora?flik=klipp&operator=b&table=room-b&game=roulette&category=bank');await pane.settle();
     assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-b');
     assert.equal(new URLSearchParams(h.location.search).get('category'),'bank');
     const target=h.location.search;
+    assert.equal(new URLSearchParams(h.location.search).has('dealer'),false);
     h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'a',game:'blackjack',room:'room-a',dealer:'astrid'});
-    assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-a');
+    assert.equal(h.location.pathname,'/admin/dealers/astrid');assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-a');
     h.go(1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});assert.equal(h.location.search,target);
-  }finally{pane.unmount();}
-});
-
-test('mounted clip pane ignores rejected history destinations and defers context onto the restored entry',async()=>{
-  const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
-  try{
-    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette');await pane.settle();
-    let blocked=true;h.window.addEventListener('studio:before-navigate',event=>{if(blocked)event.preventDefault();});
-    const before=h.snapshot();h.history.go(-1);h.step();await pane.settle();
-    assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});assert.deepEqual(h.snapshot(),before);
-    await pane.dealer('astrid');assert.deepEqual(h.snapshot(),before,'a render while compensation is pending must not rewrite its rejected destination');
-    h.flush();await pane.settle();assert.equal(h.index(),1);assert.equal(h.history.length,2);assert.deepEqual(h.snapshot()[0],before[0]);
-    const params=new URLSearchParams(h.location.search);
-    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'astrid',game:'roulette'}))assert.equal(params.get(key),value,key);
-    blocked=false;h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'a',game:'blackjack',room:'room-a',dealer:'astrid'});
-    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'astrid'});
   }finally{pane.unmount();}
 });

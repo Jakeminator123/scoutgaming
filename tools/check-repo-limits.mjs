@@ -11,7 +11,7 @@
 // 2. Ingen ny binär under media/ (bilder, video, ljud och annat Git klassar som binärt).
 //    Befintliga filer får ligga kvar, flyttas eller krympa men inte växa.
 // 3. Levande dokument: docs/NEXT-AGENT.md högst 150 rader, och ingen fil under docs/
-//    utanför docs/history/ över 100 kB (102 400 byte).
+//    över 100 kB (102 400 byte). Det finns ingen historikmapp; äldre text läses ur Git.
 //
 // Lägen (alla läser Git-objekt, inte filsystemet):
 //   node tools/check-repo-limits.mjs                     hela HEAD-trädet (git ls-tree -r -l)
@@ -96,11 +96,11 @@ export function checkRepoLimits({ files, allowlist, complete = false }) {
       else if (Number.isSafeInteger(file.baseBytes) && file.bytes > file.baseBytes) errors.push(`${file.path}: binären under media/ växer från ${file.baseBytes} till ${file.bytes} byte. `
         + 'Lägg den nya versionen i Blob via Admin; Git lagrar inte media.');
     }
-    if (file.path.startsWith('docs/') && !file.path.startsWith('docs/history/') && file.bytes > MAX_DOC_BYTES) {
-      errors.push(`${file.path}: ${kb(file.bytes)}, över taket 100 kB för levande dokument. Flytta äldre avsnitt till docs/history/ eller radera dem.`);
+    if (file.path.startsWith('docs/') && file.bytes > MAX_DOC_BYTES) {
+      errors.push(`${file.path}: ${kb(file.bytes)}, över taket 100 kB för levande dokument. Radera äldre avsnitt; Git har dem (docs/HISTORIK.md).`);
     }
     if (file.path === NEXT_AGENT && Number.isInteger(file.lines) && file.lines > MAX_NEXT_AGENT_LINES) {
-      errors.push(`${NEXT_AGENT}: ${file.lines} rader, över taket ${MAX_NEXT_AGENT_LINES}. Flytta äldre avsnitt till docs/history/ eller radera avklarat.`);
+      errors.push(`${NEXT_AGENT}: ${file.lines} rader, över taket ${MAX_NEXT_AGENT_LINES}. Radera avklarat; Git har det (docs/HISTORIK.md).`);
     }
   }
   if (complete) for (const path of entries.keys()) if (!seen.has(path)) errors.push(`${path}: finns inte i trädet; ta bort posten ur ${ALLOWLIST}`);

@@ -7,7 +7,7 @@ export type PartnerAppearanceInitial = {
  draft?:AppearanceDraft|null;draftRevision?:number;history?:readonly {revision:number;publishedAt?:number|string;branding:Readonly<Record<string,unknown>>}[];
  rooms?:readonly {id:string;label:string;presentationLaneId:string;game?:'blackjack'|'roulette'}[];
 };
-export type AppearanceReview = {reviewToken:string;draftRevision:number;packageRevision:number;branding:EditableBranding;changes:{roomId:string|null;key:string;before:string|null;after:string|null}[];affectedRooms:string[]};
+export type AppearanceReview = {reviewToken:string;draftRevision:number;packageRevision:number;branding:EditableBranding;changes:{roomId:string|null;key:string;before:string|null;after:string|null}[];affectedRooms:string[];hiddenTableChanges?:number;tablesHidden?:boolean};
 export function appearanceBranding(value:unknown):EditableBranding;
 export function sameAppearance(left:unknown,right:unknown):boolean;
 export function appearanceDraftRevision(state:PartnerAppearanceInitial):number;
@@ -18,3 +18,4 @@ export function changeAppearance(value:EditableBranding,change:{roomId?:string|n
 export function resetAppearanceRoom(value:EditableBranding,roomId:string):EditableBranding;
 export type AppearanceRoomLive = Record<'background'|'dealer'|'table',string|null>;
 export function appearanceRoomStatus(state:PartnerAppearanceInitial,roomId:string):{roomId:string;laneId:string;packageRevision:number;draftRevision:number;draft:boolean;live:AppearanceRoomLive}|null;
+export function appearanceChangeCount(left:unknown,right:unknown):number;

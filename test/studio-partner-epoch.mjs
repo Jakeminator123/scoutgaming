@@ -9,7 +9,10 @@ import { createPgliteStore } from './fixtures/pglite-pool.mjs';
 const stamp = secret => createHash('sha256').update(secret).digest('hex');
 // Real PostgreSQL (PGlite) with the product schema, wired as server.mjs wires Postgres:
 // game rows in croupier_game (db), API keys in croupier_auth (boDb), one pool.
-async function fixture(t, { legacy = false } = {}) {
+// Without `legacy` the option is omitted, exactly as server.mjs calls playerAuth and
+// installPartnerApi, so the strict tests below run on the modules' own defaults.
+async function fixture(t, { legacy } = {}) {
+  const legacyOption = legacy === undefined ? {} : { allowLegacyPartnerSessions: legacy };
   const store = await createPgliteStore(); t.after(() => store.close());
   let beforeTransaction;
   // The hook runs where a queued caller would wait: before its outermost transaction opens.
@@ -20,8 +23,8 @@ async function fixture(t, { legacy = false } = {}) {
   const claims = [];
   const partner = installPartnerApi({ db, boDb, getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
     logTx: async () => {}, jwtSign: value => { claims.push(value); return 'fixture-token'; }, publicUrl: 'https://game.example.invalid',
-    publicGamePath: '/game', root: '', allowLegacyPartnerSessions: legacy });
-  const authOptions = { allowLegacyPartnerSessions: legacy, partnerAuthority: id => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(id) };
+    publicGamePath: '/game', root: '', ...legacyOption });
+  const authOptions = { ...legacyOption, partnerAuthority: id => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(id) };
   const auth = playerAuth(db, () => { throw Error('No real account creation'); }, null, authOptions);
   const request = cookie => ({ headers: { cookie }, socket: {} });
   async function signed(key, path, body = { playerId: 'fixture-player' }) {
@@ -67,7 +70,7 @@ test('rotation invalidates issued sessions and saved launch URLs; a fresh creden
   await assert.rejects(restarted.fromPartner(f.request(''), fresh), /unavailable/);
 });
 
-test('strict cutover rejects legacy launch claims and persisted legacy partner sessions', async t => {
+test('by default (as server.mjs wires it) legacy launch claims and persisted unstamped partner sessions are refused', async t => {
   const f = await fixture(t), key = await f.partner.keys.create({ name: 'fixture', scopes: ['launch'] });
   await f.partner.keys.mintLaunch(key.id, { playerId: 'fixture-player' });
   const { partner_key_stamp, ...legacyClaims } = f.claims.at(-1);
@@ -108,7 +111,7 @@ test('queued partner credits recheck the authenticated credential inside the gam
   assert.equal((await f.db.prepare('SELECT balance FROM players WHERE id=?').get(player)).balance, 0);
 });
 
-test('native partner events reject old stamps and legacy provenance after cutover', async t => {
+test('by default native partner events reject old stamps and unstamped legacy provenance', async t => {
   const f = await fixture(t), key = await f.partner.keys.create({ name: 'fixture', scopes: ['launch','events'] });
   await f.partner.keys.mintLaunch(key.id, { playerId: 'fixture-player' }); const claims = f.claims.at(-1);
   const observation = { playerId: claims.sub, previousView: { round: null }, view: { round: null },

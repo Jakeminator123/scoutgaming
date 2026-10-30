@@ -5,9 +5,10 @@ export interface NativeStudioConfiguration {
   connectionString: string; allowedOrigins: string[]; publicHosts: string[];
   apiBase: '/studio/api/admin' | '/api/admin'; authBase: '/studio/api/auth' | '/api/auth';
 }
-export function nativeStudioAdminEnabled(env?: Record<string,string | undefined>): boolean;
+export function nativeStudioAdminEnabled(): true;
 export function nativeStudioAdminConfiguration(env?: Record<string,string | undefined>): NativeStudioConfiguration | null;
 export function assertNativeStudioRequest(request: Request, config: NativeStudioConfiguration | null): void;
+export function withMovingSpeechDealers<T extends object>(readCatalog: () => Promise<T>, env: Record<string,string | undefined>): () => Promise<T & {movingSpeech:{dealerIds:string[]}}>;
 export function readAssistantDatabaseInventory(pool: {query(sql: string): Promise<{rows: {table_schema:string;table_name:string}[]}>}): ReturnType<NativeStudioRuntime['assistantDatabaseInventory']>;
 export interface NativeStudioRuntime {
   /** Server-only derived signer; never include in a client payload. */
@@ -19,6 +20,8 @@ export interface NativeStudioRuntime {
   repository: any; gamePolicy: any;
   replyRepository: any;
   readDesignCatalog(): Promise<unknown>;
+  /** Dealers with a moving bank here (movingDriftDealerIds); the project save refuses a new motion reference for others. */
+  movingSpeechDealers(): string[];
   assistantDatabaseInventory(): Promise<{source:string;partial:boolean;tables:{schema:string;name:string}[]}>;
   mutationTransaction<T>(work: () => Promise<T>): Promise<T>;
   validateProjectBindings?: (project: any) => Promise<void>;

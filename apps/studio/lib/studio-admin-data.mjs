@@ -1,11 +1,13 @@
-import { randomUUID } from 'node:crypto';
 import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { createPlayerAdministration } from '../../../packages/storage/server/player-administration.mjs';
+import { PLAYER_OPERATOR_COLUMN, playerOperator } from '../../../packages/storage/server/player-operator.mjs';
 import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../../packages/presentation/contracts/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
+// Game migration 012 adds croupier_auth.api_keys.operator_id; the same probe as apikeys/create.
+const KEY_OPERATOR_COLUMN = "SELECT EXISTS (SELECT FROM pg_attribute WHERE attrelid=to_regclass('croupier_auth.api_keys') AND attname='operator_id' AND NOT attisdropped) AS present";
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
 function bodyKeys(body, allowed, required = allowed) {
   if (!body || typeof body !== 'object' || Array.isArray(body)
@@ -99,33 +101,41 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     ]);
     return { tiers: saved.value.tiers, rooms: saved.value.rooms, revision: saved.revision, players: total.n, tx };
   });
-  register('GET', 'players', async () => ({
-    players: await db.prepare('SELECT players.id,name,currency,balance,created_at,status,closed_at,EXISTS(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed FROM players ORDER BY created_at DESC LIMIT 500').all()
-      .then(rows => rows.map(row => ({ ...row, passwordChangeAllowed: row.passwordChangeAllowed === true || row.passwordChangeAllowed === 1 }))),
-    administration: true, storage: 'postgres',
-  }));
+  // Steg F (docs/plans/STEG-F.md): each player names its company once game migration 014 exists.
+  // Before it the column is absent, every player reads as without company and operatorBinding is pending.
+  register('GET', 'players', async () => {
+    const column = await db.prepare(PLAYER_OPERATOR_COLUMN).get();
+    const rows = await db.prepare("SELECT players.id,name,currency,balance,created_at,status,closed_at,to_jsonb(players)->>'operator_id' AS operator_id,EXISTS(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id) AS passwordChangeAllowed FROM players ORDER BY created_at DESC LIMIT 500").all();
+    return {
+      players: rows.map(({ operator_id: operatorId = null, ...row }) => ({ ...row,
+        passwordChangeAllowed: row.passwordChangeAllowed === true || row.passwordChangeAllowed === 1,
+        operatorId: (() => { try { return playerOperator({ operator_id: operatorId }); } catch { return null; } })() })),
+      operatorBinding: column?.present === true ? 'ready' : 'pending',
+      administration: true, storage: 'postgres',
+    };
+  });
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
   register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,(hash IS NOT NULL)::integer AS active FROM users ORDER BY id').all() }));
-  register('GET', 'apikeys', async () => ({ keys: await boDb.prepare('SELECT id,name,scopes,(wallet_url IS NOT NULL AND wallet_url<>\'\') AS wallet_configured,created_at,last_used,revoked_at FROM api_keys ORDER BY created_at DESC').all()
-    .then(rows => rows.map(row => ({ ...row, scopes: (() => { try { const value = JSON.parse(row.scopes); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; } catch { return []; } })() }))) }));
+  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): each key names its company, and Admin chooses
+  // among this scope's companies when it creates one. Before game migration 012 the column is
+  // absent: keys read as without company and operatorBinding says creation waits for it.
+  register('GET', 'apikeys', async () => {
+    const column = await boDb.prepare(KEY_OPERATOR_COLUMN).get();
+    const bound = column?.present === true;
+    const rows = await boDb.prepare(`SELECT k.id,k.name,k.scopes,(k.wallet_url IS NOT NULL AND k.wallet_url<>'') AS wallet_configured,k.created_at,k.last_used,k.revoked_at${bound ? ',k.operator_id' : ''} FROM api_keys k ORDER BY k.created_at DESC`).all();
+    const operators = (await boDb.prepare('SELECT operator_id,name,status FROM croupier_studio.operators WHERE environment_id=? AND workspace_id=? ORDER BY name,operator_id')
+      .all(scope.environment, scope.workspaceId)).map(row => ({ id: row.operator_id, name: row.name, status: row.status }));
+    const names = new Map(operators.map(row => [row.id, row.name]));
+    return {
+      operatorBinding: bound ? 'ready' : 'pending',
+      operators,
+      keys: rows.map(({ operator_id: operatorId = null, ...row }) => ({ ...row,
+        scopes: (() => { try { const value = JSON.parse(row.scopes); return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; } catch { return []; } })(),
+        operatorId: typeof operatorId === 'string' ? operatorId : null,
+        operatorName: typeof operatorId === 'string' ? names.get(operatorId) ?? null : null })),
+    };
+  });
 
-  change('room', ['id','state'], (value, body) => {
-    if (!text(body.id,100) || !['live','preview','pending'].includes(body.state) || !Array.isArray(value.rooms)) fail();
-    const room = value.rooms.find(item => item?.id === body.id); if (!room) fail(404);
-    room.state = body.state;
-  });
-  change('pitboss', ['payout10x','streak5','randomWalkMin'], (value, body) => {
-    if (typeof body.payout10x !== 'boolean' || typeof body.streak5 !== 'boolean'
-      || !Number.isInteger(body.randomWalkMin) || body.randomWalkMin < 1 || body.randomWalkMin > 1440) fail();
-    value.pitboss = { payout10x: body.payout10x, streak5: body.streak5, randomWalkMin: body.randomWalkMin };
-  });
-  change('tournament', ['name','format','buyin','pool','cap','starts'], (value, body) => {
-    if (!text(body.name,100) || !text(body.format,100) || !text(body.starts,100)
-      || !['buyin','pool'].every(key => typeof body[key] === 'number' && Number.isFinite(body[key]) && body[key] >= 0 && body[key] <= 100_000_000)
-      || !Number.isSafeInteger(body.cap) || body.cap < 0 || body.cap > 1_000_000 || !Array.isArray(value.tournaments)) fail();
-    value.tournaments.unshift({ id: `t-${randomUUID()}`, name: body.name.trim(), format: body.format.trim(),
-      buyin: body.buyin, pool: body.pool, cap: body.cap, starts: body.starts.trim(), state: 'draft', entries: 0 });
-  });
   if (typeof canAssignDealer === 'function') change('tier', ['tier','dealer'], async (value, body) => {
     const dealers = await savedDealerSet();
     if (!['classic','high','vip'].includes(body.tier) || !dealers.has(body.dealer) || !Object.hasOwn(value.tiers || {}, body.tier)) fail();

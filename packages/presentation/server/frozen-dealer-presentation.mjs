@@ -13,6 +13,7 @@ import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
 import {isPresentationRoom} from '../contracts/presentation-room.mjs';
 import { StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
+import { filmedProfileFor } from '../contracts/filmed-profiles/studio-profile.mjs';
 import {recordedSpeechProjection} from '../runtime/recorded-speech-selection.mjs';
 import {revalidatePrivateMedia} from '../../studio-registry/server/private-media-revalidation.mjs';
 
@@ -111,7 +112,11 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     }
     return { context, projectRevision: presentation.projectRevision, schemaVersion:presentation.schemaVersion, idlePolicy, idleInventory,
       configurationSource:'operator-package-v' + presentation.schemaVersion, lane:structuredClone(lane), project, inventory, records,
-      dealer: { id: context.dealerId, label: entries[0].label }, record };
+      dealer: { id: context.dealerId, label: entries[0].label }, record,
+      // The dealer's own landings as frozen in its package row (compact and expanded). Without them the
+      // engine keeps the code profile (dragan, paow), exactly as before.
+      ...(entries[0].filmedProfile ? { studioFilmedProfile: entries[0].filmedProfile,
+        filmedProfile: filmedProfileFor(context.dealerId, { registeredDealers: entries }) } : {}) };
   }
   async function configuration(input) {
     const resolved = await resolve(input);
@@ -122,6 +127,8 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       // published player follows these; it has no mode control of its own.
       openclaw: structuredClone(resolved.lane.openclaw),
       dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) },
+      // A dealer's own landings reach the player only through this locked configuration (compact, as frozen).
+      ...(resolved.studioFilmedProfile ? { filmedProfile: structuredClone(resolved.studioFilmedProfile) } : {}),
       ...(resolved.schemaVersion === 3 ? {idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
         const idle = resolved.idleInventory.videos.find(video => video.id === row.id);
         return {...publicVideo(resolved,row.id),available:true,...(idle ? {familyId:idle.familyId,role:idle.role,dealer:resolved.dealer.id} : {})};
@@ -133,7 +140,8 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
     if (resolved.schemaVersion === 2) return record.id === resolved.record?.id ? publicIdle(record,resolved.context) : null;
     return {...publicIdle(record,resolved.context), src:videoPrefix + [resolved.context.operatorSlug,resolved.context.roomId,resolved.context.packageRevision,resolved.context.dealerId,record.id].join('/')};
   }
-  async function response(request) {
+  // immutable (the shared room's room-video only): a media file of this exact package revision, named by its id.
+  async function response(request, {immutable = false} = {}) {
     const url = new URL(request.url);
     const eventMedia = url.pathname.startsWith(videoPrefix);
     if (!eventMedia && !url.pathname.startsWith(prefix)) return null;
@@ -150,7 +158,7 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       if (!record) return json(404, 'studio_presentation_idle_media_unavailable');
       const { pathname, sha256, size, contentType } = record;
       const media = await privateMedia({ provider: 'vercel-blob', pathname, sha256, size, contentType }, request);
-      return await revalidatePrivateMedia(media, request, sha256);
+      return await revalidatePrivateMedia(media, request, sha256, {immutable: immutable === true && eventMedia});
     } catch (error) {
       const status = [400, 404, 409].includes(error?.statusCode) ? error.statusCode : 503;
       const code = typeof error?.code === 'string' && error.code.startsWith('studio_presentation_idle_') ? error.code : 'studio_presentation_idle_media_unavailable';

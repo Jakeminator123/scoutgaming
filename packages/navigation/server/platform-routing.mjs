@@ -23,7 +23,7 @@ export function launchBackendSearch(url) {
 const AUTH = new Set([
   '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/player/login', '/api/auth/player/register',
 ]);
-const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/command$/;
+const SHARED_ROOM_COMMAND = /^\/api\/shared-room\/[a-z0-9_-]{1,128}\/(?:command|chat)$/;
 const SHARED_ROOM_PRESENTATION = /^\/api\/presentation\/shared-room\/[a-z0-9_-]{1,128}\/(?:binding|config|idle-advice)$/;
 const ROOM_PRESENTATION_MEDIA = [
   /^\/api\/presentation\/room-idle\/[a-z][a-z0-9-]{0,62}\/[a-z0-9_-]{1,128}\/([1-9][0-9]{0,15})\/[a-z][a-z0-9-]{0,39}$/,
@@ -152,7 +152,7 @@ export function platformRoute(url, config, request) {
   if (path === '/play/profil' || path === '/play/profil/' || path === '/play/historik' || path === '/play/historik/') {
     return {kind: 'frontend'};
   }
-  const gameRedirect=gameEntryRedirect(url,{CROUPIER_STUDIO_NEON_POLICY:config.canonicalGame?'1':''});
+  const gameRedirect=config.canonicalGame?gameEntryRedirect(url):null;
   if (gameRedirect) return {kind:'redirect',destination:config.publicOrigin+gameRedirect};
   // Internal Node endpoints are reachable through these two exact rewrites.
   // A direct browser/API request must not create an alternative public route.

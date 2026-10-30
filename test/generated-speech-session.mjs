@@ -29,7 +29,7 @@ async function fixture(t, options = {}) {
     assert.fail('unexpected endpoint');
   };
   const dependencies = { workerState: () => ({ workers: connected ? 1 : 0, busy: busy ? 1 : 0, available: connected && !busy ? 1 : 0 }),
-    fetchImpl, now: () => time,
+    fetchImpl, now: () => time, journalRequired: false,
     sleep: async (ms, signal) => { time += ms; signal?.throwIfAborted(); },
     readyTimeoutMs: 1000, idleTimeoutMs: options.idleTimeoutMs ?? 60000 };
   const create = (configPatch = {}, dependencyPatch = {}) => {

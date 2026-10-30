@@ -10,6 +10,7 @@ import {dealerVersionPath} from '../services/game/public/dealer-version-switcher
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../apps/studio/lib/partner-branding-api.mjs';
+import {publishThroughDraft,withBrandingDrafts} from '../apps/studio/test/fixtures/branding-draft-store.mjs';
 import {nativeRoomMaterialChoicesFixture} from './fixtures/native-room-game-material.mjs';
 import {resolveNativeRoomGameMaterial} from '../packages/presentation/server/native-room-game-material.mjs';
 import {validateRoomGameMaterial} from '../packages/presentation/contracts/room-game-config.mjs';
@@ -42,16 +43,18 @@ function fixture({schemaVersion=3,includeBaselineDealer=false,branding={}}={}) {
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project,administration})},
     packages:{resolve:async slug=>slug==='north'?{operator:{id:'north',status:'active'},package:structuredClone(pack)}:{operator:null}},
     log:()=>{}});
-  const store={getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
+  const store=withBrandingDrafts({getCurrentPackage:async id=>id==='north'?structuredClone(pack):null,publishPackage:async input=>{
     assert.equal(input.expectedRevision,pack.revision);pack={...input,revision:pack.revision+1};return structuredClone(pack);
-  }};
+  }});
   const readAdministration=async()=>({revision:'admin-snapshot',value:structuredClone(administration)});
   const api=createPartnerBrandingApi({store,readAdministration,readProject:()=>assert.fail('published choices cannot read the latest draft'),
     withWriteContext:work=>work({store,readAdministration,reauthorize:async()=>true})});
-  return {select,api,pack:()=>structuredClone(pack),presentation,lane,room,administration};
+  const draft=(branding,{expectedPackageRevision=1,expectedDraftRevision=0}={})=>api.command({operatorId:'north',actor:'partner',action:'save-draft',branding,expectedPackageRevision,expectedDraftRevision});
+  const publish=(branding,{expectedPackageRevision=1,expectedDraftRevision=0}={})=>publishThroughDraft(api,{operatorId:'north',actor:'partner',branding,expectedPackageRevision,expectedDraftRevision});
+  return {select,api,draft,publish,pack:()=>structuredClone(pack),presentation,lane,room,administration};
 }
 function clientDocument(selection) {
-  const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
+  const html=decorateGameEntryHtml('<html lang="sv"></html>',selection),dataset={};
   for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) {
     dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
   }
@@ -147,23 +150,24 @@ test('v2 own-dealer room keeps its single-dealer contract even if its frozen lan
   const result=await f.select('operator=north&table=room-johns');
   assert.equal(result.selection.dealer,'linnea');
   assert.deepEqual(result.selection.choices.dealers,['linnea']);
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['linnea']);
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'nora'}}),error=>error.statusCode===409);
+  assert.deepEqual((await f.api.readState({operatorId:'north'})).dealerChoices[f.lane.id],['linnea']);
+  await assert.rejects(f.draft({dealer:'nora'}),error=>error.statusCode===409);
   assert.equal(f.pack().revision,1);
 });
 test('partner can save either frozen v3 dealer and the chosen identity reaches that room without rewriting its frozen package',async()=>{
   const f=fixture(),original=readPackagePresentation(f.pack());
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['linnea','nora']);
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'foreign'}}),error=>error.statusCode===422);
-  const saved=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lane.id,dealer:'nora'}});
+  assert.deepEqual((await f.api.readState({operatorId:'north'})).dealerChoices[f.lane.id],['linnea','nora']);
+  await assert.rejects(f.draft({dealer:'foreign'}),error=>error.statusCode===422);
+  const saved=await f.publish({lane:f.lane.id,dealer:'nora'});
   assert.equal(saved.branding.dealer,'nora');assert.equal(saved.packageRevision,2);
   assert.deepEqual(readPackagePresentation(f.pack()),original);assert.deepEqual(f.pack().tables,['room-johns']);
   const {selection}=clientDocument((await f.select('operator=north&table=room-johns')).selection);
   const choice=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
   assert.equal(choice.dealer,'nora');assert.equal(choice.navigateDealer,null);
   assert.equal(selection.dealer,'nora');assert.equal(selection.localDealer,'nora');
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'linnea'}}),error=>error.statusCode===409);
-  const reverted=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:2,branding:{dealer:'linnea'}});
+  // Draft revision 2 after save and publish; a stale package revision is still a conflict.
+  await assert.rejects(f.draft({dealer:'linnea'},{expectedPackageRevision:1,expectedDraftRevision:2}),error=>error.statusCode===409);
+  const reverted=await f.publish({dealer:'linnea'},{expectedPackageRevision:2,expectedDraftRevision:2});
   assert.equal(reverted.branding.dealer,'linnea');assert.equal(reverted.packageRevision,3);
 });
 

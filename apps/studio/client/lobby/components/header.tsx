@@ -110,7 +110,7 @@ export function Header() {
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: op.accent }} aria-hidden />
                     <span className="flex-1 text-sm">{op.name}</span>
                     {soon ? (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Inga rum</span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Inga spelbord</span>
                     ) : selected ? (
                       <Check className="h-3.5 w-3.5 text-lime" aria-hidden />
                     ) : null}
@@ -129,7 +129,7 @@ export function Header() {
 
           <StepButton
             index="02"
-            label={room ? room.name : "Spelrum"}
+            label={room ? room.name : "Spelbord"}
             state={states[STEP_IDS.room]}
             inView={inView === STEP_IDS.room}
             lockedHint="Välj bolag först"
@@ -143,7 +143,7 @@ export function Header() {
             label={dealer ? dealer.name : "Dealer"}
             state={states[STEP_IDS.dealer]}
             inView={inView === STEP_IDS.dealer}
-            lockedHint="Välj spelrum först"
+            lockedHint="Välj spelbord först"
             onClick={() => scrollToSection(STEP_IDS.dealer)}
           />
         </nav>
@@ -222,7 +222,7 @@ export function Header() {
                       >
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: op.accent }} aria-hidden />
                         <span className="flex-1 truncate">{op.name}</span>
-                        {soon && <span className="font-mono text-[9px] uppercase tracking-[0.18em]">Inga rum</span>}
+                        {soon && <span className="font-mono text-[9px] uppercase tracking-[0.18em]">Inga spelbord</span>}
                       </button>
                     </li>
                   );
@@ -236,7 +236,7 @@ export function Header() {
 
             <MobileRow
               index="02"
-              label={room ? room.name : "Spelrum"}
+              label={room ? room.name : "Spelbord"}
               state={states[STEP_IDS.room]}
               onClick={() => {
                 scrollToSection(STEP_IDS.room);

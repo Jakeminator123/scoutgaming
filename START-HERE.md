@@ -8,7 +8,7 @@ Läsordning:
 2. **[docs/NEXT-AGENT.md](docs/NEXT-AGENT.md)**: aktuellt läge, återstående aktiviteter och vem som agerar.
 3. **[migrering/STATUS.md](migrering/STATUS.md)**: aktivitetsstatus, genererad från [status.json](migrering/status.json), som är enda statuskällan.
 
-Reglerna står i [AGENTS.md](AGENTS.md) och orden i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md).
+Reglerna står i [AGENTS.md](AGENTS.md). Orden står i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) (kort ordlista med gamla namn → nya).
 
 ## En produktväg
 
@@ -30,13 +30,14 @@ Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, oc
 | Miljö | Tjänst | Identitet |
 | --- | --- | --- |
 | Produktion | GitHub | `Jakeminator123/scoutgaming`, repo-ID `1380630440`, målbranch `main` |
-| Produktion | Vercel | team `scoutgaming` `team_Scxorb9qtZHjNae1YEQnFCaT`, projekt `scoutgaming` `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`, www.scoutgaming.tech; deployar `main` automatiskt |
+| Produktion | Vercel | team `scoutgaming` `team_Scxorb9qtZHjNae1YEQnFCaT`, projekt `scoutgaming` `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`, www.scoutgaming.tech; deployar `main` automatiskt. Projektets "Ignored Build Step" släpper bara igenom `main` (`vercel.json` delas av båda projekten och tillåter `main` och `preview`; filtret per projekt får inte tas bort) |
 | Produktion | Render, workspace `tea-d19jsa63jp1c73ch0sc0` | spelmotor `croupier-v3` `srv-dbd6nfon74is73aiblf0` (manuell deploy efter grön CI); Director `croupier-lab-director` `srv-danhlpjtqb8s73bv530g`; Gateway `croupier-lab-openclaw` `srv-danhiv3tqb8s73burkq0` (privat tjänst) |
 | Produktion | Neon | org "Vercel: scoutgaming" `org-green-butterfly-00780270`, projekt `croupier-production` `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game` med scheman `public`, `croupier_auth`, `croupier_game`, `croupier_studio` |
 | Produktion | Blob | `croupier-media-private` `store_AqwvebTbBHarOjvG` |
-| Preview | Vercel | `croupier-k06-k07-staging` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14`, croupier-k06-k07-staging.vercel.app; deployas med låst SHA via API |
-| Preview | Render | `croupier-k06-k07-staging` `srv-dbf61l0m7kps73ft7mk0`, `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
-| Preview | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351`, branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
+| Preview | GitHub | samma repo, långlivad branch `preview` (skapad 2026-10-29 från `main` a05917c3); tar emot push från `main`/`jakob/*` och PR:er med bas `preview`. Rulesetet "preview: no deletion, no force push" skapas av Jakob innan branchen används; utan det skyddar bara pre-push-hooken, och GitHubs auto-delete raderar branchen om den någonsin blir head i en mergad PR |
+| Preview | Vercel | projekt `scoutgaming-preview` `prj_7dgyvW5zakx1qJ8YaH5pueVTVi14` (bytte namn 2026-10-29), preview.scoutgaming.tech (`CROUPIER_PUBLIC_ORIGIN`); den gamla adressen `croupier-k06-k07-staging.vercel.app` finns kvar som alias, och Vercels inloggningsskydd gäller alla adresser utom den egna domänen; deployar branchen `preview` automatiskt. Projektets "Ignored Build Step" släpper bara igenom `preview` (samma `vercel.json` som produktionen; filtret per projekt får inte tas bort) |
+| Preview | Render | spelmotor `scoutgaming-preview-engine` `srv-dbf61l0m7kps73ft7mk0` (bytte namn 2026-10-29; adressen är fortfarande `https://croupier-k06-k07-staging.onrender.com`), byggs automatiskt från branchen `preview`; `CROUPIER_SHARED_TABLE_ENABLED=1` sedan 2026-10-27 |
+| Preview | Neon | projekt `croupier-k06-k07-staging` `red-violet-36066351` (namnet är oförändrat), branch `br-plain-voice-b9yu49xi`, databas `croupier_staging` |
 | Preview | Blob | `croupier-k06-k07-staging` `store_7E06N1P4w9Mu1dZD` (riktigt, godkänt material får ligga här; aldrig produktionstoken eller riktiga spelardata) |
 | Raderat | Render | `croupier-v2` och `croupier-vercel-preview-qa` raderades 2026-10-27 (Jakobs beslut). Äldre dokument som nämner dem beskriver historik. |
 
@@ -55,36 +56,37 @@ Allt som är grönt går direkt till produktion, i denna ordning:
 
 ## Preview
 
-Preview är den tidigare stagingen, som behålls efter O03 (Jakobs beslut D5, 2026-10-28); resursnamnen i identitetstabellen är oförändrade. Den kör samma kod som produktionen mellan prov. Bara SHA:er från `main` eller `jakob/*` deployas dit, låst och via API, aldrig `kevin*`. Preview är inget obligatoriskt steg före produktion: orkestratorn avgör när en visuell koll behövs. Jakob startar och stoppar Render-tjänsten; en agent startar den bara under ett prov och säger till när provet är klart. Testkonton är syntetiska, utöver Jakobs egna inloggningar (Admin och spelare) som speglats dit från produktionen (Jakobs beslut 2026-10-28). Previews Admin-inloggning ligger i gitignorerad `.env.local` under nycklarna `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW`. Lösenord skrivs aldrig i Git eller chatt. Produktion och Johns Bet-demon rörs aldrig vid prov. Acceptanskvitton skrivs som `docs/*-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
+Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och branchen `preview` är preview. Preview är den tidigare stagingen, som behålls efter O03 (Jakobs beslut D5, 2026-10-28); Vercel-projektet heter `scoutgaming-preview` och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com` är oförändrad), medan Neon-projektet och Blob-lagret fortfarande heter `croupier-k06-k07-staging`. Källan är branchen `preview` på GitHub, inte längre en låst SHA via API: Vercel-projektet `scoutgaming-preview` deployar varje push till `preview` till preview.scoutgaming.tech, och Render-tjänsten byggs från samma branch. Till `preview` får bara `main` och `jakob/*` pushas (pre-push-hooken tillåter fast-forward, nekar radering, force-push och push från en lokal `kevin*`-checkout), aldrig Kevins arbete; `preview` är ingen featurebranch och mergas aldrig till `main`, inte heller indirekt: `origin/preview` mergas aldrig in i `main` eller en `jakob/*`-branch, och `merge-pr.mjs` nekar en PR mot `main` vars head bär previews historik. `preview` innehåller alltid `main`: så länge `preview` inte divergerat fast-forwardas den från `main` (`node tools/push-github-work.mjs --environment preview` på `main`), annars synkas den med en PR från `main` med bas `preview` som mergas med `node tools/merge-pr.mjs <nr> --head <full-sha> --base preview`. Preview är inget obligatoriskt steg före produktion: orkestratorn avgör när en visuell koll behövs. Jakob startar och stoppar Render-tjänsten; en agent startar den bara under ett prov och säger till när provet är klart. Testkonton är syntetiska, utöver Jakobs egna inloggningar (Admin och spelare) som speglats dit från produktionen (Jakobs beslut 2026-10-28). Previews Admin-inloggning ligger i gitignorerad `.env.local` under nycklarna `STAGING_ADMIN_LOGIN_UN` och `STAGING_ADMIN_LOGIN_PW`. Lösenord skrivs aldrig i Git eller chatt. Produktion och Johns Bet-demon rörs aldrig vid prov. Acceptanskvitton skrivs som `docs/*-ACCEPTANCE.json` med versions-, deploy- och databasidentiteter.
 
 ## Köra och testa
 
 1. Node 24 via Volta (`apps/studio/package.json` pinnar versionen). `npm ci` i `apps/studio`, `services/game` och `services/astrid-gpu-worker/gateway`; `pnpm install` i `apps/web`. I en ny worktree behöver pre-commit `npm ci` i `apps/studio` och i det paket som provas.
 2. `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns adress och startar inga lokala servrar.
 3. Riktade prov: `node --test --test-concurrency=4 <filer>`. Sviter: `sh .githooks/pre-commit-full <svit>` med `studio`, `admin`, `contracts`, `database`, `presentation`, `access`, `speech`, `gameplay` eller `engine`. PGlite-proven (`test/fixtures/pglite-pool.mjs`) kör utan Postgres-installation; motorn över HTTP mot riktig Postgres körs med `node tools/run-engine-qa.mjs --postgres-bin <bin>`.
-4. Pre-commit (`.githooks/pre-commit`) kör riktade kontroller på ändrade filer; `node tools/precommit-checks.mjs --plan` visar urvalet. Full regression, Chrome och isolerad Postgres körs i CI (`.github/workflows/croupier.yml`) eller med `sh .githooks/pre-commit --full`.
+4. Pre-commit (`.githooks/pre-commit`) kör riktade kontroller på ändrade filer; `node tools/precommit-checks.mjs --plan` visar urvalet. Full regression och isolerad Postgres körs i CI (`.github/workflows/croupier.yml`) på PR:er som är klara för granskning, vid push till `preview`, nattligen på `main` (02:00 UTC) och manuellt, eller lokalt med `sh .githooks/pre-commit --full`. Push till `main` kör bara dokumentationskontroller, migreringsberedskap och Gateway-containern när dess indata ändrats; PR:ens egen CI har redan kört regressionen. Chrome-jobbet `Regression (browser)` körs på PR och krävs för `CI` när PR:en ändrar `services/game/public/**`, `apps/studio/client/**` eller `apps/studio/components/**` (`browserAcceptanceRequired` i `tools/ci-changes.mjs`); på andra PR:er blockerar det inte `CI`. Nattkörningen och push till `preview` kräver det alltid. En utkast-PR (draft) kör bara klassificering och `node tools/precommit-checks.mjs --pr-diff` (samma riktade kontroller på merge-diffen) och får ingen kontroll med namnet `CI` förrän den markeras klar; CI väljer dessutom regressionsben efter ändringens omfång (matrisen står i `tools/ci-changes.mjs`).
 5. Riktig acceptans görs i preview: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Ljud och läppsynk bedöms av Jakob.
 
 ## Leverera
 
 1. `git fetch`, sedan egen branch `jakob/*` från färsk `origin/main` (Claude-underagenter: `jakob/claude-*` i en worktree under `.claude/worktrees`).
 2. Committa med repots hookar, aldrig `--no-verify`. Läs `node tools/security-status.mjs` före push och merge.
-3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`.
-4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>` (under O02 även `--freeze <kandidat-sha>`).
-5. Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
+3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`, öppnad som klar (inte draft), med raden `Buggranskning: <verktyg/modell>, <nivå>, <fynd>` efter egen granskning av diffen ([AGENTS.md](AGENTS.md#leverans-och-merge)).
+4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); orkestratorn mergar med `node tools/merge-pr.mjs <nr> --head <full-sha>`, som nekar om main sedan CI-körningen ändrat samma filer eller paketrot; merga då in `origin/main` och låt CI köra om.
+5. Till preview, när en ändring ska ses på preview.scoutgaming.tech före eller i stället för merge: `node tools/push-github-work.mjs --environment preview` från `main` eller `jakob/*` (fast-forward av `preview` till HEAD; flaggan krävs även på en lokal `preview`). Har `preview` divergerat nekar verktyget; öppna då en PR med bas `preview` (`gh pr create --base preview --head jakob/<branch>`), så gör GitHub mergen på preview-sidan. Merga aldrig `origin/preview` in i `main` eller en `jakob/*`-branch: det drar previews innehåll in i nästa PR mot `main`, och `merge-pr.mjs` nekar en sådan head. En PR mot `preview` mergas av orkestratorn med `node tools/merge-pr.mjs <nr> --head <full-sha> --base preview` efter grön `CI` (samma ägar-, CI- och kevin-kontroller som mot `main`) eller av Jakob personligen; agenter använder aldrig GitHubs merge-knapp. `main` är fortfarande den enda produktvägen: en ändring på `preview` når produktionen bara via en PR från sin `jakob/*`-branch mot `main`.
+6. Uppdatera [docs/NEXT-AGENT.md](docs/NEXT-AGENT.md) vid överlämning. Samordning sker i PR:er och [teaminboxen](inbox/README.md).
 
 ## Kanoniska dokument
 
 | Fråga | Dokument |
 | --- | --- |
 | Läge, återstående arbete, kända fällor | [NEXT-AGENT](docs/NEXT-AGENT.md) |
-| Aktivitetsstatus och plan | [STATUS](migrering/STATUS.md), [MASTERPLAN](migrering/MASTERPLAN.md) |
+| Aktivitetsstatus (migreringen är avslutad) | [STATUS](migrering/STATUS.md) |
 | Regler för agenter | [AGENTS](AGENTS.md) |
-| Ord och begrepp | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) |
+| Vad orden betyder | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
 | Arbetssteg i Admin | [användarguiden](apps/studio/docs/README.md) |
 | Drift, moln och återställning | [CLOUD-MIGRATION](docs/CLOUD-MIGRATION.md), [ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md), [RENDER-V3](ops/cloud/RENDER-V3.md) |
 | Miljövariabler | [ENVIRONMENT-VARIABLES](docs/ENVIRONMENT-VARIABLES.md) |
 | Lagrings- och uppspelningskontrakt | [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md) |
 | AI-verktyg och OpenClaw | [docs/AI](docs/AI/README.md) |
 | Alla dokument: vad, för vem, när de uppdateras | [docs/README](docs/README.md) |
-| Daterade kvitton (bevis, inte läge) | `docs/<datum>-*-ACCEPTANCE.json` och `*-REVIEW.md` |
+| Daterade kvitton (bevis, inte läge) och raderade dokument | `docs/<datum>-*-ACCEPTANCE.json`; raderade står i [HISTORIK](docs/HISTORIK.md) |

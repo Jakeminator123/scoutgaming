@@ -20,7 +20,7 @@ async function fixture(t, { failLog = false, failCommit = false, failPublish = f
   const store = await createPgliteStore(), { db, boDb, gamePool } = store;
   for (const id of ['native-alice', 'native-bob', 'ordinary']) await db.prepare('INSERT INTO players (id,name,currency,balance,created_at) VALUES (?,?,?,?,?)').run(id, id, 'EUR', 1000, 'test');
   const getPlayer = id => db.prepare('SELECT id, name, currency, balance, status FROM players WHERE id = ?').get(id);
-  // Cloud policy: legacy unstamped partner sessions are refused (CROUPIER_STUDIO_NEON_POLICY=1).
+  // Cloud policy: legacy unstamped partner sessions are refused (Neon is the fixed registry).
   const auth = await playerAuth(db, () => { throw new Error('No real account creation'); }, null, { allowLegacyPartnerSessions: false,
     partnerAuthority: async id => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(id) });
   let rejectedPublications = 0;

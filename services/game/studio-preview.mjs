@@ -111,7 +111,8 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
         if(record&&(record.sha256!==video.sha256||record.size!==video.bytes||!same(record.classification,video.classification)))fail('studio_preview_media_mismatch',409);
         if(['upload'].includes(video.source)&&!record)fail('studio_preview_media_unavailable',503);
       }
-      const assets=freeze((project.layerAssets??[]).map(validateLayerAsset));
+      // A miljöbild (illustration) is never a layer, so the preview's library leaves it out.
+      const assets=freeze((project.layerAssets??[]).map(validateLayerAsset).filter(row=>row.role!=='illustration'));
       if(['table','background'].some(role=>assets.filter(row=>row.role===role).length>32))fail('studio_preview_layer_limit',422);
       const dealerAvailability=project.dealers.filter(row=>isActiveDealerId(row.id)).map(({id,label})=>({id,label,playable:Boolean(ownDealerIdle(project,inventory,id)),
         reason:ownDealerIdle(project,inventory,id)?null:'studio_preview_idle_required'}));
@@ -187,7 +188,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       if(s.owner!==actor.user)fail('studio_preview_not_found',404);live(s);s.active++;acquired=true;
       if(entry){
         if(!['GET','HEAD'].includes(request.method))fail('studio_preview_method_not_allowed',405);
-        const selected={...selection(s,url.searchParams),studioPreview:metadata(s)},decorated=decorateGameEntryHtml(await readHtml(),{},selected,{offline:true});live(s);
+        const selected={...selection(s,url.searchParams),studioPreview:metadata(s)},decorated=decorateGameEntryHtml(await readHtml(),selected,{offline:true});live(s);
         return new Response(request.method==='HEAD'?null:decorated,{status:200,headers:{...headers,'Content-Type':'text/html; charset=utf-8'}});
       }
       const route=api[2]??'';

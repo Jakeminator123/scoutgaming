@@ -20,7 +20,7 @@ let createSpeechIngress;
 try { ({ createSpeechIngress } = await import('../apps/speech/service.mjs')); } finally { hook.deregister(); }
 
 const env = { CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://player.example.test',
-  CROUPIER_BACKEND_ORIGIN: 'https://engine.example.test', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.test',
+  CROUPIER_BACKEND_ORIGIN: 'https://engine.example.test',
   CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3) };
 const headers = { upgrade: 'websocket', connection: 'Upgrade', host: 'player.example.test',
   origin: env.CROUPIER_PUBLIC_ORIGIN, cookie: 'player_session=fixture',

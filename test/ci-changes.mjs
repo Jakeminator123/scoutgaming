@@ -1,14 +1,110 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
-import { ciScope, ciSelection, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired } from '../tools/ci-changes.mjs';
+import { ciScope, ciSelection, ciOutputs, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired,
+  gatewayContainerRequired, openClawDeployOnly, scopeOf, regressionLegs, draftPullRequest, REGRESSION_LEGS, SCOPE_LEGS, LIPSYNC_LEG,
+  BROWSER_MODES, BROWSER_CLIENT_PREFIXES, browserAcceptanceRequired } from '../tools/ci-changes.mjs';
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
+// Nightly/manual/preview selection: the complete product, never a draft; Chrome is required.
+const complete = Object.freeze({ scope: 'full', migration: true, moving: true, gateway: true, draft: false, browser: 'required' });
+// Push main: integration checks only; the PR's own ready CI ran the regression.
+const integration = Object.freeze({ scope: 'integration', migration: true, moving: false, gateway: true, draft: false, browser: 'none' });
+const DEPLOY_LEGS = ['studio-admin-contracts', 'access-presentation'];
+
+test('scope matrix: documentation, integration, openclaw-deploy and full select legs; shared paths and uncertain input stay full', () => {
+  assert.deepEqual(SCOPE_LEGS.full, REGRESSION_LEGS.map(({ leg }) => leg));
+  assert.deepEqual(SCOPE_LEGS.documentation, []);
+  assert.deepEqual(SCOPE_LEGS.integration, [], 'push main runs no regression leg');
+  assert.deepEqual(BROWSER_MODES, ['required', 'advisory', 'none']);
+  // deploy/ is read only by the access and contracts suites; their legs also carry studio and presentation.
+  assert.deepEqual(SCOPE_LEGS['openclaw-deploy'], DEPLOY_LEGS);
+  for (const leg of DEPLOY_LEGS) assert.ok(REGRESSION_LEGS.some(item => item.leg === leg), leg);
+  assert.ok(REGRESSION_LEGS.find(({ leg }) => leg === DEPLOY_LEGS[0]).suites.split(' ').includes('contracts'));
+  assert.ok(REGRESSION_LEGS.find(({ leg }) => leg === DEPLOY_LEGS[1]).suites.split(' ').includes('access'));
+  assert.ok(SCOPE_LEGS.full.includes(LIPSYNC_LEG));
+  for (const path of ['services/openclaw/lab/deploy/Dockerfile.gateway', 'services/openclaw/lab/deploy/gateway-config.mjs',
+    'services/openclaw/lab/deploy/runtime-bundle/roles/croupier-speech.md', 'services/openclaw/lab/deploy/container/gateway-container.test.mjs']) {
+    for (const extra of [{}, {status:'A', before:'000000'}, {status:'D', after:'000000'}]) {
+      assert.equal(openClawDeployOnly([change(path, extra)]), true, path);
+      assert.equal(scopeOf([change(path, extra)]), 'openclaw-deploy', path);
+      assert.equal(gatewayContainerRequired([change(path, extra)]), true, path);
+    }
+  }
+  assert.deepEqual(regressionLegs('openclaw-deploy').map(({ leg }) => leg), DEPLOY_LEGS);
+  assert.deepEqual(regressionLegs('full'), [...REGRESSION_LEGS]);
+  assert.deepEqual(regressionLegs('documentation'), []);
+  assert.deepEqual(regressionLegs('integration'), []);
+  assert.deepEqual(regressionLegs('unknown'), [...REGRESSION_LEGS], 'an unknown scope runs everything');
+  // lab/src is copied into Postgres fixtures and imported by Studio tests; shared roots and plumbing run everything.
+  for (const path of ['services/openclaw/lab/src/server.mjs', 'services/openclaw/lab/package.json', 'services/openclaw/README.md',
+    'packages/director/openclaw.mjs', 'test/fixtures/copy-openclaw-runtime.mjs', '.githooks/pre-commit-full', 'tools/ci-changes.mjs',
+    'services/openclaw/lab/deploy/../src/server.mjs', 'services/openclaw/lab/deploy\\x.mjs']) {
+    assert.equal(openClawDeployOnly([change('services/openclaw/lab/deploy/start-gateway.mjs'), change(path)]), false, path);
+    assert.equal(scopeOf([change('services/openclaw/lab/deploy/start-gateway.mjs'), change(path)]), 'full', path);
+  }
+  for (const extra of [{after:'120000'}, {before:'120000'}, {after:'100755'}, {status:'T'}]) {
+    assert.equal(openClawDeployOnly([change('services/openclaw/lab/deploy/start-gateway.mjs', extra)]), false);
+  }
+  assert.equal(openClawDeployOnly([]), false);
+  assert.equal(scopeOf([change('docs/guide.md')]), 'documentation');
+  assert.equal(scopeOf([change('docs/guide.md'), change('services/openclaw/lab/deploy/start-gateway.mjs')]), 'full', 'mixed prose and deploy stays full');
+});
+
+test('the Gateway container builds only when its image inputs, the hook registry or CI plumbing change', () => {
+  for (const path of ['services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'services/openclaw/lab/Dockerfile.dockerignore',
+    'services/openclaw/lab/package.json', '.github/workflows/croupier.yml', '.github/actions/setup-ffmpeg/action.yml', '.githooks/pre-commit-full',
+    'tools/regression-group.mjs', '../unknown', 'docs\\guide.md']) {
+    for (const extra of [{}, {status:'D', after:'000000'}]) assert.equal(gatewayContainerRequired([change('README.md'), change(path, extra)]), true, path);
+  }
+  for (const path of ['services/openclaw/lab/src/server.mjs', 'services/openclaw/lab/test/server.test.mjs', 'services/game/server.mjs',
+    'packages/director/openclaw.mjs', 'apps/studio/app/page.tsx', 'docs/NEXT-AGENT.md', 'tools/ci-changes.mjs', 'test/backup-render-state.mjs']) {
+    assert.equal(gatewayContainerRequired([change(path)]), false, path);
+  }
+  assert.equal(gatewayContainerRequired([]), true);
+});
+
+test('draft detection reads only the pull_request payload and treats anything unreadable as ready', () => {
+  const root = mkdtempSync(join(tmpdir(), 'croupier-ci-draft-'));
+  try {
+    const eventPath = join(root, 'event.json');
+    const env = (payload, extra = {}) => { writeFileSync(eventPath, payload); return { GITHUB_EVENT_NAME: 'pull_request', GITHUB_EVENT_PATH: eventPath, ...extra }; };
+    assert.equal(draftPullRequest({ env: env(JSON.stringify({ pull_request: { draft: true } })) }), true);
+    assert.equal(draftPullRequest({ env: env(JSON.stringify({ pull_request: { draft: false } })) }), false);
+    for (const payload of ['not JSON', '{}', JSON.stringify({ pull_request: { draft: 'true' } }), JSON.stringify({ pull_request: {} })]) {
+      assert.equal(draftPullRequest({ env: env(payload) }), false, payload);
+    }
+    assert.equal(draftPullRequest({ env: env(JSON.stringify({ pull_request: { draft: true } }), { GITHUB_EVENT_NAME: 'push' }) }), false, 'push payloads are not drafts');
+    assert.equal(draftPullRequest({ env: { GITHUB_EVENT_NAME: 'pull_request', GITHUB_EVENT_PATH: join(root, 'absent') } }), false);
+    assert.equal(draftPullRequest({ env: { GITHUB_EVENT_NAME: 'pull_request' } }), false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('workflow outputs carry the leg list and a fromJSON matrix for every scope', () => {
+  const outputs = ciOutputs({ ...complete });
+  assert.deepEqual(Object.keys(outputs), ['scope', 'migration', 'moving', 'gateway', 'draft', 'browser', 'legs', 'matrix']);
+  assert.deepEqual(JSON.parse(outputs.legs), SCOPE_LEGS.full);
+  assert.deepEqual(JSON.parse(outputs.matrix), { include: [...REGRESSION_LEGS] });
+  assert.equal(outputs.browser, 'required');
+  for (const value of Object.values(outputs)) assert.doesNotMatch(value, /\n/, 'GITHUB_OUTPUT lines are single-line');
+  const deploy = ciOutputs({ scope: 'openclaw-deploy', migration: true, moving: false, gateway: true, draft: false, browser: 'none' });
+  assert.deepEqual(JSON.parse(deploy.legs), DEPLOY_LEGS);
+  assert.deepEqual(JSON.parse(deploy.matrix).include.map(({ leg }) => leg), DEPLOY_LEGS);
+  assert.deepEqual(deploy, { ...deploy, migration: 'true', moving: 'false', gateway: 'true', draft: 'false', browser: 'none' });
+  const docs = ciOutputs({ scope: 'documentation', migration: false, moving: false, gateway: false, draft: true, browser: 'none' });
+  assert.equal(docs.legs, '[]');
+  assert.equal(docs.draft, 'true');
+  const main = ciOutputs({ ...integration, gateway: false });
+  assert.deepEqual(main, { scope: 'integration', migration: 'true', moving: 'false', gateway: 'false', draft: 'false', browser: 'none', legs: '[]', matrix: '{"include":[]}' });
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const changes = yaml.split('  changes:\n')[1]?.split('  documentation:\n')[0];
+  for (const key of Object.keys(outputs)) assert.ok(changes.includes(`      ${key}: $` + `{{ steps.scope.outputs.${key} }}`), `changes exports ${key}`);
+});
 test('only ordinary prose qualifies; runtime, config, mixed changes and file types run full CI', () => {
   assert.equal(documentationOnly([change('docs/history/JOHN-HANDOFF-2026-10.md'), change('apps/studio/docs/TERMINOLOGI.md')]), true);
   for (const path of ['.github/workflows/croupier.yml', 'docs/environment-variables.json',
@@ -21,6 +117,26 @@ test('only ordinary prose qualifies; runtime, config, mixed changes and file typ
   }
   assert.equal(documentationOnly([]), false);
   assert.equal(documentationOnly([change('docs/removed.md', {status:'D',after:'000000'})]), true);
+});
+
+test('Chrome acceptance is required for browser client changes, including deletion and uncertain paths', () => {
+  assert.deepEqual(BROWSER_CLIENT_PREFIXES, ['services/game/public/', 'apps/studio/client/', 'apps/studio/components/']);
+  for (const path of ['services/game/public/js/table.js', 'services/game/public/index.html', 'services/game/public/css/game.css',
+    'apps/studio/client/admin/router.tsx', 'apps/studio/client/package.json', 'apps/studio/client/build.mjs',
+    'apps/studio/components/appearance-choices.tsx', 'apps/studio/components/partner-appearance.module.css',
+    'apps/studio/components/partner/views/rooms.jsx', '../unknown', 'a//b', '']) {
+    for (const extra of [{}, {status:'D',after:'000000'}]) {
+      assert.equal(browserAcceptanceRequired([change(path, extra)]), true, path);
+      assert.equal(browserAcceptanceRequired([change('services/game/server.mjs'), change(path, extra)]), true, 'mixed with ' + path);
+    }
+  }
+  // Server, Next pages and other Studio code keep Chrome advisory; so do look-alike prefixes.
+  for (const path of ['services/game/server.mjs', 'services/game/publication.mjs', 'services/game/public-api.mjs',
+    'apps/studio/components-old/editor.tsx', 'apps/studio/clients/x.mjs', 'apps/studio/lib/store.mjs', 'apps/web/app/page.tsx',
+    'test/card-view.mjs', '.github/workflows/croupier.yml', 'tools/ci-changes.mjs', 'docs/NEXT-AGENT.md']) {
+    assert.equal(browserAcceptanceRequired([change(path)]), false, path);
+  }
+  assert.equal(browserAcceptanceRequired([]), true);
 });
 
 test('Moving image verification follows worker and its workflow changes, including deletion and uncertain paths', () => {
@@ -46,8 +162,7 @@ test('local and CI prose selection share reviewed guides and prose folders while
     'migrering/jakob-main-migrering/AKTIVITETER.md', 'migrering/kevin-ks-migrering/AKTIVITETER.md',
     'migrering/kevin-ks-migrering/K05/MAPPNINGSSYSTEM.md', 'migrering/SAMARBETE-OCH-ATKOMST.md', 'migrering/new-runtime.md',
     'START-HERE.md', 'inbox/README.md', 'ops/cloud/README.md', 'ops/cloud/RENDER-V3.md',
-    'docs/history/2026-10-27-j08-staging-acceptance.md', 'docs/history/2026-10-27-receipt.json',
-    'docs/history/2026-10-19-plain-language-note.txt']) {
+    'docs/2026-10-27-j08-staging-acceptance.md']) {
     assert.equal(documentationOnly([change(path)]), true, path);
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'documentation', path);
@@ -55,7 +170,7 @@ test('local and CI prose selection share reviewed guides and prose folders while
   for (const path of ['packages/presentation/docs/runtime.md', 'services/game/public/docs/partner-api.md',
     'services/openclaw/lab/deploy/runtime-bundle/README.md', 'docs/config.json', 'docs/../runtime.md',
     'migrering/status.mjs', 'migrering/config.json', 'ops/cloud/config.mjs', 'ops/cloud/deploy/README.md', 'inbox/people.json',
-    'docs/history/run.mjs', 'docs/history/receipt.sh']) {
+    'docs/history/run.mjs', 'docs/history/receipt.sh', 'docs/2026-10-27-receipt.json', 'docs/2026-10-19-note.txt']) {
     assert.equal(documentationOnly([change(path)]), false, path);
     assert.equal(verificationMode([change(path)], { env: {} }), 'focused', path);
   }
@@ -151,8 +266,8 @@ test('client-only PRs avoid production reads; server, migration and uncertain ch
   }
   assert.equal(migrationReadinessRequired([]), true);
   assert.equal(migrationReadinessRequired([change('apps/studio/components/link.mjs', {after:'120000'})]), true);
-  for (const event of ['push', 'workflow_dispatch']) {
-    assert.deepEqual(ciSelection({env:{GITHUB_EVENT_NAME:event}}), {scope:'full',migration:true,moving:true});
+  for (const event of ['push', 'workflow_dispatch', 'schedule']) {
+    assert.deepEqual(ciSelection({env:{GITHUB_EVENT_NAME:event}}), complete);
   }
 });
 
@@ -194,14 +309,27 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   // The hook's own suite list is the registry; CI may neither drop nor repeat a suite.
   const hookSuites = fullHook.match(/^  all\|([a-z|]+)\) ;;$/m)?.[1].split('|');
   assert.ok(hookSuites?.includes('engine') && hookSuites.includes('container'));
-  const dealer = yaml.split('\n  dealer-regression:\n')[1]?.split('\n  gateway-container:\n')[0];
+  const dealer = yaml.split('\n  dealer-regression:\n')[1]?.split('\n  browser-regression:\n')[0];
   assert.ok(dealer, 'the regression job must exist');
-  assert.match(dealer, /strategy:\n      fail-fast: false\n/, 'one failing leg must not cancel the others');
-  const include = '\n' + (dealer.split('\n        include:\n')[1]?.split('\n    outputs:\n')[0] ?? '');
-  const legs = include.split('\n          - leg: ').slice(1).map(body => ({leg: body.split('\n')[0],
-    suites: body.match(/suites: (.*)/)?.[1].replace(/^'(.*)'$/, '$1').split(' ').filter(Boolean) ?? [],
-    flags: [...body.matchAll(/            ([a-z_]+): true/g)].map(match => match[1])}));
+  const browser = yaml.split('\n  browser-regression:\n')[1]?.split('\n  gateway-container:\n')[0];
+  assert.ok(browser, 'the Chrome acceptance job must exist');
+  assert.match(dealer, /strategy:\n      fail-fast: false\n      matrix: \$\{\{ fromJSON\(needs\.changes\.outputs\.matrix\) \}\}\n/, 'one failing leg must not cancel the others; the classifier selects the legs');
+  assert.match(dealer, /\n    if: needs\.changes\.outputs\.draft != 'true' && needs\.changes\.outputs\.legs != '\[\]'\n/, 'drafts and leg-less scopes run no regression leg');
+  // The leg table is the classifier's; each leg names its suites and boolean step selectors.
+  const legs = REGRESSION_LEGS.map(({ leg, suites, ...flags }) => ({ leg, suites: suites.split(' ').filter(Boolean),
+    flags: Object.entries(flags).filter(([, value]) => value === true).map(([name]) => name) }));
   assert.ok(legs.length >= 2, 'regression runs in parallel legs');
+  // Each leg pays the toolchain setup once, so the leg count stays small; every leg runs suites.
+  assert.ok(legs.length <= 4, 'at most four regression legs');
+  for (const { leg, suites } of legs) assert.ok(suites.length > 0, `${leg} runs at least one suite`);
+  assert.equal(new Set(legs.map(({ leg }) => leg)).size, legs.length);
+  for (const { leg, flags } of legs) {
+    assert.match(leg, /^[a-z][a-z0-9-]*$/);
+    for (const flag of flags) assert.ok(dealer.includes(`matrix.${flag}`), `${leg}: selector ${flag} is read by a step`);
+  }
+  for (const selector of [...new Set(dealer.match(/matrix\.([a-z_]+)/g))].map(name => name.slice('matrix.'.length))) {
+    assert.ok(['leg', 'suites'].includes(selector) || legs.some(({ flags }) => flags.includes(selector)), `step selector ${selector} exists in a leg`);
+  }
   const matrixSuites = legs.flatMap(leg => leg.suites);
   const container = yaml.split('\n  gateway-container:\n')[1]?.split('\n  migration-readiness:\n')[0];
   assert.match(container, /run: sh \.githooks\/pre-commit-full container\n/);
@@ -221,21 +349,81 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   }
   assert.match(steps.find(step => step.startsWith('Existing isolated Studio SQL')), /tools\/studio-isolated-qa\.mjs/);
   assert.match(steps.find(step => step.startsWith('Real engine over HTTP')), /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
-  assert.equal(legs.filter(leg => leg.flags.includes('browser')).length, 1, 'one leg runs every browser test');
-  assert.match(steps.find(step => step.startsWith('Real browser acceptance')), /git grep -l -F -e process\.env\.CROUPIER_BROWSER_FIXTURE_MODULE /, 'discovery matches files that read the variable, not files that mention it');
+  // One job runs every browser test; its own if is the classifier's browser mode, and its steps never skip.
+  assert.doesNotMatch(dealer, /CROUPIER_BROWSER_FIXTURE_MODULE=/, 'the regression legs leave the browser fixture unset');
+  assert.match(browser, /^    name: Regression \(browser\)\n    needs: changes\n    if: needs\.changes\.outputs\.draft != 'true' && needs\.changes\.outputs\.browser != 'none'\n/);
+  const browserSteps = browser.split('      - name: ');
+  const chrome = browserSteps.find(step => step.startsWith('Real browser acceptance'));
+  assert.match(chrome, /git grep -l -F -e process\.env\.CROUPIER_BROWSER_FIXTURE_MODULE /, 'discovery matches files that read the variable, not files that mention it');
+  assert.match(chrome, /CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome/);
+  assert.match(chrome, /node tools\/regression-group\.mjs browser\/chrome \d+ node --test /);
+  assert.doesNotMatch(browser.split('\n    steps:\n')[1], /^\s+if: (?!always\(\))/m, 'browser steps run whenever the job runs');
   assert.equal(legs.filter(leg => leg.flags.includes('build')).length, 1, 'the real Studio build runs once');
-  assert.equal(yaml.match(/continue-on-error: true/g)?.length, 1, 'only the timing receipt below may fail softly');
+  // Every job that runs suites installs the toolchain once: ffmpeg and the package trees from the shared cache.
+  for (const [name, job] of [['dealer-regression', dealer], ['browser-regression', browser],
+    ['targeted', yaml.split('\n  targeted:\n')[1]?.split('\n  dealer-regression:\n')[0]]]) {
+    assert.equal(job.match(/uses: \.\/\.github\/actions\/setup-ffmpeg/g)?.length, 1, `${name}: ffmpeg once`);
+    assert.equal(job.match(/uses: \.\/\.github\/actions\/install-dependencies/g)?.length, 1, `${name}: package trees once`);
+    assert.doesNotMatch(job, /npm --prefix \S+ ci|pnpm --dir apps\/web install|pnpm\/action-setup/, `${name}: no second install outside the shared action`);
+  }
+  // Each soft step is a timing receipt or main's cache upkeep; checks themselves never fail softly.
+  const soft = yaml.split('\n      - ').filter(step => /\n\s+continue-on-error: true/.test(step));
+  assert.equal(yaml.match(/continue-on-error:/g)?.length, soft.length);
+  assert.deepEqual(soft.map(step => step.split('\n')[0]), ['name: Keep the shared package-tree cache current on main',
+    'name: Save regression group timings', 'name: Save regression group timings'], 'only the timing receipts and cache upkeep may fail softly');
+  const upkeep = soft[0];
+  assert.match(upkeep, /\n\s+if: needs\.changes\.outputs\.scope == 'integration'\n/, 'cache upkeep runs on push main only');
+  assert.match(upkeep, /uses: \.\/\.github\/actions\/install-dependencies\n\s+with:\n\s+warm: 'true'/);
   // The SQLite ban exempts documentation, so a documentation-only PR cannot violate it; the full regression runs it.
   assert.match(fullHook, /^run_check contracts no-sqlite \d+ node tools\/check-no-sqlite\.mjs$/m);
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);
   assert.match(timings, /name: dealer-regression-timing-\$\{\{ matrix\.leg \}\}-/, 'each leg keeps its own timing receipt');
+  assert.match(browserSteps.find(step => /^Save regression group timings/.test(step)), /name: dealer-regression-timing-browser-/);
   assert.match(yaml, /if: always\(\)[\s\S]*dealer-regression-timing\.jsonl/);
   assert.doesNotMatch(yaml, /system-map/);
   assert.doesNotMatch(fullHook, /system-map/);
   const push = readFileSync(new URL('../tools/check-push-target.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(push, /system-map/);
+});
+
+test('the shared package-tree cache is keyed on every installed lockfile and manifest and saves only a clean install', () => {
+  const action = readFileSync(new URL('../.github/actions/install-dependencies/action.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const installs = [...action.matchAll(/npm --prefix (\S+) ci\b/g)].map(match => ({ dir: match[1], lock: 'package-lock.json' }))
+    .concat([...action.matchAll(/pnpm --dir (\S+) install --frozen-lockfile/g)].map(match => ({ dir: match[1], lock: 'pnpm-lock.yaml' })));
+  assert.deepEqual(installs.map(({ dir }) => dir).sort(), ['apps/speech', 'apps/studio', 'apps/studio/client', 'apps/web',
+    'services/astrid-gpu-worker/gateway', 'services/game']);
+  const key = action.match(/\n        key: (.+)\n/)?.[1];
+  assert.match(key, /runner\.os.*runner\.arch.*steps\.node\.outputs\.abi.*hashFiles\(/, 'OS, architecture and Node ABI are part of the key');
+  const hashed = [...key.matchAll(/'([^']+)'/g)].map(match => match[1]);
+  const paths = action.split('path: |\n').slice(1).map(block => block.split('\n').filter(line => /^ {10}\S/.test(line)).map(line => line.trim()));
+  assert.equal(paths.length, 2);
+  assert.deepEqual(paths[0], paths[1], 'restore and save cover the same trees');
+  for (const { dir, lock } of installs) {
+    for (const file of [`${dir}/${lock}`, `${dir}/package.json`]) assert.ok(hashed.includes(file), `key hashes ${file}`);
+    assert.ok(paths[0].includes(`${dir}/node_modules`), `cache holds ${dir}/node_modules`);
+  }
+  // A file: dependency is a copy inside the cached tree; its sources must change the key.
+  // The changes job checks out only CI files (sparse); there the manifests are absent and full checkouts enforce this.
+  for (const { dir } of installs) {
+    const manifestUrl = new URL(`../${dir}/package.json`, import.meta.url);
+    if (!existsSync(manifestUrl)) continue;
+    const manifest = JSON.parse(readFileSync(manifestUrl, 'utf8'));
+    for (const spec of Object.values({ ...manifest.dependencies, ...manifest.devDependencies, ...manifest.optionalDependencies })) {
+      if (!String(spec).startsWith('file:')) continue;
+      const source = posix.normalize(posix.join(dir, String(spec).slice(5)));
+      assert.ok(hashed.includes(`${source}/**`), `key hashes the copied ${source} of ${dir}`);
+    }
+  }
+  assert.doesNotMatch(action, /restore-keys/, 'only an exact key skips the install');
+  const steps = action.split('\n    - ').slice(1);
+  const installSteps = steps.filter(step => /npm --prefix|pnpm\/action-setup|pnpm --dir|actions\/cache\/save/.test(step));
+  assert.equal(installSteps.length, 4, 'npm trees, pnpm setup, pnpm tree, save');
+  for (const step of installSteps) {
+    assert.match(step, /\n\s+if: steps\.cache\.outputs\.cache-hit != 'true'\n/, 'install and save run only on a miss');
+  }
+  assert.match(action, /lookup-only: \$\{\{ inputs\.warm == 'true' \}\}/);
 });
 
 test('real PR merge diff detects an earlier code commit even when the final commit is documentation', () => {
@@ -264,11 +452,30 @@ test('real PR merge diff detects an earlier code commit even when the final comm
       'migrering/STATUS.md','migrering/jakob-main-migrering/AKTIVITETER.md']) put(path,'reviewed report\n');
     put('migrering/status.json','{}\n'); commit('six migration report files');
     git('checkout','main'); git('merge','--no-ff','migration-docs','-m','test report merge');
-    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'documentation',migration:false,moving:false});
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'documentation',migration:false,moving:false,gateway:false,draft:false,browser:'none'});
+    // The draft flag comes from the event payload; a draft never changes the scope itself.
+    const eventPath=join(root,'.git','pr-event.json');
+    writeFileSync(eventPath,JSON.stringify({pull_request:{draft:true}}));
+    assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}),{scope:'documentation',migration:false,moving:false,gateway:false,draft:true,browser:'none'});
     git('checkout','-qb','ui'); mkdirSync(join(root,'apps', 'studio','components'),{recursive:true});
     put('apps/studio/components/editor.tsx','export const label = "Editor";\n'); commit('client-only edit');
     git('checkout','main'); git('merge','--no-ff','ui','-m','test UI merge');
-    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false});
+    // Shared Studio components require Chrome on a ready PR; a draft runs none.
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'full',migration:false,moving:false,gateway:false,draft:false,browser:'required'});
+    assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}),{scope:'full',migration:false,moving:false,gateway:false,draft:true,browser:'none'});
+    // Browser client code makes Chrome required on a ready PR; a draft still runs none.
+    for (const [branch, path] of [['admin-client','apps/studio/client/admin/router.tsx'],['game-client','services/game/public/js/table.js']]) {
+      git('checkout','-qb',branch); mkdirSync(join(root,...path.split('/').slice(0,-1)),{recursive:true});
+      put(path,'export const view = 1;\n'); commit(branch+' edit');
+      git('checkout','main'); git('merge','--no-ff',branch,'-m','test '+branch+' merge');
+      const ready = ciSelection({cwd:root,env:prEnv()});
+      assert.equal(ready.scope,'full',path); assert.equal(ready.draft,false); assert.equal(ready.browser,'required',path);
+      assert.equal(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}).browser,'none','a draft runs no Chrome: '+path);
+    }
+    git('checkout','-qb','deploy'); mkdirSync(join(root,'services','openclaw','lab','deploy'),{recursive:true});
+    put('services/openclaw/lab/deploy/start-gateway.mjs','export const gateway = 1;\n'); commit('gateway deploy edit');
+    git('checkout','main'); git('merge','--no-ff','deploy','-m','test deploy merge');
+    assert.deepEqual(ciSelection({cwd:root,env:prEnv()}),{scope:'openclaw-deploy',migration:true,moving:false,gateway:true,draft:false,browser:'none'});
     git('checkout','-qb','moving'); mkdirSync(join(root,'services','moving-gpu-worker'),{recursive:true});
     put('services/moving-gpu-worker/serverless.py','fixture = True\n'); commit('worker edit');
     git('checkout','main'); git('merge','--no-ff','moving','-m','test worker merge');
@@ -278,46 +485,58 @@ test('real PR merge diff detects an earlier code commit even when the final comm
     git('checkout','main'); git('merge','--no-ff','code','-m','test mixed merge');
     assert.equal(ciScope({cwd:root,env:prEnv()}),'full');
     assert.equal(ciScope({cwd:root,env:{...prEnv(),GITHUB_SHA:'0'.repeat(40)}}),'full');
-    for (const event of ['push','workflow_dispatch']) assert.equal(ciScope({cwd:root,env:{GITHUB_EVENT_NAME:event}}),'full');
+    for (const event of ['push','workflow_dispatch','schedule']) assert.equal(ciScope({cwd:root,env:{GITHUB_EVENT_NAME:event}}),'full');
     git('checkout','-qb','rename'); git('mv','app.mjs','docs/renamed.md'); commit('move code under docs');
     git('checkout','main'); git('merge','--no-ff','rename','-m','test rename merge');
     assert.equal(ciScope({cwd:root,env:prEnv()}),'full','deleted runtime side of a rename must be checked');
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
 
-test('main uses the complete push range only for worker selection and stays strict on uncertain input', () => {
+test('push main runs integration checks only; preview uses its complete push range only for worker selection', () => {
   const root = mkdtempSync(join(tmpdir(),'croupier-main-worker-'));
   const env = {...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'};
   for(const key of Object.keys(env))if(/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES)$/.test(key))delete env[key];
   const git=(...args)=>execFileSync('git',args,{cwd:root,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
-  const put=(path,text)=>writeFileSync(join(root,path),text),commit=message=>{git('add','.');git('commit','-qm',message);};
-  const complete={scope:'full',migration:true,moving:true};
+  const put=(path,text)=>{mkdirSync(join(root,...path.split('/').slice(0,-1)),{recursive:true});writeFileSync(join(root,path),text);};
+  const commit=message=>{git('add','.');git('commit','-qm',message);};
   try{
     git('init','-q','-b','main');git('config','user.name','CI fixture');git('config','user.email','ci@example.invalid');git('config','core.hooksPath',join(root,'no-hooks'));
-    mkdirSync(join(root,'services','moving-gpu-worker'),{recursive:true});put('services/moving-gpu-worker/serverless.py','worker = 1\n');
+    put('services/moving-gpu-worker/serverless.py','worker = 1\n');put('services/openclaw/lab/deploy/start-gateway.mjs','export const gateway=1;\n');
     put('app.mjs','export const version=1;\n');put('README.md','base\n');commit('base');const base=git('rev-parse','HEAD');
     const eventPath=join(root,'.git','push-event.json');
-    const push=(before=base)=>{const head=git('rev-parse','HEAD');writeFileSync(eventPath,JSON.stringify({before,after:head}));
-      return {GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:head,GITHUB_EVENT_PATH:eventPath};};
+    const push=(before=base,ref='refs/heads/preview')=>{const head=git('rev-parse','HEAD');writeFileSync(eventPath,JSON.stringify({before,after:head}));
+      return {GITHUB_EVENT_NAME:'push',GITHUB_REF:ref,GITHUB_SHA:head,GITHUB_EVENT_PATH:eventPath};};
     put('app.mjs','export const version=2;\n');commit('unrelated product edit');
-    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false});
+    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false},'preview verifies the complete product, Chrome required');
+    // Main: no regression leg, no worker image, no Chrome; readiness always; the Gateway image follows the push range.
+    assert.deepEqual(ciSelection({cwd:root,env:push(base,'refs/heads/main')}),{...integration,gateway:false});
     put('README.md','followup prose\n');commit('docs after code');
-    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false},'main regression and migration readiness remain full');
+    assert.deepEqual(ciSelection({cwd:root,env:push()}),{...complete,moving:false},'preview regression and migration readiness remain full');
     const shallow=join(root,'shallow');git('clone','-q','--depth=2',pathToFileURL(root).href,shallow);
     assert.deepEqual(ciSelection({cwd:shallow,env:push()}),complete,'an unavailable batch base cannot skip the image');
+    assert.deepEqual(ciSelection({cwd:shallow,env:push(base,'refs/heads/main')}),integration,'an unavailable main range builds the Gateway image');
     rmSync(shallow,{recursive:true,force:true});
     git('checkout','-qb','side',base);put('README.md','side branch\n');commit('unrelated history');const side=git('rev-parse','HEAD');git('checkout','main');
     assert.deepEqual(ciSelection({cwd:root,env:push(side)}),complete,'a non-ancestor is not a push range');
-    const valid=push();
-    for(const changes of [{GITHUB_REF:'refs/heads/feature'},{GITHUB_EVENT_NAME:'workflow_dispatch'},{GITHUB_SHA:'f'.repeat(40)},{GITHUB_EVENT_PATH:join(root,'absent')}])
-      assert.deepEqual(ciSelection({cwd:root,env:{...valid,...changes}}),complete);
-    for(const payload of ['not JSON',JSON.stringify({before:'0'.repeat(40),after:valid.GITHUB_SHA}),JSON.stringify({before:base,after:'f'.repeat(40)}),JSON.stringify({before:valid.GITHUB_SHA,after:valid.GITHUB_SHA})]){
-      writeFileSync(eventPath,payload);assert.deepEqual(ciSelection({cwd:root,env:valid}),complete);
+    assert.deepEqual(ciSelection({cwd:root,env:push(side,'refs/heads/main')}),integration);
+    for (const ref of ['refs/heads/preview','refs/heads/main']) {
+      const valid=push(base,ref), uncertain=ref==='refs/heads/main'?integration:complete;
+      for(const changes of [{GITHUB_SHA:'f'.repeat(40)},{GITHUB_EVENT_PATH:join(root,'absent')}])
+        assert.deepEqual(ciSelection({cwd:root,env:{...valid,...changes}}),uncertain,ref);
+      for(const payload of ['not JSON',JSON.stringify({before:'0'.repeat(40),after:valid.GITHUB_SHA}),JSON.stringify({before:base,after:'f'.repeat(40)}),JSON.stringify({before:valid.GITHUB_SHA,after:valid.GITHUB_SHA})]){
+        writeFileSync(eventPath,payload);assert.deepEqual(ciSelection({cwd:root,env:valid}),uncertain,ref+' '+payload);
+      }
     }
+    const valid=push();
+    for(const changes of [{GITHUB_REF:'refs/heads/feature'},{GITHUB_EVENT_NAME:'workflow_dispatch'},{GITHUB_EVENT_NAME:'schedule',GITHUB_REF:'refs/heads/main'}])
+      assert.deepEqual(ciSelection({cwd:root,env:{...valid,...changes}}),complete,'feature pushes, manual and nightly runs verify the complete product');
     const previous=git('rev-parse','HEAD');put('services/moving-gpu-worker/serverless.py','worker = 2\n');commit('worker change');put('README.md','last commit is only prose\n');commit('docs after worker');
     assert.deepEqual(ciSelection({cwd:root,env:push(previous)}),complete,'earlier worker changes in a batch cannot be hidden by its last commit');
-    git('rm','services/moving-gpu-worker/serverless.py');commit('remove worker source');
+    assert.deepEqual(ciSelection({cwd:root,env:push(previous,'refs/heads/main')}),{...integration,gateway:false},'main leaves the worker image to its PR and the nightly run');
+    git('rm','-q','services/moving-gpu-worker/serverless.py');commit('remove worker source');
     assert.deepEqual(ciSelection({cwd:root,env:push(previous)}),complete,'worker removals also require its image check');
+    const beforeGateway=git('rev-parse','HEAD');put('services/openclaw/lab/deploy/start-gateway.mjs','export const gateway=2;\n');commit('gateway edit');put('README.md','prose after the gateway\n');commit('docs after gateway');
+    assert.deepEqual(ciSelection({cwd:root,env:push(beforeGateway,'refs/heads/main')}),integration,'an earlier Gateway input change in the range builds its image on main');
   }finally{rmSync(root,{recursive:true,force:true});}
 });
 
@@ -329,17 +548,112 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   const run = needs => spawnSync(process.execPath,['--input-type=module','-e',script],{
     encoding:'utf8',env:{...process.env,CI_NEEDS:JSON.stringify(needs)},
   }).status;
-  const full = { changes:{result:'success',outputs:{scope:'full',migration:'true',moving:'false'}}, documentation:{result:'skipped'},
-    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'gateway-container':{result:'success'},
+  const allLegs = JSON.stringify(SCOPE_LEGS.full);
+  // A ready full-scope PR: every leg, Chrome advisory.
+  const full = { changes:{result:'success',outputs:{scope:'full',migration:'true',moving:'false',gateway:'true',draft:'false',browser:'advisory',legs:allLegs}},
+    documentation:{result:'skipped'}, targeted:{result:'skipped'},
+    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'browser-regression':{result:'success'}, 'gateway-container':{result:'success'},
     'migration-readiness':{result:'success'}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
-  const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.documentation.result='success';
+  const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.changes.outputs.gateway='false'; docs.changes.outputs.legs='[]'; docs.documentation.result='success';
+  docs.changes.outputs.browser='none'; docs['browser-regression'].result='skipped';
   docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
   docs['gateway-container'].result='skipped'; docs['migration-readiness'].result='skipped';
   assert.equal(run(docs),0);
+  // Chrome on a ready PR is advisory: any result passes the gate; malformed or contradictory selection does not.
+  for (const result of ['failure','cancelled','skipped',undefined]) {
+    const advisory=structuredClone(full); advisory['browser-regression'].result=result; assert.equal(run(advisory),0,'advisory Chrome does not block: '+result);
+  }
+  for (const value of ['',undefined,'unknown',true,'false']) {
+    const broken=structuredClone(full); broken.changes.outputs.browser=value; assert.notEqual(run(broken),0,'unreported browser selection is rejected: '+value);
+  }
+  for (const mode of ['required','advisory']) {
+    const contradictory=structuredClone(docs); contradictory.changes.outputs.browser=mode; contradictory['browser-regression'].result='success';
+    assert.notEqual(run(contradictory),0,'documentation runs no Chrome acceptance: '+mode);
+  }
+  // Nightly, manual and preview runs require Chrome.
+  const nightly = structuredClone(full); nightly.changes.outputs.browser='required'; nightly.changes.outputs.moving='true'; nightly['moving-worker'].result='success';
+  assert.equal(run(nightly),0);
+  for (const result of ['failure','cancelled','skipped',undefined]) {
+    const broken=structuredClone(nightly); broken['browser-regression'].result=result; assert.notEqual(run(broken),0,'required Chrome: '+result);
+  }
+  const noBrowserJob=structuredClone(nightly); delete noBrowserJob['browser-regression']; assert.notEqual(run(noBrowserJob),0);
+  // Selection none: the job must not have run at all.
+  for (const result of ['success','failure']) {
+    const broken=structuredClone(full); broken.changes.outputs.browser='none'; broken['browser-regression'].result=result; assert.notEqual(run(broken),0,'browser ran against the classification: '+result);
+  }
+  // Push main (integration): documentation, readiness and the gateway as classified; no regression job.
+  const main = structuredClone(docs); main.changes.outputs.scope='integration'; main.changes.outputs.migration='true'; main['migration-readiness'].result='success';
+  assert.equal(run(main),0,'push main passes on its integration checks');
+  const mainGateway = structuredClone(main); mainGateway.changes.outputs.gateway='true'; mainGateway['gateway-container'].result='success';
+  assert.equal(run(mainGateway),0,'push main builds the Gateway image when its inputs changed');
+  for (const result of ['skipped','failure','cancelled',undefined]) {
+    const broken=structuredClone(mainGateway); broken['gateway-container'].result=result; assert.notEqual(run(broken),0,'main gateway: '+result);
+  }
+  for (const job of ['documentation','migration-readiness']) for (const result of ['skipped','failure','cancelled',undefined]) {
+    const broken=structuredClone(main); broken[job].result=result; assert.notEqual(run(broken),0,`main ${job}: ${result}`);
+  }
+  for (const [job, outputs] of [['dealer-regression',{lipsync_verified:'true'}],['browser-regression',undefined]]) {
+    const broken=structuredClone(main); broken[job]={result:'success',...(outputs ? {outputs} : {})}; assert.notEqual(run(broken),0,`main must not run ${job}`);
+  }
+  const mainWithLegs=structuredClone(main); mainWithLegs.changes.outputs.legs=allLegs; mainWithLegs['dealer-regression']={result:'success',outputs:{lipsync_verified:'true'}};
+  assert.notEqual(run(mainWithLegs),0,'integration scope and a leg list contradict each other');
+  const mainDraft=structuredClone(main); mainDraft.changes.outputs.draft='true'; assert.notEqual(run(mainDraft),0,'a push is never a draft');
+  const mainNoReadiness=structuredClone(main); mainNoReadiness.changes.outputs.migration='false'; mainNoReadiness['migration-readiness'].result='skipped';
+  assert.notEqual(run(mainNoReadiness),0,'every push to main checks the live migration ledger');
   const client = structuredClone(full); client.changes.outputs.migration='false';
   client['migration-readiness'].result='skipped';
   assert.equal(run(client),0,'client-only changes need no production access');
+  // Gateway container: required exactly when the classifier asked for it.
+  const noGateway = structuredClone(full); noGateway.changes.outputs.gateway='false'; noGateway['gateway-container'].result='skipped';
+  assert.equal(run(noGateway),0,'an unchanged Gateway image needs no build');
+  for (const result of ['success','failure','cancelled',undefined]) {
+    const broken=structuredClone(noGateway); broken['gateway-container'].result=result; assert.notEqual(run(broken),0,'gateway ran against the classification: '+result);
+  }
+  for (const value of ['',undefined,'unknown',true]) {
+    const broken=structuredClone(full); broken.changes.outputs.gateway=value; assert.notEqual(run(broken),0,'unreported gateway selection is rejected');
+  }
+  // Narrow scope: only its legs ran, the lipsync receipt is not required when its leg did not run.
+  const deploy = structuredClone(full); deploy.changes.outputs.scope='openclaw-deploy'; deploy.changes.outputs.legs=JSON.stringify(SCOPE_LEGS['openclaw-deploy']);
+  deploy.changes.outputs.browser='none'; deploy['browser-regression'].result='skipped';
+  delete deploy['dealer-regression'].outputs;
+  assert.equal(run(deploy),0,'openclaw-deploy requires its legs and the Gateway container');
+  const deployNoGateway = structuredClone(deploy); deployNoGateway.changes.outputs.gateway='false'; deployNoGateway['gateway-container'].result='skipped';
+  assert.equal(run(deployNoGateway),0);
+  for (const result of ['failure','cancelled','skipped',undefined]) {
+    const broken=structuredClone(deploy); broken['dealer-regression'].result=result; assert.notEqual(run(broken),0,'narrow scope still needs its legs: '+result);
+  }
+  const lipsyncLegOnly = structuredClone(full); lipsyncLegOnly.changes.outputs.legs=JSON.stringify([LIPSYNC_LEG]); delete lipsyncLegOnly['dealer-regression'].outputs;
+  assert.notEqual(run(lipsyncLegOnly),0,'the lipsync leg must attest whenever it runs');
+  for (const legs of ['','not json','{}','[1]','[""]',undefined]) {
+    const broken=structuredClone(full); broken.changes.outputs.legs=legs; assert.notEqual(run(broken),0,'malformed leg list: '+legs);
+  }
+  const emptyFull = structuredClone(full); emptyFull.changes.outputs.legs='[]'; emptyFull['dealer-regression'].result='skipped'; delete emptyFull['dealer-regression'].outputs;
+  assert.notEqual(run(emptyFull),0,'a full scope without legs verifies nothing');
+  // Draft runs: only the targeted job (or documentation) may run; the gate is not named CI there.
+  const draft = structuredClone(full); draft.changes.outputs.draft='true'; draft.changes.outputs.browser='none'; draft.targeted.result='success';
+  for (const job of ['dealer-regression','browser-regression','gateway-container','migration-readiness']) { draft[job].result='skipped'; delete draft[job].outputs; }
+  assert.equal(run(draft),0,'a draft passes on the targeted job alone');
+  const draftDocs = structuredClone(docs); draftDocs.changes.outputs.draft='true';
+  assert.equal(run(draftDocs),0,'a documentation draft passes on the documentation job');
+  for (const result of ['failure','cancelled','skipped',undefined]) {
+    const broken=structuredClone(draft); broken.targeted.result=result; assert.notEqual(run(broken),0,'draft targeted: '+result);
+    const brokenDocs=structuredClone(draftDocs); brokenDocs.documentation.result=result; assert.notEqual(run(brokenDocs),0,'draft documentation: '+result);
+  }
+  for (const job of ['dealer-regression','browser-regression','gateway-container','migration-readiness','moving-worker','documentation']) {
+    for (const result of ['success','failure']) {
+      const broken=structuredClone(draft); broken[job].result=result; assert.notEqual(run(broken),0,`a draft must not run ${job} (${result})`);
+    }
+  }
+  const draftAdvisory=structuredClone(draft); draftAdvisory.changes.outputs.browser='advisory'; assert.notEqual(run(draftAdvisory),0,'a draft selects no Chrome acceptance');
+  for (const value of ['',undefined,'unknown',true,'yes']) {
+    const broken=structuredClone(full); broken.changes.outputs.draft=value; assert.notEqual(run(broken),0,'unreported draft selection is rejected');
+  }
+  // A ready run never accepts the targeted job in place of regression.
+  const readyTargeted = structuredClone(full); readyTargeted.targeted.result='success';
+  assert.notEqual(run(readyTargeted),0);
+  const readyNoRegression = structuredClone(full); readyNoRegression.targeted.result='success'; readyNoRegression['dealer-regression'].result='skipped'; delete readyNoRegression['dealer-regression'].outputs;
+  assert.notEqual(run(readyNoRegression),0);
   for (const result of [undefined,'','skipped','failure','cancelled']) {
     const broken=structuredClone(full); broken['migration-readiness'].result=result;
     assert.notEqual(run(broken),0,'required readiness must have a successful job: '+result);
@@ -352,6 +666,8 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   }
   const inconsistentDocs=structuredClone(docs); inconsistentDocs.changes.outputs.migration='true';
   assert.notEqual(run(inconsistentDocs),0,'documentation cannot claim to have run required readiness');
+  const docsWithLegs=structuredClone(docs); docsWithLegs.changes.outputs.legs=allLegs;
+  assert.notEqual(run(docsWithLegs),0,'documentation scope and a leg list contradict each other');
   const readiness = yaml.split('\n  migration-readiness:\n')[1]?.split('\n  moving-worker:')[0];
   assert.ok(readiness?.includes('run: node tools/check-migration-readiness.mjs'));
   assert.ok(readiness.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_GAME_DATABASE_URL }}'));
@@ -364,13 +680,16 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     {event_name:'pull_request',repository,event:{pull_request:{head:{repo:{full_name:repository}}}},allowed:true},
     {event_name:'pull_request',repository,event:{pull_request:{head:{repo:{full_name:'contributor/scoutgaming'}}}},allowed:false},
     {event_name:'push',ref:'refs/heads/main',repository,allowed:true},
+    {event_name:'push',ref:'refs/heads/preview',repository,allowed:true},
     {event_name:'push',ref:'refs/heads/feature',repository,allowed:false},
     {event_name:'workflow_dispatch',repository,allowed:true},
+    {event_name:'schedule',ref:'refs/heads/main',repository,allowed:true},
     {event_name:'unknown',repository,allowed:false},
   ];
-  for (const context of contexts) for (const migration of ['true','false']) {
-    const allowed=runInNewContext(condition,{needs:{changes:{outputs:{migration}}},github:context});
-    assert.equal(allowed,migration==='true' && context.allowed,'production access: '+JSON.stringify({event:context.event_name,migration,allowed:context.allowed}));
+  for (const context of contexts) for (const migration of ['true','false']) for (const draftFlag of ['true','false']) {
+    const allowed=runInNewContext(condition,{needs:{changes:{outputs:{migration,draft:draftFlag}}},github:context});
+    assert.equal(allowed,migration==='true' && draftFlag==='false' && context.allowed,'production access: '+JSON.stringify({event:context.event_name,migration,draft:draftFlag,allowed:context.allowed}));
+    if (draftFlag==='true') continue;
     const result=structuredClone(full); result.changes.outputs.migration=migration;
     result['migration-readiness'].result=allowed?'success':'skipped';
     assert.equal(run(result)===0,migration==='false' || context.allowed,'fork readiness must block without exposing production access');
@@ -399,14 +718,94 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   }
   const unreported=structuredClone(full); delete unreported['moving-worker']; assert.notEqual(run(unreported),0);
   assert.notEqual(run({}),0);
+  // Draft runs are not the required check: the gate job is renamed, so CI stays missing on that head.
+  const gate = yaml.split('\n  ci:\n')[1];
+  assert.match(gate, /^    name: \$\{\{ needs\.changes\.outputs\.draft == 'true' && 'CI \(utkast\)' \|\| 'CI' \}\}\n/, 'only ready runs report the check named CI');
+  for (const [draftFlag, expected] of [['true','CI (utkast)'],['false','CI'],['','CI'],[undefined,'CI']]) {
+    const name = runInNewContext("draft == 'true' && 'CI (utkast)' || 'CI'", { draft: draftFlag });
+    assert.equal(name, expected);
+  }
+});
+
+test('migration readiness reads the preview ledger on preview runs, production otherwise, with no fallback to production', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
+  const readiness = yaml.split('\n  migration-readiness:\n')[1]?.split('\n  moving-worker:')[0];
+  assert.ok(readiness, 'the readiness job must exist');
+  const steps = readiness.split('\n      - ').slice(1).map(step => '      - ' + step);
+  const named = name => {
+    const found = steps.filter(step => step.startsWith(`      - name: ${name}\n`));
+    assert.equal(found.length, 1, 'exactly one step: ' + name);
+    return found[0];
+  };
+  // No expression anywhere in the workflow may pick a secret with a || reserve: a && b || c returns c when b is empty.
+  for (const expression of yaml.match(/\$\{\{[^}]*\}\}/g) ?? []) {
+    if (expression.includes('secrets.')) assert.doesNotMatch(expression, /\|\||&&/, 'a secret is never chosen with && / ||: ' + expression);
+  }
+  assert.equal(yaml.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2, 'the preview secret is read only by the readiness job (presence check and preview step)');
+  assert.equal(readiness.match(/secrets\.CROUPIER_PREVIEW_DATABASE_URL/g)?.length, 2);
+  const preview = named('Studio migration readiness (preview ledger)');
+  const production = named('Studio migration readiness (production ledger)');
+  assert.ok(preview.includes("\n        if: steps.ledger.outputs.environment == 'preview'\n"));
+  assert.ok(preview.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_PREVIEW_DATABASE_URL }}'));
+  assert.doesNotMatch(preview, /secrets\.CROUPIER_GAME_DATABASE_URL/, 'the preview step never receives production credentials');
+  assert.ok(production.includes("\n        if: steps.ledger.outputs.environment == 'production'\n"));
+  assert.ok(production.includes('CROUPIER_GAME_DATABASE_URL: $'+'{{ secrets.CROUPIER_GAME_DATABASE_URL }}'));
+  assert.doesNotMatch(production, /CROUPIER_PREVIEW_DATABASE_URL/);
+  for (const step of [preview, production]) assert.ok(step.includes('\n        run: node tools/check-migration-readiness.mjs\n'));
+  const select = named('Select the migration ledger (preview or production)');
+  assert.ok(steps.indexOf(select) < steps.indexOf(preview) && steps.indexOf(select) < steps.indexOf(production), 'the ledger is chosen before readiness runs');
+  assert.ok(select.includes('\n        id: ledger\n') && select.includes('\n        shell: bash\n'));
+  assert.ok(select.includes("PREVIEW_SECRET_SET: $"+"{{ secrets.CROUPIER_PREVIEW_DATABASE_URL != '' }}"), 'the selector sees only whether the preview secret exists');
+  assert.doesNotMatch(select, /secrets\.CROUPIER_GAME_DATABASE_URL/);
+  const script = select.split('\n        run: |\n')[1]?.split('\n').map(line => line.slice(10)).join('\n');
+  assert.ok(script?.includes('GITHUB_OUTPUT'), 'the selector script must be extractable');
+  const root = mkdtempSync(join(tmpdir(), 'ci-ledger-'));
+  try {
+    let n = 0;
+    const choose = (env) => {
+      const output = join(root, `output-${n++}`);
+      writeFileSync(output, '');
+      const shell = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+      const result = spawnSync(shell, ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      assert.ifError(result.error);
+      return {status: result.status, output: readFileSync(output, 'utf8'), log: result.stdout + result.stderr};
+    };
+    const cases = [
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'preview'}, 'preview'],
+      [{GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/pull/7/merge', GITHUB_BASE_REF: 'main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'schedule', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/jakob/codex-fixture'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/tags/preview'}, 'production'],
+      [{GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: 'refs/heads/preview', GITHUB_BASE_REF: 'main'}, 'production'],
+    ];
+    for (const [context, ledger] of cases) {
+      const chosen = choose({...context, PREVIEW_SECRET_SET: 'true'});
+      assert.equal(chosen.status, 0, JSON.stringify(context));
+      assert.equal(chosen.output, `environment=${ledger}\n`, 'ledger for ' + JSON.stringify(context));
+      const missing = choose({...context, PREVIEW_SECRET_SET: 'false'});
+      if (ledger === 'production') {
+        assert.equal(missing.status, 0, 'production does not need the preview secret');
+        assert.equal(missing.output, 'environment=production\n');
+      } else {
+        assert.equal(missing.status, 1, 'a missing preview secret fails: ' + JSON.stringify(context));
+        assert.equal(missing.output, '', 'a missing preview secret selects no ledger at all');
+        assert.match(missing.log, /::error title=Preview migration readiness::.*CROUPIER_PREVIEW_DATABASE_URL/);
+      }
+    }
+  } finally { rmSync(root, {recursive: true, force: true}); }
 });
 
 test('lipsync worker checks run in one regression leg with isolated Python and only attest after every command passes', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
-  const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  gateway-container:\n')[0];
+  const dealer = yaml.split('  dealer-regression:\n')[1]?.split('  browser-regression:\n')[0];
   assert.ok(dealer, 'the full regression job must exist');
   assert.doesNotMatch(yaml, /^  lipsync-worker:/m, 'the worker checks stay a leg of the regression job');
-  assert.equal(dealer.match(/\n            lipsync: true\n/g)?.length, 1, 'exactly one leg runs and attests the worker checks');
+  assert.equal(REGRESSION_LEGS.filter(leg => leg.lipsync === true).length, 1, 'exactly one leg runs and attests the worker checks');
+  assert.equal(REGRESSION_LEGS.find(leg => leg.lipsync === true).leg, LIPSYNC_LEG, 'the gate requires the receipt from that leg');
   assert.ok(dealer.includes('lipsync_verified: $' + '{{ steps.lipsync_contracts.outputs.verified }}'));
   const python = dealer.split('      - name: Select the worker Python without changing other checks\n')[1]?.split('      - name:')[0];
   assert.ok(python?.includes('id: lipsync_python'));
@@ -496,7 +895,8 @@ test('sparse checkout retains the full commit diff and every policy dependency',
   const git = (...args)=>execFileSync('git',args,{cwd:root,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
   const put = (path,text)=>{mkdirSync(join(root,...path.split('/').slice(0,-1)),{recursive:true});writeFileSync(join(root,path),text);};
   const commit = message=>{git('add','.');git('commit','-qm',message);};
-  const full = moving=>({scope:'full',migration:true,moving});
+  // PR cases: a product edit outside the Gateway inputs needs no container build; uncertain identity runs everything.
+  const full = moving=>({...complete,moving,gateway:false,browser:'advisory'});
   try {
     git('init','-q','-b','main');git('config','user.name','CI fixture');git('config','user.email','ci@example.invalid');git('config','core.hooksPath',join(root,'no-hooks'));
     for (const path of files) put(path,readFileSync(new URL('../'+path,import.meta.url),'utf8'));
@@ -511,7 +911,7 @@ test('sparse checkout retains the full commit diff and every policy dependency',
       {path:'outside/runtime.mjs',expected:full(false)},
       {path:'services/moving-gpu-worker/serverless.py',remove:true,expected:full(true)},
       {path:'outside/runtime.mjs',rename:true,expected:full(false)},
-      {path:'README.md',expected:{scope:'documentation',migration:false,moving:false}},
+      {path:'README.md',expected:{scope:'documentation',migration:false,moving:false,gateway:false,draft:false,browser:'none'}},
     ];
     for (const [index,item] of cases.entries()) {
       const branch='case-'+index;git('checkout','-qb',branch,base);
@@ -528,7 +928,7 @@ test('sparse checkout retains the full commit diff and every policy dependency',
       const pr={GITHUB_EVENT_NAME:'pull_request',GITHUB_REF:'refs/pull/1/merge',GITHUB_SHA:item.head};
       assert.deepEqual(ciSelection({cwd:root,env:pr}),item.expected,item.path);
       for (const invalid of [{GITHUB_REF:'refs/heads/main'},{GITHUB_SHA:'0'.repeat(40)},{GITHUB_EVENT_NAME:'unknown'}]) {
-        assert.deepEqual(ciSelection({cwd:root,env:{...pr,...invalid}}),full(true),'uncertain identity must never become documentation-only');
+        assert.deepEqual(ciSelection({cwd:root,env:{...pr,...invalid}}),complete,'uncertain identity must never become documentation-only');
       }
     }
     rmSync(join(root,'tools','documentation-paths.mjs'));

@@ -1,0 +1,103 @@
+name: Review or remove the accidentally public Moving prep package
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      expected_head:
+        description: 'Full reviewed cleanup source SHA; must equal dispatch head'
+        required: true
+        type: string
+      execute:
+        description: 'Delete only the reviewed accidental moving-gpu-prep package'
+        required: true
+        default: false
+        type: boolean
+      approved_digest:
+        description: 'For deletion: exact accidentally published sha256 digest'
+        required: false
+        default: ''
+        type: string
+      confirmed_head:
+        description: 'For deletion: original published head 8418878f25d9563358545c9b39ff2391c7036d7f'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+# Serialize with publication; never cancel another registry operation.
+concurrency:
+  group: moving-gpu-prep-publish
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: >-
+      github.repository == 'Jakeminator123/scoutgaming' &&
+      github.repository_id == '1380630440' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        (github.event.label.name == 'moving-gpu-prep-cleanup-dry-run' ||
+         github.event.label.name == 'moving-gpu-prep-cleanup-approved')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || inputs.expected_head }}
+      SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      EXECUTE_CLEANUP: ${{ github.event_name == 'pull_request' && github.event.label.name == 'moving-gpu-prep-cleanup-approved' || github.event_name == 'workflow_dispatch' && inputs.execute }}
+      APPROVED_DIGEST: ${{ github.event_name == 'pull_request' && github.event.label.name == 'moving-gpu-prep-cleanup-approved' && 'sha256:5e3ecea7694d8b5dd4bf160dd27ad2ac4303da3caaed7080d1b9a3318d9c9e1b' || inputs.approved_digest }}
+      CONFIRMED_HEAD: ${{ github.event_name == 'pull_request' && github.event.label.name == 'moving-gpu-prep-cleanup-approved' && '8418878f25d9563358545c9b39ff2391c7036d7f' || inputs.confirmed_head }}
+    steps:
+      - name: Require the frozen reviewed cleanup head
+        run: |
+          python3 - <<'PY'
+          import os, re
+          assert re.fullmatch(r'[a-f0-9]{40}', os.environ['EXPECTED_HEAD'])
+          assert os.environ['EXPECTED_HEAD'] == os.environ['SOURCE_HEAD']
+          PY
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            services/moving-gpu-prep
+            services/astrid-gpu-worker/workers
+            tools
+      - name: Verify exact source, release seal and behavior tests
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 services/moving-gpu-prep/build.py --check
+          python3 -B -m unittest discover -s services/moving-gpu-prep/tests -v
+      - name: Inspect target without mutation and record safe recovery identifiers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 services/moving-gpu-prep/cleanup_public_package.py --receipt "$RUNNER_TEMP/moving-gpu-prep-cleanup.json"
+      - name: Preserve recovery artifact before any deletion
+        uses: actions/upload-artifact@v7
+        with:
+          name: moving-gpu-prep-cleanup-before-${{ github.run_id }}
+          path: ${{ runner.temp }}/moving-gpu-prep-cleanup.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Recheck and delete only with explicit exact confirmation
+        if: env.EXECUTE_CLEANUP == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 services/moving-gpu-prep/cleanup_public_package.py \
+            --receipt "$RUNNER_TEMP/moving-gpu-prep-cleanup.json" --execute \
+            --approved-digest "$APPROVED_DIGEST" --confirmed-head "$CONFIRMED_HEAD"
+      - name: Preserve deletion and postcheck result
+        if: always() && env.EXECUTE_CLEANUP == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: moving-gpu-prep-cleanup-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/moving-gpu-prep-cleanup.json
+          if-no-files-found: ignore
+          retention-days: 30

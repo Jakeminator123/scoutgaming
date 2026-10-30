@@ -1,56 +1,131 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import source from '../apps/studio/lib/paow-idle-source-f664c54d.json' with {type:'json'};
-import {preparePaowIdleRotation} from '../apps/studio/lib/paow-idle-rotation.mjs';
+import {IDLE_ROTATION_DEALERS,idleRotationSource,prepareIdleRotation,savedIdleRotationSelection,validateIdleRotationSource} from '../apps/studio/lib/idle-rotation-sources.mjs';
 import {createLiveIdleController} from '../packages/presentation/runtime/live-idle.mjs';
 import {validateIdlePolicy, createIdlePreviewPlan, IdlePolicyError} from '../packages/presentation/runtime/idle-policy.mjs';
-import {chooseRotationClip} from '../packages/presentation/runtime/idle-rotation.mjs';
+import {chooseRotationClip,createIdleOffers} from '../packages/presentation/runtime/idle-rotation.mjs';
 import {addDealer,createSeedProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {encodePresentationPackage,decodePresentationPackage} from '../packages/presentation/server/presentation-package.mjs';
 import {assertFrozenMediaPreconditions} from '../packages/presentation/server/frozen-dealer-idle.mjs';
 
-function fixture() {
-  const familyId='paow/idle.ready/ready';
-  const videos=source.clips.map((take,index)=>({id:`00000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,
-    dealer:'paow',familyId,available:true,verdict:'unrated',sha256:take.sha256,bytes:take.bytes,
-    role:index?'variant':'standard',classification:{dealerId:'paow',kind:'idle',eventId:'idle.ready',playback:'once'}}));
-  const inventory={videos,families:[{id:familyId,dealerId:'paow',playbackType:'idle-pool',standardIds:[videos[0].id],variantIds:videos.slice(1).map(row=>row.id)}]};
-  const base={schemaVersion:1,familyId,base:[{videoId:videos[0].id,weight:100,durationMs:1625}],variants:[]};
-  const policy=preparePaowIdleRotation(base,inventory).policy;
-  const controller=createLiveIdleController({policy,inventory,dealerId:'paow',seed:42,now:()=>0,initialScene:{active:true}});
+const KEVIN_REF='de31659c13ab495e80779c1acbf4efd446b4e565';
+const prefix={paow:'00000000',dragan:'11111111'};
+// Registered originals with the source's exact bytes, as the native /videos inventory reports them.
+function registered(dealerId) {
+  const source=idleRotationSource(dealerId),familyId=`${dealerId}/idle.ready/ready`;
+  const videos=source.clips.map((take,index)=>({id:`${prefix[dealerId]}-0000-4000-8000-${String(index+1).padStart(12,'0')}`,
+    dealer:dealerId,familyId,available:true,verdict:'unrated',sha256:take.sha256,bytes:take.bytes,
+    role:index?'variant':'standard',classification:{dealerId,kind:'idle',eventId:'idle.ready',playback:'once'}}));
+  const inventory={videos,families:[{id:familyId,dealerId,playbackType:'idle-pool',standardIds:[videos[0].id],variantIds:videos.slice(1).map(row=>row.id)}]};
+  return {source,familyId,inventory,base:{schemaVersion:1,familyId,base:[{videoId:videos[0].id,weight:100,durationMs:1625}],variants:[]}};
+}
+function fixture(dealerId='paow',selection=null) {
+  const f=registered(dealerId),prepared=prepareIdleRotation(f.base,f.inventory,{selection}),policy=prepared.policy;
+  assert.ok(policy,prepared.error);
+  const controller=createLiveIdleController({policy,inventory:f.inventory,dealerId,seed:42,now:()=>0,initialScene:{active:true}});
   const row=clip=>policy.rotation.clips.find(item=>item.videoId===clip.videoId);
   const finish=()=>{const clip=controller.snapshot().clip;assert.ok(clip);controller.presented(clip.playId);return controller.completed(clip.playId);};
-  return {base,policy,inventory,controller,row,finish};
+  return {...f,prepared,policy,controller,row,finish};
 }
 
-test('all 24 exact originals reuse registered identities; missing, rejected, deleted, foreign or ambiguous bytes block binding',()=>{
-  const f=fixture();assert.equal(f.policy.rotation.clips.length,24);assert.equal(f.policy.variants.length,23);
-  assert.deepEqual(new Set(f.policy.rotation.clips.map(row=>row.videoId)),new Set(f.inventory.videos.map(row=>row.id)));
-  for(const patch of [v=>v.bytes++,v=>v.sha256='f'.repeat(64),v=>v.available=false,v=>v.verdict='no',v=>v.dealer='astrid',
-    v=>v.classification.dealerId='astrid',v=>v.classification.playback='loop',v=>v.deletion={state:'pending'}]) {
-    const inventory=structuredClone(f.inventory);patch(inventory.videos[17]);assert.equal(preparePaowIdleRotation(f.base,inventory).policy,null);
+test('each dealer source is frozen to Kevin\'s exact ref: PAOW without the three rejected takes, Dragan with his H3 and clasped-hand takes',()=>{
+  assert.deepEqual(IDLE_ROTATION_DEALERS,['paow','dragan']);
+  const paow=idleRotationSource('paow'),dragan=idleRotationSource('dragan');
+  for(const source of [paow,dragan]) {
+    assert.equal(source.ref,KEVIN_REF);assert.equal(source.baseline,'andas');assert.equal(source.clips[0].id,'andas');
+    assert.ok(source.clips.every(take=>take.frames===39&&take.fps===24&&take.durationMs===1625&&take.path.startsWith('kevin/croupier-scoutgg/public/media/dealers/')));
+    assert.equal(validateIdleRotationSource(structuredClone(source)).dealerId,source.dealerId);
   }
-  const duplicate=structuredClone(f.inventory);duplicate.videos.push({...duplicate.videos[17],id:'duplicate'});
-  assert.equal(preparePaowIdleRotation(f.base,duplicate).policy,null);
-  assert.equal(preparePaowIdleRotation({...f.base,familyId:'astrid/idle.ready/ready'},f.inventory),null);
+  assert.equal(paow.clips.length,21);assert.equal(dragan.clips.length,16);assert.equal(dragan.sourceDealerId,'dragge');
+  for(const rejected of ['andasb','rakrygg6101','plattaxlar5101'])assert.equal(paow.clips.some(take=>take.id===rejected),false,rejected);
+  const evolution=dragan.clips.filter(take=>take.phase!=='any');
+  assert.deepEqual(evolution.map(take=>take.id),['knappin5101','knappin5102','knappandas5102','knappaxlar5102','knapput5101','knapput5102','plattaxlar5101','lutfram5101']);
+  assert.deepEqual(dragan.clips.filter(take=>take.head).map(take=>take.id),['blickhoger']);
+  assert.equal(new Set([...paow.clips,...dragan.clips].map(take=>take.sha256)).size,37,'no original is shared between dealers');
+  paow.clips.pop();assert.equal(idleRotationSource('paow').clips.length,21,'callers get a copy');
+  assert.equal(idleRotationSource('astrid'),null);
+  for(const patch of [s=>s.clips[3].sha256=s.clips[2].sha256,s=>s.clips[3].extra=1,s=>s.clips[3].durationMs=1600,s=>s.baseline='andasb',
+    s=>s.ref='de31659c',s=>s.dealerId='mei',s=>s.clips[3].path=s.clips[3].path.replace('.mp4','x.mp4'),
+    s=>s.clips=s.clips.filter(take=>take.from!=='clasped'||take.to!=='rest'),s=>s.clips[0].head=true]) {
+    const source=idleRotationSource('dragan');patch(source);assert.throws(()=>validateIdleRotationSource(source),/Ogiltig vilokälla/);
+  }
 });
 
-test('long sessions cover all 24 clips across both phases, join exact poses and space head motion',()=>{
-  const f=fixture(),seen=new Set();let pose='rest',sinceHead=Infinity;
-  for(let i=0;i<4000;i++) {
-    const phase=i<2000?'bets':'decide';f.controller.updateScene({phase});
-    const clip=f.controller.snapshot().clip,row=f.row(clip);seen.add(row.videoId);
-    assert.equal(row.from,pose);if(row.head)assert.ok(sinceHead>=4);
-    if(i>2002) {assert.equal(row.to,'rest');assert.ok(row.calm);assert.notEqual(row.phase,'bets');}
-    pose=row.to;sinceHead=row.head?0:sinceHead+1;f.finish();
+test('binding reuses registered identities; wrong bytes, wrong owner, rejected, deleted or ambiguous originals are named and block it',()=>{
+  for(const dealerId of IDLE_ROTATION_DEALERS) {
+    const f=fixture(dealerId),total=f.source.clips.length;
+    assert.equal(f.policy.rotation.clips.length,total);assert.equal(f.policy.variants.length,total-1);
+    assert.equal(f.prepared.matched,total);assert.equal(f.prepared.selected,total);assert.equal(f.prepared.error,null);
+    assert.deepEqual(f.policy.rotation.clips.map(row=>row.videoId),f.inventory.videos.map(row=>row.id));
+    assert.deepEqual(f.prepared.clips.map(row=>row.status),Array(total).fill('registered'));
+    for(const patch of [v=>v.bytes++,v=>v.sha256='f'.repeat(64),v=>v.available=false,v=>v.verdict='no',v=>v.dealer='astrid',
+      v=>v.classification.dealerId='astrid',v=>v.classification.playback='loop',v=>v.classification.eventId='speak.other',v=>v.deletion={state:'pending'}]) {
+      const inventory=structuredClone(f.inventory);patch(inventory.videos[5]);
+      const result=prepareIdleRotation(f.base,inventory);
+      assert.equal(result.policy,null);assert.equal(result.clips[5].status,'missing');assert.equal(result.matched,total-1);
+      assert.match(result.error,new RegExp(`Originalet ${f.source.clips[5].id} saknas`));
+    }
+    const duplicate=structuredClone(f.inventory);duplicate.videos.push({...duplicate.videos[5],id:'22222222-0000-4000-8000-000000000001'});
+    const ambiguous=prepareIdleRotation(f.base,duplicate);
+    assert.equal(ambiguous.policy,null);assert.equal(ambiguous.clips[5].status,'ambiguous');assert.match(ambiguous.error,/Flera original matchar/);
+    const otherBase=structuredClone(f.base);otherBase.base[0].videoId=f.inventory.videos[3].id;
+    assert.match(prepareIdleRotation(otherBase,f.inventory).error,/Välj andas som basklipp/);
   }
-  assert.equal(seen.size,24);
+  // Each dealer's own bytes: PAOW's originals registered under Dragan never bind Dragan's sequence, and the reverse.
+  const paow=registered('paow'),dragan=registered('dragan');
+  const crossed=videos=>videos.map(video=>({...structuredClone(video),dealer:'dragan',familyId:dragan.familyId,classification:{...video.classification,dealerId:'dragan'}}));
+  const foreign=prepareIdleRotation(dragan.base,{videos:[dragan.inventory.videos[0],...crossed(paow.inventory.videos)]});
+  assert.equal(foreign.matched,1);assert.equal(foreign.policy,null);assert.match(foreign.error,/15 valda original saknas/);
+  assert.equal(prepareIdleRotation(paow.base,{videos:crossed(paow.inventory.videos)}).clips[0].status,'missing');
+  assert.equal(prepareIdleRotation({...paow.base,familyId:'astrid/idle.ready/ready'},paow.inventory),null);
+});
+
+test('Admin binds a subset: the baseline always stays and clasped hands need both an entry and an exit to rest',()=>{
+  const f=registered('paow'),subset=['andas','knappin5101','knapput5101','plattandas5101'];
+  const chosen=prepareIdleRotation(f.base,f.inventory,{selection:[...subset].reverse()});
+  assert.equal(chosen.error,null);assert.equal(chosen.selected,4);
+  assert.deepEqual(chosen.policy.rotation.clips.map(row=>f.inventory.videos.find(video=>video.id===row.videoId).sha256),
+    subset.map(id=>f.source.clips.find(take=>take.id===id).sha256),'source order, exact bytes');
+  assert.equal(chosen.policy.variants.length,3);assert.deepEqual(chosen.policy.variants.map(row=>row.description),subset.slice(1));
+  assert.deepEqual(savedIdleRotationSelection(chosen,chosen.policy),{ids:subset,outside:0});
+  const calm=prepareIdleRotation(f.base,f.inventory,{selection:['andas','djupandetag','fingrar']});
+  assert.equal(calm.policy.rotation.clips.length,3);
+  for(const [dealerId,selection] of [['paow',['andas','knappin5101','knappandas5101']],['paow',['andas','knappandas5101','knapput5101']],
+    ['dragan',idleRotationSource('dragan').clips.filter(take=>!take.id.startsWith('knapput')).map(take=>take.id)]]) {
+    const g=registered(dealerId),result=prepareIdleRotation(g.base,g.inventory,{selection});
+    assert.equal(result.policy,null);assert.match(result.error,/Knäppta händer kräver minst ett klipp in i posen och ett tillbaka till vila/);
+  }
+  assert.match(prepareIdleRotation(f.base,f.inventory,{selection:['djupandetag']}).error,/Basklippet andas ingår alltid/);
+  for(const selection of [['andas','andasb'],'andas',[1],5,{}])assert.match(prepareIdleRotation(f.base,f.inventory,{selection}).error,/inte finns i dealerns vilokälla/);
+  // Missing media blocks only while it is selected; deselecting it is an explicit choice.
+  const gap=structuredClone(f.inventory);gap.videos=gap.videos.filter(video=>video.sha256!==f.source.clips.find(take=>take.id==='knappaxlar5101').sha256);
+  assert.match(prepareIdleRotation(f.base,gap).error,/Originalet knappaxlar5101 saknas/);
+  const without=prepareIdleRotation(f.base,gap,{selection:f.source.clips.map(take=>take.id).filter(id=>id!=='knappaxlar5101')});
+  assert.equal(without.error,null);assert.equal(without.policy.rotation.clips.length,20);
+  // A saved sequence from an older selection reports the clips outside this source.
+  const older=structuredClone(chosen.policy);older.variants.push({videoId:'33333333-0000-4000-8000-000000000001',durationMs:1625,use:'rotation',automatic:null,description:'andasb'});
+  older.rotation.clips.push({videoId:'33333333-0000-4000-8000-000000000001',phase:'any',from:'rest',to:'rest',weight:20,head:false,calm:true});
+  assert.deepEqual(savedIdleRotationSelection(chosen,validateIdlePolicy(older)),{ids:subset,outside:1});
+});
+
+test('long sessions cover every clip of both dealers across both phases, join exact poses and space head motion',()=>{
+  for(const dealerId of IDLE_ROTATION_DEALERS) {
+    const f=fixture(dealerId),seen=new Set();let pose='rest',sinceHead=Infinity;
+    for(let i=0;i<4000;i++) {
+      const phase=i<2000?'bets':'decide';f.controller.updateScene({phase});
+      const clip=f.controller.snapshot().clip,row=f.row(clip);seen.add(row.videoId);
+      assert.equal(row.from,pose);if(row.head)assert.ok(sinceHead>=4);
+      if(i>2002) {assert.equal(row.to,'rest');assert.ok(row.calm);assert.notEqual(row.phase,'bets');}
+      pose=row.to;sinceHead=row.head?0:sinceHead+1;f.finish();
+    }
+    assert.equal(seen.size,f.source.clips.length,dealerId);
+  }
 });
 
 test('speech and changed game phase finish the current clasped take, play its exit, then prove standard idle',()=>{
-  for(const patch of [{speechReady:true},{phase:'decide'}]) {
-    const f=fixture(),c=f.controller;
+  for(const dealerId of IDLE_ROTATION_DEALERS)for(const patch of [{speechReady:true},{phase:'decide'}]) {
+    const f=fixture(dealerId),c=f.controller;
     for(let i=0;f.row(c.snapshot().clip).to!=='clasped'&&i<200;i++)f.finish();
     const entry=c.snapshot().clip;assert.equal(f.row(entry).to,'clasped');c.presented(entry.playId);
     assert.equal(c.updateScene(patch).clip.playId,entry.playId);assert.equal(c.snapshot().idleReady,false);
@@ -84,33 +159,144 @@ test('missing exits forbid entry; a partial failure holds its pose until a verif
 });
 
 test('validation rejects inconsistent graphs and the preview uses intact matching clip boundaries',()=>{
-  const f=fixture();
-  for(const patch of [p=>p.rotation.clips.pop(),p=>p.rotation.clips[0].to='clasped',p=>p.variants[0].use='manual',
-    p=>p.rotation.clips.find(r=>r.from==='clasped').phase='decide',p=>p.rotation.clips.push(p.rotation.clips[0])]) {
-    const p=structuredClone(f.policy);patch(p);assert.throws(()=>validateIdlePolicy(p),IdlePolicyError);
-  }
-  for(const phase of ['bets','decide'])for(let seed=0;seed<50;seed++) {
-    const plan=createIdlePreviewPlan(f.policy,{phase,seed});let pose='rest';
-    for(const clip of plan){const row=f.row(clip);assert.equal(row.from,pose);pose=row.to;assert.equal(clip.endMs-clip.startMs,1625);}
-    assert.equal(pose,'rest');
+  for(const dealerId of IDLE_ROTATION_DEALERS) {
+    const f=fixture(dealerId);
+    for(const patch of [p=>p.rotation.clips.pop(),p=>p.rotation.clips[0].to='clasped',p=>p.variants[0].use='manual',
+      p=>p.rotation.clips.find(r=>r.from==='clasped').phase='decide',p=>p.rotation.clips.push(p.rotation.clips[0])]) {
+      const p=structuredClone(f.policy);patch(p);assert.throws(()=>validateIdlePolicy(p),IdlePolicyError);
+    }
+    for(const phase of ['bets','decide'])for(let seed=0;seed<50;seed++) {
+      const plan=createIdlePreviewPlan(f.policy,{phase,seed});let pose='rest';
+      for(const clip of plan){const row=f.row(clip);assert.equal(row.from,pose);pose=row.to;assert.equal(clip.endMs-clip.startMs,1625);}
+      assert.equal(pose,'rest');
+    }
   }
 });
 
-test('publishing freezes all 24 original identities and pose policy, and rejects changed media revisions',()=>{
-  const f=fixture(),project=addDealer(createSeedProject(),'paow','PAOW');
-  const line=project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');
-  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=f.policy.base[0].videoId;
-  project.dealerIdlePolicies=[{dealerId:'paow',policy:f.policy}];project.lanes=[defaultPresentationLane('paow')];
-  const lane=project.lanes[0];lane.dealers=['paow'];lane.layers.dealer={enabled:true,default:'paow',allowed:['paow']};
-  const mediaRows=f.inventory.videos.map((video,index)=>{
-    Object.assign(video.classification,{role:index?'alternative':'standard',situation:'',label:source.clips[index].id,notes:''});
-    return {id:video.id,sha256:video.sha256,size:video.bytes,contentType:'video/mp4',revision:'verified-'+index,
-      pathname:`croupier/media/dealers/paow/review/uploads/${video.id}/${video.sha256}.mp4`,classification:video.classification};
-  });
-  const capture=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
-    administrationDocument:{kind:'administration',revision:'admin-fixture',value:{rooms:[]}},mediaRows},inventory:f.inventory,selectedLaneIds:[lane.id]});
-  const frozen=decodePresentationPackage(encodePresentationPackage(capture.presentation));
-  assert.deepEqual(frozen.playback.dealerIdlePolicies,[{dealerId:'paow',policy:f.policy}]);
-  assert.equal(capture.mediaPreconditions.length,24);
-  mediaRows[20].revision='replaced';assert.throws(()=>assertFrozenMediaPreconditions(capture.mediaPreconditions,mediaRows));
+test('publishing freezes exactly the bound original identities and pose policy, and rejects changed media revisions',()=>{
+  for(const selection of [null,['andas','knappin5101','knapput5101','plattandas5101']]) {
+    const f=fixture('paow',selection),project=addDealer(createSeedProject(),'paow','PAOW'),count=f.policy.rotation.clips.length;
+    assert.equal(count,selection?4:21);
+    const line=project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');
+    line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=f.policy.base[0].videoId;
+    project.dealerIdlePolicies=[{dealerId:'paow',policy:f.policy}];project.lanes=[defaultPresentationLane('paow')];
+    const lane=project.lanes[0];lane.dealers=['paow'];lane.layers.dealer={enabled:true,default:'paow',allowed:['paow']};
+    const mediaRows=f.inventory.videos.map((video,index)=>{
+      Object.assign(video.classification,{role:index?'alternative':'standard',situation:'',label:f.source.clips[index].id,notes:''});
+      return {id:video.id,sha256:video.sha256,size:video.bytes,contentType:'video/mp4',revision:'verified-'+index,
+        pathname:`croupier/media/dealers/paow/review/uploads/${video.id}/${video.sha256}.mp4`,classification:video.classification};
+    });
+    const capture=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
+      administrationDocument:{kind:'administration',revision:'admin-fixture',value:{rooms:[]}},mediaRows},inventory:f.inventory,selectedLaneIds:[lane.id]});
+    const frozen=decodePresentationPackage(encodePresentationPackage(capture.presentation));
+    assert.deepEqual(frozen.playback.dealerIdlePolicies,[{dealerId:'paow',policy:f.policy}]);
+    assert.deepEqual(capture.mediaPreconditions.map(row=>row.id).sort(),f.policy.rotation.clips.map(row=>row.videoId).sort());
+    const bound=mediaRows.findIndex(row=>row.id===f.policy.rotation.clips.at(-1).videoId);
+    mediaRows[bound].revision='replaced';assert.throws(()=>assertFrozenMediaPreconditions(capture.mediaPreconditions,mediaRows));
+  }
+});
+
+// OpenClaw or a game rule may propose one rest clip of the sequence; it plays once, then the sequence continues.
+function proposing(selection=null) {
+  const f=registered('paow'),policy=structuredClone(prepareIdleRotation(f.base,f.inventory,{selection}).policy);
+  const id=name=>f.inventory.videos.find(video=>video.sha256===f.source.clips.find(take=>take.id===name).sha256).id;
+  for(const [name,use] of [['djupandetag','openclaw'],['fingrar','rules'],['blickvanster','openclaw']])policy.variants.find(row=>row.videoId===id(name)).use=use;
+  let clock=0;
+  const c=createLiveIdleController({policy:validateIdlePolicy(policy),inventory:f.inventory,dealerId:'paow',seed:42,now:()=>clock,initialScene:{active:true}});
+  const finish=()=>{const clip=c.snapshot().clip;c.presented(clip.playId);return c.completed(clip.playId).clip;};
+  // The current clip ends at rest, so a proposal can follow it.
+  const atRest=()=>{for(let i=0;policy.rotation.clips.find(row=>row.videoId===c.snapshot().clip.videoId).to!=='rest'&&i<300;i++)finish();};
+  return {f,policy,id,c,finish,atRest,tick:ms=>{clock+=ms;return clock;},at:()=>clock};
+}
+
+test('a proposed rest clip plays once at the next boundary at rest, then the sequence resumes',()=>{
+  for(const use of ['openclaw','rules']) {
+    const p=proposing(),target=p.id(use==='openclaw'?'djupandetag':'fingrar');
+    assert.equal(p.c.snapshot().clip.standardBase,true);
+    assert.equal(p.c.offerVariant({videoId:target,requestId:`${use}-1`,expiresAt:p.at()+30000},{use}),true);
+    const played=p.finish();
+    assert.deepEqual([played.videoId,played.reason,played.requestId,played.kind],[target,use,`${use}-1`,'variant']);
+    p.tick(1625);const next=p.finish();
+    assert.equal(next.reason,'pose-rotation');assert.equal(next.requestId,undefined);
+    for(let i=0;i<300;i++){p.tick(1625);assert.equal(p.finish().reason,'pose-rotation');}
+  }
+});
+
+test('proposals keep the use, pose, phase, TTL and one start per minute; stale ones give way to the sequence',()=>{
+  const p=proposing(),openclaw=p.id('djupandetag'),rules=p.id('fingrar'),head=p.id('blickvanster'),plain=p.id('vikt6103');
+  const offer=(videoId,requestId,ttl=10000,use)=>p.c.offerVariant({videoId,requestId,expiresAt:p.at()+ttl},use?{use}:undefined);
+  assert.equal(offer(rules,'wrong-use'),false,'a rules clip is not OpenClaw\'s');
+  assert.equal(offer(openclaw,'wrong-use-2',10000,'rules'),false);
+  assert.equal(offer(plain,'sequence-only'),false,'a clip left to the sequence is never proposed');
+  assert.equal(offer(openclaw,'manual',10000,'manual'),false);
+  assert.equal(offer(openclaw,'too-long',30001),false);assert.equal(offer(openclaw,'expired',0),false);
+  assert.equal(p.c.offerVariant({videoId:openclaw,requestId:'extra',expiresAt:p.at()+1000,note:1}),false);
+  p.c.updateScene({phase:'decide'});assert.equal(offer(head,'restless'),false,'only calm clips while the player decides');
+  p.c.updateScene({phase:'bets'});
+  // One proposal waits at a time; a request id is used once.
+  assert.equal(offer(openclaw,'first'),true);assert.equal(offer(head,'second'),false);
+  p.c.clearOffers();assert.equal(offer(openclaw,'first'),false,'a used request id stays used');
+  // Expired before the boundary: the sequence goes on.
+  p.atRest();assert.equal(offer(openclaw,'short',1000),true);p.tick(2000);
+  assert.equal(p.finish().reason,'pose-rotation');
+  // Played once; another proposal within a minute of its start is refused, after a minute accepted.
+  p.tick(10);p.atRest();assert.equal(offer(head,'now'),true);const played=p.finish();
+  assert.equal(played.reason,'openclaw');assert.equal(played.videoId,head);
+  assert.equal(offer(openclaw,'queued'),false,'a proposal waiting to start blocks the next');
+  p.c.presented(played.playId);p.tick(30000);assert.equal(offer(openclaw,'too-soon'),false);
+  p.tick(30001);assert.equal(offer(openclaw,'next-minute'),true);
+  // Speech, a block or a changed scene drops a waiting proposal.
+  p.atRest();p.c.updateScene({revision:'1'});assert.equal(p.finish().reason,'pose-rotation');
+  p.atRest();assert.equal(offer(openclaw,'speech'),true);p.c.updateScene({speechReady:true});assert.equal(offer(openclaw,'during-speech'),false);
+  assert.equal(p.finish().reason,'pose-rotation');
+});
+
+test('a proposal waits for the sequence to return to rest; only rest clips may carry a proposer',()=>{
+  const p=proposing(),target=p.id('djupandetag');
+  for(let i=0;p.c.snapshot().clip&&p.policy.rotation.clips.find(row=>row.videoId===p.c.snapshot().clip.videoId).to!=='clasped'&&i<300;i++){p.tick(100);p.finish();}
+  const row=videoId=>p.policy.rotation.clips.find(item=>item.videoId===videoId);
+  assert.equal(row(p.c.snapshot().clip.videoId).to,'clasped');
+  assert.equal(p.c.offerVariant({videoId:target,requestId:'wait',expiresAt:p.at()+30000}),true);
+  let seen=null;
+  for(let i=0;i<40&&!seen;i++){p.tick(100);const next=p.finish();if(next.reason==='openclaw')seen=next;else assert.equal(row(next.videoId).from===row(next.videoId).to||row(next.videoId).to==='rest'||row(next.videoId).from==='rest',true);}
+  assert.ok(seen,'played after the exit to rest');assert.equal(seen.videoId,target);
+  const bad=structuredClone(p.policy);bad.variants.find(item=>row(item.videoId).to==='clasped').use='openclaw';
+  assert.throws(()=>validateIdlePolicy(bad),IdlePolicyError);
+  const exit=structuredClone(p.policy);exit.variants.find(item=>row(item.videoId).from==='clasped'&&row(item.videoId).to==='rest').use='rules';
+  assert.throws(()=>validateIdlePolicy(exit),IdlePolicyError);
+});
+
+test('a proposal keeps the sequence spacing: no head movement within four clips, never the clip just played',()=>{
+  const p=proposing(),head=p.id('blickvanster'),openclaw=p.id('djupandetag'),rules=p.id('fingrar');
+  const row=videoId=>p.policy.rotation.clips.find(item=>item.videoId===videoId);
+  let req=0;const offer=(videoId,use)=>p.c.offerVariant({videoId,requestId:`spacing-${++req}`,expiresAt:p.at()+30000},use?{use}:undefined);
+  // Play the sequence until a head movement has just ended.
+  let i=0;for(;i<500;i++){const done=row(p.c.snapshot().clip.videoId);p.tick(100);p.finish();if(done.head)break;}
+  assert.ok(i<500,'the sequence plays a head movement');
+  for(let since=0;since<4;since++){
+    assert.equal(offer(head),false,`a head movement ${since} clips after the last one is refused`);
+    p.tick(100);p.finish();
+  }
+  assert.equal(offer(head),true,'after four clips a head movement may be proposed');
+  // The accepted proposal plays; the same clip may not be proposed straight after it.
+  p.atRest();const played=p.finish();assert.equal(played.videoId,head);
+  p.c.presented(played.playId);p.tick(100);
+  const after=p.c.completed(played.playId).clip;assert.notEqual(after.videoId,head);
+  p.tick(60001);
+  assert.equal(offer(head),false,'the clip just played is not proposed again');
+  // Never the clip just played, whoever played it.
+  const proposer=videoId=>videoId===openclaw?'openclaw':videoId===rules?'rules':null;
+  for(let n=0;n<500;n++){const done=p.c.snapshot().clip.videoId;p.tick(100);p.finish();if(proposer(done)&&row(done).to==='rest'){
+    assert.equal(offer(done,proposer(done)),false,'a proposal repeating the last clip is refused');
+    const other=done===openclaw?rules:openclaw;assert.equal(offer(other,proposer(other)),true);return;}}
+  assert.fail('the sequence plays a proposable clip');
+});
+
+test('used request ids are forgotten after 30 s, so the guard never fills up for good',()=>{
+  const offers=createIdleOffers(),read=(requestId,at)=>offers.read({videoId:'v',requestId,expiresAt:at+30000},'openclaw',at);
+  for(let i=0;i<512;i++)assert.ok(read(`r${i}`,0));
+  assert.equal(read('overflow',0),null,'at most 512 ids within 30 s');
+  assert.equal(read('r7',30000),null,'an id is still used 30 s later');
+  assert.ok(read('fresh',30001),'older ids are cleared, so a fresh one is accepted');
+  assert.equal(read('fresh',30002),null,'and that id is now used');
 });

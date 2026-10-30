@@ -17,7 +17,6 @@ import { operatorPackageSql, operatorRow, packageRow } from './fixtures/operator
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'croupier' });
-const env = { CROUPIER_STUDIO_NEON_POLICY: '1' };
 const html = '<!doctype html><html lang="sv"><body></body></html>';
 const idle = dealerId => ({ dealerId, engineKey: 'idle-1/idle/idle', available: true });
 const legacy = { schemaVersion: 1, id: 'legacy', label: 'Legacy', renderer: 'indexed-video', dealer: 'vera', mediaCollection: 'legacy-dealers' };
@@ -52,7 +51,7 @@ async function fixture({ lanes = {gameLane:mobile.id,gameLanes:[mobile]}, projec
   const select = createGameEntrySelector({ policy: counted, packages: packageReader, log });
   const page = async query => {
     const entry = await select(new URLSearchParams(query));
-    return entry.status === 404 ? { status: 404, body: OPERATOR_NOT_FOUND_HTML } : { status: 200, body: decorateGameEntryHtml(html, env, entry.selection), selection: entry.selection };
+    return entry.status === 404 ? { status: 404, body: OPERATOR_NOT_FOUND_HTML } : { status: 200, body: decorateGameEntryHtml(html, entry.selection), selection: entry.selection };
   };
   return { page, select, db, logs, reads };
 }

@@ -40,7 +40,7 @@ test('Vercel ingress owns the lobby prefix and transforms it to the mounted Stud
 
 test('public lobby routing preserves queries and leaves admin access on its existing route', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   for (const path of ['/lobby', '/lobby/', '/lobby/_assets/lobby/app.js', '/lobby/_assets/fonts/inter.woff2', '/admin', '/admin/lobby']) {
     assert.deepEqual(platformRoute(new URL(path + '?operator=alpha', config.publicOrigin), config),
@@ -170,6 +170,19 @@ test('public lobby exposes one profile entry through the existing authenticated 
 });
 
 
+// The anonymous lobby cannot read /admin/_assets (401 without an Admin session). Build the shipped
+// public bundle with build.mjs's own options and check that every lobby image uses the public base.
+test('the public lobby bundle never asks for an admin asset path, room illustrations included', async () => {
+  const require = createRequire(new URL('../apps/studio/client/package.json', import.meta.url));
+  const {surfaceBundleOptions} = await import('../apps/studio/client/surface-bundle.mjs');
+  const options = surfaceBundleOptions('public-lobby');
+  const {outputFiles} = await require('esbuild').build({...options, minify: false, write: false, outfile: join(tmpdir(), 'public-lobby-check.js'), logLevel: 'silent'});
+  const text = outputFiles.find(file => file.path.endsWith('.js')).text;
+  assert.equal(text.includes('/admin/_assets'), false, 'no /admin/_assets path in the public lobby');
+  for (const file of ['room-studion.png', 'room-salongen.png', 'room-loungen.png']) assert.ok(text.includes(file), file);
+  assert.ok(text.includes('/lobby/_assets/lobby/images/lobby/'), 'room illustrations use the public lobby base');
+});
+
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 test('lobby browser preserves choices, authenticated launch contract, account navigation and invalid-link isolation',
   {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE for the isolated lobby browser check', timeout: 45_000}, async t => {
@@ -180,14 +193,18 @@ test('lobby browser preserves choices, authenticated launch contract, account na
       import {createRoot} from 'react-dom/client';
       import {LobbyProvider} from './components/lobby-provider.tsx';
       import {DealersSection} from './components/sections/dealers-section.tsx';
+      import {RoomsSection} from './components/sections/rooms-section.tsx';
       import {Header} from './components/header.tsx';
-      createRoot(document.getElementById('root')).render(<LobbyProvider><Header/><DealersSection/></LobbyProvider>);
+      createRoot(document.getElementById('root')).render(<LobbyProvider><Header/><RoomsSection/><DealersSection/></LobbyProvider>);
     `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
     external: ['/composition-runtime/compositor.js'],
     alias: {'@/lib/catalog.mjs': fileURLToPath(new URL('../apps/studio/client/runtime/public-lobby-catalog.mjs', import.meta.url)),
       '@': root, 'next/link': fileURLToPath(new URL('../apps/studio/client/runtime/navigation.tsx', import.meta.url)), 'next/image': fileURLToPath(new URL('../apps/studio/client/runtime/image.ts', import.meta.url))},
+    // The public build's own path rewrite: the fixture serves only the public asset base, as production does.
+    plugins: [(await import('../apps/studio/client/surface-bundle.mjs')).publicLobbyPaths()],
     define: {'process.env.NODE_ENV': '"production"'}, logLevel: 'silent'});
     const pack = publication('alpha');
+    pack.rooms[0].limitPreset = 'high';
     pack.rooms[0].dealers.push({...pack.rooms[0].dealers[0], id: 'oskar', label: 'Oskar'});
     const html = '<!doctype html><html lang="sv"><meta charset="utf-8"><style>'
       + '[data-slot="dialog-overlay"]{position:fixed;inset:0;background:#0003}'
@@ -211,8 +228,9 @@ test('lobby browser preserves choices, authenticated launch contract, account na
         body=renderPlayerAreaHtml(model);type='text/html';
       }
       else if (path === '/favicon.ico') {response.writeHead(204); response.end(); return;}
-      // Decorative portrait stills/clips only; the fixture needs no media bytes.
-      else if (path.startsWith('/admin/_assets/lobby/')) {portraitRequests.add(path); response.writeHead(204); response.end(); return;}
+      // Decorative portrait stills/clips and room illustrations only; the fixture needs no media bytes.
+      // An /admin/_assets request is unexpected: production answers it with 401 for a logged-out player.
+      else if (path.startsWith('/lobby/_assets/lobby/')) {portraitRequests.add(path); response.writeHead(204); response.end(); return;}
       else {unexpected.push(request.method + ' ' + path); response.writeHead(404); response.end(); return;}
       response.writeHead(200, {'content-type': type}); response.end(body);
     });
@@ -235,17 +253,24 @@ test('lobby browser preserves choices, authenticated launch contract, account na
     // Before a room is chosen, step 3 shows five locked portrait teasers under the glass.
     const dealerCards = page.locator('ul[aria-label="Dealers"] > li');
     await page.goto(origin + '/lobby');
-    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(4).waitFor();
-    assert.equal(await dealerCards.count(), 5);
+    await page.locator('ul[aria-label="Dealers"][aria-hidden="true"] > li').nth(3).waitFor();
+    assert.equal(await dealerCards.count(), 4);
     assert.equal(await page.locator('ul[aria-label="Dealers"] button:not([disabled])').count(), 0);
     assert.equal(await page.locator('a[href^="/game?game=blackjack"], a[href^="/game?game=roulette"]').count(), 0);
     await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
     await page.getByRole('button', {name: 'Välj Oskar', exact: true}).waitFor();
     assert.deepEqual(await dealerCards.locator('button').evaluateAll(rows => rows.map(row => [row.getAttribute('aria-label'), row.disabled])), [
       ['Välj Nora', false], ['Välj Oskar', false],
-      ...['Astrid', 'Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig i valt spelrum', true]),
+      ...['Mårten', 'Dragge', 'Anna', 'Paow'].map(name => [name + ' – inte tillgänglig vid valt spelbord', true]),
     ], 'published dealers first, then disabled teasers');
-    assert.ok(portraitRequests.has('/admin/_assets/lobby/images/dealers/astrid.jpg'));
+    // The image request reaches the fixture server after the buttons render; wait for it (up to 5 s).
+    const requested = async (path, message) => {
+      for (let i = 0; i < 100 && !portraitRequests.has(path); i++) await new Promise(resolve => setTimeout(resolve, 50));
+      assert.ok(portraitRequests.has(path), message);
+    };
+    await requested('/lobby/_assets/lobby/images/dealers/marten.jpg', 'the Mårten teaser loads its portrait from the public base');
+    // The bet profile picks no picture (#641): a High room without miljöbild or background shows the design illustration.
+    await requested('/lobby/_assets/lobby/images/lobby/room-salongen.png', 'the High room card shows the design illustration from the public base');
     for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
       const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
       await trigger.focus(); await trigger.press('Enter');
@@ -318,11 +343,14 @@ test('lobby browser preserves choices, authenticated launch contract, account na
 
 test('shared room command transport routes only its exact HTTP path through the existing signed backend', () => {
   const config = platformConfiguration({ CROUPIER_VERCEL_UI: '1', CROUPIER_BACKEND_ORIGIN: 'https://engine.example',
-    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com', CROUPIER_LAB_UI_ORIGIN: 'https://studio.example',
+    CROUPIER_PUBLIC_ORIGIN: 'https://www.example.com',
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   const path = '/api/shared-room/room-1/command';
   assert.equal(backendPlatformPath(path), true);
   assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + path });
+  const chat = '/api/shared-room/room-1/chat'; // Room chat (PR 1) uses the same exact-path backend route.
+  assert.equal(backendPlatformPath(chat), true);
+  assert.deepEqual(platformRoute(new URL(chat, config.publicOrigin), config), { kind: 'backend', destination: config.backendOrigin + chat });
   const headers = platformBackendHeaders(new Headers({ cookie: 'player_session=browser', origin: config.publicOrigin,
     'x-croupier-vercel-secret': 'forged', 'x-croupier-public-origin': 'forged' }), config);
   assert.equal(headers.get('cookie'), 'player_session=browser'); assert.equal(headers.get('origin'), config.publicOrigin);

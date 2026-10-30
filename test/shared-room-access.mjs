@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createSharedRoomAccess} from '../services/game/shared-room-access.mjs';
+import {createSharedRoomAccess,ROOM_CONFIG_MISSING} from '../services/game/shared-room-access.mjs';
 import {createSharedRoomChannel} from '../services/game/shared-room-channel.mjs';
 import {playerAuth} from '../services/game/storage/async-player-auth.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
@@ -60,7 +60,7 @@ function fixture({realAuth=false}={}) {
   if(realAuth) {
     const db={prepare(sql){return {async get(...args){trace.push('auth:sql');
       if(sql.includes('FROM player_sessions'))return state.session&&args[0]===sessionId.slice(7)?{player_id:state.session.actorId,source_stamp:null,display_name:null,expires:state.session.expiresAt}:undefined;
-      if(sql==='SELECT status FROM players WHERE id=?')return {status:'active'};
+      if(sql==="SELECT status,to_jsonb(p)->>'operator_id' AS operator_id FROM players p WHERE id=?")return {status:'active',operator_id:null};
       assert.fail('Unexpected auth query: '+sql);
     }};}};
     Object.assign(auth,playerAuth(db,()=>assert.fail('read-only auth cannot create players')));
@@ -140,6 +140,17 @@ test('active room context reads its exact old package, dealer, branding and geom
   const newView=createActiveRoomPresentationContext({...current,privateMedia:()=>assert.fail('metadata must not fetch media')});
   assert.equal((await newView.selection()).branding.color,'#445566');
   assert.deepEqual(h.state,snapshot,'all active and historical reads are immutable');h.assertReleased();
+});
+
+// Plan L3 PR 3: the package's own rooms (Studio 023) carry the table's state. A table the package pauses is
+// refused at the shared table (403) even where the administration document still says live.
+test('a table the package pauses is refused although the administration document still says live',async()=>{
+  const h=fixture();
+  h.state.pack.rooms=canonicalStudioJson(h.state.administration.rooms.map(room=>room.id==='room-a'?{...room,state:'pending'}:room));
+  assert.equal(h.state.administration.rooms.find(room=>room.id==='room-a').state,'live');
+  await assert.rejects(h.read('room-a'),denied);
+  assert.equal((await h.read('room-b')).roomId,'room-b','the other table of the same package still enters');
+  h.assertReleased();
 });
 
 test('active package lookup cannot resurrect revoked sessions, rooms, dealers, media or trashed layers',async()=>{
@@ -226,7 +237,7 @@ test('native access rejects changed measurements or approvals even with a refres
   }
 });
 
-test('explicit ports/scope and non-partner live session required before all registry reads',async()=>{
+test('explicit ports/scope and a complete live session required before all registry reads',async()=>{
   const h=fixture();assert.throws(()=>createSharedRoomAccess({scope}),TypeError);
   assert.throws(()=>createSharedRoomAccess({auth:h.auth,repository:h.repository,scope:{...scope,workspaceId:'other'}}),TypeError);
   for(const value of [null,{...h.state.session,partnerKeyId:'key-a'},{actorId:'player-a',sessionId,expiresAt:999999},{...h.state.session,expiresAt:1000},{...h.state.session,sessionId:'raw-bearer'}]) {
@@ -255,9 +266,27 @@ test('revocation, changed identity and expiry reject before further registry rea
 
 test('closed or moved rooms, suspended operators, removed games and stale package bindings deny',async()=>{
   const cases=[s=>{s.administration.rooms[0].state='preview';},s=>{s.administration.rooms[0].operatorId='south';},s=>{s.operator.status='suspended';},
-    s=>{s.pack.tables='["room-b"]';},s=>{s.pack.games='["roulette"]';},s=>{s.pack=null;},s=>{delete s.pack.branding.roomGameConfigVersions['room-a'];},
-    s=>{s.pack.branding.roomGameConfigVersions['room-a']='room-config-00000000-0000-4000-8000-300000000000';},s=>{s.heads['room-a']='room-config-00000000-0000-4000-8000-300000000000';}];
+    s=>{s.pack.tables='["room-b"]';},s=>{s.pack.games='["roulette"]';},s=>{s.pack=null;},
+    s=>{s.pack.branding.roomGameConfigVersions['room-a']='room-config-00000000-0000-4000-8000-300000000000';},s=>{s.heads['room-a']='room-config-00000000-0000-4000-8000-300000000000';},
+    s=>{s.pack.branding.roomGameConfigVersions['room-a']=7;}];
   for(const change of cases){const h=fixture(),binding=await h.read();change(h.state);await assert.rejects(h.access.revalidate(binding),denied);h.assertReleased();}
+});
+
+// Preview 29 Oct 2026: a new open room without published game settings got a plain 403 for a minute. A room
+// whose package binds no settings, or whose binding has no published head, is refused by name instead.
+test('an open room without published game settings is refused with room_config_missing, in authorize and revalidate',async()=>{
+  const missing={code:ROOM_CONFIG_MISSING,statusCode:403};
+  assert.equal(ROOM_CONFIG_MISSING,'room_config_missing');
+  for(const change of [s=>{delete s.pack.branding.roomGameConfigVersions['room-a'];},s=>{delete s.pack.branding.roomGameConfigVersions;},s=>{delete s.heads['room-a'];}]) {
+    const h=fixture();change(h.state);await assert.rejects(h.read(),missing);h.assertReleased();
+    const g=fixture(),binding=await g.read();change(g.state);await assert.rejects(g.access.revalidate(binding),missing);g.assertReleased();
+  }
+  // The sibling room keeps its own settings and is admitted as before.
+  const h=fixture();delete h.state.pack.branding.roomGameConfigVersions['room-a'];
+  assert.equal((await h.read('room-b',new Request('https://engine.invalid/shared-room/room-b',{headers:{origin:'https://ui.invalid',cookie:`player_session=${token}`}}))).roomId,'room-b');
+  // A closed room or a removed game is still the plain refusal: only an open, admitted room can lack settings.
+  const closed=fixture();delete closed.state.pack.branding.roomGameConfigVersions['room-a'];closed.state.administration.rooms[0].state='preview';
+  await assert.rejects(closed.read(),denied);closed.assertReleased();
 });
 
 test('branding-only publication keeps original config valid but invalidates an older connection binding',async()=>{
@@ -307,5 +336,97 @@ test('actual channel prepare composes with access before any game/presentation r
     readSnapshot:()=>assert.fail('prepare cannot read game state'),readPresentation:()=>assert.fail('prepare cannot read presentation')});
   try {const result=await channel.prepare(request());assert.equal(typeof result.attach,'function');
     h.state.session=null;await assert.rejects(channel.prepare(request()),denied);
+  } finally {channel.close();h.assertReleased();}
+});
+
+// Speech lag (28 Oct 2026): a room-video URL names an immutable package revision, its dealer and a media id, so the
+// verified file may stay in the browser; room-idle names no media id and still revalidates. Errors are never kept.
+test('a room-video file of the active package is cached as immutable; the room idle and an error revalidate',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read(),captured=await h.readLocked(binding,h.original.configVersion);
+  const video=captured.authority.media.find(row=>row.classification.kind!=='idle')??captured.authority.media[0];
+  const served=(path,{fail=false}={})=>createActiveRoomPresentationContext({...captured,request:new Request('https://engine.invalid'+path),
+    privateMedia:async record=>fail?new Response(null,{status:503}):new Response('bytes',{status:200,headers:{etag:'"sha256-'+record.sha256+'"','content-type':'video/mp4'}})}).response();
+  const file=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id);
+  assert.equal(file.status,200);assert.equal(file.headers.get('etag'),'"sha256-'+video.sha256+'"');
+  assert.equal(file.headers.get('cache-control'),'private, max-age=31536000, immutable');
+  const idle=await served('/api/presentation/room-idle/north/room-a/1/dragan');
+  assert.equal(idle.status,200);assert.equal(idle.headers.get('cache-control'),'private, no-cache, must-revalidate');
+  const failed=await served('/api/presentation/room-video/north/room-a/1/dragan/'+video.id,{fail:true});
+  assert.equal(failed.headers.get('cache-control'),'private, no-store');
+  h.assertReleased();
+});
+
+test('the package port reads exactly one operator package revision and grants nothing',async()=>{
+  const h=activeHistoryFixture(),binding=await h.read();
+  const current=await h.access.readPackage(binding.operatorId,binding.packageRevision);
+  assert.equal(current.revision,binding.packageRevision);assert.equal(current.operatorId,binding.operatorId);
+  const earlier=await h.access.readPackage(binding.operatorId,1);assert.equal(earlier.revision,1);
+  assert.equal(await h.access.readPackage(binding.operatorId,99),null);
+  for(const [operatorId,revision] of [['bad id',1],[binding.operatorId,0],[binding.operatorId,'1']])
+    await assert.rejects(h.access.readPackage(operatorId,revision),{statusCode:403});
+  h.assertReleased();
+});
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters its key's company's rooms
+// with a player's rights, and is refused by name in another company's room or without a company.
+const partner=(h,operatorId='north',partnerKeyId='key-a')=>{h.state.session={...h.state.session,partnerKeyId,operatorId};};
+test('a partner session bound to the room company is admitted in authorize, revalidate and revalidateLocked',async()=>{
+  const h=fixture();partner(h);
+  const binding=await h.read();
+  assert.deepEqual(binding,{actorId:'player-a',sessionId,expiresAt:999999,operatorId:'north',roomId:'room-a',packageRevision:1});
+  assert.deepEqual(await h.access.revalidate(binding),binding);
+  const locked=await h.repository.transaction(()=>h.access.revalidateLocked(binding));
+  assert.deepEqual(locked,binding);assert.ok(Object.isFrozen(locked));
+  const native=nativeFixture();partner(native);
+  const captured=await native.readLocked(await native.read(),null);assert.equal(captured.context.operatorSlug,'north');
+  h.assertReleased();native.assertReleased();
+});
+
+test('another company, a key without company and a changed key binding are refused at every admission',async()=>{
+  const mismatch={code:'partner_operator_mismatch',statusCode:403},unbound={code:'partner_key_unbound',statusCode:403};
+  const other=fixture();partner(other,'south');
+  await assert.rejects(other.read(),mismatch);other.assertReleased();
+  const none=fixture();partner(none,null);
+  await assert.rejects(none.read(),unbound);
+  assert.equal(none.trace.includes('connect'),false,'a key without a company is refused before any registry read');
+  for(const value of [{partnerKeyId:'key-a'},{partnerKeyId:'key-a',operatorId:''},{partnerKeyId:'',operatorId:'north'},{partnerKeyId:'key-a',operatorId:42}]) {
+    const h=fixture();h.state.session={...h.state.session,...value};
+    await assert.rejects(h.read(),denied,JSON.stringify(value));assert.equal(h.trace.includes('connect'),false);
+  }
+  // An open binding is checked against the session's current key every time: another company, no company,
+  // or rotation/revocation (which deletes the session) all end it.
+  for(const [change,expected] of [[s=>{s.session.operatorId='south';},mismatch],[s=>{s.session.operatorId=null;},unbound],
+    [s=>{s.session=null;},denied]]) {
+    const h=fixture();partner(h);const binding=await h.read();change(h.state);
+    await assert.rejects(h.access.revalidate(binding),expected);
+    await assert.rejects(h.repository.transaction(()=>h.access.revalidateLocked(binding)),expected);h.assertReleased();
+  }
+  // A native binding never becomes a partner one inside the same admission.
+  const swapped=fixture();swapped.after(marker=>{if(marker==='shared-room-access:config')partner(swapped);});
+  await assert.rejects(swapped.read(),denied);swapped.assertReleased();
+});
+
+// Granskning PR #642: the company check runs before the game settings are read, so a partner from another
+// company is refused as partner_operator_mismatch, never room_config_missing, and no settings row is read.
+test('another company is refused by name before the table settings are read, also when the table has none',async()=>{
+  const mismatch={code:'partner_operator_mismatch',statusCode:403};
+  for(const change of [()=>{},s=>{delete s.pack.branding.roomGameConfigVersions['room-a'];},s=>{delete s.heads['room-a'];}]) {
+    const h=fixture();partner(h,'south');change(h.state);
+    await assert.rejects(h.read(),mismatch);
+    assert.equal(h.trace.includes('shared-room-access:config'),false,'the settings head is never read for another company');h.assertReleased();
+    const g=fixture();partner(g);const binding=await g.read();change(g.state);g.state.session.operatorId='south';
+    await assert.rejects(g.access.revalidate(binding),mismatch);
+    await assert.rejects(g.repository.transaction(()=>g.access.revalidateLocked(binding)),mismatch);g.assertReleased();
+  }
+});
+
+test('the room company check runs inside the channel prepare, so the upgrade refusal keeps its code',async()=>{
+  const h=fixture(),channel=createSharedRoomChannel({origin:'https://ui.invalid',...h.access,now:()=>1000,
+    readSnapshot:()=>assert.fail('prepare cannot read game state'),readPresentation:()=>assert.fail('prepare cannot read presentation')});
+  try {
+    partner(h,'south');await assert.rejects(channel.prepare(request()),{code:'partner_operator_mismatch',statusCode:403});
+    partner(h,null);await assert.rejects(channel.prepare(request()),{code:'partner_key_unbound',statusCode:403});
+    partner(h);assert.equal(typeof (await channel.prepare(request())).attach,'function');
+    delete h.state.pack.branding.roomGameConfigVersions['room-a'];await assert.rejects(channel.prepare(request()),{code:'room_config_missing',statusCode:403});
   } finally {channel.close();h.assertReleased();}
 });

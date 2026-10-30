@@ -2,6 +2,8 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../../packages/studio-access/server/account-credentials.mjs';
 import { readBackofficePlayerSource } from '../bo-player-session.mjs';
+import { claimedOperator, keyOperator, partnerRefusal, PARTNER_OPERATOR_MISMATCH } from '../partner-operator.mjs';
+import { playerOperator } from '../../../packages/storage/server/player-operator.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied
 // one exact origin. Web still expects its own public Host behind the proxy.
@@ -22,18 +24,20 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
 }
 
 export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,authEpoch,
-  allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' } = {}) {
+  allowLegacyPartnerSessions = false } = {}) {
 
   const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
   const digest=t=>createHash('sha256').update(t).digest('hex');
-  const partnerAllowed=async (id, stamp)=>{
-    if(typeof id!=='string'||!id||typeof partnerAuthority!=='function')return false;
+  // The key row while it may still act for its sessions, otherwise null.
+  const partnerKey=async (id, stamp)=>{
+    if(typeof id!=='string'||!id||typeof partnerAuthority!=='function')return null;
     const key=await partnerAuthority(id);
-    if(!key||key.id!==id||key.revoked_at||key.wallet_url)return false;
-    if(stamp===undefined||stamp===null)return allowLegacyPartnerSessions;
+    if(!key||key.id!==id||key.revoked_at||key.wallet_url)return null;
+    if(stamp===undefined||stamp===null)return allowLegacyPartnerSessions?key:null;
     return typeof stamp==='string'&&/^[a-f0-9]{64}$/.test(stamp)&&typeof key.secret==='string'
-      && digest(key.secret)===stamp;
+      && digest(key.secret)===stamp ? key : null;
   };
+  const partnerAllowed=async (id, stamp)=>Boolean(await partnerKey(id,stamp));
   const accountStamp = account => account ? `local:${digest(`${account.salt}:${account.hash}`)}` : null;
   // The cloud gateway connects to Web over loopback and does not forward a
   // trusted client IP. Limit failed password guesses for each account instead
@@ -52,7 +56,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
   async function validatedSession(sessionDigest) {
     const session=(await db.prepare('SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>?').get(sessionDigest,Date.now()));
     if(!session)return null;
-    const player = await db.prepare('SELECT status FROM players WHERE id=?').get(session.player_id);
+    const player = await db.prepare("SELECT status,to_jsonb(p)->>'operator_id' AS operator_id FROM players p WHERE id=?").get(session.player_id);
     if (!player || player.status !== 'active') return null;
     // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
     if(String(session.source_stamp??'').startsWith('local:')) {
@@ -71,11 +75,20 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     const partnerKeyId=partner?.[1]??null, partnerKeyStamp=partner?.[2];
     // Historical sessions stay in storage, but revoked keys and unsupported
     // external wallets cannot bypass partner API checks through the native UI.
-    if(partnerKeyId&&!(await partnerAllowed(partnerKeyId,partnerKeyStamp)))return null;
+    let operatorId=null;
+    if(partnerKeyId){
+      const key=await partnerKey(partnerKeyId,partnerKeyStamp);
+      if(!key)return null;
+      // Nyckel→bolag: the company comes from the key row, never from the session (null before 012).
+      operatorId=keyOperator(key);
+    }
+    // Steg F: the player's own company, null before game-014 and for a player without one. Read
+    // after every other check, so a session that is refused today is still refused the same way.
+    const playerOperatorId = playerOperator(player);
     const publicSession = partnerKeyId
       ? { playerId: session.player_id, partnerKeyId, ...(partnerKeyStamp?{partnerKeyStamp}:{}), displayName: session.display_name || 'spelaren' }
       : { playerId: session.player_id, partnerKeyId: null };
-    return { publicSession, expiresAt: session.expires };
+    return { publicSession, expiresAt: session.expires, operatorId, playerOperatorId };
   }
   async function session(req) {
     const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -90,7 +103,12 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     const verified=await validatedSession(sessionDigest);
     if(!verified || !Number.isSafeInteger(verified.expiresAt) || verified.expiresAt<=0)return null;
     // Keep partner provenance explicit; new room access must not reinterpret it as native.
-    return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt,partnerKeyId:verified.publicSession.partnerKeyId});
+    // A partner binding also names its key's company (null for a key without one). A player with a
+    // company (steg F, after game-014) carries it as playerOperatorId; without one the binding is as before.
+    const partnerKeyId=verified.publicSession.partnerKeyId;
+    return Object.freeze({actorId:verified.publicSession.playerId,sessionId,expiresAt:verified.expiresAt,partnerKeyId,
+      ...(partnerKeyId===null?{}:{operatorId:verified.operatorId}),
+      ...(verified.playerOperatorId===null?{}:{playerOperatorId:verified.playerOperatorId})});
   }
   async function binding(req) {
     const header=req.headers.cookie;
@@ -122,7 +140,11 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     return db.transaction(async () => {
       // Rotation/revocation and session issuance use the same product lock.
       // Old signed launch claims cannot establish a session after that change.
-      if(!(await partnerAllowed(claims.partner,claims.partner_key_stamp)))throw Error('Partner launch is unavailable');
+      const key=await partnerKey(claims.partner,claims.partner_key_stamp);
+      if(!key)throw Error('Partner launch is unavailable');
+      // Nyckel→bolag: the signed company must be the key's own. Until PR C a key without a
+      // company still launches with a token without one; any other combination is refused.
+      if(keyOperator(key)!==claimedOperator(claims))throw partnerRefusal(PARTNER_OPERATOR_MISMATCH);
       const stamp = claims.partner_key_stamp ? `:${claims.partner_key_stamp}` : '';
       return issue(req,{player_id:claims.sub,source_stamp:`partner:${claims.partner}${stamp}`,display_name:displayName},maxAge,'Lax');
     });

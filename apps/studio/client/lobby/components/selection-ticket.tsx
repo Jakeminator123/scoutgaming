@@ -12,7 +12,7 @@ export function SelectionTicket() {
 
   const rows = [
     { index: "01", label: "Bolag", value: operator.name, id: STEP_IDS.operator, accent: operator.accent },
-    { index: "02", label: "Spelrum", value: room?.name, id: STEP_IDS.room },
+    { index: "02", label: "Spelbord", value: room?.name, id: STEP_IDS.room },
     { index: "03", label: "Dealer", value: dealer?.name, id: STEP_IDS.dealer },
   ];
 
@@ -58,7 +58,11 @@ export function SelectionTicket() {
         </ul>
 
         <div className="flex items-center p-1.5">
-          {room && dealer ? (
+          {room?.preparing ? (
+            <span role="status" className="flex h-8 items-center whitespace-nowrap rounded-full border border-border px-4 text-sm text-muted-foreground">
+              Förbereds
+            </span>
+          ) : room && dealer ? (
             <a
               href={playUrlFor({ operator, room, dealer })} onClick={prepareLaunch} onAuxClick={prepareLaunch}
               className="flex h-8 items-center gap-2 rounded-full bg-lime px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-85"
@@ -72,7 +76,7 @@ export function SelectionTicket() {
               onClick={() => scrollToSection(nextId)}
               className="flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-border px-4 text-sm text-foreground transition-colors hover:border-lime"
             >
-              {step === 2 ? "Välj spelrum" : "Välj dealer"}
+              {step === 2 ? "Välj spelbord" : "Välj dealer"}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </button>
           )}

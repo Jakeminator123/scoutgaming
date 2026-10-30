@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { basename, dirname, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDocumentationPath } from './documentation-paths.mjs';
@@ -83,12 +84,45 @@ export function verificationMode(changes, { forceFull = false, env = process.env
   ) ? 'documentation' : 'focused';
 }
 
+// --pr-diff: the committed diff HEAD^1..HEAD instead of the index. In CI that is
+// the PR merge commit against main (draft PRs run only these targeted checks);
+// locally it is the last commit. CI environment flags do not force --full there.
 export function parseArgs(args) {
-  if (args.some(arg => !['--full', '--plan'].includes(arg))) {
-    throw Error('Usage: node tools/precommit-checks.mjs [--full] [--plan]');
+  if (args.some(arg => !['--full', '--plan', '--pr-diff'].includes(arg)) || (args.includes('--full') && args.includes('--pr-diff'))) {
+    throw Error('Usage: node tools/precommit-checks.mjs [--full | --pr-diff] [--plan]');
   }
-  return { forceFull: args.includes('--full'), planOnly: args.includes('--plan') };
+  return { forceFull: args.includes('--full'), planOnly: args.includes('--plan'), prDiff: args.includes('--pr-diff') };
 }
+
+export const PR_DIFF = Object.freeze(['HEAD^1', 'HEAD']);
+
+export function readCommittedChanges(root, { env = isolatedGitEnvironment(), range = PR_DIFF } = {}) {
+  const result = spawnSync('git', ['-c', 'diff.relative=false', 'diff', '--name-status', '-z',
+    '--no-renames', '--no-ext-diff', '--no-textconv', ...range, '--'], { cwd: root, encoding: 'utf8', env });
+  if (result.error || result.status !== 0) {
+    throw Error('Cannot inspect committed changes: ' + (result.error?.message || result.stderr || result.signal || result.status));
+  }
+  return parseStagedChanges(result.stdout);
+}
+
+// A new test file that no runner lists fails CI's orphan audit (admin-contracts leg);
+// the same audit runs here as soon as a commit adds one. Mirrors isTestFile in
+// tools/check-orphan-tests.mjs for the discovery roots it walks.
+export function addsTestFile(changes) {
+  return changes.some(({ status, path }) => status === 'A'
+    && /^(?:test|apps|services|packages|ops|tools\/media)\//.test(path)
+    && !path.split('/').some(part => ['fixtures', '__fixtures__', 'node_modules'].includes(part))
+    && /\.(?:mjs|js|cjs|ts|mts|cts)$/.test(path)
+    && (/\.(?:test|spec)\.[^.]+$/.test(path) || path.split('/').slice(0, -1).some(part => part === 'test' || part === 'tests')
+      || (path.startsWith('tools/media/') && basename(path).startsWith('test-'))));
+}
+
+// Printed after a failed check whose plain output does not say what to do.
+const CHECK_HINTS = Object.freeze({
+  'tools/check-orphan-tests.mjs': 'Orphan tests: add each listed file to a run_node_tests line in .githooks/pre-commit-full '
+    + '(the suite that owns its area: studio, admin, contracts, database, presentation, access, speech, gameplay, engine or container), '
+    + 'or classify a helper/opt-in module in tools/orphan-tests-exceptions.json. CI fails the admin-contracts leg otherwise.',
+});
 
 // Static ESM only: do not evaluate helpers, dynamic imports or require calls.
 // Keep quoted strings as tokens so comments and example code cannot add edges.
@@ -159,14 +193,123 @@ function fixtureConsumerTests(changes, root) {
     .map(entry => `test/${entry.name}`).filter(path => reachesChange(path));
 }
 
+// Text sources a test can load by path; documentation keeps its quick path.
+const consumerSource = /\.(?:[cm]?[jt]sx?|css|html|json)$/;
+// Manifests and lockfiles are read by setup and install tests, not loaded as code.
+const manifestOrLock = /(?:^|\/)(?:package[^/]*\.json|npm-shrinkwrap\.json|[^/]*-lock\.(?:json|ya?ml)|[^/]*\.lockb?)$/;
+// A source named by more tests than this is a shared contract (studio-model.mjs is
+// named by over a hundred). The full regression runs all of them; a subset chosen
+// here would only look complete, so such a source adds no consumers.
+export const SOURCE_CONSUMER_LIMIT = 8;
+// More changed sources without own tests than this is a sweep (a move, a rename,
+// a dependency bump); the search would cost more than it adds, and the full
+// regression in CI runs every test anyway.
+export const SOURCE_CONSUMER_SEARCH_LIMIT = 50;
+
+// The orphan audit knows which tests a runner registers. It is loaded only when a
+// search runs. CI's sparse classifier checkout and copied fixtures carry only this
+// file; then no consumers are added. A broken audit or runner file (a package.json
+// that does not parse) costs the search, never the hook.
+function registeredTests(root) {
+  const audit = fileURLToPath(new URL('./check-orphan-tests.mjs', import.meta.url));
+  if (!existsSync(audit)) return [];
+  try {
+    return createRequire(import.meta.url)(audit).auditOrphanTests({ root }).covered.map(entry => entry.file);
+  } catch (error) {
+    console.warn(`Source consumer search skipped: ${String(error?.message ?? error).split('\n')[0]}`);
+    return [];
+  }
+}
+
+// String literals outside comments. A template literal counts only without
+// placeholders: a computed path is unknown. Regex literals are not recognized: a
+// quote or '//' inside one can hide the strings after it on that line or until the
+// next matching quote. That only loses consumers (a false negative, left to CI);
+// it never selects a test that does not load the path.
+function* stringLiterals(source) {
+  for (const { 0: token, index } of source.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|`(?:\\.|[^`\\])*`/g)) {
+    if (token[0] !== '/' && !(token[0] === '`' && token.includes('${'))) yield { value: token.slice(1, -1), index };
+  }
+}
+
+// The call a string is passed to: resolve(root, 'x') gives resolve, new URL('x', base)
+// gives URL. A string in an array, an object, a comparison or an assignment is data.
+function calleeOf(source, index) {
+  let depth = 0;
+  for (let i = index - 1; i >= 0 && index - i <= 400; i--) {
+    const ch = source[i];
+    if (')]}'.includes(ch)) depth++;
+    else if ('([{'.includes(ch) && depth) depth--;
+    else if (ch === '(') return source.slice(Math.max(0, i - 80), i).match(/([\w$]+)\s*$/)?.[1] ?? '';
+    else if ('[{;'.includes(ch) || (ch === '=' && !depth)) return '';
+  }
+  return '';
+}
+const pathLoaders = new Set(['import', 'require', 'resolve', 'join', 'read', 'readdir', 'load', 'compile', 'transform',
+  'tsx', 'jsx', 'url', 'source', 'module', 'file', 'path', 'stat', 'exists']);
+const loadsPath = name => (name.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+/g) ?? []).some(word => pathLoaders.has(word.toLowerCase()));
+
+// Registered tests in another folder or under another name that load a changed
+// source by path, e.g. client/admin/lib/*.test.mjs compiling
+// new URL('../components/studio/x.tsx', import.meta.url). Only for sources that
+// got no test above; static text, nothing is evaluated.
+// Exact: a './' or '../' string resolved from the test's folder, or the path from
+// the repository root passed to a loader (import, require, resolve, join, readFile,
+// compile, URL, ...; checked by calleeOf/loadsPath), with or without extension.
+// Only without an exact name, and only passed to a loader: a trailing part of at
+// least two segments ('components/x.tsx', 'ui/kit'), or a hyphenated file name
+// with or without extension (tsx('dealer-directory'),
+// 'dealer-directory.tsx'). Path lists in classification tests and single words
+// such as 'dialog', 'page.tsx' or 'room.mjs' are data or name another file.
+// Manifests and lockfiles never search.
+function sourceConsumerTests(paths, root) {
+  paths = paths.filter(path => !manifestOrLock.test(path));
+  if (!paths.length || paths.length > SOURCE_CONSUMER_SEARCH_LIMIT) return [];
+  const targets = paths.map(path => {
+    const stemPath = path.replace(/\.[^./]+$/, ''), stem = basename(stemPath);
+    const trailing = [path, stemPath].flatMap(key => key.split('/').map((_, i, parts) => parts.slice(i).join('/')).slice(1, -1));
+    if (/^[\w.]+(?:[-_][\w.]+)+$/.test(stem)) trailing.push(stem, basename(path));
+    return { path, exact: new Set([path, stemPath]), loose: new Set(trailing), stem,
+      exactTests: new Set(), looseTests: new Set() };
+  });
+  for (const file of registeredTests(root)) {
+    let source;
+    try { source = readFileSync(resolve(root, file), 'utf8'); } catch { continue; }
+    // Every rule ends in the file name, so only tests containing it are parsed.
+    const relevant = targets.filter(target => target.path !== file && source.includes(target.stem));
+    if (!relevant.length) continue;
+    for (const { value, index } of stringLiterals(source)) {
+      if (!value || value.startsWith('/') || /[\s\\?#*]/.test(value)) continue;
+      const relative = /^\.\.?\//.test(value);
+      if (!relative && value.startsWith('.')) continue;
+      const named = relative ? posix.normalize(posix.join(posix.dirname(file), value)) : value;
+      let loader;
+      const loaded = () => loader ??= loadsPath(calleeOf(source, index));
+      for (const target of relevant) {
+        if (relative ? target.exact.has(named) : target.exact.has(value) && loaded()) target.exactTests.add(file);
+        else if (!relative && target.loose.has(value) && loaded()) target.looseTests.add(file);
+      }
+    }
+  }
+  const tests = new Set();
+  for (const { exactTests, looseTests } of targets) {
+    const found = exactTests.size ? exactTests : looseTests;
+    if (found.size <= SOURCE_CONSUMER_LIMIT) for (const test of found) tests.add(test);
+  }
+  return [...tests];
+}
+
 export function focusedTests(changes, root = repositoryRoot) {
   const selected = new Set();
-  const add = path => { if (existsSync(resolve(root, path))) selected.add(path); };
+  const withoutOwnTests = [];
+  let own = 0;
+  const add = path => { if (existsSync(resolve(root, path))) { selected.add(path); own++; } };
   for (const { path } of changes) {
     // Only repository-relative paths, never options or traversal from a diff.
     if (path.startsWith('-') || path.startsWith('/') || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))) {
       throw Error('Invalid changed path');
     }
+    own = 0;
     if (/(?:\.test\.[cm]?js$|^(?:test|apps\/[^/]+\/test)\/[^/]+\.mjs$)/.test(path)) add(path);
     // Moved shared contracts keep their existing behavioral regression suites.
     const registryTests = {
@@ -194,21 +337,29 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
-    // The merge guard shares the freeze prefixes and the branch policy.
-    if (/^tools\/(?:o02-freeze-check\.mjs|repository-policy\.json)$/.test(path)) add('test/merge-pr.mjs');
+    // The merge guard reads the branch policy.
+    if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
+    if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
   }
   for (const path of fixtureConsumerTests(changes, root)) selected.add(path);
+  for (const path of sourceConsumerTests(withoutOwnTests, root)) selected.add(path);
   return [...selected].sort();
 }
 
-export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorkers = 4 } = {}) {
+// committed: plan for the committed range PR_DIFF (--pr-diff) instead of the index.
+export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorkers = 4, committed = false } = {}) {
   if (mode === 'full') return [['sh', '.githooks/pre-commit-full']];
   if (!['documentation', 'focused'].includes(mode)) throw Error('Unknown verification mode');
   if (!Number.isInteger(testWorkers) || testWorkers < 1 || testWorkers > 4) throw Error('Focused test workers must be an integer from 1 to 4');
   const tests = focusedTests(changes, root);
-  const commands = [['git', 'diff', '--cached', '--check']];
+  const commands = [committed ? ['git', 'diff', '--check', ...PR_DIFF] : ['git', 'diff', '--cached', '--check']];
   // Repo growth (files over 1 MB, new media binaries, living-document limits) on the staged diff only.
-  if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) commands.push([process.execPath, 'tools/check-repo-limits.mjs', '--cached']);
+  if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) {
+    commands.push([process.execPath, 'tools/check-repo-limits.mjs', ...(committed ? ['--tree', 'HEAD', '--changed-since', 'HEAD^1'] : ['--cached'])]);
+  }
+  if (mode === 'focused' && addsTestFile(changes) && existsSync(resolve(root, 'tools/check-orphan-tests.mjs'))) {
+    commands.push([process.execPath, 'tools/check-orphan-tests.mjs']);
+  }
   for (const { status, path } of changes) {
     if (status === 'D' || !existsSync(resolve(root, path))) continue;
     if (/\.[cm]?js$/.test(path)) commands.push([process.execPath, '--check', path]);
@@ -218,7 +369,12 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
   if (changes.some(({path}) => ['migrering/status.json', 'migrering/status.mjs', 'migrering/STATUS.md'].includes(path))) {
     commands.push([process.execPath, 'migrering/status.mjs', '--check']);
   }
-  if (changes.some(({path}) => /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path))) {
+  // The environment guard (registry reads and hard-coded names) runs for the registry and
+  // its tool, and in focused mode for every changed non-documentation file: any of them
+  // can reintroduce a read of a fixed name.
+  if (existsSync(resolve(root, 'tools/check-environment-variables.mjs')) && changes.some(({path}) =>
+    /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path)
+    || (mode === 'focused' && !isDocumentationPath(path)))) {
     commands.push([process.execPath, 'tools/check-environment-variables.mjs']);
   }
   if (changes.some(({path}) => /^apps\/web\/.+\.[cm]?[jt]sx?$/.test(path))) {
@@ -242,6 +398,7 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
     }
     if (result.status !== 0) {
       if (result.signal) console.error('Verification interrupted by ' + result.signal);
+      if (CHECK_HINTS[args[0]]) console.error(CHECK_HINTS[args[0]]);
       return Number.isInteger(result.status) && result.status > 0 ? result.status : 1;
     }
   }
@@ -249,24 +406,26 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
 }
 
 export function main(args = process.argv.slice(2)) {
-  const { forceFull, planOnly } = parseArgs(args);
+  const { forceFull, planOnly, prDiff } = parseArgs(args);
   const indexEnv = isolatedGitEnvironment();
   // The invoking Git commit can own a temporary index (for example --only).
   // Keep that exact index only for this hook's own inspection, never its checks.
   if (process.env.GIT_INDEX_FILE) indexEnv.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
-  const changes = readStagedChanges(repositoryRoot, { env: indexEnv });
-  const mode = verificationMode(changes, { forceFull });
+  const changes = prDiff ? readCommittedChanges(repositoryRoot) : readStagedChanges(repositoryRoot, { env: indexEnv });
+  // --pr-diff is the targeted CI path for draft PRs: never the full product there.
+  const mode = prDiff ? verificationMode(changes, { env: {} }) : verificationMode(changes, { forceFull });
   // Limit simultaneous disposable servers on constrained local machines.
   // This changes scheduling only: CI/full checks and every test stay intact.
   const workerSetting = mode === 'focused' ? process.env.CROUPIER_PRECOMMIT_TEST_WORKERS : undefined;
   if (workerSetting !== undefined && !['1','2','3','4'].includes(workerSetting)) throw Error('CROUPIER_PRECOMMIT_TEST_WORKERS must be 1, 2, 3 or 4');
-  const commands = checkPlan(mode, { changes, testWorkers: workerSetting === undefined ? 4 : Number(workerSetting) });
+  const commands = checkPlan(mode, { changes, committed: prDiff, testWorkers: workerSetting === undefined ? 4 : Number(workerSetting) });
   if (planOnly) {
     console.log(JSON.stringify({ mode, commands }));
     return 0;
   }
   console.log(mode === 'full'
     ? 'Full regression: CI or explicit --full.'
+    : prDiff ? `Targeted ${mode} checks on ${PR_DIFF.join('..')}: changed files and available related tests. The full regression runs when the PR is ready for review.`
     : `Local ${mode} checks: changed files and available related tests. Full regression runs in CI; use --full locally when needed.`);
   return runChecks(commands);
 }

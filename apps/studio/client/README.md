@@ -4,6 +4,14 @@
 lobbyn (`/lobby`). Klienten har ett eget låst React-/TypeScript-bygge; Studio
 äger rutter, inloggning och server-API:er.
 
+React, react-dom, deras `@types`, esbuild och TypeScript har exakt samma
+versioner här som i `apps/studio/package.json`, eftersom de delade
+komponenterna i `apps/studio/components` byggs av båda. Uppgradera dem i båda
+paketen i samma PR; `apps/studio/test/client-version-sync.test.mjs` kontrollerar
+det. Planen för resten av verktygskedjan (en Tailwind, en
+tokenfil, ett mörkt läge) står i
+[VERKTYGSKEDJA](../../../docs/plans/VERKTYGSKEDJA.md).
+
 | Del | Ansvar |
 | --- | --- |
 | `admin/` | Admin: Studio-sidorna (sceneditor, klippkarta, dealers, bord och bakgrunder), bolag, rum, konton, drift och ekonomi |

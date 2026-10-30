@@ -1,0 +1,380 @@
+// Partner-API:ts åtgärder för egna spelbord (ADMIN-FORENKLING 5.5) mot riktig
+// PostgreSQL-SQL (PGlite): byta dealer inom tilldelningen, spelinställningar och
+// pausa/öppna. Varje åtgärd provas för rätt roll, fel roll (403), annat bolag
+// (403/404 utan läckage), ett val utanför tilldelningen (422) och CAS (409).
+// Varje nekat anrop jämför administrations-, paket- och utkastrevisionen och
+// bolagets spelbordsjournal före och efter: inget ändrat.
+// PGlite är en enda session: låskonkurrens mellan sessioner provas inte här.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { partnerPostgresFixture } from './fixtures/partner-postgres.mjs';
+import { PARTNER_ASSIGNMENT_KEY } from '../lib/partner-assignment.mjs';
+import { NATIVE_FILMED_PLANNING_MUTATION } from '../lib/presentation-runtime-readiness.mjs';
+import { listPackageRooms } from '../../../packages/presentation/server/package-rooms.mjs';
+import { createResourceLifecycleApi } from '../lib/resource-lifecycle-api.mjs';
+
+// Admins egen väg för spelbordens läge (room-state, resource-lifecycle-api.mjs) genom samma nativa grind:
+// sedan L3 PR 3 en paketversion, som partnerns.
+function adminRoomState(f) {
+  const lifecycle = createResourceLifecycleApi({ repository: f.repository, scope: f.scope, now: f.config.now });
+  return async (roomId, state) => {
+    const body = { operatorId: 'north', roomId, state, expectedAdministrationRevision: (await f.raw.readDocument('administration')).revision,
+      expectedPackageRevision: (await f.direct.getCurrentPackage('north')).revision };
+    return f.config.presentationTransaction(() => lifecycle.handlers.get('POST /studio/api/admin/room-state')({ actor: f.admin, scope: f.scope, body }),
+      { presentationDocuments: ['project', 'administration'], presentationOperatorIds: ['north'], presentationMutation: { kind: 'resource-lifecycle', value: {} } });
+  };
+}
+
+test('partner table actions on PostgreSQL', async t => {
+  // Med Studio 023: paketet bär spelbordens läge (plan L3 PR 3), och pausa/öppna ger en ny paketversion.
+  const f = await partnerPostgresFixture(t);
+  const pack = () => f.direct.getCurrentPackage('north');
+  // Samma begäran mot den nuvarande paketversionen (varje paus och öppning höjer den).
+  const fresh = async body => ({ ...body, expectedPackageRevision: (await pack()).revision });
+  // Admins tilldelning: en ny paketrevision med `assignment` i brandingen.
+  const grant = async assignment => {
+    const current = await pack();
+    const branding = { ...current.branding, [PARTNER_ASSIGNMENT_KEY]: assignment };
+    // Efter en publicerad spelinställning kräver paketet den nativa grinden, som Admins publicering.
+    return f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+      lanes: current.lanes, games: current.games, tables: current.tables, branding }), [NATIVE_FILMED_PLANNING_MUTATION]);
+  };
+  const status = async (promise, expected, message) => {
+    const response = await promise;
+    const body = await response.json();
+    assert.equal(response.status, expected, `${message}: ${JSON.stringify(body)}`);
+    return body;
+  };
+  const room = name => f.id(name);
+  const assignment = async (user = 'north-admin') => (await f.call('assignment', { user })).json();
+  const journal = () => f.rows(`SELECT action, access_class, actor_id, resource_type, resource_id, changes FROM croupier_studio.operator_audit_events
+    WHERE environment_id=$1 AND workspace_id=$2 AND operator_id='north' AND action LIKE 'room.%' ORDER BY occurred_at_ms, event_id`, [f.scope.environment, f.scope.workspaceId]);
+  const revisions = async () => ({ administration: (await f.raw.readDocument('administration')).revision, package: (await pack()).revision,
+    draft: (await f.direct.getBrandingDraft('north'))?.revision ?? 0, journal: (await journal()).length });
+  // Ett nekat anrop ändrar ingenting: anropet görs först efter ögonblicksbilden.
+  const refused = async (call, expected, message) => {
+    const before = await revisions();
+    const body = await status(call(), expected, message);
+    assert.deepEqual(await revisions(), before, `${message}: inget ändrat`);
+    return body;
+  };
+  const adminState = adminRoomState(f);
+
+  await t.test('dealer: a choice inside the assignment is saved in the appearance draft', async () => {
+    const before = await assignment();
+    const body = { roomId: room('north-a'), dealer: 'paow', expectedDraftRevision: before.revisions.brandingDraft, expectedPackageRevision: before.revisions.package };
+    await refused(() => f.call('dealer', { user: 'north-viewer', body }), 403, 'a viewer has no presentations.configure');
+    await refused(() => f.call('dealer', { user: 'south-admin', body }), 403, 'another company');
+    const saved = await status(f.call('dealer', { body }), 200, 'administrator');
+    assert.equal(saved.draft.branding.roomOverrides[room('north-a')].dealer, 'paow');
+    assert.equal((await pack()).revision, before.revisions.package, 'the draft publishes nothing');
+    await refused(() => f.call('dealer', { body }), 409, 'a stale draft revision');
+    const after = await assignment();
+    assert.equal(after.revisions.brandingDraft, before.revisions.brandingDraft + 1);
+    const next = { ...body, expectedDraftRevision: after.revisions.brandingDraft };
+    await refused(() => f.call('dealer', { body: { ...next, dealer: 'ghost' } }), 422, 'a dealer outside the assignment, sent directly');
+    await refused(() => f.call('dealer', { body: { ...next, roomId: room('south') } }), 422, 'another company\'s table is not in the assignment');
+    await refused(() => f.call('dealer', { body: { ...next, expectedPackageRevision: next.expectedPackageRevision + 1 } }), 409, 'a stale package revision');
+    await refused(() => f.call('dealer', { body: { ...next, extra: true } }), 400, 'an unknown field');
+  });
+
+  await t.test('dealer: allow.dealer=false closes the action even for an administrator', async () => {
+    const granted = await grant({ allow: { dealer: false } });
+    const current = await assignment();
+    assert.equal(current.assignment.allow.dealer, false);
+    await refused(() => f.call('dealer', { body: { roomId: room('north-a'), dealer: 'dragan', expectedDraftRevision: current.revisions.brandingDraft,
+      expectedPackageRevision: granted.revision } }), 403, 'allow.dealer');
+  });
+
+  await t.test('dealer: allow.dealer=false also closes the appearance draft (branding save-draft), under the lock', async () => {
+    const draftFor = async () => {
+      const view = await (await f.call('branding')).json();
+      const base = view.draft?.branding ?? view.branding;
+      return { action: 'save-draft', expectedDraftRevision: view.draftRevision, expectedPackageRevision: (await pack()).revision,
+        branding: { ...base, roomOverrides: { ...(base.roomOverrides ?? {}), [room('north-b')]: { dealer: 'paow' } } } };
+    };
+    await refused(async () => f.call('branding', { body: await draftFor() }), 422, 'roomOverrides.dealer without allow.dealer');
+    // Samma utkast med Admins tilldelning utan dealerstopp sparas: det var allow som nekade.
+    await grant({});
+    const saved = await status(f.call('branding', { body: await draftFor() }), 200, 'roomOverrides.dealer with the dealer layer open');
+    assert.equal(saved.draft.branding.roomOverrides[room('north-b')].dealer, 'paow');
+  });
+
+  let draftRevision = null;
+  await t.test('settings: closed until Admin grants language or limit; then only the assigned profiles', async () => {
+    const closed = { action: 'save-draft', roomId: room('north-a'), expectedPackageRevision: (await pack()).revision, expectedDraftRevision: null,
+      gameConfig: { language: 'sv', limitPreset: 'prive' } };
+    await refused(() => f.call('room-settings', { body: closed }), 403, 'no allow.language or allow.limit');
+    const granted = await grant({ allow: { language: true, limit: true, pause: true }, limitPresets: ['casual', 'prive'] });
+    const body = { ...closed, expectedPackageRevision: granted.revision };
+    await refused(() => f.call('room-settings', { user: 'north-editor', body }), 403, 'an editor has no tables.configure');
+    await refused(() => f.call('room-settings', { user: 'south-admin', body }), 403, 'another company');
+    await refused(() => f.call('room-settings', { body: { ...body, roomId: room('south') } }), 404, 'another company\'s table');
+    await refused(() => f.call('room-settings', { body: { ...body, gameConfig: { language: 'sv', limitPreset: 'high' } } }), 422, 'a profile outside the assignment');
+    await refused(() => f.call('room-settings', { body: { ...body, gameConfig: { language: 'de', limitPreset: 'prive' } } }), 422, 'an unknown language');
+    await refused(() => f.call('room-settings', { body: { ...body, expectedPackageRevision: body.expectedPackageRevision - 1 } }), 409, 'a stale package revision (CAS)');
+    const saved = await status(f.call('room-settings', { body }), 200, 'administrator');
+    assert.equal(saved.administrationRevision, undefined, 'the shared administration revision stays internal');
+    assert.deepEqual(saved.draft.gameConfig, { language: 'sv', limitPreset: 'prive' });
+    draftRevision = saved.draft.revision;
+    // Utkastet står i bolagets journal med partnerns konto och accessClass.
+    const entries = (await journal()).filter(row => row.action === 'room.settings' && JSON.parse(row.changes).after.draftRevision === draftRevision);
+    assert.deepEqual(entries.map(entry => [entry.access_class, entry.actor_id, entry.resource_type, entry.resource_id]), [['partner', '42', 'package', room('north-a')]]);
+    await refused(() => f.call('room-settings', { body }), 409, 'a stale draft revision');
+    const read = await assignment();
+    assert.equal(read.rooms.find(row => row.id === room('north-a')).settings.draft.revision, draftRevision);
+  });
+
+  await t.test('settings: the draft is published through the shared J08 writer', async () => {
+    const before = await pack();
+    const body = { action: 'publish', roomId: room('north-a'), expectedPackageRevision: before.revision, expectedDraftRevision: draftRevision };
+    await refused(() => f.call('room-settings', { user: 'north-viewer', body }), 403, 'a viewer');
+    const published = await status(f.call('room-settings', { body }), 200, 'administrator');
+    assert.deepEqual(published.published.gameConfig, { language: 'sv', limitPreset: 'prive' });
+    assert.equal(published.draft, null);
+    const after = await pack();
+    assert.equal(after.revision, before.revision + 1);
+    assert.equal(typeof after.branding.roomGameConfigVersions[room('north-a')], 'string');
+    assert.equal(after.branding.roomGameConfigVersions[room('south')], undefined);
+    await refused(() => f.call('room-settings', { body: { ...body, expectedPackageRevision: after.revision } }), 409, 'no draft left to publish');
+  });
+
+  await t.test('settings: a field without its allow is refused, the other may change', async () => {
+    const granted = await grant({ allow: { limit: true, pause: true }, limitPresets: ['casual', 'prive'] });
+    const body = { action: 'save-draft', roomId: room('north-a'), expectedPackageRevision: granted.revision, expectedDraftRevision: null };
+    await refused(() => f.call('room-settings', { body: { ...body, gameConfig: { language: 'en', limitPreset: 'prive' } } }), 422, 'language without allow.language');
+    await status(f.call('room-settings', { body: { ...body, gameConfig: { language: 'sv', limitPreset: 'casual' } } }), 200, 'limit with allow.limit');
+  });
+
+  const lobby = async () => {
+    const administration = (await f.raw.readDocument('administration')).value;
+    return listPackageRooms({ administration, package: await pack(), operatorId: 'north' }).filter(row => row.state === 'live').map(row => row.id).sort();
+  };
+  await t.test('state: pausing removes the table from the lobby catalogue; reopening needs published settings', async () => {
+    const revision = (await pack()).revision;
+    const pause = { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: revision };
+    assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
+    await refused(() => f.call('room-state', { user: 'north-editor', body: pause }), 403, 'an editor');
+    await refused(() => f.call('room-state', { user: 'south-admin', body: pause }), 403, 'another company');
+    await refused(() => f.call('room-state', { body: { ...pause, roomId: room('south') } }), 404, 'another company\'s table');
+    await refused(() => f.call('room-state', { body: { ...pause, expectedPackageRevision: revision - 1 } }), 409, 'a stale package revision (CAS)');
+    // Bolagets öppna utseendeutkast bygger på nuvarande paket; pausen tar det med sig (aldrig kastat).
+    const before = await pack(), draft = await f.direct.getBrandingDraft('north');
+    assert.deepEqual([draft.action, draft.basePackageRevision], ['draft.save', revision]);
+    const paused = await status(f.call('room-state', { body: pause }), 200, 'administrator');
+    assert.deepEqual(paused.room, { id: room('north-a'), state: 'pending' });
+    assert.equal(paused.packageRevision, revision + 1, 'the pause is a package revision');
+    const after = await pack();
+    assert.equal(after.revision, revision + 1);
+    assert.deepEqual(after.rooms.map(row => [row.id, row.state]), [[room('north-a'), 'pending'], [room('north-b'), 'live']], 'the package carries the state');
+    assert.deepEqual(after.branding, before.branding, 'only the rooms differ; the paused table keeps its published settings');
+    const kept = await f.direct.getBrandingDraft('north');
+    assert.deepEqual([kept.revision, kept.action, kept.basePackageRevision, kept.branding], [draft.revision + 1, 'draft.save', revision + 1, draft.branding]);
+    assert.deepEqual(await lobby(), [room('north-b')], 'the paused table leaves the lobby catalogue');
+    // Pausen står i bolagets journal med partnerns konto och accessClass.
+    const states = async () => (await journal()).filter(row => row.action === 'room.state');
+    const [entry] = await states();
+    assert.deepEqual([entry.access_class, entry.actor_id, entry.resource_type, entry.resource_id], ['partner', '42', 'package', room('north-a')]);
+    assert.deepEqual(JSON.parse(entry.changes), { before: { state: 'live' }, after: { state: 'pending', administrationRevision: (await f.raw.readDocument('administration')).revision } });
+    // The pause's package version is journaled with the partner's own account too (never a pseudonym), naming the table.
+    const [published] = await f.rows(`SELECT access_class, actor_id, changes FROM croupier_studio.operator_audit_events
+      WHERE environment_id=$1 AND workspace_id=$2 AND operator_id='north' AND action='package.publish' AND after_revision=$3`, [f.scope.environment, f.scope.workspaceId, revision + 1]);
+    const { after: publishedAfter } = JSON.parse(published.changes);
+    assert.deepEqual([published.access_class, published.actor_id, publishedAfter.roomId, publishedAfter.state], ['partner', '42', room('north-a'), 'pending']);
+    await refused(async () => f.call('room-state', { body: await fresh(pause) }), 409, 'the table is no longer live (CAS)');
+    await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'live' } }), 400, 'no change');
+    await refused(() => f.call('room-state', { body: { ...pause, state: 'live', expectedState: 'pending' } }), 409, 'reopen with a stale package revision (CAS)');
+    await status(f.call('room-state', { body: await fresh({ ...pause, state: 'live', expectedState: 'pending' }) }), 200, 'reopen');
+    assert.equal((await pack()).revision, revision + 2);
+    assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
+    const opened = (await states()).map(row => JSON.parse(row.changes)).find(changes => changes.after.state === 'live');
+    assert.deepEqual(opened, { before: { state: 'pending' }, after: { state: 'live', administrationRevision: (await f.raw.readDocument('administration')).revision } });
+    // Partnerns journal visar händelserna men aldrig Scoutgamings administrationsrevision.
+    const read = await status(f.call('journal'), 200, 'the partner journal');
+    const shown = read.entries.filter(entry => entry.action === 'room.state');
+    // Samma klocka i fixturen: ordningen mellan raderna avgörs av event_id, så jämför utan ordning.
+    assert.deepEqual(shown.map(({ changes }) => `${JSON.stringify(changes.before)}>${JSON.stringify(changes.after)}`).sort(),
+      ['{"state":"live"}>{"state":"pending"}', '{"state":"pending"}>{"state":"live"}']);
+    assert.ok(shown.every(({ changes }) => Object.keys(changes).sort().join() === 'after,before'));
+    assert.ok(read.entries.some(entry => entry.action === 'room.settings'), 'the settings draft is listed too');
+    assert.doesNotMatch(JSON.stringify(read), /administrationRevision/, 'the administration revision never reaches the partner');
+    const other = { roomId: room('north-b'), state: 'pending', expectedState: 'live' };
+    await status(f.call('room-state', { body: await fresh(other) }), 200, 'pause a table without published settings');
+    await refused(async () => f.call('room-state', { body: await fresh({ ...other, state: 'live', expectedState: 'pending' }) }), 409, 'never released by Admin');
+    const south = (await f.raw.readDocument('administration')).value.rooms.find(row => row.id === room('south'));
+    assert.equal(south.state, 'live', 'the other company\'s table is untouched');
+  });
+
+  await t.test('state: the partner never lifts a pause Admin set, only its own', async () => {
+    const open = { roomId: room('north-a'), state: 'live', expectedState: 'pending' };
+    const pause = { ...open, state: 'pending', expectedState: 'live' };
+    // Admin pausar: partnern får 409 admin-pause och ingenting ändras. Admins paus är också en paketversion.
+    const revision = (await pack()).revision;
+    assert.equal((await adminState(room('north-a'), 'pending')).packageRevision, revision + 1);
+    assert.equal((await pack()).rooms.find(row => row.id === room('north-a')).state, 'pending');
+    const refusedBody = await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'an Admin pause');
+    assert.equal(refusedBody.reason, 'admin-pause');
+    // Partnern pausar, Admin öppnar och pausar igen: pausen är nu Admins.
+    await adminState(room('north-a'), 'live');
+    await status(f.call('room-state', { body: await fresh(pause) }), 200, 'partner pause');
+    await adminState(room('north-a'), 'live');
+    await adminState(room('north-a'), 'pending');
+    assert.equal((await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'Admin re-paused after the partner pause')).reason, 'admin-pause');
+    // Admin (N1) pausar genom portalens väg: journalraden är internal-admin, inte
+    // partner, så bolaget kan inte häva den (listPartnerRoomPauses, access_class='partner').
+    await adminState(room('north-a'), 'live');
+    const n1 = await status(f.call('room-state', { user: 'n1-admin', body: await fresh(pause) }), 200, 'N1 pause through the portal route');
+    assert.deepEqual(n1.room, { id: room('north-a'), state: 'pending' });
+    const internal = (await journal()).filter(row => row.action === 'room.state' && row.access_class !== 'partner');
+    assert.deepEqual(internal.map(row => [row.access_class, row.actor_id, JSON.parse(row.changes).after.state]), [['internal-admin', '7', 'pending']]);
+    assert.equal((await refused(async () => f.call('room-state', { body: await fresh(open) }), 409, 'an N1 pause set through the portal route')).reason, 'admin-pause');
+    // Partnerns egen paus består genom Admins andra sparningar och öppnas av partnern.
+    await adminState(room('north-a'), 'live');
+    await status(f.call('room-state', { body: await fresh(pause) }), 200, 'partner pause');
+    await adminState(room('north-b'), 'live');
+    await status(f.call('room-state', { body: await fresh(open) }), 200, 'the partner opens its own pause');
+    assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
+  });
+
+  await t.test('state and settings: the role and the company are read again under the lock', async () => {
+    const original = f.config.presentationTransaction;
+    // Ändringen görs efter ingångens kontroll men före låset (transaktionen).
+    const between = async (change, call, message) => {
+      f.config.presentationTransaction = async (work, options) => { await change(); return original(work, options); };
+      try { return await refused(call, 403, message); } finally { f.config.presentationTransaction = original; }
+    };
+    const revision = (await pack()).revision;
+    const pause = { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: revision };
+    const settings = { action: 'save-draft', roomId: room('north-a'), expectedPackageRevision: revision, expectedDraftRevision: null,
+      gameConfig: { language: 'sv', limitPreset: 'casual' } };
+    const role = (await f.direct.getRole('north', 'partner-admin'));
+    const setRole = permissions => f.direct.upsertRole({ actor: 'fixture', operatorId: 'north', roleId: 'partner-admin', label: role.label, permissions, delegable: role.delegable });
+    const member = async (userId, changes) => {
+      const membership = await f.direct.getMembership('north', userId);
+      await f.direct.upsertMembership({ actor: 'fixture', operatorId: 'north', userId, roleId: membership.roleId, status: membership.status,
+        expectedRevision: membership.revision, ...changes });
+    };
+    // Ett andra partner-admin-konto, så att medlemskapet får stängas (bolaget behåller en administratör).
+    await member('43', { roleId: 'partner-admin' });
+    for (const [body, path] of [[pause, 'room-state'], [settings, 'room-settings']]) {
+      await between(() => setRole(role.permissions.filter(permission => permission !== 'tables.configure')), () => f.call(path, { body }), `${path}: role withdrawn`);
+      await setRole([...role.permissions]);
+      await between(() => member('42', { status: 'suspended' }), () => f.call(path, { body }), `${path}: membership in the company suspended`);
+      await member('42', { status: 'active' });
+    }
+    await member('43', { roleId: 'partner-editor' });
+    // Utan ändring däremellan går samma paus igenom.
+    await status(f.call('room-state', { body: pause }), 200, 'nothing changed in between');
+    await status(f.call('room-state', { body: await fresh({ ...pause, state: 'live', expectedState: 'pending' }) }), 200, 'reopen');
+  });
+
+  await t.test('state: allow.pause=false closes the action', async () => {
+    const granted = await grant({ allow: { limit: true } });
+    await refused(() => f.call('room-state', { body: { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: granted.revision } }), 403, 'allow.pause');
+  });
+
+  await t.test('appearance: a paused table keeps its published override; only a new or changed one is refused', async () => {
+    // Admin publicerar en dealer-override för north-b (i paketets branding).
+    const current = await pack();
+    await f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+      lanes: current.lanes, games: current.games, tables: current.tables,
+      branding: { ...current.branding, roomOverrides: { ...(current.branding.roomOverrides ?? {}), [room('north-b')]: { dealer: 'paow' } } } }),
+    [NATIVE_FILMED_PLANNING_MUTATION]);
+    // Ett utkast som bara ändrar north-a och bär north-b:s publicerade override vidare.
+    const draftFor = async (overrides = {}) => {
+      const view = await (await f.call('branding')).json();
+      return { action: 'save-draft', expectedDraftRevision: view.draftRevision, expectedPackageRevision: view.packageRevision,
+        branding: { ...view.branding, roomOverrides: { ...view.branding.roomOverrides, [room('north-a')]: { dealer: 'paow' }, ...overrides } } };
+    };
+    const dealerFor = async (id, dealer = 'paow') => {
+      const read = await assignment();
+      return { roomId: id, dealer, expectedDraftRevision: read.revisions.brandingDraft, expectedPackageRevision: read.revisions.package };
+    };
+    assert.equal((await draftFor()).branding.roomOverrides[room('north-b')].dealer, 'paow');
+    await status(f.call('branding', { body: await draftFor() }), 200, 'north-b live: the same draft');
+    await status(f.call('dealer', { body: await dealerFor(room('north-a')) }), 200, 'north-b live: dealer for north-a');
+    // north-b pausas (läge pending): samma utkast och dealerbytet för north-a går fortfarande igenom.
+    await adminState(room('north-b'), 'pending');
+    await status(f.call('branding', { body: await draftFor() }), 200, `north-b paused by Admin: the same draft`);
+    await status(f.call('dealer', { body: await dealerFor(room('north-a'), 'dragan') }), 200, `north-b paused by Admin: dealer for north-a`);
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('north-b')]: { dealer: 'dragan' } }) }), 422, 'a changed override for the paused table');
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('north-b')]: { dealer: 'paow', background: 'ghost' } }) }), 422, 'a widened override for the paused table');
+    await refused(async () => f.call('dealer', { body: await dealerFor(room('north-b'), 'dragan') }), 422, 'POST dealer for the paused table');
+    await refused(async () => f.call('branding', { body: await draftFor({ [room('south')]: { dealer: 'paow' } }) }), 422, 'another company\'s table');
+    await adminState(room('north-b'), 'live');
+  });
+});
+
+test('before Studio migration 022 the journaled table actions answer 503 and write nothing', async t => {
+  const f = await partnerPostgresFixture(t, { deferOptional: ['022'] });
+  const current = await f.direct.getCurrentPackage('north');
+  const granted = await f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+    lanes: current.lanes, games: current.games, tables: current.tables,
+    branding: { ...current.branding, [PARTNER_ASSIGNMENT_KEY]: { allow: { language: true, limit: true, pause: true }, limitPresets: ['casual', 'prive'] } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]);
+  const revisions = async () => ({ administration: (await f.raw.readDocument('administration')).revision, package: (await f.direct.getCurrentPackage('north')).revision,
+    journal: (await f.rows('SELECT count(*)::integer AS n FROM croupier_studio.operator_audit_events WHERE environment_id=$1 AND workspace_id=$2', [f.scope.environment, f.scope.workspaceId]))[0].n });
+  for (const [path, body] of [
+    ['room-state', { roomId: f.id('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: granted.revision }],
+    ['room-settings', { action: 'save-draft', roomId: f.id('north-a'), expectedPackageRevision: granted.revision, expectedDraftRevision: null, gameConfig: { language: 'sv', limitPreset: 'prive' } }],
+  ]) {
+    const before = await revisions();
+    const response = await f.call(path, { body });
+    assert.equal(response.status, 503, path);
+    assert.deepEqual(await response.json(), { error: 'Authentication unavailable', reason: 'studio_migration_required' });
+    assert.deepEqual(await revisions(), before, `${path}: inget skrivet`);
+  }
+  assert.equal((await f.raw.readDocument('administration')).value.rooms.find(row => row.id === f.id('north-a')).state, 'live');
+});
+
+// Utan Studio 023 (före Jakobs körning i preview och produktion) är pausen ändå en paketversion: paketet
+// bär inga `rooms` och läsarna läser dokumentet. Bolagets öppna utseendeutkast och ett annat spelbords
+// spelinställningsutkast följer med till den nya versionen, och det pausade spelbordet behåller sina
+// publicerade spelinställningar genom en annan publicering.
+test('without Studio 023 the partner pause still raises the package and keeps both drafts', async t => {
+  const f = await partnerPostgresFixture(t, { deferOptional: ['023'] });
+  const pack = () => f.direct.getCurrentPackage('north'), room = name => f.id(name);
+  const call = async (path, body, message) => {
+    const response = await f.call(path, { body }), value = await response.json();
+    assert.equal(response.status, 200, `${message}: ${JSON.stringify(value)}`);
+    return value;
+  };
+  const lobby = async () => listPackageRooms({ administration: (await f.raw.readDocument('administration')).value, package: await pack(), operatorId: 'north' })
+    .filter(row => row.state === 'live').map(row => row.id).sort();
+  const read = await (await f.call('assignment')).json();
+  await call('dealer', { roomId: room('north-a'), dealer: 'paow', expectedDraftRevision: read.revisions.brandingDraft, expectedPackageRevision: read.revisions.package }, 'appearance draft');
+  const current = await pack();
+  await f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: current.revision,
+    lanes: current.lanes, games: current.games, tables: current.tables,
+    branding: { ...current.branding, [PARTNER_ASSIGNMENT_KEY]: { allow: { language: true, limit: true, pause: true }, limitPresets: ['casual', 'prive'] } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]);
+  const settings = async roomId => (await call('room-settings', { action: 'save-draft', roomId, expectedPackageRevision: (await pack()).revision, expectedDraftRevision: null,
+    gameConfig: { language: 'sv', limitPreset: 'prive' } }, `settings draft ${roomId}`)).draft.revision;
+  const publish = async (roomId, draftRevision) => call('room-settings', { action: 'publish', roomId, expectedPackageRevision: (await pack()).revision, expectedDraftRevision: draftRevision }, `publish ${roomId}`);
+  await publish(room('north-a'), await settings(room('north-a')));
+  const waiting = await settings(room('north-b'));
+  const before = await pack(), draft = await f.direct.getBrandingDraft('north');
+  assert.equal(draft.basePackageRevision, before.revision, 'the appearance draft followed the two publications');
+  const paused = await call('room-state', { roomId: room('north-a'), state: 'pending', expectedState: 'live', expectedPackageRevision: before.revision }, 'pause');
+  const after = await pack();
+  assert.deepEqual([paused.packageRevision, after.revision, after.rooms], [before.revision + 1, before.revision + 1, null]);
+  assert.equal((await f.raw.readDocument('administration')).value.rooms.find(row => row.id === room('north-a')).state, 'pending');
+  assert.deepEqual(await lobby(), [room('north-b')]);
+  const kept = await f.direct.getBrandingDraft('north');
+  assert.deepEqual([kept.revision, kept.basePackageRevision, kept.branding], [draft.revision + 1, after.revision, draft.branding]);
+  // The other table's settings draft was made on the previous package and is still publishable.
+  await publish(room('north-b'), waiting);
+  const bound = (await pack()).branding.roomGameConfigVersions;
+  assert.equal(bound[room('north-a')], before.branding.roomGameConfigVersions[room('north-a')], 'the paused table keeps its published settings');
+  assert.equal(typeof bound[room('north-b')], 'string');
+  // A change to what the paused table's settings were checked against (here its dealer) is refused while it is
+  // paused (409, nothing written), as before PR 3: otherwise the publication would pass and the opening fail (422).
+  const held = await pack(), overrides = held.branding.roomOverrides ?? {};
+  await assert.rejects(f.repository.withMutationContext(() => f.direct.publishPackage({ actor: 'fixture', operatorId: 'north', expectedRevision: held.revision,
+    lanes: held.lanes, games: held.games, tables: held.tables,
+    branding: { ...held.branding, roomOverrides: { ...overrides, [room('north-a')]: { ...overrides[room('north-a')], dealer: 'paow' } } } }),
+  [NATIVE_FILMED_PLANNING_MUTATION]), error => error?.statusCode === 409 && error.code === 'studio_conflict');
+  assert.equal((await pack()).revision, held.revision);
+  await call('room-state', { roomId: room('north-a'), state: 'live', expectedState: 'pending', expectedPackageRevision: (await pack()).revision }, 'reopen');
+  assert.deepEqual(await lobby(), [room('north-a'), room('north-b')]);
+});

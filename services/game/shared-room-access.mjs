@@ -5,6 +5,7 @@ import {isPresentationRoom,roomGame} from '../../packages/presentation/contracts
 import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import {assertPublishedRoomGameConfig} from '../../packages/presentation/server/room-game-publication.mjs';
 import {canonicalStudioJson,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
+import {PARTNER_KEY_UNBOUND,PARTNER_OPERATOR_MISMATCH} from './partner-operator.mjs';
 
 const deny=()=>{throw new StudioStorageError('studio_forbidden',403);};
 const unavailable=()=>{throw new StudioStorageError('studio_storage_unavailable',503);};
@@ -14,13 +15,29 @@ const same=(a,b)=>canonicalStudioJson(a)===canonicalStudioJson(b);
 const mediaIdentity=value=>({...value,classification:Object.fromEntries(Object.entries(value.classification).filter(([key])=>!['label','notes'].includes(key)))});
 const layerIdentity=({label,...value})=>value;
 const aborted=signal=>{if(signal?.aborted)throw signal.reason??new DOMException('Aborted','AbortError');};
+const refuse=code=>{throw new StudioStorageError(code,403);};
+// A live room whose package binds no game settings, or whose binding has no published head, has
+// nothing a seat can use until Admin publishes its settings (Spelinställningar › Publicera). The
+// upgrade names this refusal in its 1008 close, so the page says so instead of retrying for a minute.
+export const ROOM_CONFIG_MISSING='room_config_missing';
+const configMissing=()=>refuse(ROOM_CONFIG_MISSING);
 function session(value,now) {
-  // Legacy partner keys have no canonical operator/room grant. This new demo
-  // channel rejects them; the existing Partner HTTP/table paths are untouched.
-  if(!value||!Object.hasOwn(value,'partnerKeyId')||value.partnerKeyId!==null
+  if(!value||!Object.hasOwn(value,'partnerKeyId')
     ||!id(value.actorId)||!/^player-[a-f0-9]{64}$/.test(value.sessionId)
     ||!Number.isSafeInteger(value.expiresAt)||value.expiresAt<=now())deny();
+  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters only rooms of its
+  // key's company, with a player's rights; admit() compares that company with the room's. A key
+  // without a company (every key before 012) has no room grant and is refused by name.
+  if(value.partnerKeyId!==null) {
+    if(!id(value.partnerKeyId)||!Object.hasOwn(value,'operatorId'))deny();
+    if(value.operatorId===null)refuse(PARTNER_KEY_UNBOUND);
+    if(!id(value.operatorId))deny();
+  }
   return {actorId:value.actorId,sessionId:value.sessionId,expiresAt:value.expiresAt};
+}
+const grant=value=>value.partnerKeyId===null?null:value.partnerKeyId+'\0'+value.operatorId;
+function admit(value,publication) {
+  if(value.partnerKeyId!==null&&value.operatorId!==publication.operatorId)refuse(PARTNER_OPERATOR_MISMATCH);
 }
 function configMatches(value,context) {
   try { assertPublishedRoomGameConfig(value,context); }
@@ -38,7 +55,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     ||!repository||!['transaction','withTransactionClient','readDocument'].every(key=>typeof repository[key]==='function')
     ||!same(scope,validateStudioScope(repository.scope)))throw new TypeError('Explicit scoped room access required');
   const parameters=[scope.environment,scope.workspaceId];
-  async function current(roomId,signal,details=false) {
+  async function current(roomId,signal,details=false,value=null) {
     aborted(signal);
     return repository.transaction(()=>repository.withTransactionClient(async client=>{
       aborted(signal);
@@ -63,7 +80,12 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
       if(!presentation)deny();
       const dealerId=resolvePackageRoomDealer(pack,room,presentation);
       if(!dealerId||entry.selection.dealer!==dealerId)deny();
-      const version=pack.branding?.roomGameConfigVersions?.[roomId];
+      // The company check runs before the game settings are read: a partner from another company is refused
+      // as partner_operator_mismatch, never told whether this company's table has published settings.
+      if(value)admit(value,{operatorId:operator.id});
+      const bindings=pack.branding?.roomGameConfigVersions;
+      if(!bindings||typeof bindings!=='object'||!Object.hasOwn(bindings,roomId))configMissing();
+      const version=bindings[roomId];
       if(typeof version!=='string'||!/^room-config-[a-f0-9-]{36}$/.test(version))deny();
       // These are the existing ConfigPort tables. Read head + frozen body on
       // this same scoped client, without starting or modifying a game window.
@@ -71,6 +93,7 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
         FROM croupier_game.shared_table_config_heads h LEFT JOIN croupier_game.shared_table_configs c
         ON c.room_id=h.room_id AND c.version=h.version
         WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND h.room_id=$3`,[...parameters,roomId]);
+      if(!result.rows.length)configMissing();
       if(result.rows.length!==1||result.rows[0].version!==version)deny();
       let config;try{config=typeof result.rows[0].body==='string'?JSON.parse(result.rows[0].body):result.rows[0].body;}catch{unavailable();}
       configMatches(config,{version,pack,room,presentation,dealerId});
@@ -81,10 +104,11 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
   }
   async function bind(value,roomId,signal) {
     const accepted=session(value,now);aborted(signal);
-    const publication=await current(roomId,signal);aborted(signal);
+    const publication=await current(roomId,signal,false,value);aborted(signal);
+    admit(value,publication);
     // Recheck revocation/expiry after the registry wait, with no retained token.
-    const latest=session(await auth.bindingById(accepted.sessionId),now);aborted(signal);
-    if(!same(accepted,latest))deny();
+    const fresh=await auth.bindingById(accepted.sessionId),latest=session(fresh,now);aborted(signal);
+    if(!same(accepted,latest)||grant(fresh)!==grant(value))deny();
     return Object.freeze({...accepted,...publication});
   }
   async function authorize(request,{roomId,signal}={}) {
@@ -112,10 +136,11 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
     if(!binding||keys.some(key=>!Object.hasOwn(binding,key))||!isGameLaneId(binding.roomId)
       ||!id(binding.operatorId)||!Number.isSafeInteger(binding.packageRevision)||binding.packageRevision<1)deny();
     aborted(signal);
-    const fresh=session(await commandAuth.bindingById(binding.sessionId,{actorId:binding.actorId,signal}),now);
+    const value=await commandAuth.bindingById(binding.sessionId,{actorId:binding.actorId,signal}),fresh=session(value,now);
     if(['actorId','sessionId','expiresAt'].some(key=>fresh[key]!==binding[key]))deny();
-    const publication=await current(binding.roomId,signal);
+    const publication=await current(binding.roomId,signal,false,value);
     if(['operatorId','roomId','packageRevision'].some(key=>publication[key]!==binding[key]))deny();
+    admit(value,publication);
     aborted(signal);
     return Object.freeze({...fresh,...publication});
   }
@@ -171,5 +196,17 @@ export function createSharedRoomAccess({auth,commandAuth,repository,scope,now=Da
           media:[...expected.values()],assets}};
     }));
   }
-  return Object.freeze({authorize,revalidate,revalidateLocked,readPresentationContextLocked});
+  // Speech lag (28 Oct 2026): the immutable package a room's frozen config is bound to, read on this scoped
+  // repository only to derive that config's own speech clips (shared-room-filmed-steps.mjs). It grants
+  // nothing: no session, room or media access follows from it, and the caller checks the config's binding.
+  async function readPackage(operatorId,packageRevision,{signal}={}) {
+    if(!id(operatorId)||!Number.isSafeInteger(packageRevision)||packageRevision<1)deny();
+    aborted(signal);
+    return repository.transaction(()=>repository.withTransactionClient(async client=>{
+      aborted(signal);
+      const sql={async query(text,values){aborted(signal);const result=await client.query(text,values);aborted(signal);return result;}};
+      return (await createOperatorStore({sql,scope,now})).getPackage(operatorId,packageRevision);
+    }));
+  }
+  return Object.freeze({authorize,revalidate,revalidateLocked,readPresentationContextLocked,readPackage});
 }

@@ -14,10 +14,11 @@ const LAB_DIR = studioRoots().appRoot;
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 const ID = /^[a-f0-9]{64}$/;
 const inFlight = new Map();
-const neonMode = env => env?.CROUPIER_STUDIO_NEON_POLICY === '1' || env?.CROUPIER_STUDIO_NATIVE_ADMIN === '1';
+// Neon and native Admin are fixed on every deployment, so the standalone preview is always off.
+const neonMode = () => true;
 const disabledMessage = 'Det fristående röstprovet är avstängt. Tal i molnläget kräver Render och dess beständiga kostnadsjournal.';
 function assertPreviewEnabled(options = {}) {
-  if (neonMode(process.env) || neonMode(options.env) || options.settings?.disabled)
+  if (neonMode() || options.settings?.disabled)
     throw new StudioError(disabledMessage, 503);
 }
 export const VOICE_PREVIEW = Object.freeze({
@@ -32,7 +33,7 @@ export const VOICE_PHRASES = Object.freeze([
 
 // Server-only, selective key read. Never write credentials into process.env or responses.
 export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_DIR, '../../.env')] } = {}) {
-  if (neonMode(env)) return { key: '', mismatch: false, cacheDir: '', disabled: true };
+  if (neonMode()) return { key: '', mismatch: false, cacheDir: '', disabled: true };
   const values = {};
   for (const file of envFiles) {
     try {
@@ -50,7 +51,7 @@ export function readVoiceSettings({ env = process.env, envFiles = [resolve(LAB_D
 }
 
 export function voicePreviewStatus(settings = readVoiceSettings()) {
-  if (settings.disabled || neonMode(process.env)) return {
+  if (settings.disabled || neonMode()) return {
     configured: false, message: disabledMessage, voiceName: VOICE_PREVIEW.voiceName, modelId: VOICE_PREVIEW.modelId,
     maxTextLength: VOICE_PREVIEW.maxTextLength, phrases: VOICE_PHRASES,
   };

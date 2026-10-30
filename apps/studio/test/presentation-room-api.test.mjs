@@ -4,13 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, createEmptyProject, defaultPresentationLane, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
+import {nativeRoomMaterialFixture,studioCopyProfile} from '../../../test/fixtures/native-room-game-material.mjs';
 import {EXTENDED_PRESENTATION_STORAGE_CHECKSUM} from '../../../packages/presentation/server/presentation-storage.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { nativeStudioAdminConfiguration, createNativeStudioRequestHandlers } from '../lib/studio-native-runtime.mjs';
 import { fixtureDatabaseUrl } from '../../../test/fixtures/database-url.mjs';
-import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
+import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../../packages/presentation/contracts/presentation-layers.mjs';
@@ -200,12 +200,12 @@ test('a background playback switch and a missing default cannot create a fixed-e
 
 test('baked environments are explicit and multiple dealers do not prove a shared scene', async () => {
   const f = await fixture(), ready = await f.prepare();
-  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
+  assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Bakgrund i dealerfilmen' });
   const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
   lane.dealers = ['astrid', 'elin']; lane.layers.dealer.allowed = ['astrid', 'elin'];
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
   const blocked = await f.prepare(), before = f.pool.snapshot();
-  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
+  assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Bakgrunden följer vald dealer' });
   assert.equal(blocked.reason, 'presentation_room_environment_required');
   await assert.rejects(f.create(await f.payload()), error => error.code === 'studio_presentation_room_environment_required');
   assert.deepEqual(f.pool.snapshot(), before);
@@ -444,8 +444,8 @@ test('unavailable runtime refuses before writer locks; an unrelated catalogue le
 
 test('unified room endpoint publishes while retaining fresh role, Origin and exact query/body/scope boundaries', async () => {
   const f = await fixture(); let role = 'admin';
-  const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
-    CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_PUBLIC_ORIGIN:origin,CROUPIER_LAB_BASE_PATH:'/studio',
+  const config = nativeStudioAdminConfiguration({
+    CROUPIER_PUBLIC_ORIGIN:origin,
     CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,
     CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require','fixture') });
   const api = createStudioAdminApi({ authorize: async () => ({ ...session, role }), allowedOrigins: config.allowedOrigins, publicHosts: config.publicHosts, handlers: f.roomApi.handlers, mutationTransaction: work => work() });
@@ -1055,5 +1055,54 @@ test('room preflight and creation reject malformed current capabilities without 
     const response=await api.handle(new Request(origin+'/studio/api/admin/presentation-room?operatorId=north&presentationLaneId=vip-presentation'));
     assert.equal(response.status,503);assert.deepEqual(Object.keys(await response.json()),['error']);
     assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
+// Bolagets eget material: a new room rebuilds the package, so it merges like the
+// other rebuilding publishers. The company's approved background is not a changed
+// room environment, survives with the company's choice, and leaves when revoked.
+test('a new room keeps the company\'s approved background and choice instead of refusing a changed environment', async () => {
+  const own = '0d0d0d0d-0000-4000-8000-00000000b001';
+  const ownAsset = { schemaVersion: 1, id: own, role: 'background', label: 'Bolagets bakgrund', sha256: '6'.repeat(64), size: 4096, contentType: 'image/png', width: 1920, height: 1080 };
+  ownAsset.pathname = layerAssetPath(ownAsset);
+  let rows = [];
+  const f = await fixture({ materials: () => ({ listMaterials: async operatorId => operatorId === 'north' ? rows : [] }) });
+  const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
+  fixedBackground(saved.value, lane); lane.operatorAdjustable = [...lane.operatorAdjustable, 'background']; lane.composition = defaultCompositionSettings();
+  await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+  const allowed = () => { const raw = f.pool.snapshot().packages.at(-1); return { raw, frozen: readPackagePresentation({ lanes: JSON.parse(raw.lanes), branding: JSON.parse(raw.branding) }) }; };
+  await f.create(await f.payload());
+  assert.equal(allowed().frozen.assets.some(row => row.id === own), false);
+  rows = [{ materialId: own, revision: 2, state: 'approved', source: 'upload', role: 'background', asset: ownAsset, tableBinding: null, occurredAtMs: 1 }];
+  await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  let { raw, frozen } = allowed();
+  assert.deepEqual(frozen.lanes[0].layers.background.allowed.at(-1), own, 'the new room publication merges the approved background');
+  // The company chooses its own background; the next room must neither refuse nor reset it.
+  await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: raw.package_revision, lanes: JSON.parse(raw.lanes), games: JSON.parse(raw.games),
+    tables: JSON.parse(raw.tables), branding: { ...JSON.parse(raw.branding), background: own } });
+  const ready = await f.prepare();
+  assert.equal(ready.reason, null, 'the company material is not a changed room environment'); assert.equal(ready.ready, true);
+  const third = await f.create(await f.payload({ idempotencyKey: '0ccc0000-1111-4222-8333-444444444444' }));
+  assert.equal(third.duplicate, false);
+  ({ raw, frozen } = allowed());
+  assert.ok(frozen.assets.some(row => row.id === own)); assert.equal(JSON.parse(raw.branding).background, own, 'the company choice stays');
+  rows = [{ ...rows[0], revision: 3, state: 'revoked' }];
+  await f.create(await f.payload({ idempotencyKey: '0ddd0000-1111-4222-8333-444444444444' }));
+  ({ raw, frozen } = allowed());
+  assert.equal(frozen.assets.some(row => row.id === own), false, 'revoked material leaves the next room publication');
+  assert.equal(Object.hasOwn(JSON.parse(raw.branding), 'background'), false, 'the choice falls back to the template');
+});
+
+test('a package carrying a dealer\'s own filmed profile is not published to a v32 or v33 runtime; v34 accepts it',async()=>{
+  for(const version of [32,33,34]){
+    const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(version)}),saved=await f.repository.readDocument('project');
+    saved.value.dealers.find(row=>row.id==='astrid').filmedProfile=studioCopyProfile('astrid','paow');
+    await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
+    const ready=await f.prepare();
+    if(version<34){
+      assert.equal(ready.ready,false);assert.equal(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED,`v${version}`);
+      const body=await f.payload(),before=f.pool.snapshot();
+      await assert.rejects(f.create(body),error=>error.statusCode===503&&error.message===PRESENTATION_RUNTIME_UPDATE_REQUIRED);assert.deepEqual(f.pool.snapshot(),before);
+    } else assert.notEqual(ready.reason,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
   }
 });

@@ -1,0 +1,298 @@
+/* Partnerportalen: skalet och primitiverna, efter den godkända skissen.
+   Allt är fäst under .partner-portal och ändrar inga globala Studio-stilar.
+   Mörk sidomeny, lime för aktivt val.
+   Färgerna kommer från packages/ui/tokens.css (--sg-*): mörkt som standard,
+   ljust med klassen light på <html>, samma val som i Admin. Radix-portaler,
+   paletten (cmdk) och toasts (sonner) monteras i samma rot och får samma tokens. */
+/* Portalens egna namn som inte finns i tokenfilen; ljusa värden när <html> har klassen light. Spelbordets
+   editor (partner-appearance.module.css) läser --sg-ok-text och --sg-radius härifrån. */
+.partner-portal{--sg-lime-soft:#3a4318;--sg-chart-1:#d6ff3a;--sg-chart-2:#e6e8eb;--sg-radius:12px;--sg-shadow-pop:0 18px 48px -20px rgba(0,0,0,.8);--sg-ok-text:var(--sg-ok);
+isolation:isolate;min-height:100vh;background:var(--sg-bg);color:var(--sg-text);font:400 14px/1.5 var(--sg-font-body);-webkit-font-smoothing:antialiased;text-align:left}
+.partner-portal:where(.light *){--sg-lime-soft:#f1ffb3;--sg-chart-1:#b5e31a;--sg-chart-2:#1b1c1e;--sg-shadow-pop:0 18px 48px -20px rgba(20,22,26,.45)}
+.partner-portal *{box-sizing:border-box}
+.partner-portal a{color:inherit;text-decoration:none}
+.partner-portal button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.partner-portal h1,.partner-portal h2,.partner-portal h3,.partner-portal h4,.partner-portal p{margin:0}
+.partner-portal code{font-family:var(--sg-font-mono);font-size:12px;background:var(--sg-surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.partner-portal kbd{font-family:var(--sg-font-mono);font-size:11px;padding:1px 5px;border-radius:4px;border:1px solid var(--sg-side-line);color:var(--sg-side-muted)}
+.partner-portal :focus-visible{outline:2px solid var(--sg-text);outline-offset:2px}
+.partner-portal .side :focus-visible{outline-color:var(--sg-lime)}
+.partner-portal [hidden]{display:none!important}
+.partner-portal svg{flex:none}
+
+/* Skalet: innehållet ligger intill sidomenyn med jämnt avstånd, aldrig centrerat i en tom yta. */
+.partner-portal .shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.partner-portal .side{position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;gap:2px;background:var(--sg-side);color:var(--sg-side-text);padding:18px 12px 12px;overflow:auto}
+.partner-portal .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px;min-width:0}
+.partner-portal .brand .mark{width:30px;height:30px;border-radius:8px;background:var(--sg-lime);color:var(--sg-on-accent);display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.partner-portal .brand>div{min-width:0}
+.partner-portal .brand .name{font-weight:700;font-size:15px;letter-spacing:-.01em;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.partner-portal .brand .sub{color:var(--sg-side-muted);font-size:12px}
+.partner-portal .context{margin:0 0 10px;padding:10px 12px;background:var(--sg-side-2);border:1px solid var(--sg-side-line);border-radius:10px;font-size:12.5px;display:grid;gap:3px}
+.partner-portal .context .small{color:var(--sg-side-muted)}
+.partner-portal .context b{display:block;font-size:13.5px}
+.partner-portal .context select{margin-top:6px;width:100%;background:var(--sg-side);color:var(--sg-side-text);border:1px solid var(--sg-side-line);border-radius:7px;padding:6px 8px;font:inherit;font-size:12.5px}
+.partner-portal .find{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 10px;padding:8px 10px;border-radius:8px;border:1px solid var(--sg-side-line);color:var(--sg-side-muted);font-size:13px}
+.partner-portal .find:hover{color:var(--sg-side-text);background:var(--sg-side-2)}
+.partner-portal .find kbd{margin-left:auto}
+.partner-portal .side nav{display:grid;gap:2px}
+.partner-portal .side a.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--sg-side-text);font-weight:500;font-size:13.5px;min-width:0}
+.partner-portal .side a.nav .nav-icon{color:var(--sg-side-muted)}
+.partner-portal .side a.nav .label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.partner-portal .side a.nav:hover{background:var(--sg-side-2)}
+.partner-portal .side a.nav[aria-current="page"]{background:var(--sg-side-2);color:var(--sg-side-text);font-weight:600;border-radius:3px 8px 8px 3px;box-shadow:inset 4px 0 0 var(--sg-lime)}
+.partner-portal .side a.nav[aria-current="page"] .nav-icon{color:var(--sg-lime)}
+/* Ljus inre ram på den valda posten (yta + limekant, som Admins meny); en ram utanför klipps i den rullande mobilmenyn. */
+.partner-portal .side a.nav[aria-current="page"]:focus-visible{outline-color:var(--sg-side-text);outline-offset:-4px}
+.partner-portal .side a.nav .count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--sg-side-line);color:var(--sg-side-text);font-size:11px;font-weight:600;display:grid;place-items:center}
+.partner-portal .side a.nav[aria-current="page"] .count{background:var(--sg-side-line);color:var(--sg-side-text)}
+.partner-portal .side .foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--sg-side-line);display:grid;gap:10px;font-size:12.5px}
+.partner-portal .side .who{display:flex;align-items:center;gap:10px;min-width:0}
+.partner-portal .side .who>div{min-width:0;flex:1}
+.partner-portal .side .who>div>div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.partner-portal .side .foot .small{color:var(--sg-side-muted)}
+.partner-portal .side .avatar{width:30px;height:30px;border-radius:50%;background:var(--sg-lime);color:var(--sg-on-accent);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.partner-portal .icon-button{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;color:var(--sg-side-muted)}
+.partner-portal .icon-button:hover{background:var(--sg-side-2);color:var(--sg-side-text)}
+.partner-portal .side .prefs{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;color:var(--sg-side-muted);font-size:12px}
+.partner-portal .side .prefs a{color:var(--sg-side-muted)}
+.partner-portal .side .prefs a:hover{color:var(--sg-side-text)}
+.partner-portal .main{min-width:0;padding:28px 40px 72px}
+.partner-portal .page{max-width:1520px;display:grid;gap:18px;min-width:0}
+.partner-portal .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 20px;flex-wrap:wrap}
+.partner-portal .page-title{min-width:0;flex:1 1 320px}
+.partner-portal .eyebrow{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--sg-muted);margin-bottom:8px}
+.partner-portal .crumbs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12.5px;font-weight:600;color:var(--sg-muted)}
+.partner-portal .crumbs a:hover{color:var(--sg-text);text-decoration:underline}
+.partner-portal .crumbs [aria-current]{color:var(--sg-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40ch}
+.partner-portal .page-head h1{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.partner-portal .intro{margin-top:6px;color:var(--sg-muted);max-width:72ch}
+.partner-portal .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.partner-portal .actions.end{justify-content:flex-end}
+
+/* Kort och raster. På breda skärmar (≥1600 px) får sidokolumnen mer plats och tabeller och diagram ligger bredvid varandra. */
+.partner-portal .grid{display:grid;gap:16px;min-width:0}
+.partner-portal .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.partner-portal .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.partner-portal .grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.partner-portal .grid.c1{grid-template-columns:minmax(0,1fr)}
+.partner-portal .grid.main-aside{grid-template-columns:minmax(0,1fr) 340px;align-items:start}
+.partner-portal .grid.wide-2{grid-template-columns:minmax(0,1fr)}
+.partner-portal .card{background:var(--sg-surface);border:1px solid var(--sg-border);border-radius:var(--sg-radius);padding:18px 20px;box-shadow:var(--sg-shadow);min-width:0}
+.partner-portal .card.flat{box-shadow:none}
+.partner-portal .card.tight{padding:12px 14px}
+.partner-portal .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.partner-portal .card-head h2,.partner-portal .card-head h3{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:650;letter-spacing:-.01em}
+.partner-portal .card-icon{display:inline-grid;color:var(--sg-muted)}
+.partner-portal .card-head .aside{color:var(--sg-muted);font-size:12.5px}
+.partner-portal .stack{display:grid;gap:16px;min-width:0;align-content:start}
+.partner-portal .muted{color:var(--sg-muted)}
+.partner-portal .small{font-size:12.5px}
+.partner-portal .faint{color:var(--sg-faint)}
+.partner-portal .strong{font-weight:600}
+.partner-portal .mt{margin-top:12px}
+.partner-portal .mt-l{margin-top:20px}
+.partner-portal .ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.partner-portal .name-cell{max-width:320px;min-width:140px}
+.partner-portal .link-quiet{display:inline-flex;align-items:center;gap:4px;color:var(--sg-muted);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.partner-portal .link-quiet:hover{color:var(--sg-text)}
+.partner-portal ul.list{margin:0 0 12px;padding-left:18px;display:grid;gap:2px}
+
+/* Rader med etikett, text och åtgärd */
+.partner-portal .rows{display:grid}
+.partner-portal .row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--sg-line-2);color:inherit}
+.partner-portal .row:first-child{border-top:0;padding-top:0}
+.partner-portal .row:last-child{padding-bottom:0}
+.partner-portal .row .title{font-weight:600}
+.partner-portal .row .text{color:var(--sg-muted);font-size:13px}
+.partner-portal .row.link:hover .title{text-decoration:underline}
+
+/* Etiketter */
+.partner-portal .chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--sg-surface-2);color:var(--sg-muted);border:1px solid var(--sg-border);letter-spacing:0}
+.partner-portal .chip.ok{background:var(--sg-ok-bg);color:var(--sg-ok);border-color:transparent}
+.partner-portal .chip.warn{background:var(--sg-warn-bg);color:var(--sg-warn-text);border-color:transparent}
+.partner-portal .chip.danger{background:var(--sg-danger-bg);color:var(--sg-danger-text);border-color:transparent}
+.partner-portal .chip.info{background:var(--sg-info-bg);color:var(--sg-info);border-color:transparent}
+.partner-portal .chip.accent{background:var(--sg-accent-bg);color:var(--sg-text);border-color:transparent}
+.partner-portal .chip.ink{background:var(--sg-side);color:var(--sg-side-text);border-color:transparent}
+.partner-portal .chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* Knappar (cva-varianterna i views/ui.tsx och editorns sg-btn) */
+.partner-portal .btn,.partner-portal .sg-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 14px;border-radius:8px;border:1px solid var(--sg-border);background:var(--sg-surface);color:var(--sg-text);font-weight:600;font-size:13px;white-space:nowrap;cursor:pointer;transition:border-color .12s,background .12s,filter .12s}
+.partner-portal .btn:hover,.partner-portal .sg-btn:hover{border-color:var(--sg-faint)}
+.partner-portal .btn.primary,.partner-portal .sg-btn-primary{background:var(--sg-lime);border-color:var(--sg-lime);color:var(--sg-on-accent)}
+.partner-portal .btn.primary:hover,.partner-portal .sg-btn-primary:hover{filter:brightness(1.04);border-color:var(--sg-lime)}
+.partner-portal .btn.ink{background:var(--sg-side);border-color:var(--sg-side);color:var(--sg-side-text)}
+.partner-portal .btn.ghost,.partner-portal .sg-btn-ghost{border-color:transparent;background:transparent;color:var(--sg-muted)}
+.partner-portal .btn.ghost:hover,.partner-portal .sg-btn-ghost:hover{background:var(--sg-surface-2);color:var(--sg-text)}
+.partner-portal .btn.danger{color:var(--sg-danger-text)}
+.partner-portal .btn.danger-solid{background:var(--sg-danger-text);border-color:var(--sg-danger-text);color:var(--sg-surface)}
+.partner-portal .btn.small{min-height:30px;padding:4px 10px;font-size:12.5px}
+.partner-portal .btn.icon{padding:0;width:32px;min-width:32px}
+.partner-portal .btn[aria-disabled="true"],.partner-portal .btn:disabled,.partner-portal .sg-btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+
+/* Tabeller */
+.partner-portal .scroll-x{overflow-x:auto}
+.partner-portal .table{width:100%;border-collapse:collapse;font-size:13.5px}
+.partner-portal .table th{text-align:left;font-size:12px;color:var(--sg-muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--sg-border);white-space:nowrap}
+.partner-portal .table td{padding:11px 10px;border-bottom:1px solid var(--sg-line-2);vertical-align:middle}
+.partner-portal .table tr:last-child td{border-bottom:0}
+.partner-portal .table tr.link:hover td{background:var(--sg-surface-2)}
+.partner-portal .table td.num,.partner-portal .table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Nyckel–värde */
+.partner-portal .kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 18px;font-size:13.5px;margin:0}
+.partner-portal .kv dt{color:var(--sg-muted)}
+.partner-portal .kv dd{margin:0;overflow-wrap:anywhere}
+
+/* Tomläge, notiser, 403 och tekniska detaljer */
+.partner-portal .empty{display:grid;justify-items:center;gap:6px;padding:32px 20px;text-align:center;border:1px dashed var(--sg-border);border-radius:var(--sg-radius);color:var(--sg-muted);background:var(--sg-surface-2)}
+.partner-portal .empty-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--sg-surface);border:1px solid var(--sg-border);color:var(--sg-muted);margin-bottom:4px}
+.partner-portal .empty h3{color:var(--sg-text);font-size:14.5px}
+.partner-portal .note{padding:10px 12px;border-radius:8px;background:var(--sg-info-bg);color:var(--sg-info);font-size:13px}
+.partner-portal .note.warn{background:var(--sg-warn-bg);color:var(--sg-warn-text)}
+.partner-portal .note.accent{background:var(--sg-accent-bg);color:var(--sg-text)}
+.partner-portal .note.danger{background:var(--sg-danger-bg);color:var(--sg-danger-text)}
+.partner-portal .denied{display:grid;gap:10px;justify-items:start;max-width:640px}
+.partner-portal .denied h2{font-size:18px}
+.partner-portal details.tech{font-size:12px;color:var(--sg-faint)}
+.partner-portal details.tech summary{cursor:pointer;width:fit-content}
+.partner-portal details.tech[open] summary{margin-bottom:6px}
+
+/* Formfält */
+.partner-portal .field{display:grid;gap:6px;font-size:13px}
+.partner-portal .field label{font-weight:600}
+.partner-portal .field .hint{color:var(--sg-muted);font-size:12.5px}
+.partner-portal .input,.partner-portal select.input,.partner-portal textarea.input{width:100%;min-height:36px;padding:7px 10px;border:1px solid var(--sg-border);border-radius:8px;background:var(--sg-surface);color:var(--sg-text);font:inherit}
+.partner-portal textarea.input{resize:vertical}
+
+/* Siffror, diagram (recharts) och segmentväxlare */
+.partner-portal .stats .card{padding:16px 18px}
+.partner-portal .stat{display:grid;gap:2px;position:relative}
+.partner-portal .stat-icon{position:absolute;top:0;right:0;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--sg-surface-2);color:var(--sg-muted)}
+.partner-portal .stat .v{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;padding-right:34px}
+.partner-portal .stat .l{font-size:12.5px;color:var(--sg-muted)}
+.partner-portal .bars{width:96px;min-width:84px}
+.partner-portal .chart{width:100%;min-width:0}
+.partner-portal .recharts-text{font-family:var(--sg-font-body)}
+.partner-portal .seg{display:inline-flex;border:1px solid var(--sg-border);border-radius:999px;overflow:hidden;background:var(--sg-surface)}
+.partner-portal .seg button{padding:6px 12px;color:var(--sg-muted);font-size:12.5px;font-weight:600;min-height:32px}
+.partner-portal .seg button[aria-pressed="true"]{background:var(--sg-side);color:var(--sg-side-text)}
+
+/* Flikar (Radix Tabs) */
+.partner-portal .tabs{display:flex;gap:2px;border-bottom:1px solid var(--sg-border);overflow-x:auto}
+.partner-portal .tabs button{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;color:var(--sg-muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.partner-portal .tabs button:hover{color:var(--sg-text)}
+.partner-portal .tabs button[data-state="active"]{color:var(--sg-text);border-bottom-color:var(--sg-text);font-weight:600}
+.partner-portal .tabs .count{font-size:11px;color:var(--sg-faint)}
+
+/* Menyer (Radix DropdownMenu), bekräftelser (Radix Dialog) och verktygstips (Radix Tooltip) */
+.partner-portal .menu-content{z-index:80;min-width:210px;background:var(--sg-surface);color:var(--sg-text);border:1px solid var(--sg-border);border-radius:10px;box-shadow:var(--sg-shadow-pop);padding:6px;font-size:13px}
+.partner-portal .menu-item{position:relative;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 28px;border-radius:6px;outline:none;cursor:pointer;user-select:none}
+.partner-portal .menu-content>.menu-item:not([role="menuitemradio"]){padding-left:10px}
+.partner-portal .menu-item[data-highlighted]{background:var(--sg-surface-2)}
+.partner-portal .menu-item[data-disabled]{color:var(--sg-faint);cursor:not-allowed}
+.partner-portal .menu-item.danger{color:var(--sg-danger-text)}
+.partner-portal .menu-check{position:absolute;left:8px;display:inline-grid}
+.partner-portal .menu-label{padding:6px 10px 2px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--sg-faint)}
+.partner-portal .menu-separator{height:1px;background:var(--sg-line-2);margin:6px 4px}
+.partner-portal .dialog-overlay{position:fixed;inset:0;z-index:90;background:rgba(10,12,16,.5);animation:pp-fade .15s ease-out}
+.partner-portal .dialog-content{position:fixed;top:50%;left:50%;z-index:91;transform:translate(-50%,-50%);width:min(520px,calc(100vw - 32px));max-height:86vh;overflow:auto;background:var(--sg-surface);color:var(--sg-text);border:1px solid var(--sg-border);border-radius:14px;padding:22px 24px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);display:grid;gap:12px;animation:pp-rise .16s ease-out}
+.partner-portal .dialog-content h2{font-size:18px}
+.partner-portal .dialog-content ul{margin:0;padding-left:20px;color:var(--sg-muted);font-size:13px}
+.partner-portal .tip{z-index:95;max-width:320px;padding:6px 10px;border-radius:7px;background:var(--sg-side);color:var(--sg-side-text);font-size:12px;line-height:1.45;box-shadow:var(--sg-shadow-pop);overflow-wrap:anywhere}
+.partner-portal .tip-arrow{fill:var(--sg-side)}
+.partner-portal .info-tip{display:inline-grid;place-items:center;color:var(--sg-faint);vertical-align:middle}
+
+/* ⌘K-paletten (cmdk) */
+.partner-portal .palette{position:fixed;top:14vh;left:50%;z-index:96;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));background:var(--sg-surface);color:var(--sg-text);border:1px solid var(--sg-border);border-radius:14px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);overflow:hidden;animation:pp-fade .12s ease-out}
+.partner-portal .palette [cmdk-input]{width:100%;border:0;border-bottom:1px solid var(--sg-border);padding:14px 16px;font:inherit;font-size:15px;background:transparent;color:var(--sg-text);outline:none}
+.partner-portal .palette [cmdk-list]{max-height:min(52vh,420px);overflow:auto;padding:6px}
+.partner-portal .palette [cmdk-group-heading]{padding:8px 10px 4px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--sg-faint)}
+.partner-portal .palette [cmdk-item]{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px}
+.partner-portal .palette [cmdk-item][data-selected="true"]{background:var(--sg-surface-2)}
+.partner-portal .palette [cmdk-item] svg{color:var(--sg-muted)}
+.partner-portal .palette [cmdk-empty]{padding:18px;text-align:center;color:var(--sg-muted);font-size:13px}
+
+/* Toasts (sonner) */
+.partner-portal [data-sonner-toaster]{--normal-bg:var(--sg-surface);--normal-text:var(--sg-text);--normal-border:var(--sg-border);font-family:var(--sg-font-body)}
+.partner-portal [data-sonner-toast]{box-shadow:var(--sg-shadow-pop)}
+
+/* Skelett vid laddning */
+.partner-portal .skeleton{border-radius:8px;background:linear-gradient(90deg,var(--sg-surface-2) 0%,var(--sg-line-2) 50%,var(--sg-surface-2) 100%);background-size:200% 100%;animation:pp-shimmer 1.2s linear infinite}
+.partner-portal .skeleton.line{height:12px;margin-top:10px}
+.partner-portal .skeleton.block{height:120px}
+.partner-portal .skeleton.block.tall{height:320px}
+.partner-portal .skeleton-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,46%);gap:18px}
+.partner-portal .appearance-state{display:grid;gap:16px}
+.partner-portal .partner-appearance-panel{min-width:0}
+.partner-portal .partner-appearance-panel-state{color:var(--sg-muted);font-size:13px}
+
+/* Spelbordslistan: kort med scenens bild överst */
+.partner-portal .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.partner-portal .room-card{display:grid;gap:0;width:100%;padding:0;overflow:hidden;background:var(--sg-surface);border:1px solid var(--sg-border);border-radius:var(--sg-radius);box-shadow:var(--sg-shadow);text-align:left;color:inherit;transition:border-color .12s,box-shadow .12s,transform .12s}
+.partner-portal button.room-card:hover{border-color:var(--sg-faint);box-shadow:var(--sg-shadow-pop);transform:translateY(-1px)}
+.partner-portal .room-card.paused .scene-thumb{filter:grayscale(.6);opacity:.75}
+.partner-portal .scene-thumb{position:relative;display:grid;place-items:center;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(160deg,var(--sg-side-2),var(--sg-side));color:var(--sg-side-muted)}
+.partner-portal .scene-thumb .layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.partner-portal .scene-thumb .bg{object-fit:cover}
+.partner-portal .scene-thumb .dealer{object-fit:contain}
+.partner-portal .scene-thumb .table{object-fit:contain;object-position:50% 100%;top:auto;height:62%}
+.partner-portal .scene-thumb .plate{font-size:26px;font-weight:750;letter-spacing:.04em}
+.partner-portal .room-card-body{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px}
+.partner-portal .room-card-text{min-width:0;display:grid;gap:2px}
+.partner-portal .room-card-text .strong{font-size:15px}
+.partner-portal .room-card-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.partner-portal .room-default{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.partner-portal .room-default .link-quiet{font-weight:600;color:var(--sg-text)}
+
+@keyframes pp-fade{from{opacity:0}}
+@keyframes pp-rise{from{opacity:0;transform:translate(-50%,-48%)}}
+@keyframes pp-shimmer{to{background-position:-200% 0}}
+
+@media (min-width:1600px){
+  .partner-portal .main{padding:32px 48px 80px}
+  .partner-portal .grid.main-aside{grid-template-columns:minmax(0,1fr) 380px}
+  .partner-portal .grid.wide-2{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+}
+@media (max-width:1180px){
+  .partner-portal .grid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .partner-portal .grid.main-aside{grid-template-columns:minmax(0,1fr)}
+  .partner-portal .skeleton-editor{grid-template-columns:1fr}
+}
+@media (max-width:980px){
+  .partner-portal .grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .partner-portal .main{padding:24px 24px 64px}
+}
+@media (max-width:760px){
+  .partner-portal .shell{grid-template-columns:1fr}
+  .partner-portal .side{position:static;height:auto;padding:10px 12px}
+  .partner-portal .side .context,.partner-portal .side .find{display:none}
+  .partner-portal .side nav{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+  .partner-portal .side a.nav{white-space:nowrap;padding:7px 10px;font-size:13px;flex:none}
+  .partner-portal .side a.nav .nav-icon{display:none}
+  .partner-portal .side .foot{margin-top:8px;padding-top:8px;grid-template-columns:1fr;gap:8px}
+  .partner-portal .brand{padding-bottom:8px}
+  .partner-portal .main{padding:18px 16px 48px}
+  .partner-portal .grid.c2,.partner-portal .grid.c3{grid-template-columns:1fr}
+  .partner-portal .grid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .partner-portal .page-head h1{font-size:22px}
+  .partner-portal .row{grid-template-columns:1fr;gap:6px}
+  .partner-portal .kv{grid-template-columns:1fr;gap:2px 0}
+  .partner-portal .kv dt{margin-top:8px}
+  .partner-portal .room-grid{grid-template-columns:1fr}
+  .partner-portal .stat .v{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){.partner-portal *{transition:none!important;animation:none!important}}
+/* Byt konto och Logga ut i sidomenyn (partner-session-actions.module.css) som lugna textknappar. */
+.partner-portal .side .foot [aria-busy]>div{display:flex;gap:14px;flex-wrap:wrap}
+.partner-portal .side .foot [aria-busy] button{color:var(--sg-side-muted);font-size:12px;font-weight:600;min-height:28px}
+.partner-portal .side .foot [aria-busy] button:hover{color:var(--sg-side-text)}
+.partner-portal .side .foot [role="status"],.partner-portal .side .foot [role="alert"]{font-size:12px;color:var(--sg-side-muted)}
+.partner-portal .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.partner-portal .row>div:first-child{min-width:86px}
+@media (min-width:2200px){.partner-portal .page{max-width:1680px}}
+/* Nyckel–värde i en smal sidokolumn: etikett ovanför värdet. */
+.partner-portal .grid.main-aside>.stack .kv{grid-template-columns:1fr;gap:2px 0}
+.partner-portal .grid.main-aside>.stack .kv dt{margin-top:8px}
+.partner-portal .grid.main-aside>.stack .kv dt:first-child{margin-top:0}

@@ -81,8 +81,9 @@ const config = {
   clientAddress: async () => '203.0.113.10',
 };
 const northId = 'operator-demo-north';
+// A reader of the snapshot: the sections it carries follow these permissions (partner-data.mjs).
 const role = {
-  id: 'role-partner', permissions: ['overview.read'], label: 'Partner',
+  id: 'role-partner', permissions: ['overview.read', 'tables.read', 'presentations.read'], label: 'Partner',
   operatorId: northId, scope,
 };
 const activeMembership = { userId: '42', roleId: role.id, status: 'active', operatorId: northId, scope, name: 'North Partner', email: 'north@partner.invalid' };
@@ -230,17 +231,16 @@ test('a north membership cannot read demo-south, and a suspended membership is d
   assert.equal(snapshot.headers.get('x-content-type-options'), 'nosniff');
   const body = await snapshot.json();
   assert.equal(body.preview, false);
-  assert.equal(body.notConnected, true);
+  assert.equal(body.notConnected, undefined);
   assert.equal(body.operator.id, northId);
-  assert.deepEqual(body.players, []);
-  assert.deepEqual(body.transactions, []);
-  assert.deepEqual(body.reports, []);
+  assert.equal(body.players, undefined);
+  assert.equal(body.transactions, undefined);
+  assert.deepEqual(body.role, { id: 'role-partner', label: 'Partner' });
   assert.equal(JSON.stringify(body).includes('demo-south'), false);
   assert.deepEqual(body.team, []); // This role has overview.read, but not team.read.
-  for (const key of ['tables', 'presentations']) {
-    assert.ok(body[key].length > 0, key);
-    for (const item of body[key]) assert.equal(item.operatorId, northId, key);
-  }
+  assert.ok(body.tables.length > 0);
+  for (const item of body.tables) assert.equal(item.operatorId, northId);
+  assert.equal(body.presentations, undefined);
   assert.equal(body.packageRevision, '3');
   const south = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-south`, {
     headers: { host: 'public.example.invalid', cookie },
@@ -365,7 +365,16 @@ test('branding read follows the lane, requires configure, and refuses deprecated
       },
     };
   }
-  const reader = storeFor(['overview.read']);
+  // Spelbordens utseende is the presentation: a role without presentations.read gets 403 even on GET,
+  // and tables.read (the room list) does not stand in for it.
+  for (const permissions of [['overview.read'], ['overview.read', 'tables.read']]) {
+    const denied = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+      headers: { host: 'public.example.invalid', cookie },
+    }), { ...config, store: storeFor(permissions), readProject, readAdministration: async () => ({ rooms: [] }) });
+    assert.equal(denied.status, 403, permissions.join());
+    assert.deepEqual(await denied.json(), { error: 'Access denied' });
+  }
+  const reader = storeFor(['overview.read', 'presentations.read']);
   const authed = { ...config, store: reader, readProject,readAdministration:async()=>({rooms:[]}) };
   const read = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     headers: { host: 'public.example.invalid', cookie },
@@ -386,7 +395,19 @@ test('branding read follows the lane, requires configure, and refuses deprecated
   }), authed);
   assert.equal(denied.status, 403);
   assert.equal(reader.published.length, 0);
-  const writer = storeFor(['overview.read', 'presentations.configure']);
+  // presentations.configure alone cannot write either: the entry needs presentations.read as well.
+  const configureOnly = storeFor(['overview.read', 'presentations.configure']);
+  const refused = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
+    method: 'POST',
+    headers: {
+      host: 'public.example.invalid', origin: publicOrigin, 'sec-fetch-site': 'same-origin',
+      'content-type': 'application/json', cookie,
+    },
+    body: JSON.stringify({ expectedRevision: 4, branding: { color: '#00ff00' } }),
+  }), { ...config, store: configureOnly, readProject });
+  assert.equal(refused.status, 403);
+  assert.equal(configureOnly.published.length, 0);
+  const writer = storeFor(['overview.read', 'presentations.read', 'presentations.configure']);
   const saved = await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/branding?operator=demo-north`, {
     method: 'POST',
     headers: {
@@ -410,16 +431,16 @@ test('scoped snapshot projects the frozen lane format and never substitutes the 
   const response=await handlePartnerAuth(new Request(`${publicOrigin}/studio/api/partner/snapshot?operator=demo-north`,{headers:{host:'public.example.invalid',cookie}}),{...withStore(store),readAdministration:async()=>({rooms:[]})});
   assert.equal(response.status,200);
   const body=await response.json();
-  assert.equal(body.presentations[0].name,'Publicerad North');
-  assert.equal(body.presentations[0].dealer,'astrid');
-  assert.equal(body.presentations[0].operatorId,northId);
-  assert.equal(body.presentations[0].compatibility,'full-frame');
-  assert.deepEqual(body.presentations[0].layers.table.allowed,[]);
+  // Den frysta presentationen och tilldelningen bär miljön.
+  assert.equal(body.presentation.lanes[0].label,'Publicerad North');
+  assert.deepEqual(body.assignment.lanes,[{id:body.presentation.lanes[0].id,label:'Publicerad North'}]);
+  assert.deepEqual(body.assignment.dealers.map(dealer=>dealer.id),['astrid']);
+  assert.deepEqual(body.assignment.tables,[]);
   assert.equal(body.presentation.projectRevision,'frozen-r1');
   assert.equal(body.packageRevision,'7');
   assert.equal(JSON.stringify(body).includes('_scoutPresentation'),false);
   assert.deepEqual(body.tables,[]);
-  assert.equal(body.roomBindings,'operator-owned-v2');
+  for(const key of ['presentations','roomBindings','summary','mode'])assert.equal(body[key],undefined,key);
 });
 
 for (const schemaVersion of [1,2,3]) test('partner tables require cloud registration and actual room ownership with presentation v'+schemaVersion,async()=>{
@@ -442,13 +463,13 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
   const body=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
   if(schemaVersion===1){
     assert.deepEqual(body.tables,[],'historical names alone do not authorize cloud rooms');
-    assert.equal(body.summary.activeTables,0);
+    assert.equal(body.summary,undefined);
   }else{
     assert.deepEqual(body.tables.map(row=>row.id),['room-live','room-preview']);
     assert.equal(body.tables[0].name,'Johns blackjack');
     assert.equal(body.tables[0].operatorId,northId);
     assert.equal(body.tables[0].presentationId,'published-portrait');
-    assert.equal(body.summary.activeTables,1);
+    assert.deepEqual(body.tables.filter(row=>row.status==='active').map(row=>row.id),['room-live']);
     administration.rooms[0].game='roulette';
     const roulette=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,config:{...config,readAdministration:async()=>administration}});
     assert.equal(roulette.tables[0].game,'roulette');
@@ -460,7 +481,7 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
   const rejected=await partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
     config:{...config,readAdministration:async()=>incompatible}});
   assert.deepEqual(rejected.tables,[]);
-  assert.equal(rejected.summary.activeTables,0);
+  assert.equal(rejected.summary,undefined);
   await assert.rejects(partnerWorkspaceData(request,{operatorSlug:'demo-north',store,
     config:{...config,readAdministration:async()=>{throw Object.assign(Error('unavailable'),{statusCode:503});}}}),
     error=>error.statusCode===503);
@@ -477,7 +498,8 @@ import {presentationCapabilitiesForVersion} from '../../../packages/presentation
 import {createGameEntrySelector} from '../../../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../../../packages/presentation/runtime/player-choices.mjs';
 
-async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabilityVersion=21,unrelatedAnchors=false}={}) {
+async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabilityVersion=21,unrelatedAnchors=false,packageRooms=false,
+  permissions=['overview.read','tables.read','presentations.read','presentations.configure']}={}) {
   const base=createStudioMemoryPool(),trace=[];
   const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
   const lane={...defaultPresentationLane('linnea'),id:'linnea-published',dealers:['linnea','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
@@ -495,9 +517,13 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
   const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane],assets:tableGeometry?[tableAsset]:[]}).presentation;
   const presentation={...captured,schemaVersion:2};
   let state={drafts:[],operatorAudits:[],operators:[scoped({operator_id:northId,slug:'demo-north',name:'North',status:'active',created_at_ms:1})],
-    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(['overview.read','presentations.configure']),delegable:false})],
+    roles:[scoped({operator_id:northId,role_id:role.id,label:'Configure',permissions:JSON.stringify(permissions),delegable:false})],
     memberships:[scoped({operator_id:northId,user_id:'42',role_id:role.id,status:'active',revision:1,created_at_ms:1})],
     packages:[scoped({operator_id:northId,package_revision:1,lanes:JSON.stringify([lane.id]),games:'["blackjack"]',tables:'["room-native"]',branding:canonicalStudioJson(withPackagePresentation({name:'North'},presentation)),published_at_ms:1})]};
+  // Two tables written with the package's own rooms (Studio 023, L3).
+  const nativeRooms=[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'},
+    ...(packageRooms?[{schemaVersion:2,id:'room-two',name:'Andra bordet',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}]:[])];
+  if(packageRooms)Object.assign(state.packages[0],{tables:'["room-native","room-two"]',rooms:canonicalStudioJson(nativeRooms)});
   function anchoredPresentation(){
     const value=structuredClone(presentation),target=value.lanes[0];
     target.layers.table={...target.layers.table,enabled:true,default:tableAsset.id,allowed:[tableAsset.id]};
@@ -536,7 +562,10 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     throw Error('unsupported native operator fixture query '+tag);
   }
   const pool={trace,base,snapshot:()=>copy(state),
-    async query(sql,values=[]) {trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
+    async query(sql,values=[]) {
+      // This schema has no migration 021: company material is not installed.
+      if(sql.includes('/* operator-materials:materials-ready */'))return result([{ledgered:0,present:false}]);
+      trace.push({client:0,tag:/operator-store:([a-z-]+)/.exec(sql)?.[1],values:copy(values)});return operatorQuery(sql,values,state);},
     async connect() {
       const client=await base.connect(),id=++clientSequence;let working,readonly,mutating=false;
       return {release:()=>client.release(),async query(sql,values=[]) {
@@ -552,7 +581,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     },
   };
   const repository=createStudioRepository({pool,scope});
-  const administration={rooms:[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}],
+  const administration={rooms:structuredClone(nativeRooms),
     gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
   await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
@@ -564,7 +593,7 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
       return Response.json(presentationCapabilitiesForVersion(Math.min(requested,capabilityVersion)));
     }};
   const login=await handlePartnerAuth(loginRequest('north-partner',secret),nativeConfig),cookie='partner_session='+tokenOf(login);
-  const get=()=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
+  const get=(operator='demo-north')=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator='+encodeURIComponent(operator),{headers:{host:'public.example.invalid',cookie}}),nativeConfig);
   const command=(body,operator='demo-north')=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator='+encodeURIComponent(operator),{
     method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
     body:JSON.stringify(body)}),nativeConfig);
@@ -583,6 +612,10 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     addLockedAnchors:()=>{state.packages[0].branding=canonicalStudioJson(withPackagePresentation({name:'North'},anchoredPresentation()));},
     changePackageRevision:()=>{state.packages[0].package_revision=2;},
     revoke:()=>{state.memberships[0].status='suspended';},
+    setPermissions:list=>{state.roles[0].permissions=JSON.stringify(list);},
+    removeMembership:()=>{state.memberships=[];},
+    addCompany:()=>{state.operators.push(scoped({operator_id:'operator-demo-south',slug:'demo-south',name:'South',status:'active',created_at_ms:1}));
+      state.packages.push(scoped({...state.packages[0],operator_id:'operator-demo-south'}));},
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
 
@@ -695,4 +728,95 @@ test('native anchored publication preserves package CAS and ignores other operat
   assert.equal((await plain.post()).status,200);
   assert.deepEqual(plain.pool.trace.filter(row=>row.tag==='capabilities').map(row=>row.requested),[3]);
   assert.equal(plain.pool.snapshot().packages.filter(row=>row.operator_id==='other-operator').length,1);
+});
+
+// Spelbordslistan styrs av tables.read, som i snapshoten (partner-data.mjs):
+// utseendet (presentations.read) bär då bara bolagets val, inga spelbord.
+import {STANDARD_OPERATOR_ROLES} from '../lib/operator-admin-api.mjs';
+const roomFree=(body,label)=>{
+  assert.deepEqual(body.rooms,[],label);assert.deepEqual(body.roomDealerChoices,{},label);
+  assert.doesNotMatch(JSON.stringify(body),/Linneas rum|room-native/,label);
+};
+const nativeRoom={id:'room-native',label:'Linneas rum',presentationLaneId:'linnea-published',game:'blackjack'};
+test('branding without tables.read carries no tables, and the standard roles keep theirs',async()=>{
+  const reader=await nativeBrandingFixture({permissions:['overview.read','presentations.read']});
+  const read=await reader.get();assert.equal(read.status,200);
+  const body=await read.json();roomFree(body,'presentations.read only');
+  assert.equal(body.canConfigure,false);assert.equal(body.presentation.lanes[0].id,'linnea-published');
+  assert.deepEqual(body.dealerChoices,{'linnea-published':['linnea']},'the company choices stay');
+  for(const standard of STANDARD_OPERATOR_ROLES){
+    const f=await nativeBrandingFixture({permissions:[...standard.permissions]});
+    const response=await f.get();assert.equal(response.status,200,standard.id);
+    const view=await response.json();
+    assert.deepEqual(view.rooms,[nativeRoom],standard.id);assert.deepEqual(view.roomDealerChoices,{'room-native':['linnea']},standard.id);
+    assert.equal(view.canConfigure,standard.permissions.includes('presentations.configure'),standard.id);
+  }
+});
+test('a package with its own rooms and two tables reads and saves the partner appearance per table (no 503)',async()=>{
+  const f=await nativeBrandingFixture({packageRooms:true,tableGeometry:true});
+  const read=await f.get();assert.equal(read.status,200);
+  const view=await read.json();
+  assert.deepEqual(view.rooms.map(room=>room.id),['room-native','room-two']);
+  assert.deepEqual(view.roomDealerChoices,{'room-native':['linnea'],'room-two':['linnea']});
+  assert.equal((await f.saveRoomColor()).status,200);
+});
+test('branding writes without tables.read return no tables, also when tables.read is lost inside the transaction',async()=>{
+  const writer=await nativeBrandingFixture({permissions:['overview.read','presentations.read','presentations.configure']});
+  const saved=await writer.save();assert.equal(saved.status,200);roomFree(await saved.json(),'save-draft');
+  const reviewed=await writer.review();assert.equal(reviewed.status,200);
+  const review=await reviewed.json();
+  assert.deepEqual(review.affectedRooms,[]);assert.ok(review.changes.length);assert.ok(review.changes.every(row=>row.roomId===null));
+  assert.doesNotMatch(JSON.stringify(review),/room-native|Linneas rum/);
+  const published=await writer.publish(review.reviewToken);assert.equal(published.status,200);
+  const receipt=await published.json();roomFree(receipt,'publish');assert.equal(receipt.packageRevision,2);
+  // Samma steg med tables.read (redaktören) visar spelbordet och dess påverkan.
+  const editor=await nativeBrandingFixture();
+  assert.deepEqual((await(await editor.save()).json()).rooms,[nativeRoom]);
+  const full=await(await editor.review()).json();
+  assert.deepEqual(full.affectedRooms,['room-native']);assert.ok(full.changes.some(row=>row.roomId==='room-native'));
+  // tables.read tas bort mellan förkontrollen och transaktionen: svaret följer rollen i transaktionen.
+  const narrowed=await nativeBrandingFixture();
+  narrowed.changeBeforeWrite(()=>narrowed.setPermissions(['overview.read','presentations.read','presentations.configure']));
+  const late=await narrowed.save();assert.equal(late.status,200);roomFree(await late.json(),'tables.read lost in the transaction');
+});
+test('branding still denies company B and a caller without membership',async()=>{
+  const f=await nativeBrandingFixture({permissions:['overview.read','presentations.read']});
+  f.addCompany();
+  const other=await f.get('demo-south');assert.equal(other.status,403);assert.deepEqual(await other.json(),{error:'Access denied'});
+  assert.equal((await f.get()).status,200);
+  f.removeMembership();
+  const none=await f.get();assert.equal(none.status,403);assert.deepEqual(await none.json(),{error:'Access denied'});
+  for(const standard of STANDARD_OPERATOR_ROLES){
+    const g=await nativeBrandingFixture({permissions:[...standard.permissions]});g.addCompany();
+    assert.equal((await g.get('demo-south')).status,403,standard.id);
+  }
+});
+// Ett utkast som bara ändrar spelbordsval: utan tables.read döljs raderna i
+// granskningen men räknas (hiddenTableChanges), och tablesHidden säger att en
+// tom affectedRooms betyder dolda spelbord. Spelbordens id i
+// branding.roomOverrides hör till utseendet och syns avsiktligt utan tables.read.
+test('review without tables.read counts hidden table changes, flags hidden tables and can publish them',async()=>{
+  const roomOnly={roomOverrides:{'room-native':{color:'#334455'}}};
+  const saveRoomOnly=f=>f.command({action:'save-draft',expectedDraftRevision:0,expectedPackageRevision:1,branding:roomOnly});
+  const editor=await nativeBrandingFixture({anchors:true});
+  assert.equal((await saveRoomOnly(editor)).status,200);
+  const full=await(await editor.review()).json();
+  assert.ok(full.changes.length);assert.ok(full.changes.every(row=>row.roomId==='room-native'));
+  assert.deepEqual(full.affectedRooms,['room-native']);
+  assert.equal(Object.hasOwn(full,'hiddenTableChanges'),false);assert.equal(Object.hasOwn(full,'tablesHidden'),false);
+  const writer=await nativeBrandingFixture({anchors:true,permissions:['overview.read','presentations.read','presentations.configure']});
+  assert.equal((await saveRoomOnly(writer)).status,200);
+  const reviewed=await writer.review();assert.equal(reviewed.status,200);
+  const review=await reviewed.json();
+  assert.deepEqual(review.changes,[]);assert.equal(review.hiddenTableChanges,full.changes.length);
+  assert.equal(review.tablesHidden,true);assert.deepEqual(review.affectedRooms,[]);
+  assert.doesNotMatch(JSON.stringify({changes:review.changes,affectedRooms:review.affectedRooms}),/room-native/);
+  const published=await writer.publish(review.reviewToken);assert.equal(published.status,200);
+  assert.equal((await published.json()).packageRevision,2);
+  // Fixturen HAR nu roomOverrides: spelbordslistan och dealervalen per spelbord
+  // är tomma och namnet syns inte, men id:t i roomOverrides syns (avsiktligt).
+  const read=await(await writer.get()).json();
+  assert.deepEqual(read.rooms,[]);assert.deepEqual(read.roomDealerChoices,{});
+  assert.deepEqual(read.branding.roomOverrides,roomOnly.roomOverrides);
+  assert.doesNotMatch(JSON.stringify(read),/Linneas rum/);
 });

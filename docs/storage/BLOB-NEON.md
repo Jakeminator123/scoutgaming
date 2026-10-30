@@ -12,8 +12,31 @@ Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegr
 | `runtime_media_catalogs` | Scoped layout, Blob-index och presentationsmanifest, revisions- och hashbundna |
 | `speech_reply_records` | Talrepliker: text, språk, tagning och exakta ljud-, video- och indexhashar |
 | Frysta paket och spelinställningar | Det spelet läser; ändras aldrig efter publicering |
+| `operator_materials`, `operator_material_policies`, `operator_ai_attempts` (migrering 021, valfri) | Bolagets eget material: en journal per bakgrund eller bordsgrafik (väntar, godkänt, avslaget, återkallat; ett nytt läge är en ny rad) med exakt lagerfil och, för bordsgrafik, dealerns landningsmall; bolagets AI-dagstak (standard 0 = av) och spärr; AI-försök per bolag och UTC-dygn |
+
+Bolagets eget material hamnar bara i bolagets eget frysta paket, aldrig i någon annans. Publicerare som bygger om presentationen sammanfogar, övriga bevarar. Sammanfogar gör Admins paketpublicering, publicering av scenlayout och viloklipp, nytt spelbord och bolagets brandingpublicering, via `packages/presentation/server/operator-material-merge.mjs` och `apps/studio/lib/operator-material-publication.mjs`. Godkända bakgrunder hamnar på mallar som låser upp en bildbakgrund och har ett av bolagets spelbord. Bordsgrafik hamnar bara på sin egen mall, och bara när landningsmallen fortfarande stämmer med mallens dealer och placering. Bevarar gör rummets livscykel, materialpapperskorgen, dealerarkivet och rummets spelinställningar: de skriver om det frysta paketet som det är, så återkallat material försvinner först vid nästa sammanfogande publicering, och därför måste ett återkallande publicera om direkt. Ett materialid tillhör ett enda bolag per workspace och kan aldrig vara ett av Admins egna. Utan 021 läses inget material, skrivningar ger `operator_materials_unavailable` och varje publicering är exakt som förut. 021 körs först efter Jakobs uttryckliga "ja 021".
 
 Repo-JSON (`media/layout.json`, `media/blob-index.json`, importfiler) och äldre Blob-JSON är authoring- och importunderlag, aldrig runtime-reserv. Saknad eller felaktig katalog ger 503, inte en lokal fallback.
+
+## Scheman och skrivare
+
+Neon-projektet heter `croupier-production` (`wandering-hill-60561912`) och databasen i det `croupier_game`; någon databas `croupier_production` finns inte. All produktdata ligger i den databasen, uppdelad i scheman. Läst 2026-10-29, 74 tabeller:
+
+| Schema | Tabeller | Innehåll | Skrivs av |
+| --- | --- | --- | --- |
+| `public` | 0 | tomt | – |
+| `croupier_auth` | 7 | personal (`users`), tokens, `meta`, auth-epoker, sessioner (`lab_sessions`), partnernycklar (`api_keys`, med `operator_id NOT NULL` sedan `game-012`), BO-resten `bo_lab_handoffs` | Studio och motorn (`users`, `meta`); Studio skapar nycklarna och motorn autentiserar dem |
+| `croupier_game` | 39 och 2 vyer från `pg_stat_statements` | spelare, saldo och transaktioner, spelarinloggning, delat bord (008–010), roulette, Partner-API:ts spelare och rundor, chattminne och probe | motorn, utom rummets spelinställningar (`shared_table_configs`, `shared_table_config_heads`; `packages/presentation/server/room-game-publication.mjs`) och spelaradministrationen (`packages/storage/server/player-administration.mjs`), som Studio skriver |
+| `croupier_studio` | 28 (31 med den valfria 021) | dokumentregistret (`documents`, `document_history`, `audit_events`, `media_records`), bolag och paket (`operator_*`), runtimekatalog och talrepliker, Forge | Studio, utom tal- och GPU-tabellerna (`speech_*`, `gpu_*`, `fullfile_*`, `operator_qa_*`, `moving_*`), som motorn skriver |
+
+Schemat följer alltså inte skrivaren. Båda tjänsterna ansluter med rollen `croupier_game`, som äger allt utom `moving_drift_control`.
+
+Det finns två migreringsledgrar med krockande nummer: `ops/neon-game/011` och `012` är inte samma sak som `ops/neon-studio/011` och `012`. Ange alltid ledgern (`game-012`, Studio 012).
+
+- **Studio**, `croupier_studio.storage_migrations`: registret är listan i `ops/neon-studio/migrations.mjs`, och `tools/check-migration-readiness.mjs` (som CI kör) läser den. Produktionen har 001–008 och 011–020; 021 och 022 är valfria och inte körda. 022 vidgar bara bolagsjournalens action-CHECK (`operator_audit_events`, 006) med partnerns egna åtgärder (spelbordens läge, spelinställningsutkast och begäran om material eller nyckelrotation); utan den svarar de partnervägarna 503 `studio_migration_required` och skriver ingenting. 022 körs först efter Jakobs uttryckliga "ja 022". 023 lägger bara till kolumnen `operator_packages.rooms` (text, NULL eller 2–20000 tecken): paketets egna spelbord som kanonisk JSON, skriven av `publishWithin` ur administrationsdokumentets `rooms[]` i dokumentets ordning (plan L3). Utan 023 skrivs paketen som förut och läsarna använder dokumentet; äldre paket behåller `rooms` NULL. 023 körs först när L3 PR 3 är ute i samma miljö, preview före produktion.
+- **Spel**, `croupier_game.storage_migrations`: motorn och Studio kontrollerar bara `product-v1`:s checksumma mot `ops/neon-game/product-schema.sql` vid start (`packages/storage/server/postgres-store.mjs:159`). Senare spelversioner är granskade engångstransaktioner som `tools/prepare-*.mjs` renderar och som själva skriver sin ledgerrad. Produktionen har `product-v1`, `sqlite-import-v1`, `game-011-retire-lissabon` (2026-10-28) och `game-012-api-key-operator` (2026-10-29 01:46Z). 008–010 (delat bord) applicerades utan ledgerrad, och readiness läser inte den här ledgern.
+
+Preview avviker: Studio saknar 016, 018 och 019, och spel-ledgern har `product-v1` och `game-012` men inte 011 ([ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen)).
 
 ## Sökvägar i Blob
 
@@ -108,6 +131,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 | Pose och utdelning | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `services/game/filmed-deal-selection.mjs` |
 | Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealer-lifecycle.mjs` |
 | Talrepliker | `packages/presentation/server/speech-reply-repository.mjs` |
+| `media/blob-index.json` (manuellt, inget skript anropar det) | `tools/export-media-blob.mjs`: torrkörning utan flaggor; `--output media/blob-index.json` skriver indexet, `--apply` laddar upp privat och verifierar |
 | Rörligt tal | `services/moving-gpu-worker/`, `services/game/moving-speech-*.mjs`, `services/game/generated-speech-stream.mjs` |
 
 Radera inte tester för aktiva kontrakt för att deras namn innehåller Astrid eller Kevin. Medieoriginal, kalibrering och privata checkpoints är aldrig genererbara byggrester.

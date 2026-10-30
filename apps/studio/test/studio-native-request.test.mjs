@@ -9,12 +9,17 @@ import { createDealerForgeApi } from '../lib/dealer-forge-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 
 const publicOrigin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
-const environment={CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
-  CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_UI_ORIGIN:labOrigin,CROUPIER_LAB_BASE_PATH:'/studio',
+const environment={
+  CROUPIER_PUBLIC_ORIGIN:publicOrigin,
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture')};
-const config=nativeStudioAdminConfiguration(environment);
-const unifiedConfig=()=>nativeStudioAdminConfiguration({...environment,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_LAB_UI_ORIGIN:undefined});
+// Configuration is always unified (one public origin); a panel Lab alias is ignored.
+const unifiedConfig=()=>nativeStudioAdminConfiguration(environment);
+// The retired two-origin shape (public frontend rewrite to a separate Lab origin) can no
+// longer come from configuration; normalizeNativeStudioRequest still reconciles it, so the
+// tests below build it explicitly until that branch is removed.
+const config=Object.freeze(Object.fromEntries(Object.entries({...unifiedConfig(),allowedOrigins:[publicOrigin,labOrigin],
+  publicHosts:[new URL(publicOrigin).host,new URL(labOrigin).host]}).filter(([key])=>key!=='unifiedUi')));
 const scope={environment:'fixture',workspaceId:'croupier'};
 const forwarded={host:new URL(publicOrigin).host,'x-forwarded-host':new URL(publicOrigin).host,
   'x-forwarded-proto':'https',origin:publicOrigin,'sec-fetch-site':'same-origin',cookie:'bo_jwt=private-fixture-cookie'};

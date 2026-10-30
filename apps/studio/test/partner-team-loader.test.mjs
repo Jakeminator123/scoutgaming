@@ -7,24 +7,15 @@ import {
   partnerTeamSnapshot, partnerTeamView, readPartnerTeam,
 } from '../components/partner-team-loader.mjs';
 
+import { jsxRequire } from './fixtures/jsx-require.mjs';
 const require = createRequire(new URL('../package.json', import.meta.url));
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
-const babel = require('next/dist/compiled/babel/core');
-const source = await readFile(new URL('../components/kevin-bo/views/team.jsx', import.meta.url), 'utf8');
-const transformed = babel.transformSync(source, {
-  babelrc: false,
-  configFile: false,
-  presets: [[require('next/dist/compiled/babel/preset-react'), { runtime: 'classic' }]],
-  plugins: [require('next/dist/compiled/babel/plugin-transform-modules-commonjs')],
-}).code;
-const output = { exports: {} };
-new Function('require', 'module', 'exports', transformed)(require, output, output.exports);
-const { TeamView } = output.exports;
+const { TeamView } = jsxRequire(import.meta.url)('../components/partner/views/team.jsx');
 
 const operator = { id: 'north', name: 'North', slug: 'north' };
 const snapshot = {
-  schemaVersion: 1, preview: false, mode: 'live', operator, operators: [operator],
+  schemaVersion: 1, preview: false, operator, operators: [operator],
   roles: [], team: [{ id: '42', operatorId: 'north', name: 'north-admin', email: '', roleId: 'partner-admin', role: 'partner-admin', status: 'active' }],
 };
 const roles = [
@@ -137,7 +128,7 @@ test('the adapter sends the current revision, refreshes after a conflict and ref
   assert.equal(partnerTeamMessage('role', 401), 'Sessionen har gått ut. Logga in igen.');
 });
 
-test('a live administrator gets Kevin\'s invite and role controls, limited to what the API allows', () => {
+test('a live administrator gets the invite form and an action menu per member, limited to what the API allows', () => {
   const live = createPartnerTeamAdapter({ team: team(), client: { read: async () => ({}), write: async () => ({}) }, notify: () => {}, onTeam: () => {} });
   const html = renderToStaticMarkup(React.createElement(TeamView, {
     snapshot: partnerTeamSnapshot(snapshot, team()), runtime: { surface: 'partner', team: live, notify() {} }, surface: 'partner', toast() {},
@@ -145,11 +136,15 @@ test('a live administrator gets Kevin\'s invite and role controls, limited to wh
   for (const id of ['team-invite-email', 'team-invite-role', 'team-invite-submit']) assert.equal(tag(html, id).includes('disabled'), false, id);
   const [, inviteOptions] = selectFor(html, 'team-invite-role');
   assert.deepEqual([...inviteOptions.matchAll(/value="([^"]+)"/g)].map(match => match[1]), ['partner-editor', 'partner-viewer']);
-  assert.match(tag(html, 'team-role-42'), /disabled/);
-  assert.equal(tag(html, 'team-role-43').includes('disabled'), false);
-  assert.deepEqual([...selectFor(html, 'team-role-43')[1].matchAll(/value="([^"]+)"/g)].map(match => match[1]), ['partner-editor', 'partner-viewer']);
-  assert.match(tag(html, 'team-role-44'), /disabled/);
-  assert.match(html, /Medlemskap i North/);
+  assert.match(inviteOptions, />redaktör<\/option>/); assert.match(inviteOptions, />läsare<\/option>/);
+  // The only active administrator gets no menu; the server would refuse the change and the view says why.
+  assert.equal(tag(html, 'team-actions-42'), '');
+  assert.match(html, /sista administratören/);
+  assert.match(tag(html, 'team-actions-43'), /aria-haspopup="menu"/); assert.match(tag(html, 'team-actions-43'), /aria-label="Åtgärder för north-viewer"/);
+  assert.match(tag(html, 'team-actions-44'), /aria-haspopup="menu"/);
+  assert.equal(tag(html, 'team-actions-43').includes('disabled'), false);
+  assert.match(html, /<td>administratör<\/td>/); assert.match(html, /<td>läsare<\/td>/); assert.match(html, /<td>redaktör<\/td>/);
+  assert.match(html, /Medlemmar/);
   assert.match(html, /Ett befintligt partnerkonto kopplas utan mejl/);
   assert.match(html, /avstängd/);
   assert.equal(html.includes('Åtgärderna är låsta tills teamåtkomsten har verifierats.'), false);
@@ -162,9 +157,7 @@ test('a live member without team.roles.assign sees the team with every control d
     snapshot: partnerTeamSnapshot(snapshot, team({ admin: false })), runtime: { surface: 'partner', team: live }, surface: 'partner',
   }));
   for (const id of ['team-invite-email', 'team-invite-role', 'team-invite-submit']) assert.match(tag(html, id), /disabled/, id);
-  const selects = [...html.matchAll(/<select\b[^>]*>/g)].map(match => match[0]);
-  assert.equal(selects.length, 4);
-  for (const item of selects) assert.match(item, /disabled/);
+  assert.doesNotMatch(html, /aria-haspopup="menu"/);
   assert.match(html, /Du kan se teamet\. Ändringar kräver rätt administratörsbehörighet\./);
 });
 
@@ -180,7 +173,7 @@ test('the portal binds one stable team view per API base and renders Kevin\'s re
   }));
   assert.match(loading, /Åtgärderna är låsta tills teamåtkomsten har verifierats./);
   assert.match(tag(loading, 'team-invite-submit'), /disabled/);
-  const portal = await readFile(new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url), 'utf8');
+  const portal = await readFile(new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url), 'utf8');
   assert.match(portal, /teamView:partnerTeamView\(apiBase,TeamView\)/);
 });
 
@@ -216,9 +209,10 @@ test('live status controls follow server grants, support English and lock during
   const live = createPartnerTeamAdapter({ team: team(), client: {}, notify() {}, onTeam() {}, language: 'en' });
   const props = { snapshot: partnerTeamSnapshot(snapshot, team()), runtime: { team: live, teamBusy: true }, language: 'en' };
   const html = renderToStaticMarkup(React.createElement(TeamView, props));
-  assert.match(html, /Suspend north-viewer/);
-  assert.match(html, /Reactivate 44/);
-  assert.doesNotMatch(html, /Suspend north-admin/);
-  assert.match(html, /Memberships in North/);
-  for (const button of html.matchAll(/<button[^>]+aria-label="(?:Suspend|Reactivate)[^>]+>/g)) assert.match(button[0], /disabled/);
+  assert.match(html, /aria-label="Actions for north-viewer"/);
+  assert.match(html, /aria-label="Actions for 44"/);
+  assert.doesNotMatch(html, /Actions for north-admin/);
+  assert.match(html, /last administrator/);
+  assert.match(html, /<p class="intro">Members, roles and invitations/); assert.doesNotMatch(html, /North: /, 'the company name stands in the sidebar, not in every intro');
+  for (const button of html.matchAll(/<button[^>]+aria-haspopup="menu"[^>]*>/g)) assert.match(button[0], /disabled/);
 });

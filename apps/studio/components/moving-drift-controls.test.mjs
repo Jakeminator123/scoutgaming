@@ -76,6 +76,19 @@ test('revoked access removes profile data and suspends automatic reads',async()=
   h.tick(10000,{poll:true});await h.settle();assert.doesNotMatch(renderToStaticMarkup(h.render()),/Verified fixture GPU|Fixture standard/);const count=api.calls.length;
   h.tick(10000,{poll:true});await h.settle();assert.equal(api.calls.length,count);h.unmount();
 });
+test('a dealer without a drift profile gets one calm line and is not asked again',async()=>{
+  const api=transport();api.getFailure=Object.assign(new Error('no profile'),{status:422,code:'drift_unknown_dealer'});const h=await mount(api);
+  const tree=h.render();
+  assert.match(text(tree),/Den här dealern har ingen driftprofil för rörligt tal\./);
+  assert.equal(nodes(tree,node=>node.props?.role==='alert').length,0,'no error alert');assert.doesNotMatch(text(tree),/kunde inte sparas|GPU-profil/);
+  assert.equal(form(tree),undefined);assert.equal(button(tree,'Uppdatera status'),undefined);
+  assert.equal(api.calls.length,1);
+  h.tick(10000,{poll:true});await h.settle();h.events.get('visibilitychange')();await h.settle();
+  assert.equal(api.calls.length,1,'neither polling nor returning to the tab asks again');
+  // Another dealer's transport starts over and reads its own status.
+  const other=transport(running());h.render(other);h.effects();await h.settle();
+  assert.match(text(h.render(other)),/Verified fixture GPU/);assert.equal(other.calls.length,1);h.unmount();
+});
 test('an old transport response cannot clear the lock for a newer session command',async()=>{
   const a=transport(running()),b=transport(running());let releaseA,releaseB;a.post=()=>new Promise(resolve=>{releaseA=resolve;});b.post=()=>new Promise(resolve=>{releaseB=resolve;});
   const h=await mount(a);button(h.render(),'Stoppa drift').props.onClick();h.render(b);h.effects();await h.settle();button(h.render(),'Stoppa drift').props.onClick();

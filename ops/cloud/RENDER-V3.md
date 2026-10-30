@@ -16,16 +16,16 @@ Spelmotorn är Render `croupier-v3`, tjänst `srv-dbd6nfon74is73aiblf0` i worksp
 
 Imagen installerar bara `services/game` och `services/astrid-gpu-worker/gateway` och kopierar en uttrycklig fillista, se [CONTAINER-CONTEXT](CONTAINER-CONTEXT.md). Build-filter om Render bara ska bygga vid relevanta ändringar: `ops/cloud/**`, `ops/neon-game/**`, `ops/neon-studio/**`, `packages/**`, `services/game/**`, `services/astrid-gpu-worker/gateway/**`, `tools/media-layout.mjs`, `tools/runtime-media-catalog.mjs`, `tools/media-blob-index-reader.mjs`, `.dockerignore`. `ops/cloud/test/game-image.test.mjs` håller listan i takt med spelserverns importer.
 
-Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Den behålls efter O03 och orkestratorn deployar dit pinnat, bara SHA:er från `main` eller `jakob/*`, aldrig `kevin*`. Preview är inget obligatoriskt steg före produktion. Jakob startar och stoppar den.
+Preview (tidigare staging) har en egen Render-tjänst, `croupier-k06-k07-staging` (`srv-dbf61l0m7kps73ft7mk0`), med samma recept och egna värden. Den behålls efter O03. Sedan 2026-10-29 är dess branch `preview` (bytt i Render-panelen, MCP kan inte ändra branch): det som pushas till `preview` (bara från `main` eller `jakob/*`, aldrig Kevins arbete; pre-push-hooken nekar också push från en lokal `kevin*`-checkout, se [START-HERE](../../START-HERE.md#preview)) är det som deployas, med `trigger_deploy` eller panelen om auto-deploy är av. Preview är inget obligatoriskt steg före produktion. Jakob startar och stoppar den.
 
 ## Miljövariabler
 
 Hela tabellen står i [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#render-croupier-v3-spelmotorn). Minsta uppsättningen för start:
 
-- `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_STREAM_LANE=lissabon-stream-lane` (`NODE_ENV=production` sätts av imagen)
-- `CROUPIER_DATABASE=postgres`, `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
-- `CROUPIER_STUDIO_NEON_POLICY=1`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`
-- `CROUPIER_MEDIA_STORAGE=blob`, `BLOB_READ_WRITE_TOKEN`
+- `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin` (`NODE_ENV=production` sätts av imagen; anslutnings-ID:t `lissabon-stream-lane` och databasvägen PostgreSQL är fasta i `ops/cloud/config.mjs`)
+- `CROUPIER_GAME_DATABASE_URL` (Neon med TLS)
+- `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` (Neon som register är fast i koden)
+- `BLOB_READ_WRITE_TOKEN` (privat Blob är fast i koden)
 - Ingress från Vercel: `CROUPIER_VERCEL_TRANSPORT_ORIGIN=https://croupier-v3.onrender.com`, `CROUPIER_PUBLIC_ORIGIN` och `PUBLIC_URL` (båda `https://www.scoutgaming.tech`), `CROUPIER_VERCEL_INGRESS_SECRET`
 
 Utan `PUBLIC_URL` härleds originen från `RENDER_EXTERNAL_URL` och starten stoppar med `Invalid or missing CROUPIER_PUBLIC_ORIGIN`. `BO_URL`, `LAB_PUBLIC_URL` och `CROUPIER_GAME_ORIGIN` härleds och sätts inte. `CROUPIER_SHARED_TABLE_ENABLED=1` är satt i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg`, [regeln](../../docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling)); `CROUPIER_CLOUD_LAB_CHILD` är borttagen och `1` stoppar starten.

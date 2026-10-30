@@ -1,6 +1,7 @@
 import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
 import { clipCompositing } from '../../presentation/runtime/presentation-composition.mjs';
 import { selectableLayerBases } from '../../presentation/contracts/background-playback-policy.mjs';
+import { ROOM_LIMIT_PRESETS } from '../../presentation/contracts/room-game-config.mjs';
 
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
 class UnplayableOperatorRooms extends Error {
@@ -46,11 +47,26 @@ function publicLayer(selection, role, independentLayers, defaults) {
   return { enabled, default: value, allowed, ...(role === 'background' ? { mode: enabled ? mode : 'baked' } : {}) };
 }
 
+/** The bound tables whose game settings have a published head (operator store), or null when the store
+ * cannot say: then only the binding is judged. Best effort like the bet profiles: a failed read never takes
+ * the catalogue down, and the shared table still refuses at entry. */
+export async function readRoomConfigHeads(store, pack) {
+  if (typeof store?.getPublishedRoomConfigHeads !== 'function' || !Object.keys(pack?.branding?.roomGameConfigVersions ?? {}).length) return null;
+  try { const heads = await store.getPublishedRoomConfigHeads(pack); return heads instanceof Set ? heads : null; }
+  catch (error) { console.warn('operator_rooms_config_heads_unavailable', { operatorId: pack.operatorId, code: error?.code ?? 'error' }); return null; }
+}
+/** Same judgement as the shared table's room_config_missing: no binding, or a binding without a published head. */
+export function roomSettingsMissing(pack, roomId, heads) {
+  return !Object.hasOwn(pack?.branding?.roomGameConfigVersions ?? {}, roomId) || heads instanceof Set && !heads.has(roomId);
+}
+
 /** Anonymous read-only directory. Its store is the same validated, scoped
  * operator store used by the public name endpoint. No fixture rooms, draft
  * presentation fallback, private media, player state or launch tokens. */
 export function createPublicOperatorRooms({ store = null, policy = null } = {}) {
   if (store !== null && (typeof store.getOperatorBySlug !== 'function' || typeof store.getCurrentPackage !== 'function')
+    || store?.getPublishedRoomLimitPresets !== undefined && typeof store.getPublishedRoomLimitPresets !== 'function'
+    || store?.getPublishedRoomConfigHeads !== undefined && typeof store.getPublishedRoomConfigHeads !== 'function'
     || policy !== null && (typeof policy.readSaved !== 'function' || typeof policy.readGameConfiguration !== 'function')) throw TypeError('Invalid operator rooms reader');
   async function read(slug) {
     if (!isOperatorSlug(slug)) return null;
@@ -71,6 +87,17 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     if (!frozen) return validatePublicOperatorRooms(result, { operatorSlug: slug });
     const saved = await policy.readSaved();
     const rooms = listPackageRooms({ administration: saved.administration, package: pack, operatorId: operator.id }).filter(room => room.state === 'live');
+    // The bet profile in each room's published game settings, for the lobby's room picture. A store
+    // without game settings, or a profile this build does not know, gives the room no profile.
+    // Best effort: the picture must never take the catalogue down, so a failed read gives the default
+    // picture and a warning (the failure code only), never a 503 for the rooms or Admin's catalogue.
+    let limitPresets = new Map();
+    if (rooms.length && store.getPublishedRoomLimitPresets) {
+      try { limitPresets = await store.getPublishedRoomLimitPresets(pack); }
+      catch (error) { console.warn('operator_rooms_limit_presets_unavailable', { operator: slug, code: error?.code ?? 'error' }); }
+      if (!(limitPresets instanceof Map)) limitPresets = new Map();
+    }
+    const heads = rooms.length ? await readRoomConfigHeads(store, pack) : null;
     // All choices in this response use the same saved snapshot and immutable
     // package. Delegate exact room ownership, version and renderer checks to
     // the actual game selector instead of duplicating its authority.
@@ -114,7 +141,14 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
           table: publicLayer(selection, 'table', independentLayers, defaults),
           background: publicLayer(selection, 'background', independentLayers, defaults) });
       }
+      const limitPreset = limitPresets.get(room.id);
+      // The frozen lane's miljöbild; the package validator has already checked that it is an illustration in this package.
+      const illustration = typeof lane.illustration === 'string' && frozen.assets.some(item => item.id === lane.illustration && item.role === 'illustration') ? lane.illustration : null;
+      // The shared table admits a blackjack seat only with the package's game settings binding and its published
+      // head (services/game/shared-room-access.mjs room_config_missing): without them the room is being prepared.
+      const preparing = game === 'blackjack' && roomSettingsMissing(pack, room.id, heads);
       result.rooms.push({ id: room.id, name: room.name, laneId: room.gameLaneId, ...(game === 'roulette' ? {game} : {}),
+        ...(Object.hasOwn(ROOM_LIMIT_PRESETS, limitPreset ?? '') ? { limitPreset } : {}), ...(illustration ? { illustration } : {}), ...(preparing ? { status: 'preparing' } : {}),
         presentation: { id: lane.id, label: lane.label }, dealerDefault: initial.dealer, dealers,
         playUrl: `/play/${game}?` + new URLSearchParams({ operator: slug, table: room.id }).toString() });
     }

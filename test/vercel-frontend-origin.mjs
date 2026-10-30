@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request as httpRequest } from 'node:http';
-import { ENGINE_QA_SKIP, createEngineDatabase, freePort, insertCraigUser, startEngine } from './fixtures/engine-qa.mjs';
+import { ENGINE_QA_SKIP, createEngineDatabase, freePort, insertCraigUser, installBaseStudioRuntime, startEngine } from './fixtures/engine-qa.mjs';
 
 const game='https://game.example.test';
 const frontend='https://preview.example.vercel.app';
 const password='Synthetic-Proxy-Test-Password';
 
 async function fixture(t) {
-  const database=await createEngineDatabase(t),port=await freePort();
+  const database=await createEngineDatabase(t),port=await freePort(),studio=await installBaseStudioRuntime(t,database);
   await insertCraigUser(database,{id:1,username:'pilot-reader',email:'reader@example.invalid',salt:'isolated-proxy-salt',password,role:'reader'});
   let engine;
   async function start(extra={}){
-    engine=await startEngine(t,{database,port,env:{NODE_ENV:'production',
+    engine=await startEngine(t,{database,port,preload:studio.preload,env:{...studio.env,NODE_ENV:'production',
       PUBLIC_URL:game,BO_URL:game,LAB_PUBLIC_URL:game,CROUPIER_CLOUD_LAYOUT:'single-origin',
       CROUPIER_CLOUD_RUNTIME:'1',...extra}});
   }
@@ -60,8 +60,10 @@ test('opt-in Vercel Origin permits player POSTs with the observed Preview Host a
   assert.equal((await post('/api/table',{op:'state'},{cookie,origin:'https://evil.example.test'})).status,403);
   assert.equal((await post('/api/table',{op:'state'},{cookie,host:new URL(frontend).host})).status,200);
   assert.equal((await post('/api/table',{op:'state'},{cookie,host:'attacker.invalid'})).status,403);
-  assert.equal((await post('/api/bo/login',{user:'pilot-reader',pass:password})).status,403,
-    'trusted Vercel player origin never crosses the stricter BO POST origin gate');
+  // With Neon as the fixed registry every BO POST is retired (410) before any origin gate,
+  // so the trusted Vercel player origin never reaches a BO writer.
+  assert.equal((await post('/api/bo/login',{user:'pilot-reader',pass:password})).status,410,
+    'trusted Vercel player origin never reaches a retired BO POST');
   // The BO-to-game handoff is retired: its start route redirects nowhere on either host.
   for (const host of [new URL(game).host, new URL(frontend).host]) {
     const boStart=await f.request('/api/auth/bo/start?next=%2F',{host});

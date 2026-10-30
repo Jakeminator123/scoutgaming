@@ -62,12 +62,13 @@ test('real product HTTP result survives into authenticated stream; memory forget
   await post('/api/player', {}); const state = await post('/api/table', { op: 'state' });
   const worker = new WebSocket(origin.replace('http:', 'ws:') + '/lipsync-worker', { headers: { Authorization: `Bearer ${secret}`, 'X-Worker-Id': 'http-test' } }); sockets.push(worker);
   await once(worker, 'open');
-  let currentId, starts = 0, pcm = 0, aborts = 0;
+  let currentId, starts = 0, pcm = 0, aborts = 0, sendMedia = false;
   const activity = new EventTarget();
   worker.on('message', (data, binary) => {
     if (binary) { pcm++; activity.dispatchEvent(new Event('pcm')); return; }
     const m = JSON.parse(data.toString());
-    if (m.t === 'start') { currentId = m.id; starts++; worker.send(JSON.stringify({ t: 'stream', id: m.id, mime: 'video/mp4; codecs="avc1.64002a, mp4a.40.2"' })); }
+    if (m.t === 'start') { currentId = m.id; starts++; worker.send(JSON.stringify({ t: 'stream', id: m.id, mime: 'video/mp4; codecs="avc1.64002a, mp4a.40.2"' }));
+      if (sendMedia) worker.send(Buffer.alloc(1024), { binary: true }); }
     if (m.t === 'abort') { aborts++; worker.send(JSON.stringify({ t: 'done', id: m.id, aborted: true })); }
     if (m.t === 'end') worker.send(JSON.stringify({ t: 'done', id: m.id, frames: 24, ms: 1000 }));
   });
@@ -91,4 +92,13 @@ test('real product HTTP result survives into authenticated stream; memory forget
   const stolen = (await post('/chat', chat(true))).speechStream;
   const foreign = new WebSocket(origin.replace('http:', 'ws:') + stolen.url, ['astrid-v2', `ticket.${stolen.ticket}`], { origin }); sockets.push(foreign);
   const denied = await new Promise(resolve => foreign.once('error', resolve)); assert.match(denied.message, /401/); assert.equal(starts, 1);
+  // The engine hands the Studio reply library to the stream service: a completed reply
+  // (all TTS audio, worker media, done with frames) is offered to it, which logs its outcome.
+  sendMedia = true;
+  const complete = (await post('/chat', chat(true))).speechStream;
+  const full = new WebSocket(origin.replace('http:', 'ws:') + complete.url, ['astrid-v2', `ticket.${complete.ticket}`], { origin, headers: { Cookie: cookie } }); sockets.push(full);
+  assert.equal((await messages(full)()).t, 'ready');
+  const library = /"event":"speech_reply_library","state":"(?:saved|failed)"/;
+  for (const deadline = Date.now() + 15000; !library.test(engine.output()) && Date.now() < deadline;) await new Promise(resolve => setTimeout(resolve, 100));
+  assert.match(engine.output(), library); assert.equal(starts, 2);
 });

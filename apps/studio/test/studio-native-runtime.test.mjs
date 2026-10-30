@@ -102,9 +102,7 @@ test('request handler logs the failing method, pathname and redacted cause',asyn
   assert.match(line.cause.message,/^connect failed \[url\]/);assert.equal(lines[0][0].includes('fixture-token'),false);
 });
 
-const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
-  CROUPIER_STUDIO_NEON_POLICY: '1',
-  CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',
+const env = { CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') };
 
@@ -153,38 +151,33 @@ test('assistant table inventory bounds returned metadata and reports truncation'
   assert.equal(inventory.tables.length,500);assert.equal(inventory.partial,true);
 });
 test('native mode is explicit, scoped and never substitutes zone/general database', () => {
-  assert.equal(nativeStudioAdminConfiguration({}), null);
+  // Native Admin is always on; an unconfigured deployment answers 503 instead of disabling it.
+  assert.throws(() => nativeStudioAdminConfiguration({}), error => error.statusCode === 503);
   const config = nativeStudioAdminConfiguration(env);
   assert.deepEqual(config.scope, { environment: 'fixture', workspaceId: 'croupier' });
   for (const change of [{ CROUPIER_GAME_DATABASE_URL: undefined }, { CROUPIER_STUDIO_ENVIRONMENT_ID: undefined },
-    { CROUPIER_STUDIO_NEON_POLICY: undefined },
     { CROUPIER_STUDIO_WORKSPACE_ID: undefined }, { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL },
-    { CROUPIER_PUBLIC_ORIGIN: 'http://public.example.invalid' }, { CROUPIER_LAB_UI_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN }]) {
+    { CROUPIER_PUBLIC_ORIGIN: 'http://public.example.invalid' }]) {
     assert.throws(() => nativeStudioAdminConfiguration({ ...env, ...change }), error => error.statusCode === 503);
   }
 });
 test('explicit unified UI trusts only its public origin without a secondary alias', () => {
-  for (const secondary of [undefined, env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN, 'invalid-unused-alias']) {
-    const config = nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: '1', CROUPIER_LAB_UI_ORIGIN: secondary });
-    assert.equal(config.unifiedUi, true);
-    assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
-    assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
-    assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
-    assert.throws(() => assertNativeStudioRequest(new Request(env.CROUPIER_LAB_UI_ORIGIN + '/studio/api/auth/session'), config), error => error.statusCode === 403);
-  }
-  for (const value of [undefined, '0', 'true']) {
-    assert.throws(() => nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: value, CROUPIER_LAB_UI_ORIGIN: undefined }), error => error.statusCode === 503);
-  }
+  const config = nativeStudioAdminConfiguration(env);
+  assert.equal(config.unifiedUi, true);
+  assert.deepEqual(config.allowedOrigins, [env.CROUPIER_PUBLIC_ORIGIN]);
+  assert.deepEqual(config.publicHosts, [new URL(env.CROUPIER_PUBLIC_ORIGIN).host]);
+  assert.doesNotThrow(() => assertNativeStudioRequest(new Request(env.CROUPIER_PUBLIC_ORIGIN + '/studio/api/auth/session'), config));
+  assert.throws(() => assertNativeStudioRequest(new Request('https://studio.example.invalid/studio/api/auth/session'), config), error => error.statusCode === 403);
 });
 test('unified UI retains exact HTTPS, scope, Neon and policy requirements', () => {
   for (const change of [
     ...['http://public.example.invalid', 'https://localhost', 'https://127.0.0.1', 'https://[::1]',
       'https://public.example.invalid/', 'https://user@public.example.invalid'].map(value => ({ CROUPIER_PUBLIC_ORIGIN: value })),
     { CROUPIER_STUDIO_ENVIRONMENT_ID: undefined }, { CROUPIER_STUDIO_WORKSPACE_ID: undefined },
-    { CROUPIER_STUDIO_NEON_POLICY: undefined }, { CROUPIER_GAME_DATABASE_URL: undefined },
-    { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL }, { CROUPIER_LAB_BASE_PATH: '/unexpected' },
+    { CROUPIER_GAME_DATABASE_URL: undefined },
+    { CROUPIER_ZONES_DATABASE_URL: env.CROUPIER_GAME_DATABASE_URL },
   ]) {
-    assert.throws(() => nativeStudioAdminConfiguration({ ...env, CROUPIER_VERCEL_UNIFIED_UI: '1', CROUPIER_LAB_UI_ORIGIN: undefined, ...change }), error => error.statusCode === 503);
+    assert.throws(() => nativeStudioAdminConfiguration({ ...env, ...change }), error => error.statusCode === 503);
   }
 });
 test('exact trusted request host/origin before DB initialization', () => {
@@ -204,16 +197,10 @@ test('factory asserts installed schema; DB failure closes pool and never constru
   }), error => error.statusCode === 503 && !error.message.includes('PRIVATE'));
   assert.equal(closed, 1); assert.equal(constructed, 0);
 });
-test('disabled active route does not instantiate DB or acknowledge a mutation', async () => {
-  const previous = process.env.CROUPIER_STUDIO_NATIVE_ADMIN;
-  delete process.env.CROUPIER_STUDIO_NATIVE_ADMIN;
-  try {
-    const response = await handleNativeAdmin(new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/admin/room`, { method: 'POST' }));
-    assert.equal(response.status, 503);
-    assert.equal(response.headers.get('cache-control'), 'private, no-store');
-  } finally {
-    if (previous === undefined) delete process.env.CROUPIER_STUDIO_NATIVE_ADMIN; else process.env.CROUPIER_STUDIO_NATIVE_ADMIN = previous;
-  }
+test('an unconfigured active route does not instantiate DB or acknowledge a mutation', async () => {
+  const response = await handleNativeAdmin(new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/admin/room`, { method: 'POST' }));
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
 });
 test('bundled source paths load all reviewed migrations without asset URLs', async () => {
   const directory = resolve(fileURLToPath(new URL('../../../ops/neon-studio/', import.meta.url)));
@@ -221,7 +208,7 @@ test('bundled source paths load all reviewed migrations without asset URLs', asy
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.filter(row => !row.deploymentOptional).at(-1).file, '017-moving-budget-capacity.sql');
-  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016', '018', '019', '020']);
+  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['016', '018', '019', '020', '021', '022', '023']);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 

@@ -1,4 +1,10 @@
 import { createRequire } from 'node:module';
+import { PARTNER_ROOM_REFUSALS } from './partner-operator.mjs';
+import { ROOM_CONFIG_MISSING } from './shared-room-access.mjs';
+
+// Refusals the browser sees by name in a 1008 close: a partner key's company, and a room without
+// published game settings. Every other refusal keeps its plain HTTP status.
+const NAMED_REFUSALS=new Set([...PARTNER_ROOM_REFUSALS,ROOM_CONFIG_MISSING]);
 
 const requireGateway=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url));
 const unavailable=()=>Object.assign(Error('shared_room_upgrade_unavailable'),{statusCode:503});
@@ -27,7 +33,8 @@ function asRequest(request,engineOrigin,signal) {
  * or port is installed here: await handleUpgrade(req,socket,head), then dispatch
  * elsewhere only when false. The enclosing gateway must already validate private
  * ingress; this boundary checks the configured engine Host and browser Origin.
- * channel.prepare authenticates before ws emits 101. No tickets, commands, actor
+ * channel.prepare authenticates before ws emits 101; only a partner refused by name for its
+ * key's company then gets 101 and an immediate 1008 close. No tickets, commands, actor
  * ids, application registry or authentication fallback are introduced here.
  */
 export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketServer,
@@ -53,6 +60,19 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
     socket.once('error',error);socket.once('close',cleanup);
     try {socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nCache-Control: private, no-store\r\nContent-Length: 0\r\n\r\n`,()=>socket.destroy());}
     catch {socket.destroy();}
+  }
+  // A signed-in partner refused for its key's company (docs/plans/NYCKEL-BOLAG.md) must learn why:
+  // a browser sees a rejected handshake only as 1006 and retries for a minute. This socket opens
+  // and closes at once with 1008 and the fixed code as reason; it never carries a room frame.
+  function refuse(request,socket,head,code) {
+    let upgraded=false;
+    wss.handleUpgrade(request,socket,head,ws=>{
+      upgraded=true;
+      const broken=()=>ws.terminate();
+      clients.add(ws);ws.on('error',broken);ws.once('close',()=>{clients.delete(ws);ws.off('error',broken);});
+      try {ws.close(1008,code);socket.resume();}catch {ws.terminate();}
+    });
+    if(!upgraded)socket.resume();
   }
   function handleUpgrade(request,socket,head) {
     if(!owned(request?.url))return false;
@@ -88,7 +108,10 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
       // ws owns malformed handshake rejection; never write a second response.
       if(!upgraded)socket.resume();
       return true;
-    }).catch(error=>{if(active&&!controller.signal.aborted&&!socket.destroyed)reject(socket,[401,403,409,429].includes(error?.statusCode)?error.statusCode:503);return true;})
+    }).catch(error=>{
+      if(!active||controller.signal.aborted||socket.destroyed)return true;
+      if(error?.statusCode===403&&NAMED_REFUSALS.has(error.code)&&!stopped&&socket.writable&&!request.aborted){refuse(request,socket,bufferedHead,error.code);return true;}
+      reject(socket,[401,403,409,429].includes(error?.statusCode)?error.statusCode:503);return true;})
       .finally(()=>{active=false;clearTimeout(timer);pending.delete(record);
         socket.off('close',abort);socket.off('end',abort);socket.off('error',abort);request.off('aborted',abort);});
   }

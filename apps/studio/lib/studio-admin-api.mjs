@@ -1,4 +1,8 @@
 import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
+import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './room-release.mjs';
+import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
+import {presentationRoomMutationOptions} from './presentation-room-api.mjs';
+import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
@@ -7,11 +11,15 @@ import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSA
 import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
 import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
 import { logStudioServerFailure } from './studio-error-log.mjs';
+import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';
 
+// Spelbordets publicering och "Använd i miljön och i spelbordet" delar kontrakt och transaktion.
+const ROOM_RELEASE_ACTIONS = [ROOM_RELEASE_ACTION, AI_ADOPT_ACTION];
 const MAX_BODY = 64 * 1024;
-const administrationMutations = new Set(['tournament','pitboss','tier','room','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
+const administrationMutations = new Set(['tier','game-lane','game-lanes/create','game-lanes/remove','room-state','room-lifecycle','clip-landing','clip-never','gen-landing','gen-verdict']);
 const renderActions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const publicErrors = new Map([[400, 'Invalid request'], [401, 'Authentication required'], [403, 'Access denied'], [404, 'Not found'], [405, 'Method not allowed'], [413, 'Request too large'], [415, 'JSON required'], [409, 'Conflict'], [422, 'Invalid data'], [423, 'Resource busy'], [429, 'Too many attempts'], [503, 'Action unavailable'], [500, 'Request failed']]);
+const RESOURCE_DELETE_CODES = new Set(['studio_resource_delete_blocked','studio_delete_name_mismatch','studio_conflict','studio_room_not_found','studio_composition_not_found','studio_operator_not_found']);
 function failure(status) { return Object.assign(new Error(publicErrors.get(status)), { statusCode: status }); }
 function json(value, status = 200, extra = {}) {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', ...extra } });
@@ -79,7 +87,7 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
     return STUDIO_ADMIN_ENDPOINTS.filter(endpoint => ready(endpoint) && studioRoleMeetsMinimum(actor.role, endpoint.minimumRole)).map(endpoint => `${endpoint.method} ${endpoint.action}`);
   }
   async function handle(request) {
-    let action;
+    let action, release = false;
     try {
       const url = new URL(request.url);
       if (!hosts.has(url.host) || !origins.has(url.origin) || url.username || url.password) throw failure(403);
@@ -107,6 +115,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       }
       if (!ready(endpoint)) throw failure(503);
       const body = request.method === 'GET' ? null : await readObject(request);
+      // Rummets publicering svarar med sitt fasta felkontrakt {error, code, step}.
+      release = endpoint.action === 'room-release' || endpoint.action === 'operator-package' && ROOM_RELEASE_ACTIONS.includes(body?.action);
       if (['users/role', 'users/remove'].includes(endpoint.action)) {
         if (typeof body.username !== 'string' || !body.username.trim()) throw failure(400);
         if (body.username.trim().toLowerCase() === actor.user.trim().toLowerCase()) throw failure(403);
@@ -138,6 +148,11 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // Negotiate the exact saved-scene candidate before the transaction.
       const sceneLayout = endpoint.action === 'operator-package' && body?.action === 'publish-scene-layout';
       if (sceneLayout && (invocation.prepared?.action !== 'publish-scene-layout' || !invocation.prepared.presentation)) throw failure(503);
+      const roomRelease = endpoint.action === 'operator-package' && ROOM_RELEASE_ACTIONS.includes(body?.action);
+      if (roomRelease && (invocation.prepared?.action !== body.action || !invocation.prepared.presentation)) throw failure(503);
+      // Bolag › Tilldelat: den förberedda kandidaten bär exakt det paket transaktionen förhandlar.
+      const assignment = endpoint.action === 'operator-package' && body?.action === 'publish-assignment';
+      if (assignment && (invocation.prepared?.action !== 'publish-assignment' || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);
@@ -148,6 +163,9 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       // hold that same product lock while validating current identity and writing.
       const presentationOptions = ['material-trash-check','material-trash'].includes(endpoint.action)
         ? {presentationDocuments:['project','administration'],presentationMaterialTrash:{id:body.id,archived:body.archived,expectedRevision:body.expectedRevision},presentationMutation:{kind:'material-trash',value:{}}}
+        // Radera permanent: both documents, and for a room its company's frozen package (the new version keeps it).
+        : ['resource-delete-check','resource-delete'].includes(endpoint.action)
+        ? { presentationDocuments: ['project','administration'], ...(body?.kind==='room'&&typeof body.operatorId==='string'?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : ['operator-lifecycle','room-lifecycle','room-state'].includes(endpoint.action)
         ? { presentationDocuments: ['project','administration'], presentationOperatorIds: [body.operatorId], presentationMutation: {kind:'resource-lifecycle',value:{}} }
         : endpoint.action === 'room-game-config'
@@ -155,10 +173,20 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         ? { presentationDocuments: ['project','administration'], presentationMutation: [{ kind: 'administration', value: { roomGameConfigs: [] } }, ...(body?.action==='publish'?[NATIVE_FILMED_PLANNING_MUTATION]:[])],
           ...(body?.action === 'publish' ? { presentationOperatorIds: [body.operatorId] } : {}) }
         : endpoint.action === 'presentation-room'
-        ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), presentationMutation: [{ kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: invocation.prepared?.game ?? 'blackjack' }] } }, ...(invocation.prepared?.publicationPresentation ? [{ kind: 'presentation-package', value: invocation.prepared.publicationPresentation }] : [])] }
+        // Nytt spelbord (med spelinställningar: samma förhandling som room-game-config publish).
+        ? presentationRoomMutationOptions(body, invocation.prepared)
         : administrationMutations.has(endpoint.action)
         ? { presentationDocuments: ['administration'], ...(endpoint.action === 'game-lanes/create'
           ? { presentationMutation: { metadata: { dealerId: body.definition?.dealer } } } : {}) }
+        // The room publication writes the package, the room's game settings (v31 film
+        // planning) and administration without the room's draft; negotiate all before SQL.
+        : roomRelease ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
+          presentationMutation: [{ kind: 'presentation-package', value: invocation.prepared.presentation },
+            { kind: 'administration', value: { roomGameConfigs: [] } }, NATIVE_FILMED_PLANNING_MUTATION,
+            // Med AI-materialet skrivs även scenmallen i samma transaktion.
+            ...(invocation.prepared.projectWrite ? [{ kind: 'project', value: invocation.prepared.projectWrite }] : [])] }
+        : assignment ? { presentationDocuments: ['project', 'administration'], presentationOperatorIds: [body.operatorId],
+          presentationMutation: invocation.prepared.mutations }
         : endpoint.action === 'operator-package' ? { presentationDocuments: ['project', 'administration'], ...(body?.operatorId?{presentationOperatorIds:[body.operatorId]}:{}), ...(invocation.prepared?.presentation ? { presentationMutation: { kind: 'presentation-package', value: invocation.prepared.presentation } } : {}) } : undefined;
       const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();
       queueOpen = false;
@@ -177,9 +205,28 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
         const code = 'studio_room_game_material_unavailable';
         return json({ error: code, code }, status);
       }
+      // Nytt spelbord med spelinställningar: ett öppet utseendeutkast (409) och materialets skäl (422) som room-release.
+      if (action === 'presentation-room' && error instanceof StudioStorageError && error.statusCode === status
+        && (status === 409 && error.code === 'studio_room_choices_draft_pending' || status === 422 && error.code === 'studio_room_game_material_unavailable')) {
+        return json({ error: error.code, code: error.code, ...(status === 422 && isRoomGameMaterialReason(error.materialReason) ? { materialReason: error.materialReason } : {}) }, status);
+      }
+      // Nyckel→bolag: Admin names why the chosen company cannot own a new key.
+      if (action === 'apikeys/create' && status === 422 && error instanceof StudioStorageError && error.code === 'partner_key_operator_invalid') {
+        return json({ error: publicErrors.get(status), code: error.code }, status);
+      }
+      // A refused AI table graphic: fixed code, scene template, material and reason code.
+      const misfit = status === 422 ? aiTableMisfitBody(error) : null;
+      if (misfit) return json(misfit, status);
       if (status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED) {
         return json({ error: PRESENTATION_RUNTIME_UPDATE_MESSAGE, code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }, status);
       }
+      const releaseBody = release ? roomReleaseErrorBody(error, status) : null;
+      if (releaseBody) {
+        if (status >= 500) logStudioServerFailure(error, { method: request.method, route: action });
+        return json(releaseBody, status);
+      }
+      // Radera permanent names why it refused (blocked, wrong name, stale check), never provider text.
+      if (action === 'resource-delete' && error instanceof StudioStorageError && RESOURCE_DELETE_CODES.has(error.code)) return json({ error: publicErrors.get(status), code: error.code }, status);
       if (status !== 503 && status !== 500) return json({ error: publicErrors.get(status) }, status);
       logStudioServerFailure(error, { method: request.method, route: action });
       // Storage codes are fixed product identifiers (see StudioStorageError), never provider text.

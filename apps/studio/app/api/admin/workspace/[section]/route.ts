@@ -16,7 +16,6 @@ export async function GET(request: Request) {
         if (!['admin', 'superadmin'].includes(session.role)) throw Object.assign(new Error('studio_request_rejected'), {statusCode: 403});
       },
       runtime: studioNativeRuntime,
-      connectedLane: process.env.CROUPIER_STREAM_LANE === 'lissabon-stream-lane',
     });
   } catch (error) { return nativeStudioErrorResponse(error); }
 }

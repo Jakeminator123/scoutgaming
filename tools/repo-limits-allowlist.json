@@ -40,11 +40,6 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "apps/studio/client/lobby/public/videos/dealers/astrid-look.mp4",
-    "maxBytes": 2188722,
-    "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
     "path": "apps/studio/client/lobby/public/videos/dealers/dragge-shirt.mp4",
     "maxBytes": 3841224,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
@@ -63,6 +58,11 @@
     "path": "apps/studio/client/lobby/public/videos/hero-end.mp4",
     "maxBytes": 6441517,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
+  },
+  {
+    "path": "apps/studio/components/dealer-table-assets/olive-blackjack-v1.png",
+    "maxBytes": 2237524,
+    "reason": "Beställt transparent PNG-original för återanvändbar dealerbordsmall; runtime använder optimerad WebP på 229550 byte. Metadata och alfagränser verifieras mot originalet."
   },
   {
     "path": "apps/web/public/about/scout-lounge.mp4",
@@ -88,11 +88,6 @@
     "path": "apps/web/public/videos/fantasy-card.mp4",
     "maxBytes": 1140806,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
-  },
-  {
-    "path": "media/site/source/design-kit/prive-blackjack-ui-kit.html",
-    "maxBytes": 2397187,
-    "reason": "Fanns på main när grinden infördes (2026-10-28); mediebytes hör hemma i Blob"
   },
   {
     "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png",

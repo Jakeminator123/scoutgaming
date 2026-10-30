@@ -1,4 +1,7 @@
-// T2 policy groundwork; deliberately not connected to login or HTTP handlers.
+// Partnerportalens behörighetsgolv, kopplade till inloggning och HTTP: vyer och snapshot
+// (apps/studio/lib/partner-data.mjs), API-åtgärderna via partner-workspace-access.mjs och
+// partner-team-api.mjs, rollerna i operator-admin-api.mjs och lagret (operator-store.mjs).
+// Menyn (components/partner/partner-copy.mjs) läser samma vykarta.
 // These are permission floors, not authentication. Inputs must be fresh,
 // server-owned projections read in the same transaction as a protected write.
 // The caller must also verify session identity/stamp/epoch, membership revision,
@@ -9,17 +12,28 @@
 // Existing internal Studio policy and player/game authority remain separate.
 import { validateStudioScope } from '../studio-scope.mjs';
 
+// material.request och integration.request (ADMIN-FORENKLING 5.4, PARTNERPORTAL-KONVERTERING
+// 2.4 punkt 5): begära material och nyckelrotation som journalposter. Namnen prövas bara i
+// koden (operator_roles.permissions är JSON-text utan CHECK); befintliga roller får dem inte
+// automatiskt.
 export const PARTNER_PERMISSIONS = Object.freeze([
   'overview.read',
   'players.read',
   'team.read', 'team.invite', 'team.roles.assign', 'team.suspend',
   'tables.read', 'tables.configure',
-  'presentations.read', 'presentations.configure',
-  'reports.read', 'integrations.read',
+  'presentations.read', 'presentations.configure', 'material.request',
+  'reports.read', 'integrations.read', 'integration.request',
 ]);
 
 // The only permission that can grant another operator administrator.
 export const OPERATOR_ADMIN_PERMISSION = 'team.roles.assign';
+
+// Partnerportalen: the permission each view requires. The menu hides a view
+// the role lacks, and the server refuses its direct address with the same map.
+export const PARTNER_VIEW_PERMISSIONS = Object.freeze({
+  overview: 'overview.read', rooms: 'tables.read', players: 'players.read', reports: 'reports.read',
+  team: 'team.read', integration: 'integrations.read', help: 'overview.read',
+});
 
 const permissions = new Set(PARTNER_PERMISSIONS);
 const id = value => typeof value === 'string' && value.trim() === value

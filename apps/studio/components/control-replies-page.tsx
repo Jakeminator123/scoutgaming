@@ -37,8 +37,13 @@ function checkedItem(value:ReplyItem,dealerId:string,expectedId?:string):ReplyIt
   return value;
 }
 
+// Inside the dealer nav (/admin/dealers/<id>?flik=tal) the dealer sits in the path, not in the query.
+const navDealer=(pathname:string)=>pathname.match(/^\/(?:studio\/)?admin\/dealers\/([A-Za-z0-9][A-Za-z0-9._:-]{0,99})$/)?.[1];
+
 export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,initialCategory,initialNavigationContext={}}:{dealers:Dealer[];initialDealerId?:string;initialCategory?:string;initialNavigationContext?:StudioNavigationContext}){
   const dealers=activeStudioDealers({dealers:registeredDealers});
+  // The nav owns a dealer; its library never offers "no dealer", which would leave the nav for the dealer list.
+  const inDealerNav=typeof window!=='undefined'&&Boolean(navDealer(window.location.pathname));
   const [dealerId,setDealerId]=useState(dealers.some(row=>row.id===initialDealerId)?initialDealerId!:'');
   const [category,setCategory]=useState(validCategory(initialCategory));
   const [navigationContext,setNavigationContext]=useState<StudioNavigationContext>(initialNavigationContext);
@@ -80,7 +85,7 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
     context.current.href=window.location.href;
     const unload=(event:BeforeUnloadEvent)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();event.returnValue='';}};
     const restore=()=>{
-      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??'',nextCategory=validCategory(query.get('category'));
+      const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??navDealer(window.location.pathname)??'',nextCategory=validCategory(query.get('category'));
       setDealerId(dealers.some(row=>row.id===nextDealer)?nextDealer:'');setCategory(nextCategory);setNavigationContext(studioNavigationContextFromQuery(query));setDrafts({});context.current.href=window.location.href;
     };
     const history=studioHistory(window);
@@ -89,8 +94,10 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
       return true;
     });
     const unsubscribe=history.subscribe(event=>{if(event)restore();});
-    window.addEventListener('beforeunload',unload);
-    return()=>{window.removeEventListener('beforeunload',unload);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
+    // Admin's in-app navigation (menu, navs, tabs) asks here before it would unmount a draft or a write in flight.
+    const beforeNavigate=(event:Event)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}};
+    window.addEventListener('beforeunload',unload);window.addEventListener('studio:before-navigate',beforeNavigate);
+    return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('studio:before-navigate',beforeNavigate);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
   },[]);
   function choose(nextDealer:string,nextCategory:string){
     if(studioHistory(window).isRestoring())return;
@@ -146,30 +153,30 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
   }
   return <PageTemplate eyebrow="// STUDIO" title="Svarsbibliotek" intro="Här visas sparade svar för vald dealer, med exakt text, ljud och läppsynkvideo. Kategorier hjälper dig att ordna biblioteket.">
     <main className="sg-page-body">
-      <div className={styles.controls}><label>Dealer<select aria-label="Dealer i svarsbiblioteket" value={dealerId} disabled={Boolean(writingId)} onChange={event=>choose(event.target.value,category)}><option value="">Välj dealer</option>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
-        <label>Kategori<select aria-label="Filtrera svarskategori" value={category} disabled={Boolean(writingId)} onChange={event=>choose(dealerId,event.target.value)}><option value="">Alla kategorier</option>{categories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
-        <button type="button" className="sg-btn sg-btn-secondary" disabled={loading||dirty||Boolean(writingId)||!dealerId} onClick={()=>setReload(value=>value+1)}>Uppdatera</button>
+      <div className={styles.controls}><label>Dealer<select aria-label="Dealer i svarsbiblioteket" data-field="dealer" value={dealerId} disabled={Boolean(writingId)} onChange={event=>choose(event.target.value,category)}>{(!inDealerNav||!dealerId)&&<option value="">Välj dealer</option>}{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+        <label>Kategori<select aria-label="Filtrera svarskategori" data-field="category" value={category} disabled={Boolean(writingId)} onChange={event=>choose(dealerId,event.target.value)}><option value="">Alla kategorier</option>{categories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
+        <button type="button" className="sg-btn sg-btn-secondary" data-action="refresh" disabled={loading||dirty||Boolean(writingId)||!dealerId} onClick={()=>setReload(value=>value+1)}>Uppdatera</button>
       </div>
       <StudioNavigation {...navigationContext} active="replies" dealerId={dealerId} dealerLabel={dealer?.label} onNavigate={navigate}/>
       {dirty?<p role="status" className={styles.feedback}>Du har osparade kategorival. Spara eller ångra dem innan du byter dealer, filter eller sida.</p>:null}
       {error?<p role="alert" className={styles.error}>{error}</p>:null}{notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
-      {!dealerId?<p className={styles.empty}>Välj en dealer för att läsa dess svarsbibliotek.</p>:null}
+      {!dealerId?<p className={styles.empty} data-empty="no-dealer">Välj en dealer för att läsa dess svarsbibliotek.</p>:null}
       {loading&&!visibleItems.length?<p role="status" className={styles.empty}>Läser svarsbiblioteket…</p>:null}
-      {dealerId&&!loading&&!error&&!visibleItems.length?<p className={styles.empty}>{nextCursor?'Inga träffar bland hämtade svar. Välj Visa fler svar för att fortsätta läsa biblioteket.':category?'Inga sparade svar i den här kategorin för '+dealer?.label+'.':'Inga sparade svar för '+dealer?.label+' ännu. Här visas svar när de har sparats i biblioteket.'}</p>:null}
+      {dealerId&&!loading&&!error&&!visibleItems.length?<p className={styles.empty} data-empty={nextCursor?'more':category?'category':'dealer'}>{nextCursor?'Inga träffar bland hämtade svar. Välj Visa fler svar för att fortsätta läsa biblioteket.':category?'Inga sparade svar i den här kategorin för '+dealer?.label+'.':'Inga sparade svar för '+dealer?.label+' ännu. Här visas svar när de har sparats i biblioteket.'}</p>:null}
       <div className={styles.list}>{visibleItems.map(item=>{
         const chosen=drafts[item.id]??item.categories,pending=Boolean(writingId),edited=Boolean(drafts[item.id]);
         return <article key={dealerId+':'+item.id} className={styles.reply} aria-label={'Svar '+item.id}>
-          <div className={styles.heading}><h2>{dealer?.label} · {item.language||'Språk saknas'}</h2><span className={styles.review}>{reviewLabels[item.reviewStatus]??'Okänd granskningsstatus'}</span></div>
+          <div className={styles.heading}><h2>{dealer?.label} · {item.language||'Språk saknas'}</h2><span className={styles.review} data-review={item.reviewStatus}>{reviewLabels[item.reviewStatus]??'Okänd granskningsstatus'}</span></div>
           <p className={styles.exactText}>{item.exactText}</p>
           <dl className={styles.metadata}><div><dt>Skapat</dt><dd><time dateTime={item.createdAt}>{dateLabel(item.createdAt)}</time></dd></div><div><dt>Profilrevision</dt><dd><code>{item.profileRevision||'Saknas'}</code></dd></div></dl>
           <div className={styles.media}><section><h3>Ljud</h3>{item.media.audio.available&&!mediaErrors[item.id+':audio']?<audio key={item.id+':'+item.media.audio.sha256} controls preload="none" src={mediaPath(item.id,dealerId,'audio')} aria-label={'Ljud för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':audio']:true}))}/>:<p>Ljudet är inte tillgängligt.</p>}</section><section><h3>Läppsynkvideo</h3>{item.media.video.available&&!mediaErrors[item.id+':video']?<DealerClipPreview key={item.id+':'+item.media.video.sha256} url={mediaPath(item.id,dealerId,'video')} label={'Läppsynk för svar '+item.id} onError={()=>setMediaErrors(current=>({...current,[item.id+':video']:true}))}/>:<p>Videon är inte tillgänglig.</p>}</section></div>
-          <fieldset className={styles.categories} disabled={pending}><legend>Kategorier</legend><div>{categories.map(([id,label])=><label key={id}><input type="checkbox" checked={chosen.includes(id)} onChange={()=>toggle(item,id)}/>{label}</label>)}</div></fieldset>
-          {edited||conflicts[item.id]?<p className={styles.saved}>Senast sparat: {item.categories.length?item.categories.map(labelFor).join(', '):'Ingen kategori'}.</p>:null}
+          <fieldset className={styles.categories} disabled={pending}><legend>Kategorier</legend><div>{categories.map(([id,label])=><label key={id}><input type="checkbox" data-category={id} checked={chosen.includes(id)} onChange={()=>toggle(item,id)}/>{label}</label>)}</div></fieldset>
+          {edited||conflicts[item.id]?<p className={styles.saved} data-saved-categories={item.categories.join(' ')}>Senast sparat: {item.categories.length?item.categories.map(labelFor).join(', '):'Ingen kategori'}.</p>:null}
           {conflicts[item.id]?<p role="status">Hämta senaste versionen innan du sparar. Dina kategorival är kvar.</p>:null}
-          <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" disabled={!edited||pending||conflicts[item.id]} onClick={()=>void saveCategories(item)}>{writingId===item.id?'Arbetar…':'Spara kategorier'}</button><button type="button" className="sg-btn sg-btn-secondary" disabled={!edited||pending} onClick={()=>{setDrafts(current=>{const next={...current};delete next[item.id];return next;});setNotice('Kategorivalen är ångrade.');}}>Ångra kategorival</button>{conflicts[item.id]?<button type="button" className="sg-btn sg-btn-secondary" disabled={pending} onClick={()=>void latest(item)}>Hämta senaste versionen</button>:null}</div>
+          <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save" disabled={!edited||pending||conflicts[item.id]} onClick={()=>void saveCategories(item)}>{writingId===item.id?'Arbetar…':'Spara kategorier'}</button><button type="button" className="sg-btn sg-btn-secondary" data-action="undo" disabled={!edited||pending} onClick={()=>{setDrafts(current=>{const next={...current};delete next[item.id];return next;});setNotice('Kategorivalen är ångrade.');}}>Ångra kategorival</button>{conflicts[item.id]?<button type="button" className="sg-btn sg-btn-secondary" data-action="latest" disabled={pending} onClick={()=>void latest(item)}>Hämta senaste versionen</button>:null}</div>
         </article>;
       })}</div>
-      {nextCursor?<button type="button" className="sg-btn sg-btn-secondary" disabled={loading||Boolean(writingId)} onClick={()=>void more()}>{loading?'Läser fler…':'Visa fler svar'}</button>:null}
+      {nextCursor?<button type="button" className="sg-btn sg-btn-secondary" data-action="more" disabled={loading||Boolean(writingId)} onClick={()=>void more()}>{loading?'Läser fler…':'Visa fler svar'}</button>:null}
     </main>
   </PageTemplate>;
 }

@@ -10,7 +10,6 @@ const portrait={schemaVersion:1,id:'chosen-table',label:'Chosen table',renderer:
 const registry=[{id:'elin',label:'Elin'},{id:'linnea',label:'Linnea'}];
 const dataset={gameLane:portrait.id,gameDealer:'elin',gamePresentation:'local',gameLocalDealer:'elin',gameRegisteredDealers:JSON.stringify(registry)};
 const selection={lane:portrait.id,dealer:'elin',presentation:'local',localDealer:'elin',registeredDealers:registry};
-const env={CROUPIER_STUDIO_NEON_POLICY:'1'};
 
 test('empty configuration has no local dealer or lane, and the retired layer preview lane is gone',()=>{
  assert.deepEqual(GAME_LANES,[]);assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});
@@ -60,11 +59,11 @@ test('an explicit unavailable dealer never silently changes identity',()=>{
 });
 test('document attributes escape branding and reject injected identities',()=>{
  const branding={felt:'#0a5"><script>alert(1)</script>',note:'& <b>'};
- const html=decorateGameEntryHtml('<html lang="sv">',env,{...selection,operator:'sg-test',packageRevision:3,branding});
+ const html=decorateGameEntryHtml('<html lang="sv">',{...selection,operator:'sg-test',packageRevision:3,branding});
  assert.doesNotMatch(html,/<script/);assert.match(html,/data-game-local-dealer="elin"/);
  const decode=text=>text.replace(/&(amp|quot|#39|lt|gt);/g,(_,name)=>({amp:'&',quot:'"','#39':"'",lt:'<',gt:'>'})[name]);
  assert.deepEqual(JSON.parse(decode(/data-game-branding="([^"]*)"/.exec(html)[1])),branding);
- for(const change of [{dealer:'"><script>'},{dealer:'amira'},{registeredDealers:[]},{localDealer:'linnea'},{presentation:'original'}])assert.throws(()=>decorateGameEntryHtml('<html>',env,{...selection,...change}));
+ for(const change of [{dealer:'"><script>'},{dealer:'amira'},{registeredDealers:[]},{localDealer:'linnea'},{presentation:'original'}])assert.throws(()=>decorateGameEntryHtml('<html>',{...selection,...change}));
 });
 test('operator metadata is bounded and login carries only approved selectors',()=>{
  for(const slug of ['sg-test','demo-north','a'])assert.equal(isOperatorSlug(slug),true);

@@ -23,5 +23,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 `apps/studio` serverar Admin (`/admin`), Partnerportalen (`/partner`) och
 lobbyn (`/lobby`); `/studio` är teknisk basePath, ingen egen produkt. Börja i
 [START-HERE](../../START-HERE.md), följ [repots AGENTS](../../AGENTS.md) och
-[överlämningen](../../docs/NEXT-AGENT.md) och använd orden i
-[TERMINOLOGI](docs/TERMINOLOGI.md). Utvecklarreferensen är [README](README.md).
+[överlämningen](../../docs/NEXT-AGENT.md). Orden står i den korta ordlistan
+[TERMINOLOGI](docs/TERMINOLOGI.md).
+Utvecklarreferensen är [README](README.md).

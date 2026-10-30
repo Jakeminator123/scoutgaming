@@ -51,7 +51,7 @@ test('level-two member entrance is scoped and empty access never selects a fixtu
   assert.doesNotMatch(member, /href="\/(?:admin|lobby|control|play)"|sg-test|Demo North|Demo South|Intern administratör/);
   for (const operators of [[], [{ slug: 'login', name: 'Invalid destination' }], [{ slug: '../sg-test', name: 'Invalid destination' }]]) {
     const empty = render(operators);
-    assert.match(empty, /Inga tillgängliga spelbolag/);
+    assert.match(empty, /Inga tillgängliga bolag/);
     assert.doesNotMatch(empty, /href="\/partner\/[^\"]+"|Invalid destination/);
   }
 });
@@ -94,6 +94,30 @@ test('dealer dialog receives selected identity, draft state and voice availabili
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
     else process.env.NEXT_PUBLIC_LAB_BASE_PATH = saved;
   }
+});
+
+test('Öppna spelrum i Dialogtest följer single() för tvetydiga spelrum', () => {
+  const hooks = {...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}],
+    useEffect: () => {}, useRef: current => ({current}), useMemo: fn => fn(), useCallback: fn => fn};
+  function GatewayPanel() { return null; }
+  const open = search => {
+    const assigned = [];
+    const browser = {location: {pathname: '/admin/dealers/astrid', search, hash: '', assign: href => assigned.push(href)}};
+    const {ControlOpenClawChat} = loadComponent('control-openclaw-chat.tsx', {react: hooks, './gateway-panel': {GatewayPanel},
+      '../lib/studio-history.mjs': {studioHistory: () => ({canNavigate: () => true})}}, browser);
+    let panel;
+    visit(mountSelectedPage(ControlOpenClawChat, {initialProject: createSeedProject(), initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true}), node => {if (node.type === GatewayPanel) panel = node;});
+    panel.props.onPlayerChat();
+    assert.equal(assigned.length, 1);
+    return new URL(assigned[0], 'https://studio.invalid');
+  };
+  const mixed = open('?dealer=astrid&operator=operator-a&table=room-a&table=room-b&room=room-c');
+  assert.equal(mixed.pathname, '/admin/companies');
+  assert.equal(mixed.searchParams.get('tab'), 'spelbord');
+  assert.equal(mixed.searchParams.get('operator'), 'operator-a');
+  assert.deepEqual(mixed.searchParams.getAll('table'), ['room-a', 'room-b']);
+  assert.deepEqual(mixed.searchParams.getAll('room'), ['room-c']);
+  assert.equal(open('?dealer=astrid&operator=operator-a&table=room-a').pathname, '/admin/rooms/room-a');
 });
 
 test('unavailable search params leave Studio navigation unselected', () => {

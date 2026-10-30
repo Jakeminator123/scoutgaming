@@ -8,6 +8,7 @@ const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 // Keep the frame layer's 48-frame ceiling. Slow providers must finish producing
 // the reply before audio starts; their encoded reply has a separate hard cap.
 const MAX_DECODED_FRAMES = 48, MAX_STAGED_BYTES = 4 * 1024 * 1024;
+const TRANSPORT_TIMEOUT_MS = 45000, PLAYBACK_GRACE_MS = 5000;
 const fail = code => { throw Error(code); };
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const abortError = () => new DOMException('Speech cancelled', 'AbortError');
@@ -33,7 +34,8 @@ export function movingSpeechSocketURL(path, origin) {
  * rejects substituted descriptors before opening a socket or starting work. */
 export async function validateMovingSpeechStream(value, { exactText, dealerId, requestId, now = Date.now() } = {}) {
   if (!keys(value, ['schemaVersion', 'kind', 'id', 'requestId', 'dealerId', 'exactText', 'textSha256',
-    'reviewStatus', 'url', 'ticket', 'expiresAt', 'profileRevision', 'avatarSha256', 'attemptId', 'nonce', 'compositing', ...(value?.presentationVersion!==undefined?['presentationVersion','sequenceSha256']:[])])
+    'reviewStatus', 'url', 'ticket', 'expiresAt', 'profileRevision', 'avatarSha256', 'attemptId', 'nonce', 'compositing',
+    ...(value?.sequenceKind!==undefined?['sequenceKind','sequenceSha256']:value?.presentationVersion!==undefined?['presentationVersion','sequenceSha256']:[])])
     || value.schemaVersion !== 1 || value.kind !== 'moving-speech-stream' || !/^[a-f0-9]{32}$/.test(value.id)
     || !ID.test(value.requestId) || value.requestId !== requestId || value.dealerId !== dealerId
     || !/^[a-z][a-z0-9-]{0,63}$/.test(value.dealerId) || !ID.test(value.attemptId) || !ID.test(value.nonce)
@@ -45,6 +47,8 @@ export async function validateMovingSpeechStream(value, { exactText, dealerId, r
     || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= now || value.expiresAt > now + 60000) fail('invalid_moving_speech_descriptor');
   const c = value.compositing;
   if(value.presentationVersion!==undefined&&(!integer(value.presentationVersion)||!value.presentationVersion||!HASH.test(value.sequenceSha256)))fail('invalid_moving_speech_sequence');
+  if(value.sequenceKind!==undefined&&(value.sequenceKind!=='idle'||value.presentationVersion!==undefined
+    ||!HASH.test(value.sequenceSha256)))fail('invalid_moving_speech_sequence');
   if (c !== null && (!keys(c, ['mode', 'threshold', 'softness', 'despill']) || c.mode !== 'green-screen'
     || !Number.isFinite(c.threshold) || c.threshold < 0 || c.threshold > 1 || !Number.isFinite(c.softness)
     || c.softness <= 0 || c.softness > 1 || !Number.isFinite(c.despill) || c.despill < 0 || c.despill > 1)) fail('invalid_moving_speech_compositing');
@@ -58,7 +62,7 @@ export async function validateMovingSpeechStream(value, { exactText, dealerId, r
 }
 
 async function readReady(message, speech) {
-  if (!keys(message, ['t', 'protocol', 'id', 'attemptId', 'nonce', 'plan', 'rest', 'audio',...(speech.presentationVersion!==undefined?['sequence']:[])]) || message.t !== 'ready'
+  if (!keys(message, ['t', 'protocol', 'id', 'attemptId', 'nonce', 'plan', 'rest', 'audio',...(speech.sequenceSha256!==undefined?['sequence']:[])]) || message.t !== 'ready'
     || message.protocol !== 1 || message.id !== speech.id || message.attemptId !== speech.attemptId || message.nonce !== speech.nonce) fail('invalid_moving_speech_ready');
   const { plan, rest, audio } = message, b = plan?.binding;
   if (!b || b.sessionId !== speech.id || b.talkId !== speech.requestId || b.dealerId !== speech.dealerId
@@ -76,8 +80,9 @@ async function readReady(message, speech) {
     || (audio.byteLength / 48000 + .22) * 24 > plan.timeline.length) fail('invalid_moving_speech_ready');
   const sequence=message.sequence;
   if(sequence){
-    if(sequence.version!==speech.presentationVersion||await digest(new TextEncoder().encode(JSON.stringify(sequence)))!==speech.sequenceSha256
-      ||!keys(sequence,['version','steps','sources','frames'])||!Array.isArray(sequence.frames)||!sequence.frames.length||sequence.frames.length>1000
+    const idle=speech.sequenceKind==='idle';
+    if((idle?sequence.kind!=='idle':sequence.version!==speech.presentationVersion)||await digest(new TextEncoder().encode(JSON.stringify(sequence)))!==speech.sequenceSha256
+      ||!keys(sequence,[idle?'kind':'version','steps','sources','frames'])||!Array.isArray(sequence.frames)||!sequence.frames.length||sequence.frames.length>1000
       ||!Array.isArray(sequence.steps)||!sequence.steps.length||sequence.steps.length>32||!Array.isArray(sequence.sources)||sequence.sources.length>32)fail('invalid_moving_speech_sequence');
     const sources=new Map();
     for(const s of sequence.sources){
@@ -88,11 +93,17 @@ async function readReady(message, speech) {
       sources.set(s.take,s);
     }
     let end=0;
+    if(idle&&(sequence.sources.length!==1||sequence.steps.length!==1))fail('invalid_moving_speech_steps');
     for(const step of sequence.steps){
       const s=sources.get('clip-'+step.video?.id);
-      if(!s||step.first!==end||step.end!==end+s.frameCount||step.video.sha256!==s.sha256||!step.video.filmedTake
-        ||step.event?.type!=='deal'||!integer(step.event.shoeDraw)||step.event.shoeDraw<1)fail('invalid_moving_speech_steps');
-      for(let k=step.first;k<step.end;k++){const f=sequence.frames[k];if(!f||f.take!==s.take||f.frame!==k-step.first||f.sourceSha256!==s.sha256)fail('invalid_moving_speech_steps');}
+      if(!s||step.first!==end||step.video.sha256!==s.sha256)fail('invalid_moving_speech_steps');
+      if(idle){
+        if(!keys(step,['first','end','video'])||step.video.filmedTake||step.end!==Math.ceil(plan.timeline.length/s.frameCount)*s.frameCount)
+          fail('invalid_moving_speech_steps');
+      }else if(step.end!==end+s.frameCount||!step.video.filmedTake||step.event?.type!=='deal'
+        ||!integer(step.event.shoeDraw)||step.event.shoeDraw<1)fail('invalid_moving_speech_steps');
+      for(let k=step.first;k<step.end;k++){const f=sequence.frames[k];if(!f||f.take!==s.take
+        ||f.frame!==(idle?k%s.frameCount:k-step.first)||f.sourceSha256!==s.sha256)fail('invalid_moving_speech_steps');}
       end=step.end;
     }
     if(end!==sequence.frames.length)fail('invalid_moving_speech_steps');
@@ -161,6 +172,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   const loadRest = dependencies.loadRest ?? loadMovingSpeechRest;
   const raf = dependencies.requestAnimationFrame ?? globalThis.requestAnimationFrame;
   const caf = dependencies.cancelAnimationFrame ?? globalThis.cancelAnimationFrame;
+  const scheduleTimeout = dependencies.setTimeout ?? globalThis.setTimeout, cancelTimeout = dependencies.clearTimeout ?? globalThis.clearTimeout;
   const createURL = dependencies.createURL ?? URL.createObjectURL, revokeURL = dependencies.revokeURL ?? URL.revokeObjectURL;
   const now = dependencies.now ?? (() => performance.now()), timings = {};
   let connectedAt, socketOpenedAt;
@@ -170,13 +182,13 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
   let starting = false, started = false, firstFrame = false, completed = false, terminal = false, tail = Promise.resolve();
   const staged = [];
-  let stagedBytes = 0, decoding;
+  let stagedBytes = 0, decoding, playbackDurationMs, playbackTimeout;
   let resolveDone, rejectDone, failureCode;
   const noteFailure = error => { failureCode ??= chatFailureCode(error?.name === 'AbortError' ? 'chat_cancelled' : error?.message); };
   const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
   // Rejection can happen while awaiting descriptor validation or beforeStart.
   done.catch(() => {});
-  const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone) fail('moving_speech_socket_closed'); };
+  const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone || ready?.sequence) fail('moving_speech_socket_closed'); };
   const stop = error => {
     if (terminal) return; noteFailure(error); terminal = true; audio.pause(); audio.muted = true; controller.abort();
     if (frameHandle !== undefined) caf(frameHandle);
@@ -184,7 +196,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   };
   const abort = () => stop(abortError());
   signal?.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(() => stop(Error('moving_speech_timeout')), 45000);
+  const transportTimeout = scheduleTimeout(() => stop(Error('moving_speech_timeout')), TRANSPORT_TIMEOUT_MS);
   const check = () => { if (signal?.aborted || controller.signal.aborted) throw abortError(); assertCurrent(); };
   const credit = count => {
     const frames = Math.min(count, ready.plan.timeline.length - credited);
@@ -201,9 +213,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         if(released<ready.sequence.frames.length-2)fail('moving_speech_sequence_incomplete');
         if(released===ready.sequence.frames.length-2){
           const k=ready.sequence.frames.length-1,source=bodyFrames.get(k);
-          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame(ready.sequence,k);
+          if(renderFrame(source)!==true)fail('moving_speech_render_failed');onSequenceFrame?.(ready.sequence,k);
         }
-        onSequenceEnd(ready.sequence);
+        onSequenceEnd?.(ready.sequence);
       }
       if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
     } catch (error) { stop(error); }
@@ -252,6 +264,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     if(ready.sequence&&renderFrame(bodyFrames.get(0))!==true)fail('moving_speech_render_failed');
     await abortable(audio.play(), controller.signal); check();
     if (audio.paused) fail('moving_speech_audio_paused');
+    // Generation/download and actual playback each need their own bounded budget.
+    cancelTimeout(transportTimeout);
+    playbackTimeout = scheduleTimeout(() => stop(Error('moving_speech_timeout')), Math.ceil(playbackDurationMs) + PLAYBACK_GRACE_MS);
     started = true; mark('first_playing_ms'); onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
       evidence: 'media-playing', planSha256: ready.plan.planSha256, reviewStatus: 'pending', timings: { ...timings } });
     tick();
@@ -265,7 +280,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
         if (bytes.byteLength !== ready.audio.byteLength || await digest(bytes) !== ready.plan.binding.audioSha256) fail('moving_speech_pcm_hash_mismatch');
         check(); mark('first_media_ms');
         if (socketOpenedAt !== undefined) timings.socket_to_media_ms = Math.max(0, Math.round(now() - socketOpenedAt));
-        audioURL = createURL(wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
+        const audioBlob = wav(bytes,ready.sequence?Math.max(ready.sequence.frames.length,ready.plan.timeline.length):undefined);
+        playbackDurationMs = (audioBlob.size - 44) / 48000 * 1000;
+        audioURL = createURL(audioBlob); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
       } else {
         if (!bytes.byteLength) fail('invalid_moving_speech_bytes');
         if (stagedBytes + bytes.byteLength > MAX_STAGED_BYTES) fail('moving_speech_queue_full');
@@ -289,8 +306,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       if (controller.signal.aborted) loadedRest.width = loadedRest.height = 0;
       check(); restCanvas = loadedRest;
       if(ready.sequence){
-        if(typeof onSequenceReady!=='function'||typeof onSequenceFrame!=='function'||typeof onSequenceEnd!=='function')fail('moving_speech_sequence_owner_missing');
-        await onSequenceReady(ready.sequence);check();
+        if(speech.presentationVersion!==undefined&&(typeof onSequenceReady!=='function'||typeof onSequenceFrame!=='function'||typeof onSequenceEnd!=='function'))fail('moving_speech_sequence_owner_missing');
+        await onSequenceReady?.(ready.sequence);check();
         const firstVideo=ready.sequence.steps[0].video;
         if(ready.sequence.steps.some(s=>JSON.stringify(s.video.compositing??null)!==JSON.stringify(firstVideo.compositing??null)
           ||JSON.stringify(s.video.framing??null)!==JSON.stringify(firstVideo.framing??null)))fail('moving_speech_geometry_changed');
@@ -333,8 +350,9 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     socket.onopen = () => { socketOpenedAt = now(); mark('socket_open_ms'); };
     socket.onmessage = event => {
       if (terminal) return;
+      // The initial envelope includes up to 1000 sequence frames plus the speech plan.
       const size = typeof event.data === 'string' ? event.data.length * 2 : event.data?.byteLength;
-      if (!integer(size) || size > (typeof event.data === 'string' ? 256 * 1024 : 2 * 1024 * 1024)
+      if (!integer(size) || size > (typeof event.data === 'string' ? (ready ? 256 : 1024) * 1024 : 2 * 1024 * 1024)
         || queued >= 8 || queuedBytes + size > 4 * 1024 * 1024) return stop(Error('moving_speech_queue_full'));
       queued++; queuedBytes += size;
       tail = tail.then(() => processMessage(event.data)).catch(stop).finally(() => { queued--; queuedBytes -= size; });
@@ -345,7 +363,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   } catch (error) {
     noteFailure(error); throw error;
   } finally {
-    terminal = true; clearTimeout(timeout); signal?.removeEventListener('abort', abort); controller.abort();
+    terminal = true; cancelTimeout(transportTimeout); cancelTimeout(playbackTimeout); signal?.removeEventListener('abort', abort); controller.abort();
     audio.pause(); audio.muted = true; audio.onended = audio.onerror = null;
     if (frameHandle !== undefined) caf(frameHandle);
     if (socket) {

@@ -10,8 +10,12 @@ import {readPackagePresentation,withPackagePresentation} from '../../../packages
 import {materialSource} from '../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
 
+const SETTINGS = 'room-config-00000000-0000-4000-8000-000000000001';
 function fixture() {
   const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });
+  // The room's published game settings: without this binding the shared table admits no seat
+  // and the room is shown as being prepared (see the test for an unbound room below).
+  f.pack.branding = { ...f.pack.branding, roomGameConfigVersions: { [f.room.id]: SETTINGS } };
   f.project = addDealer(f.project, 'unpublished', 'Unpublished dealer');
   const operators = [{ id: f.room.operatorId, slug: 'north', name: 'North', status: 'active', secret: 'private-operator-field' },
     { id: 'another', slug: 'another', name: 'Another', status: 'suspended' }];
@@ -46,6 +50,70 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
   assert.equal(playUrlFor(choice), '/game?game=blackjack&operator=north&table=' + f.room.id + '&dealer=linnea');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'linnea' }).dealer, null);
+});
+test("the lobby shows the published miljöbild, Admin the saved one, and no bet profile picks a picture", async () => {
+  const f = fixture();
+  f.saved.administration.roomGameConfigs = [{ operatorId: f.room.operatorId, roomId: f.room.id, gameConfig: { language: 'sv', limitPreset: 'high' } }];
+  f.store.getPublishedRoomLimitPresets = async () => new Map([[f.room.id, 'casual']]);
+  const plain = await registeredDesignCatalog(f);
+  assert.equal(plain.lobby.catalogs[0].rooms[0].limitPreset, 'casual');
+  assert.equal(Object.hasOwn(plain.administration.rooms.find(row => row.id === f.room.id), 'savedLimitPreset'), false, 'the bet profile is not a picture source');
+  assert.equal(parseLobbyCatalog(plain).rooms[0].illustration.image, '/admin/_assets/lobby/images/lobby/room-salongen.png');
+  assert.equal(parseLobbyCatalog(plain).rooms[0].image, undefined);
+  // Publish a miljöbild with the room's environment, and save a newer one in the project.
+  const picture = (id, label) => { const asset = { schemaVersion: 1, id, role: 'illustration', label, sha256: id.replaceAll('-', '').padEnd(64, 'a').slice(0, 64), size: 4096, contentType: 'image/webp', width: 1920, height: 1080 }; asset.pathname = layerAssetPath(asset); return asset; };
+  const published = picture('00000000-0000-4000-8000-0000000000a1', 'Studion · miljöbild v1'), saved = picture('00000000-0000-4000-8000-0000000000a2', 'Studion · miljöbild v2');
+  assert.match(published.pathname, /^croupier\/media\/illustrations\//);
+  const frozen = structuredClone(readPackagePresentation(f.pack)), laneId = f.room.presentationLaneId;
+  frozen.assets.push(published); frozen.lanes.find(lane => lane.id === laneId).illustration = published.id;
+  f.pack.branding = withPackagePresentation(f.pack.branding, frozen);
+  f.saved.project = { ...f.saved.project, layerAssets: [...(f.saved.project.layerAssets ?? []), saved],
+    lanes: f.saved.project.lanes.map(lane => lane.id === laneId ? { ...lane, illustration: saved.id } : lane) };
+  const result = await registeredDesignCatalog(f);
+  assert.equal(result.lobby.catalogs[0].rooms[0].illustration, published.id);
+  const room = parseLobbyCatalog(result).rooms[0];
+  assert.equal(room.image, '/api/presentation/layers/north/' + published.id, 'the lobby reads the published package, never the draft');
+  const adminRoom = result.administration.rooms.find(row => row.id === f.room.id);
+  assert.equal(adminRoom.illustration, '/studio/api/layer-assets/' + saved.id, "Admin's room picture follows the saved environment");
+  assert.equal(result.administration.compositions.find(row => row.id === laneId).illustration, '/studio/api/layer-assets/' + saved.id);
+  assert.doesNotMatch(JSON.stringify(result.lobby), /croupier\/media|sha256/);
+});
+// Preview 29 Oct 2026: a new room was open and published without game settings; the lobby offered it and the
+// shared table refused every seat for a minute. Admin now warns, the lobby says "förbereds" and offers no start.
+test('an open published blackjack room without game settings is flagged in Admin and shown as being prepared in the lobby', async () => {
+  const f = fixture();
+  delete f.pack.branding.roomGameConfigVersions;
+  const result = await registeredDesignCatalog(f), admin = result.administration.rooms.find(row => row.id === f.room.id);
+  assert.equal(admin.published, true); assert.equal(admin.state, 'live'); assert.equal(admin.settingsMissing, true);
+  assert.equal(result.administration.rooms.find(row => row.id === 'not-published').settingsMissing, undefined, 'an unpublished room has its own warning');
+  assert.equal(result.lobby.catalogs[0].rooms[0].status, 'preparing');
+  const lobby = parseLobbyCatalog(result), choice = lobbySelection(lobby, { operatorId: 'north', roomKey: 'north:' + f.room.id, dealerId: 'linnea' });
+  assert.equal(choice.room.preparing, true); assert.equal(playUrlFor(choice), undefined, 'no game start for a room being prepared');
+  // Publishing the settings binds them in the package: the warning and the "preparing" state go away.
+  f.pack.branding.roomGameConfigVersions = { [f.room.id]: SETTINGS };
+  const ready = await registeredDesignCatalog(f);
+  assert.equal(ready.administration.rooms.find(row => row.id === f.room.id).settingsMissing, undefined);
+  assert.equal(Object.hasOwn(ready.lobby.catalogs[0].rooms[0], 'status'), false);
+  const room = parseLobbyCatalog(ready).rooms[0];
+  assert.equal(room.preparing, undefined);
+});
+// Granskning PR #642: the shared table also refuses a binding without its published head. Admin and the lobby
+// read the heads once per company and judge the room the same way; a failed read falls back to the binding.
+test('a bound room whose settings head is missing is flagged in Admin and the lobby alike, from one read', async () => {
+  const f = fixture(), read = [];
+  let heads = new Set();
+  f.store.getPublishedRoomConfigHeads = async pack => { read.push(pack.operatorId); if (heads instanceof Error) throw heads; return heads; };
+  const judged = async () => { const result = await registeredDesignCatalog(f);
+    return [result.administration.rooms.find(row => row.id === f.room.id).settingsMissing ?? false,
+      result.lobby.catalogs[0].rooms[0].status ?? null]; };
+  assert.deepEqual(await judged(), [true, 'preparing']);
+  assert.deepEqual(read, [f.room.operatorId], 'one heads read per company, shared by Admin and the lobby');
+  heads = new Set([f.room.id]);
+  assert.deepEqual(await judged(), [false, null]);
+  heads = Object.assign(new Error('heads unavailable'), { code: 'studio_storage_unavailable' });
+  const warn = console.warn; console.warn = () => {};
+  try { assert.deepEqual(await judged(), [false, null], 'a failed read judges the binding only and never takes the catalogue down'); }
+  finally { console.warn = warn; }
 });
 test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
@@ -124,4 +192,12 @@ test('catalog request reauthorizes before reads, accepts GET/HEAD only and never
   assert.equal(authorizations, 2); assert.equal(reads, 2);
   const query = await serveDesignCatalog(new Request(request.url + '?operator=other'), options);
   assert.equal(query.status, 400); assert.equal(reads, 2);
+});
+test('Admin sees an open appearance draft per company; a published or missing draft reads as none', async () => {
+  const f = fixture();
+  const draft = { operatorId: f.room.operatorId, revision: 2, basePackageRevision: 7, action: 'draft.save', branding: {}, sourcePackageRevision: null };
+  const read = async getBrandingDraft => (await registeredDesignCatalog({ ...f, store: { ...f.store, getBrandingDraft } })).administration.operators.map(row => row.appearanceDraft);
+  assert.deepEqual(await read(async id => id === f.room.operatorId ? draft : null), [true, false]);
+  assert.deepEqual(await read(async () => ({ ...draft, action: 'draft.publish' })), [false, false]);
+  assert.deepEqual(await read(async () => null), [false, false]);
 });

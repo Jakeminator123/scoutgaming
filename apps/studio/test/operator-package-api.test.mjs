@@ -14,6 +14,7 @@ import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {aiImageLabel,aiPlacementHash} from '../lib/ai-image-contract.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -38,6 +39,12 @@ function apiFor(pool, project = createSeedProject(), storeFactory) {
     handlers: lane.handlers,
   });
   return { api, lane };
+}
+
+// The SG test company is created in the store directly; Admin has no demo-create action.
+async function createSgTest(pool) {
+  await (await createOperatorStore({ sql: pool, scope, now: clock }))
+    .createOperator({ actor: session.user, operatorId: 'sg-test', slug: 'sg-test', name: 'SG test game provider' });
 }
 
 function request(action, body, headers = {}) {
@@ -71,37 +78,33 @@ test('a pool with connect is the store client; query-only is 503', async () => {
 
 test('admin POST uses the session actor, refuses a query-only pool, and keeps the Origin gate', async () => {
   const pool = memoryPool();
+  await createSgTest(pool);
   let actor;
   const storeFactory = async options => {
     assert.equal(options.sql, pool);
     const store = await createOperatorStore(options);
-    return {
-      createOperator: input => { actor = input.actor; return store.createOperator(input); },
-      publishPackage: input => { actor = input.actor; return store.publishPackage(input); },
-      listOperators: () => store.listOperators(),
-    };
+    return { ...store, publishPackage: input => { actor = input.actor; return store.publishPackage(input); } };
   };
   const { api } = apiFor(pool, createSeedProject(), storeFactory);
-  const missingOrigin = new Request(`${origin}/studio/api/admin/operator-create-demo`, {
-    method: 'POST', headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }, body: '{}',
+  const body = { operatorId: 'sg-test', lanes: ['mobile-phone'] };
+  const missingOrigin = new Request(`${origin}/studio/api/admin/operator-package`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' }, body: JSON.stringify(body),
   });
   assert.equal((await api.handle(missingOrigin)).status, 403);
   assert.equal(actor, undefined);
-  const created = await api.handle(request('operator-create-demo', {}));
-  assert.equal(created.status, 200);
+  const published = await api.handle(request('operator-package', body));
+  assert.equal(published.status, 200);
   assert.equal(actor, 'lane-actor');
-  assert.equal((await created.json()).operator.id, 'sg-test');
-  const duplicate = await api.handle(request('operator-create-demo', {}));
-  assert.equal(duplicate.status, 409);
+  assert.equal((await api.handle(request('operator-create-demo', {}))).status, 404, 'the retired demo-create action is gone');
 
   const queryOnly = apiFor({ query: pool.query });
-  assert.equal((await queryOnly.api.handle(request('operator-create-demo', {}))).status, 503);
+  assert.equal((await queryOnly.api.handle(request('operator-package', body))).status, 503);
 });
 
 test('publishing increases package_revision and an unknown lane id is 422', async () => {
   const pool = memoryPool();
   const { api } = apiFor(pool);
-  assert.equal((await api.handle(request('operator-create-demo', {}))).status, 200);
+  await createSgTest(pool);
   const first = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
   assert.equal(first.status, 200);
   const firstBody = await first.json();
@@ -119,7 +122,7 @@ test('publishing increases package_revision and an unknown lane id is 422', asyn
 test('publishing lanes carries the operator branding, games and tables forward', async () => {
   const pool = memoryPool();
   const { api } = apiFor(pool);
-  await api.handle(request('operator-create-demo', {}));
+  await createSgTest(pool);
   const direct = await createOperatorStore({ sql: pool, scope, now: clock });
   await direct.publishPackage({ actor: 'partner-admin', operatorId: 'sg-test', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['t1'], branding: { color: '#112233', name: 'North' } });
   const republished = await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }));
@@ -135,8 +138,9 @@ test('publishing lanes carries the operator branding, games and tables forward',
 test('an empty project.lanes list never materializes a default publication', async () => {
   const project = createSeedProject();
   project.lanes = [];
-  const { api } = apiFor(memoryPool(), project);
-  await api.handle(request('operator-create-demo', {}));
+  const pool = memoryPool();
+  const { api } = apiFor(pool, project);
+  await createSgTest(pool);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['vip-table'] }))).status, 422);
   assert.equal((await api.handle(request('operator-package', { operatorId: 'sg-test', lanes: ['mobile-phone'] }))).status, 422);
 });
@@ -200,6 +204,15 @@ function nativePool(){
           working.media.set(key(values),row);return result([row]);
         }
       if (marker === 'audit-write') { working.operatorAudits.push(clone(values)); return result([{event_id:values[3]}]); }
+        // The company's branding drafts, for the draft publication of Bolagets eget material.
+        if(marker==='current-branding-draft')return result((working.drafts??[]).filter(row=>row.operator_id===values[2]).slice(-1));
+        if(marker==='write-branding-draft'){
+          const row={environment_id:values[0],workspace_id:values[1],operator_id:values[2],draft_revision:values[3],base_package_revision:values[4],branding:values[5],
+            source_package_revision:values[6],published_package_revision:values[7],action:values[8],occurred_at_ms:values[12]};
+          (working.drafts??=[]).push(row);return result([row]);
+        }
+        if(marker==='list-packages')return result(packages().filter(row=>values[3]===null||row.package_revision<values[3]).sort((a,b)=>b.package_revision-a.package_revision).slice(0,values[4]));
+        if(marker==='package-by-revision')return result(packages().filter(row=>row.package_revision===Number(values[3])));
         if(marker==='audit'){working.audits.push(clone(values));return result();}
         if(marker==='history'){working.history.push(clone(values));return result();}
         throw Error('unexpected fixture marker '+marker);
@@ -208,7 +221,7 @@ function nativePool(){
     async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const value=await client.query(sql,values);await client.query('COMMIT');return value;}finally{client.release();}}
   };return pool;
 }
-async function nativeFixture({dealer='linnea'}={}){
+async function nativeFixture({dealer='linnea',materials=null}={}){
   const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
   pool.seedRuntimeCatalog(nativeScope,readRuntimeCatalogFixture());
   const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='linnea'?'Linnea':'Nora'),lane=defaultPresentationLane(dealer);
@@ -231,18 +244,18 @@ async function nativeFixture({dealer='linnea'}={}){
     },
     async verifyCapturedMedia(preconditions){io++;assert.ok(preconditions.length > 0);await changeDuringVerification();}
   };
-  const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
+  const api=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock,materials});
   const context={body:{operatorId:'north',lanes:[lane.id]},actor:{user:'tester'},scope:nativeScope};
   const prepare=()=>api.preparations.get('POST /studio/api/admin/operator-package')(context);
   const publish=prepared=>api.handlers.get('POST /studio/api/admin/operator-package')({...context,...(prepared===undefined?{}:{prepared})});
   const direct=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
-  return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
+  return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,videoRegistry,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
 }
 
 const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
 async function placementFixture(options){
   const f=await nativeFixture(options),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];
-  const asset={schemaVersion:1,id:placementTable,role:'table',label:'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
+  const asset={schemaVersion:1,id:placementTable,role:'table',label:options?.tableLabel??'Oak',sha256:'b'.repeat(64),size:4096,contentType:'image/png',width:1672,height:941,
     pathname:`croupier/media/tables/${placementTable}/${'b'.repeat(64)}.png`};
   presentation.assets.push(asset);lane.layers.table={enabled:true,default:placementTable,allowed:[placementTable]};
   lane.composition=defaultCompositionSettings();lane.composition.mobile.table={width:1.75,x:0,y:.35};lane.composition.mobile.dealer.y=.03;
@@ -575,7 +588,7 @@ test('native SQL failure rolls back publisher and forged or mismatched preparati
 
 test('lane operator choices carry each current published assignment and never borrow another company package', async () => {
   const pool=memoryPool(),{api,lane}=apiFor(pool),store=await createOperatorStore({sql:pool,scope,now:clock});
-  await api.handle(request('operator-create-demo',{}));
+  await createSgTest(pool);
   await store.createOperator({actor:session.user,operatorId:'johns',slug:'johns',name:'Johns'});
   assert.deepEqual((await lane.listOperators()).map(row=>[row.id,row.publishedPackage]),[['johns',null],['sg-test',null]]);
   await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
@@ -683,7 +696,7 @@ test('malformed explicit editor revisions are refused before native reads or pro
 
 test('legacy adapter enforces explicit revisions and retains compatibility for omitted revisions',async()=>{
   const pool=memoryPool(),{api}=apiFor(pool);
-  assert.equal((await api.handle(request('operator-create-demo',{}))).status,200);
+  await createSgTest(pool);
   const body={operatorId:'sg-test',lanes:['mobile-phone'],expectedPackageRevision:null};
   const first=await api.handle(request('operator-package',body));assert.equal(first.status,200);assert.equal((await first.json()).packageRevision,1);
   assert.equal((await api.handle(request('operator-package',body))).status,409);
@@ -750,5 +763,210 @@ test('native publication of all measured filmed takes requires v29 and installed
     assert.equal(fetches,1);
     const raw=createOperatorPackageApi({pool,scope:nativeScope,repository,videoRegistry,now:clock});
     await assert.rejects(raw.handlers.get('POST /studio/api/admin/operator-package')(context),e=>e.code==='studio_presentation_runtime_update_required');
+  }
+});
+
+// AI table graphics: publication refuses one drawn for another dealer or placement.
+const aiTableId='a1000000-0000-4000-8000-000000000001';
+function aiTableAsset(label){return {schemaVersion:1,id:aiTableId,role:'table',game:'blackjack',label,sha256:'c'.repeat(64),size:2048,contentType:'image/webp',width:1215,height:2074,
+  pathname:`croupier/media/tables/${aiTableId}/${'c'.repeat(64)}.webp`};}
+const drawnForPaow=composition=>aiImageLabel('Grön filt',{dealerId:'paow',placement:aiPlacementHash(composition??defaultCompositionSettings())});
+
+test('Admin package publication refuses an AI table graphic after a dealer swap, with a fixed answer; manual material passes', async () => {
+  const pool=memoryPool(),project=createSeedProject(),lane=project.lanes[0];
+  project.layerAssets=[aiTableAsset(drawnForPaow())];lane.layers.table={enabled:true,default:aiTableId,allowed:[aiTableId]};
+  const {api}=apiFor(pool,project);
+  await createSgTest(pool);
+  // The template's dealer is not the one the table was drawn for.
+  const refused=await api.handle(request('operator-package',{operatorId:'sg-test',lanes:[lane.id]}));
+  assert.equal(refused.status,422);
+  assert.deepEqual(await refused.json(),{error:'ai_table_misfit',code:'ai_table_misfit',compositionId:lane.id,assetId:aiTableId,reason:'ai_table_other_dealer'});
+  assert.equal((await (await createOperatorStore({sql:pool,scope,now:clock})).getCurrentPackage('sg-test'))?.revision??null,null,'nothing was frozen');
+  project.layerAssets[0].label='Blackjack · eget bord';
+  const manual=await api.handle(request('operator-package',{operatorId:'sg-test',lanes:[lane.id]}));
+  assert.equal(manual.status,200,'the same table as ordinary material publishes');
+});
+
+test('native package publication lets a fitting AI table through and refuses a moved placement before any I/O', async () => {
+  for (const [composition,refuse] of [[undefined,false],[{...defaultCompositionSettings(),desktop:{...defaultCompositionSettings().desktop,table:{width:.5,x:0,y:.35}}},true]]) {
+    const f=await nativeFixture({dealer:'paow'}),doc=await f.repository.readDocument('project');
+    doc.value.layerAssets=[aiTableAsset(drawnForPaow())];
+    const lane=doc.value.lanes.find(row=>row.id===f.lane.id);lane.layers.table={enabled:true,default:aiTableId,allowed:[aiTableId]};
+    if (composition) lane.composition=composition;
+    await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+    if (!refuse) { const receipt=await f.publish();assert.equal(receipt.ok,true);assert.ok(receipt.presentation.assets.some(row=>row.id===aiTableId));continue; }
+    await assert.rejects(f.prepare(),error=>error.code==='ai_table_misfit'&&error.reason==='ai_table_other_placement'&&error.compositionId===f.lane.id);
+    assert.equal(f.io(),0,'refused before provider reads');assert.equal(await f.direct.getCurrentPackage('north'),null);
+  }
+});
+
+test('publish-scene-layout refuses a moved placement for an AI table drawn for the old one, and passes one drawn for the new', async () => {
+  const published=defaultCompositionSettings();published.mobile.table={width:1.75,x:0,y:.35};published.mobile.dealer.y=.03;
+  const moved=structuredClone(published);moved.desktop.table.width=.8;
+  const stale=await placementFixture({dealer:'paow',tableLabel:drawnForPaow(published)}),before=await stale.direct.getCurrentPackage('north');
+  await assert.rejects(stale.prepare(),error=>error.code==='ai_table_misfit'&&error.reason==='ai_table_other_placement'&&error.assetId===placementTable);
+  assert.equal((await stale.direct.getCurrentPackage('north')).revision,before.revision,'the published package is unchanged');
+  const redrawn=await placementFixture({dealer:'paow',tableLabel:drawnForPaow(moved)});
+  const receipt=await redrawn.publish(await redrawn.prepare());
+  assert.equal(receipt.packageRevision,10);assert.equal(receipt.presentation.lanes[0].composition.desktop.table.width,.8);
+});
+
+// Bolagets eget material across the publishers that rebuild a presentation.
+// The material store runs real SQL on PGlite (with or without 021); the
+// publishers keep their SQL facade.
+import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
+import {createOperatorMaterialStore} from '../lib/operator-material-store.mjs';
+import {operatorTableBinding} from '../lib/operator-material-publication.mjs';
+import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
+import {canonicalStudioJson} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {randomUUID} from 'node:crypto';
+
+const ownBackground='0d0d0d0d-0000-4000-8000-00000000b001',ownTable='0d0d0d0d-0000-4000-8000-00000000c001';
+const ownAsset=(id,role,sha)=>({schemaVersion:1,id,role,label:role==='table'?'Bolagets bord':'Bolagets bakgrund',sha256:sha.repeat(64),size:4096,
+  contentType:'image/png',width:1920,height:1080,pathname:`croupier/media/${role==='table'?'tables':'backgrounds'}/${id}/${sha.repeat(64)}.png`});
+async function materialDatabase({with021=true}={}){
+  const pool=await createPglitePool({migrations:[]}),plan=await planStudioMigrations({pool});
+  await applyStudioMigrations({pool,expectedTarget:plan.target,confirm:true,deferOptional:with021?[]:['021']});
+  const operators=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
+  for(const id of ['north','south'])await operators.createOperator({actor:'fixture',operatorId:id,slug:id,name:id});
+  return {pool,store:createOperatorMaterialStore({sql:pool,scope:nativeScope,now:clock})};
+}
+// The company may change background and table; the background layer is an image layer.
+async function unlockOwnMaterial(f){
+  const doc=await f.repository.readDocument('project'),lane=doc.value.lanes.find(row=>row.id===f.lane.id);
+  lane.layers.background={enabled:true,mode:'image',default:null,allowed:[]};lane.operatorAdjustable=['table.color','table','background','branding'];
+  lane.composition=defaultCompositionSettings();
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  return lane;
+}
+// Fixture only: a first package, then a live room on this template with the same frozen branding.
+async function withOwnRoom(f,lane){
+  const first=await f.publish();
+  const room={schemaVersion:2,id:'room-own',name:'Eget rum',operatorId:'north',presentationLaneId:lane.id,gameLaneId:'johns-game',state:'live'};
+  const admin=await f.repository.readDocument('administration');admin.value.rooms=[room];
+  await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
+  const rev1=await f.direct.getCurrentPackage('north');
+  await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:rev1.lanes,games:['blackjack'],tables:[room.id],branding:rev1.branding});
+  return {first,room};
+}
+const has=(presentation,id,role)=>presentation.assets.some(row=>row.id===id)&&presentation.lanes.every(lane=>lane.layers[role].allowed.includes(id));
+const staff=()=>({actorId:'staff-1',accessClass:'internal-admin',requestId:randomUUID()});
+async function approve(store,materialId,role,tableBinding,operatorId='north'){
+  await store.appendMaterial({actor:'staff-1',audit:staff(),operatorId,materialId,expectedRevision:0,state:'pending',source:'upload',
+    asset:ownAsset(materialId,role,role==='table'?'7':'6'),...(tableBinding?{tableBinding}:{})});
+  await store.appendMaterial({actor:'staff-1',audit:staff(),operatorId,materialId,expectedRevision:1,state:'approved'});
+}
+const handler=f=>f.api.handlers.get('POST /studio/api/admin/operator-package'),preparation=f=>f.api.preparations.get('POST /studio/api/admin/operator-package');
+async function admin(f,body){const context={...f.context,body};return handler(f)({...context,prepared:await preparation(f)(context)});}
+function brandingApi(f,db){
+  const readAdministration=()=>f.repository.readDocument('administration');
+  return createPartnerBrandingApi({store:f.direct,readAdministration,readProject:async()=>(await f.repository.readDocument('project')).value,materials:db.store,
+    withWriteContext:work=>f.repository.transaction(()=>f.repository.withTransactionClient(async client=>work({
+      store:await createOperatorStore({sql:client,scope:nativeScope,now:clock,transaction:callback=>f.repository.withTransactionClient(callback)}),
+      readAdministration,reauthorize:async()=>true,materials:db.store})))});
+}
+
+test('approved company material survives every rebuilding publisher: Admin package, scene layout, idle refresh and the company\'s drafts',async t=>{
+  const db=await materialDatabase();t.after(()=>db.pool.end());
+  const f=await nativeFixture({dealer:'paow',materials:()=>db.store});
+  const lane=await unlockOwnMaterial(f);
+  await approve(db.store,ownBackground,'background');
+  await approve(db.store,ownTable,'table',operatorTableBinding('paow',lane));
+  const kept=(presentation,step)=>{assert.ok(has(presentation,ownBackground,'background'),step+': background');assert.ok(has(presentation,ownTable,'table'),step+': table');};
+  const stored=async()=>readPackagePresentation(await f.direct.getCurrentPackage('north'));
+  // Without a room on the template nothing is added; the warning says why.
+  const {first,room}=await withOwnRoom(f,lane);
+  assert.equal(first.presentation.assets.length,0);
+  assert.deepEqual(first.materialWarnings.map(row=>[row.materialId,row.code]),[[ownBackground,'operator_material_no_room'],[ownTable,'operator_material_no_room']]);
+  // 1. Admin's package publication freezes the project and adds the company's material.
+  const again=await f.publish();assert.equal(again.packageRevision,3);assert.equal(again.materialWarnings,undefined);
+  kept(again.presentation,'admin package');kept(await stored(),'admin package stored');
+  // 2. Saved scene layout: a change that keeps dealer and table placement.
+  const doc=await f.repository.readDocument('project');doc.value.lanes[0].composition.tableFront=true;
+  await f.repository.saveDocument('project',{value:doc.value,expectedRevision:doc.revision,actor:'tester'});
+  const saved=await f.repository.readDocument('project');
+  const sceneReceipt=await admin(f,{action:'publish-scene-layout',operatorId:'north',compositionId:lane.id,expectedPackageRevision:3,expectedProjectRevision:saved.revision});
+  assert.equal(sceneReceipt.packageRevision,4);assert.equal(sceneReceipt.presentation.lanes[0].composition.tableFront,true);
+  kept(sceneReceipt.presentation,'scene layout');kept(await stored(),'scene layout stored');
+  // 3. Idle refresh: only the saved idle selection changes.
+  const alternate={...structuredClone(f.record),id:'10000000-0000-4000-8000-000000000099',sha256:'d'.repeat(64)};
+  alternate.classification.label='Extra idle';alternate.pathname=`croupier/media/dealers/paow/review/uploads/${alternate.id}/${alternate.sha256}.mp4`;
+  await f.repository.registerMedia(alternate,{actor:'tester'});
+  const idleDoc=await f.repository.readDocument('project');
+  idleDoc.value.dealerIdlePolicies=[{dealerId:'paow',policy:{schemaVersion:1,familyId:'paow/idle.ready/ready',base:[{videoId:mediaId,weight:100,durationMs:1625}],
+    variants:[{videoId:alternate.id,use:'rotation',automatic:null,durationMs:1625}],
+    rotation:{clips:[mediaId,alternate.id].map(videoId=>({videoId,phase:'any',from:'rest',to:'rest',weight:20,head:false,calm:true}))}}}];
+  await f.repository.saveDocument('project',{value:idleDoc.value,expectedRevision:idleDoc.revision,actor:'tester'});
+  const idleReceipt=await admin(f,{action:'refresh-dealer-idle',operatorId:'north',roomId:room.id,dealerId:'paow',expectedPackageRevision:4});
+  assert.equal(idleReceipt.packageRevision,5);assert.ok(idleReceipt.presentation.playback.media.some(row=>row.id===alternate.id));
+  kept(idleReceipt.presentation,'idle refresh');kept(await stored(),'idle refresh stored');
+  // 4. The company's draft chooses its own background: save, review and publish.
+  const branding=brandingApi(f,db),audit=()=>({actorId:'partner-1',accessClass:'partner',requestId:randomUUID()});
+  const cycle=async(choice,expectedPackageRevision,expectedDraftRevision)=>{
+    await branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'save-draft',expectedDraftRevision,expectedPackageRevision,branding:choice});
+    const review=await branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'review',expectedDraftRevision:expectedDraftRevision+1,expectedPackageRevision});
+    return branding.command({operatorId:'north',actor:'partner-1',audit:audit(),action:'publish',expectedDraftRevision:expectedDraftRevision+1,expectedPackageRevision,reviewToken:review.reviewToken});
+  };
+  const view=await cycle({lane:lane.id,background:ownBackground},5,0);
+  assert.equal(view.packageRevision,6);assert.equal(view.branding.background,ownBackground);
+  kept(view.presentation,'branding');kept(await stored(),'branding stored');
+  // 5. The next draft also chooses the company's own table graphic.
+  const draftPublished=await cycle({lane:lane.id,background:ownBackground,table:ownTable},6,2);
+  assert.equal(draftPublished.packageRevision,7);kept(draftPublished.presentation,'draft');kept(await stored(),'draft stored');
+  assert.equal((await f.direct.getCurrentPackage('north')).branding.table,ownTable,'the company chose its own table graphic');
+  // 6. Admin publishes the package again: the company's choice and material stay.
+  const last=await f.publish();assert.equal(last.packageRevision,8);kept(last.presentation,'admin again');
+  assert.equal((await f.direct.getCurrentPackage('north')).branding.background,ownBackground);
+  // Revoked material and a moved placement leave the next package, with a warning naming the room.
+  await db.store.appendMaterial({actor:'staff-1',audit:staff(),operatorId:'north',materialId:ownBackground,expectedRevision:2,state:'revoked'});
+  const movedDoc=await f.repository.readDocument('project');movedDoc.value.lanes[0].composition.desktop.table.y=.1;movedDoc.value.lanes[0].composition.mobile.table.y=.1;
+  await f.repository.saveDocument('project',{value:movedDoc.value,expectedRevision:movedDoc.revision,actor:'tester'});
+  const movedSaved=await f.repository.readDocument('project');
+  const movedReceipt=await admin(f,{action:'publish-scene-layout',operatorId:'north',compositionId:lane.id,expectedPackageRevision:8,expectedProjectRevision:movedSaved.revision});
+  assert.equal(movedReceipt.packageRevision,9);
+  for(const id of [ownBackground,ownTable])assert.equal(movedReceipt.presentation.assets.some(row=>row.id===id),false,id);
+  assert.deepEqual(movedReceipt.materialWarnings.map(row=>[row.materialId,row.code,row.reason,row.rooms.map(item=>item.id)]),
+    [[ownTable,'operator_material_table_mismatch','placement',[room.id]]]);
+});
+
+test('a material decision between preparation and commit is a conflict; nothing is published',async t=>{
+  const db=await materialDatabase();t.after(()=>db.pool.end());
+  const f=await nativeFixture({dealer:'paow',materials:()=>db.store}),lane=await unlockOwnMaterial(f);await withOwnRoom(f,lane);
+  await approve(db.store,ownBackground,'background');
+  const prepared=await f.prepare();assert.ok(has(prepared.presentation,ownBackground,'background'));
+  await db.store.appendMaterial({actor:'staff-1',audit:staff(),operatorId:'north',materialId:ownBackground,expectedRevision:2,state:'revoked'});
+  await assert.rejects(f.publish(prepared),error=>error.statusCode===409);
+  assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
+  // The branding path negotiates the merged candidate and proves the same rows under the lock.
+  await approve(db.store,'0d0d0d0d-0000-4000-8000-00000000b002','background');
+  const branding=brandingApi(f,db),stale=createPartnerBrandingApi({store:f.direct,readAdministration:()=>f.repository.readDocument('administration'),
+    readProject:async()=>(await f.repository.readDocument('project')).value,materials:{listMaterials:async()=>[]},
+    withWriteContext:work=>f.repository.transaction(()=>f.repository.withTransactionClient(async client=>work({
+      store:await createOperatorStore({sql:client,scope:nativeScope,now:clock,transaction:callback=>f.repository.withTransactionClient(callback)}),
+      readAdministration:()=>f.repository.readDocument('administration'),reauthorize:async()=>true,materials:db.store})))});
+  // Both APIs review the same draft; the stale one negotiated without the company's rows.
+  const audit=()=>({actorId:'partner-1',accessClass:'partner',requestId:randomUUID()}),base={operatorId:'north',actor:'partner-1',expectedPackageRevision:2};
+  const unchanged=(await branding.readState({operatorId:'north'})).branding;
+  await branding.command({...base,audit:audit(),action:'save-draft',expectedDraftRevision:0,branding:unchanged});
+  const review=await branding.command({...base,audit:audit(),action:'review',expectedDraftRevision:1});
+  await assert.rejects(stale.command({...base,audit:audit(),action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken}),error=>error.statusCode===409);
+  assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
+  assert.equal((await branding.command({...base,audit:audit(),action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken})).packageRevision,3);
+});
+
+test('without 021, with 021 but no material, and with another company\'s material: the exact package without company material',async t=>{
+  for(const scenario of ['without 021','no material','other company']){
+    const db=await materialDatabase({with021:scenario!=='without 021'});t.after(()=>db.pool.end());
+    assert.equal(await db.store.available(),scenario!=='without 021');
+    if(scenario==='other company')await approve(db.store,ownBackground,'background',undefined,'south');
+    const f=await nativeFixture({dealer:'paow',materials:()=>db.store}),lane=await unlockOwnMaterial(f);await withOwnRoom(f,lane);
+    const plain=createOperatorPackageApi({pool:f.pool,scope:nativeScope,repository:f.repository,videoRegistry:f.videoRegistry,now:clock});
+    const expected=await plain.preparations.get('POST /studio/api/admin/operator-package')(f.context),prepared=await f.prepare();
+    assert.deepEqual(prepared.materialWarnings,[],scenario);
+    assert.equal(canonicalStudioJson(prepared.presentation),canonicalStudioJson(expected.presentation),scenario);
+    const before=await f.direct.getCurrentPackage('north'),receipt=await f.publish(prepared);assert.equal(receipt.materialWarnings,undefined);
+    assert.equal(canonicalStudioJson((await f.direct.getCurrentPackage('north')).branding),canonicalStudioJson(withPackagePresentation(before.branding,expected.presentation)),
+      scenario+': the same frozen envelope byte for byte');
   }
 });

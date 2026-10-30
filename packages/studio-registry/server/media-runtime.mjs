@@ -36,7 +36,8 @@ function metadataResponse(row, bytes, request, options) {
   return new Response(request.method === 'HEAD' ? null : bytes.subarray(start, end + 1), { status, headers });
 }
 
-const defaultMediaConfigured = env => env.CROUPIER_MEDIA_STORAGE === 'blob' && Boolean(env.BLOB_READ_WRITE_TOKEN);
+// Private Blob is the only media store; the token alone decides whether it is configured.
+const defaultMediaConfigured = env => Boolean(env.BLOB_READ_WRITE_TOKEN);
 
 // Apps bind their own registry, Blob and local metadata adapters.
 export function createMediaRuntimeServices({ repositoryRoot: defaultRoot, createNeonVideoRegistry, legacyClipControls,

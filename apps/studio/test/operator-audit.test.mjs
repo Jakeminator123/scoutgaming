@@ -69,3 +69,44 @@ test('trusted identity maps to stable account ID and one server request correlat
  assert.notEqual(operatorAuditContext({...identity}).requestId,first.requestId);
  assert.doesNotMatch(JSON.stringify(operatorAuditContext({user:'do-not-log@example.invalid',role:'admin'})),/do-not-log|@/);
 });
+// Partnerportalens publiceringshistorik (journal?kind=publications) läser bara
+// package.publish. Filtret ligger i SQL, så en sida och dess markör räknar bara
+// matchande rader, och utkastkedjans rader (draft.*) följer inte med.
+async function narrowedJournal(store){
+ await store.upsertMembership({actor,audit,operatorId:'north',userId:'88',roleId:'viewer',status:'active'});
+ await store.publishPackage({actor,audit,operatorId:'north',lanes:['mobile-phone'],games:['blackjack'],tables:['room-a'],branding:{}});
+ await store.upsertMembership({actor,audit,operatorId:'north',userId:'88',roleId:'viewer',status:'suspended',expectedRevision:1});
+ await store.saveBrandingDraft({actor,audit,operatorId:'north',expectedDraftRevision:0,expectedPackageRevision:1,branding:{color:'#112233'}});
+ await store.publishBrandingDraft({actor,audit,operatorId:'north',expectedDraftRevision:1,expectedPackageRevision:1,branding:{color:'#112233'}});
+ await store.upsertMembership({actor,audit,operatorId:'north',userId:'89',roleId:'viewer',status:'active'});
+ const all=(await store.listAuditEvents('north')).entries.map(row=>row.action);
+ for(const action of ['membership.create','membership.update','draft.save','draft.publish'])assert.ok(all.includes(action),'the whole journal still carries '+action);
+ // Identical timestamps order by event id, so the two pages are compared as a set.
+ const first=await store.listAuditEvents('north',{actions:['package.publish'],limit:1});
+ assert.equal(first.entries.length,1);assert.ok(first.nextCursor);
+ const second=await store.listAuditEvents('north',{actions:['package.publish'],limit:1,cursor:first.nextCursor});
+ assert.equal(second.entries.length,1);assert.equal(second.nextCursor,null);
+ assert.deepEqual([...first.entries,...second.entries].map(row=>[row.action,row.afterRevision]).sort((a,b)=>a[1]-b[1]),[['package.publish',1],['package.publish',2]]);
+ const page=await store.listAuditEvents('north',{actions:['package.publish']});
+ assert.deepEqual(page.entries.map(row=>row.action),['package.publish','package.publish']);assert.equal(page.nextCursor,null);
+ for(const actions of [[],['nope'],['package.publish','package.publish'],'package.publish',{0:'package.publish'}])
+  await assert.rejects(store.listAuditEvents('north',{actions}),e=>e.statusCode===400,JSON.stringify(actions));
+ assert.deepEqual((await store.listAuditEvents('south',{actions:['package.publish']})).entries,[]);
+}
+test('journal narrowed to publications pages only package.publish rows and rejects unknown actions',async()=>{
+ const {store}=await fixture();await narrowedJournal(store);
+});
+test('journal narrowed to publications runs the same filter as real SQL on PGlite',async()=>{
+ const {createPglitePool}=await import('../../../test/fixtures/pglite-pool.mjs');
+ const {planStudioMigrations,applyStudioMigrations}=await import('../../../ops/neon-studio/migrations.mjs');
+ const pool=await createPglitePool({migrations:[]});
+ try {
+  const plan=await planStudioMigrations({pool});
+  await applyStudioMigrations({pool,expectedTarget:plan.target,confirm:true});
+  let tick=1700000000000;const store=await createOperatorStore({sql:pool,scope,now:()=>tick++});
+  await store.createOperator({actor,audit,operatorId:'north',slug:'north',name:'North'});
+  await store.createOperator({actor,audit,operatorId:'south',slug:'south',name:'South'});
+  await store.upsertRole(roleInput);
+  await narrowedJournal(store);
+ } finally { await pool.end(); }
+});

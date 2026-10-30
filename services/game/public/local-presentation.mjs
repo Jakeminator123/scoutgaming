@@ -16,6 +16,10 @@ const SELECT_AHEAD = 2;
 // K04 F5b: how many of those answered clip files are downloaded and verified ahead at a time, on a fast link.
 // K04 F7: one at a time when the link is slow or unknown (no Network Information, or below FAST_LINK_MBPS).
 const WARM_AHEAD = 2, FAST_LINK_MBPS = 5;
+// Spoken lines warmed after the dealer's first frame: at most this many bytes (a quarter of the verified buffer's
+// 96 MB budget), the lines of every hand first.
+const SPEECH_WARM_BYTES = 24 * 1024 * 1024;
+const SPEECH_WARM_ORDER = ['placebets', 'goodluck', 'lose', 'win', 'push', 'insurance', 'double', 'dealerbust', 'blackjack', 'dealerblackjack'];
 // A shared room's window moved while a read or download ran (K04 F4/F4b). The verified
 // buffer reports a download's server code in serverCode. Not a failure of the dealer.
 const STALE_ROOM = 'shared_room_presentation_stale';
@@ -67,6 +71,30 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     ? [event.type, event.shoeDraw, event.to ?? '', event.box ?? ''].join(':') : null;
   // A planned filmed step names its exact take (shared-room-presentation.mjs timeline) in this dealer's verified media.
   const plannedVideo = event => event?.filmedTake?.sha256 ? config.inventory.videos.find(row => row.sha256 === event.filmedTake.sha256 && row.available && owned(row)) ?? null : null;
+  // Preview 28 Oct 2026 (48 lines in 17 hands): a shared room lists no families (config.inventory.families is []), so no
+  // spoken line was ever prepared or warmed. Each one waited for select (0.9-4.3 s), then its GET (TTFB 0.5-4.4 s),
+  // then its hash: 1.0-7.4 s from select to sound. A line's exact clip is the plan's speechTake (the engine attaches
+  // the room's standard, shared-room-filmed-steps.mjs), else this dealer's one approved recorded take of the line in
+  // the room's language (recordedSpeech.lineId). More than one candidate is no answer: select still chooses.
+  let speechLanguage = ['en', 'sv'].includes(config.filmedMaterial?.language) ? config.filmedMaterial.language : null;
+  const speechOf = row => row?.recordedSpeech ?? row?.classification?.recordedSpeech;
+  const speechChecks = new Map();
+  const speechFits = (row, line, language) => {
+    const speech = speechOf(row), wanted = language ?? speech?.language;
+    if (!speech || row.available !== true || !owned(row) || typeof row.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(row.sha256)) return false;
+    const key = JSON.stringify([row.id, row.sha256, line, wanted]);
+    if (!speechChecks.has(key)) speechChecks.set(key, recordedSpeechForVideo(row, { dealerId, lineId: line, language: wanted, takeId: speech.takeId, requireApproved: !preview }) !== null);
+    return speechChecks.get(key);
+  };
+  const lineVideos = line => config.inventory.videos.filter(row => speechOf(row)?.lineId === line && speechFits(row, line, speechLanguage));
+  const plannedSpeech = event => {
+    if (event?.type !== 'speak' || typeof event.line !== 'string') return null;
+    const ref = event.speechTake;
+    if (typeof ref?.sha256 === 'string' && typeof ref.id === 'string')
+      return config.inventory.videos.find(row => row.id === ref.id && row.sha256 === ref.sha256 && speechFits(row, event.line, null)) ?? null;
+    const rows = lineVideos(event.line);
+    return rows.length === 1 ? rows[0] : null;
+  };
   // K04 F7 (rerun 4 on 6a158180, 400 kbit/s): lookahead files (two 1.1-1.6 MB takes at a time, more at every plan)
   // shared the link with the dealer's first idle film (912 kB), which never finished: the dealer was not shown in three
   // of four runs. Until the dealer has shown a frame, its idle file is downloaded first and kept pinned (an action that
@@ -80,19 +108,57 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     if (closed || !lookaheadOpen()) return;
     const event = deferredPrepare; deferredPrepare = null; prepare(event); ahead?.load?.();
   };
-  const seenDealer = () => { if (!dealerSeen) { dealerSeen = true; resumeLookahead(); } };
+  const seenDealer = () => { if (!dealerSeen) { dealerSeen = true; resumeLookahead(); warmSpeech(); } };
+  // After the dealer's first frame, every spoken line of the room (about 7.7 MB for PAOW's ten Swedish slots) is
+  // downloaded and verified into the player's buffer, one file at a time, so a line rarely waits for its bytes. The
+  // buffer's own budget and LRU apply (verified-video-buffer.mjs); no lease is kept. It runs only between
+  // presentations, never beside a plan's lookahead or a pending card, stops while the tab is hidden, and not at all
+  // on a data saver or a 2G link. A file that fails is not asked for again by this warm.
+  let speechWarm = null;
+  const speechTried = new Set();
+  const speechWarmRows = () => {
+    const rows = [], seen = new Set();
+    const lines = [...new Set(config.inventory.videos.map(row => speechOf(row)?.lineId).filter(line => typeof line === 'string'))]
+      .sort((a, b) => (SPEECH_WARM_ORDER.indexOf(a) + 1 || 99) - (SPEECH_WARM_ORDER.indexOf(b) + 1 || 99));
+    let bytes = 0;
+    for (const line of lines) {
+      const takes = lineVideos(line);
+      // Without the room's language only an unambiguous line is warmed.
+      if (!speechLanguage && takes.length !== 1) continue;
+      for (const row of takes) {
+        if (seen.has(row.sha256)) continue;
+        bytes += Number.isSafeInteger(row.bytes) && row.bytes > 0 ? row.bytes : 0;
+        if (bytes > SPEECH_WARM_BYTES) return rows;
+        seen.add(row.sha256); rows.push(row);
+      }
+    }
+    return rows;
+  };
+  function warmSpeech() {
+    if (speechWarm || preview || closed || packageChanged || !dealerSeen || document.hidden || action || speech || ahead || idleFirst
+      || typeof player.warmLocalClip !== 'function' || connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return;
+    const row = speechWarmRows().find(item => !speechTried.has(item.sha256));
+    if (!row) return;
+    const own = { controller: new AbortController() }; speechWarm = own;
+    Promise.resolve().then(() => player.warmLocalClip({ media: { src: mediaUrl(row), sha256: row.sha256 } }, own.controller.signal))
+      .then(() => { speechTried.add(row.sha256); }, () => { if (!own.controller.signal.aborted) speechTried.add(row.sha256); })
+      .finally(() => { if (speechWarm === own) { speechWarm = null; warmSpeech(); } });
+  }
+  // A presentation, a hidden tab or a closed table takes the link back at once. The verified buffer keeps an
+  // abandoned download for its grace, so the plan that needs the same line joins it.
+  const pauseSpeechWarm = () => { const own = speechWarm; speechWarm = null; own?.controller.abort(); };
   const idleFirstFor = video => {
     if (dealerSeen || idleFirst || closed || typeof player.warmLocalClip !== 'function' || !/^[a-f0-9]{64}$/.test(video?.sha256 ?? '')) return;
     const first = { controller: new AbortController() }; idleFirst = first;
     Promise.resolve().then(() => player.warmLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, first.controller.signal))
-      .catch(() => {}).finally(() => { if (idleFirst === first) { idleFirst = null; resumeLookahead(); } });
+      .catch(() => {}).finally(() => { if (idleFirst === first) { idleFirst = null; resumeLookahead(); warmSpeech(); } });
   };
   const prepare = event => {
     if (!event || queueVersion !== version() || closed) return;
     if (!lookaheadOpen()) { deferredPrepare = event; return; }
     // A planned filmed step names its exact take (shared-room-presentation.mjs timeline): that file is prepared in
     // the hidden element before its time (K public/shared-table.js:310, app.js:118-125), not the family's standard.
-    const exact = plannedVideo(event);
+    const exact = plannedVideo(event) ?? plannedSpeech(event);
     const family = exact ? null : config.inventory.families?.find(row => row.dealerId === dealerId && (
       event.type === 'speak' ? row.eventId.startsWith('speak.') && row.situation === event.line :
       event.type === 'reveal' ? row.eventId === 'reveal.dealer' :
@@ -151,6 +217,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // waiting line inside the gesture while it is still current; otherwise it
   // only unlocks. The session remembers that the player allowed sound.
   let soundButton = null, soundRetry = null, soundUnlocked = false;
+  // The film that plays now ({ own, kind, video }): a sound toggle changes only its video.muted (sound() below).
+  let playing = null;
   const removeSoundButton = () => { soundButton?.remove(); soundButton = null; };
   const offerSound = (own, retry) => {
     if (closed || packageChanged) return;
@@ -169,6 +237,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   let adviceController = null, chatSequence = 0;
   let behaviourRequest = 0, lastBehaviour = '', settlementContinuation = null;
   const behaviourVersion = (value,type) => type==='settle' && settlementContinuation?.from===value ? settlementContinuation.to : value;
+  // OpenClaw's reaction to a game event is answered only for a shared table (idleConfigRead=false);
+  // a single-player table in active/shadow sends no request.
+  const behaviourUse = value => value === 'rules' ? 'rules' : !preview && !idleConfigRead && ['active','shadow'].includes(value) ? 'openclaw' : null;
   async function observeEvents(events, {command,previousVersion,signal} = {}) {
     if(signal?.aborted)return;
     // Successful collection completes the same settled round. Carry only its
@@ -177,8 +248,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       settlementContinuation={from:previousVersion,to:version()};
       if(pendingRule?.sourceType==='settle'&&pendingRule.version===previousVersion)Object.assign(pendingRule,{version:version(),collected:true});
     }
-    if (!idle || mode !== 'rules' || packageChanged || closed || document.hidden || !Array.isArray(events)
-      || !config.idlePolicy?.variants.some(item=>item.use==='rules')) return;
+    // A turn or settlement asks for an idle reaction: a saved rule in the mode Regler, OpenClaw
+    // in active/shadow (shadow is only recorded). Other modes make no request.
+    const startedMode = mode, use = behaviourUse(startedMode);
+    if (!idle || !use || packageChanged || closed || document.hidden || !Array.isArray(events)
+      || !config.idlePolicy?.variants.some(item=>item.use===use)) return;
     const event = events?.findLast(item => ['turn','settle'].includes(item.type));
     if (!event) return;
     const requestVersion=version(), key=JSON.stringify([requestVersion,event.type,event.box,event.handIndex]);
@@ -187,11 +261,11 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const own=++behaviourRequest;
     try {
       const response=await request('/api/presentation/select',{method:'POST',cache:'no-store',signal,headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({dealerId,version:requestVersion,mode:'rules',event:{type:event.type,
+        body:JSON.stringify({dealerId,version:requestVersion,mode:startedMode,event:{type:event.type,
           ...(event.type==='turn'?{box:event.box,handIndex:event.handIndex}:{})},...(context?{presentationContext:context}:{})})});
-      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || !response.ok || own!==behaviourRequest || closed || document.hidden || mode!==startedMode || behaviourVersion(requestVersion,event.type)!==version()) return;
       const result=await response.json();
-      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!=='rules' || behaviourVersion(requestVersion,event.type)!==version()) return;
+      if (signal?.aborted || own!==behaviourRequest || closed || document.hidden || packageChanged || mode!==startedMode || behaviourVersion(requestVersion,event.type)!==version()) return;
       retainRule(result,requestVersion,event.type);offerPendingRule();
     } catch { /* Optional behaviour never blocks cards, speech or the player's turn. */ }
   }
@@ -221,14 +295,28 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     finally { if (adviceController === controller) adviceController = null; }
   }
   // The committed instruction as the server published it, without a plan's choice fields.
-  const committedEvent = ({ filmedTake, filmedTransitions, ...event }) => event;
+  const committedEvent = ({ filmedTake, filmedTransitions, speechTake, ...event }) => event;
   // K04 F5c (#506): a native room's delivered plan carries each filmed step's server choice: filmedTake
   // { profileId, takeKey, id, sha256 } and filmedTransitions { before, after } ({ id, sha256 } | null), computed
   // as POST /api/presentation/select computes it (median 3.3 s in staging, longer than the first step of a plan
   // after the player's decision). The step plays that choice at once from this dealer's verified media of the
   // bound configuration, matched by sha256, in select's own answer shape; its card still waits for the step's
   // time. A choice missing or unknown here keeps select as the reserve.
+  // A spoken line's plan carries the room's standard take as speechTake { id, sha256 }: the clip POST select chooses
+  // in the 'off' mode (shared-room-filmed-steps.mjs). It plays at once, in select's answer shape, from this dealer's
+  // verified media of the bound configuration, only while this room selects speech by its standard ('off') and its
+  // idle follows no rules (a rule rides on select's answer). Another mode, an old engine without the field or a clip
+  // unknown here keeps select.
+  const speechAnswer = event => {
+    if (selectionMode('speak') !== 'off' || mode === 'rules' || typeof event.speechTake?.sha256 !== 'string') return null;
+    const video = plannedSpeech(event);
+    if (!video) return null;
+    const decision = { requestId: null, sourceEvent: committedEvent(event), mode: 'off', media: { videoId: video.id, sha256: video.sha256, reason: 'shared_exact_material' } };
+    return { eventMode: 'off', result: { owner: 'web', projectRevision: config.projectRevision || config.revision, configurationSource,
+      video, standard: video, provider: 'planned-speech', decision } };
+  };
   const planAnswer = event => {
+    if (event?.type === 'speak') return speechAnswer(event);
     const take = event?.filmedTake, moves = event?.filmedTransitions;
     if (!['deal', 'reveal'].includes(event?.type) || typeof take?.id !== 'string' || !moves || typeof moves !== 'object') return null;
     const row = ref => ref === null ? null : config.inventory.videos.find(item => typeof ref?.sha256 === 'string' && item.sha256 === ref.sha256 && item.available && owned(item));
@@ -267,8 +355,14 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         start: () => { if (!step.promise) { step.promise = selection(committed, requestVersion, controller.signal); step.promise.catch(() => {}); } return step.promise; } };
       steps.set(key, step);
     }
-    const chosen = events.map(event => planAnswer(event)?.result).filter(Boolean);
-    if (!steps.size && !chosen.length) return;
+    // The plan's own files: a chosen step's entry clip, take and exit clip, a planned take, a spoken line's clip.
+    const filesOf = event => { const answer = planAnswer(event)?.result;
+      return answer ? [answer.transitions?.before, answer.video, answer.transitions?.after] : [plannedVideo(event) ?? plannedSpeech(event)]; };
+    // A spoken line never goes ahead of the plan's first card: on a slow link (one file at a time) the opening
+    // goodluck would hold the first deal's take behind it. That card's files go first, then the plan in order.
+    const firstCard = events.findIndex(event => ['deal', 'reveal'].includes(event?.type));
+    const planned = (firstCard < 0 ? events : [events[firstCard], ...events.filter((_, index) => index !== firstCard)]).flatMap(filesOf);
+    if (!steps.size && !planned.some(Boolean)) return;
     ahead = { version: requestVersion, controller, steps };
     // K04 F5b: as each answer arrives, its exact files are downloaded and verified into the player's buffer,
     // WARM_AHEAD at a time and in the plan's order. Nothing is decoded or shown; the step that plays a file
@@ -293,9 +387,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // K04 F5c (rerun 4): a plan after the player's decision starts with its filmed step, and its files were only
     // warmed once the server's answer came (median 3.3 s in staging). The planned takes are this plan's own exact
     // files: they download from the plan's start, in order. The answer still decides what plays, and when.
-    // A step that carries the server's choice warms its entry clip, take and exit clip the same way.
-    queue(events.flatMap(event => { const answer = planAnswer(event)?.result;
-      return answer ? [answer.transitions.before, answer.video, answer.transitions.after] : [plannedVideo(event)]; }));
+    // A step that carries the server's choice warms its entry clip, take and exit clip the same way, and a spoken
+    // line its recorded clip.
+    queue(planned);
     for (const step of steps.values()) {
       const start = step.start;
       step.start = () => { const first = !step.promise, promise = start(); if (first) promise.then(warm, () => {}); return promise; };
@@ -351,6 +445,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const audible = kind === 'speech' && !muted();
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: !audible, hold, ...timing,
+        onVideo: element => { if (stillCurrent()) playing = { own, kind, video: element }; },
         // Arriving bytes are progress: a slow download is never cut by a whole-file limit.
         ...(onProgress ? { onDownloadProgress: value => onProgress({ phase: 'download', received: value?.received }) } : {}),
         ...(audible ? { onSoundBlocked: resume => offerSound(own, () => stillCurrent() && resume()) } : {}),
@@ -367,21 +462,26 @@ export async function createLocalPresentation({ player, host, dealerId, version,
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
       onProgress?.({phase:'complete'});
-    } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; if (soundRetry?.own === own) soundRetry = null; }
+    } finally { signal?.removeEventListener('abort', abort); releaseGestureWait(own); if (active === own) active = null; if (playing?.own === own) playing = null; if (soundRetry?.own === own) soundRetry = null; }
   }
+  // A rule (idleRule) or OpenClaw's reaction to the game event (idleAdvice), bound to this
+  // request's mode, version and package. Shadow advice is recorded and never played.
   function retainRule(result, requestVersion, sourceType) {
-    const rule = result.idleRule;
-    if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
+    const use = behaviourUse(mode), rule = use === 'rules' ? result.idleRule : use === 'openclaw' ? result.idleAdvice : null;
+    if (!idle || !use || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision?.requestId
       || JSON.stringify(rule.presentationContext) !== JSON.stringify(context)) return;
+    if (use === 'openclaw') receipt({ event: 'idle-advice', state: 'selected', source: 'game-event', result: rule, projectRevision: result.projectRevision, configurationSource });
+    if (typeof rule.videoId !== 'string' || mode === 'shadow') return;
     const remaining = Math.max(0, Math.min(30000, Date.parse(rule.expiresAt) - Date.now()));
     if (!Number.isFinite(remaining) || !remaining) return;
-    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:behaviourVersion(requestVersion,sourceType),sourceType,collected:sourceType==='settle'&&settlementContinuation?.from===requestVersion};
+    pendingRule = {videoId:rule.videoId,requestId:rule.requestId,expiresAt:performance.now()+remaining,version:behaviourVersion(requestVersion,sourceType),sourceType,
+      mode,use,collected:sourceType==='settle'&&settlementContinuation?.from===requestVersion};
   }
   function offerPendingRule() {
     if (!pendingRule || action || speech || ready || document.hidden || pendingRule.sourceType==='settle'&&!pendingRule.collected) return;
     const rule = pendingRule; pendingRule = null;
-    if (mode === 'rules' && rule.version === version() && rule.expiresAt > performance.now())
-      idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:'rules'});
+    if (mode === rule.mode && rule.version === version() && rule.expiresAt > performance.now())
+      idle?.offerVariant({videoId:rule.videoId,requestId:rule.requestId,expiresAt:rule.expiresAt},{use:rule.use});
   }
   function requireReload(error) {
     if (error.code !== 'studio_presentation_idle_package_changed' && !(preview && error.code?.startsWith('studio_preview_'))) return false;
@@ -447,6 +547,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function state(patch) {
     if (!document.hidden) idleTransientRetries = 0;
+    if (document.hidden || patch.action === true || patch.speech === true) pauseSpeechWarm();
     // A finished presentation, a disconnect or a hidden tab keeps no early answers.
     if (Object.hasOwn(patch, 'action') && (!patch.action || patch.command)) dropAhead();
     if (Object.hasOwn(patch, 'action')) {
@@ -471,7 +572,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     ++serial; stop(); idleRun = 0;
     idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}`, phase:readIdlePhase() });
     offerPendingRule();
-    if (action || speech) onBusy(); else resumeIdle();
+    if (action || speech) onBusy(); else { resumeIdle(); warmSpeech(); }
   }
   // onUnavailable(): this step's exact media is missing or declared unavailable
   // (not a retryable playback failure); the shared table ends its film at once.
@@ -481,6 +582,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
     const requestVersion = version();
+    pauseSpeechWarm();
     ++serial; stop(); onBusy();
     if (Date.now() >= failureUntil) status.textContent = '';
     const token = serial;
@@ -599,10 +701,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, observeEvents, start: resumeIdle,
     get filmedMaterial() { return config.filmedMaterial?structuredClone(config.filmedMaterial):null; },
-    prepareSequence(events, { selectAhead: early = false } = {}) {
-      dropAhead(); queueVersion = version(); upcoming = events; prepare(upcoming[0]);
+    // The package row's frozen landings (frozen-dealer-presentation.mjs configuration), when the dealer has its own.
+    get filmedProfile() { return config.filmedProfile?structuredClone(config.filmedProfile):null; },
+    // language: the plan's language (the room's), so a spoken line without the plan's speechTake finds its take.
+    prepareSequence(events, { selectAhead: early = false, language } = {}) {
+      if (['en', 'sv'].includes(language)) speechLanguage = language;
+      pauseSpeechWarm(); dropAhead(); queueVersion = version(); upcoming = events; prepare(upcoming[0]);
       if (early && !closed && !packageChanged) selectAhead(events, queueVersion);
     },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
-    close() { pendingRule = null; closed = true; upcoming = []; dropAhead(); idleFirst?.controller.abort(); deferredPrepare = null; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
+    // The owner's muted() changed (the table's sound button). The line that plays follows it at once: only its
+    // video.muted changes, inside the player's click, so the line is never stopped, restarted or selected again.
+    // Every other film is silent anyway, and the next line reads muted() when it starts.
+    sound() { if (!closed && playing?.kind === 'speech' && playing.video && !playing.own.signal.aborted) playing.video.muted = muted(); },
+    close() { pendingRule = null; closed = true; pauseSpeechWarm(); upcoming = []; dropAhead(); idleFirst?.controller.abort(); deferredPrepare = null; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); soundRetry = null; removeSoundButton(); } };
 }

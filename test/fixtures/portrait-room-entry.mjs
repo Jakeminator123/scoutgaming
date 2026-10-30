@@ -26,5 +26,5 @@ export function createPortraitRoomEntryFixture({dealer='linnea',allowedDealers=[
     packages:{resolve:async slug=>slug===operator?{operator:{id:room.operatorId,slug:operator,status:'active'},package:pack}:{operator:null}},log(){}});
   const query='operator='+encodeURIComponent(operator)+'&table='+encodeURIComponent(room.id);
   return {select,query,room,project,administration,pack,
-    async decorate(html,search=query) { const entry=await select(search);if(entry.status!==200)throw Error('Fixture entry rejected');return decorateGameEntryHtml(html,{CROUPIER_STUDIO_NEON_POLICY:'1'},entry.selection); }};
+    async decorate(html,search=query) { const entry=await select(search);if(entry.status!==200)throw Error('Fixture entry rejected');return decorateGameEntryHtml(html,entry.selection); }};
 }

@@ -422,7 +422,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       await tx.members.put(roomId, { actorId, name: name ?? me?.name ?? null, memberGen, active: true, joinedAt: me?.active ? me.joinedAt : t });
       result = { op, memberGen, seats: owned(r, actorId), seatGen: [...r.seatGen] };
     } else {
-      if (!me?.active || !own.length) fail('NOT_SEATED', 'Choose your boxes and enter your name first');
+      // A finished round never waits for one particular player (preview 28 Oct 2026: a present owner who never
+      // pressed Nästa runda held a settled room for an hour, and a player without a box got NOT_SEATED). Anyone
+      // at the table may open the next window; `next` keeps its own checks, lock plan and reset below.
+      if (op !== 'next' && (!me?.active || !own.length)) fail('NOT_SEATED', 'Choose your boxes and enter your name first');
       if (r.leaving.includes(actorId) && op !== 'leave') fail('LEAVING', 'Your current hand is finishing before you leave');
       if (op === 'leave') {
         if (input.memberGen !== me.memberGen) fail('STALE_COMMAND', 'Your seat changed. Reload the table');

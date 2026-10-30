@@ -1,4 +1,4 @@
-import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../../packages/operators/server/public-rooms.mjs';
+import { createPublicOperatorRooms, isUnplayableOperatorRooms, readRoomConfigHeads, roomSettingsMissing } from '../../../packages/operators/server/public-rooms.mjs';
 import { validatePublicOperatorRooms } from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../../packages/presentation/contracts/room-environment.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
@@ -8,7 +8,14 @@ import { readPackagePresentation } from '../../../packages/presentation/server/p
 import { readOperatorLifecycle } from '../../../packages/operators/server/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
+import { adminAssignmentView } from './partner-assignment.mjs';
+import { cleanBrandingDraft } from './partner-branding-api.mjs';
 
+// Bolag › Tilldelat: Admins tilldelning ur det publicerade paketet (null utan fryst presentation).
+// Ett paket vars presentation inte går att läsa visar ingen tilldelning i stället för att fälla katalogen.
+function assignmentOf(pack) {
+  try { return adminAssignmentView(pack, readPackagePresentation(pack)); } catch { return null; }
+}
 const unavailable = () => { throw Object.assign(new Error('design_catalog_unavailable'), { statusCode: 503 }); };
 
 // Reads existing scoped registers only. No migrations, seeds, publication or
@@ -24,14 +31,25 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     const pack = await store.getCurrentPackage(row.id);
     if (pack && pack.operatorId !== row.id) unavailable();
     packages.set(row.id, pack);
+    // Bolagets öppna utseendeutkast (samma bedömning som publiceringen): Nytt spelbord startar inte då.
+    const appearanceDraft = Boolean(pack && typeof store.getBrandingDraft === 'function' && await cleanBrandingDraft(await store.getBrandingDraft(row.id), pack, store));
     operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
-      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null });
+      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null, assignment: assignmentOf(pack), appearanceDraft,
+      // Miljöerna i tilldelningen: Nytt spelbord kopierar en miljö som ett annat bolag har i stället för att låsa den.
+      packageLanes: pack ? [...pack.lanes] : [] });
   }
+  // The published settings heads per company, read once and shared by Admin's warning and the lobby below,
+  // so both say what the shared table says (room_config_missing).
+  const heads = new Map();
+  for (const [id, pack] of packages) if (pack) heads.set(id, await readRoomConfigHeads(store, pack));
   // Each public room is checked by the same selector used at game entry, using
   // captured data throughout the response. Game entry revalidates on launch.
   const frozenStore = {
     getOperatorBySlug: async slug => listed.find(row => row.slug === slug) ?? null,
     getCurrentPackage: async id => packages.get(id) ?? null,
+    // The published bet profile per room, read for the captured package above (the lobby's room picture).
+    ...(typeof store.getPublishedRoomLimitPresets === 'function' ? { getPublishedRoomLimitPresets: pack => store.getPublishedRoomLimitPresets(pack) } : {}),
+    ...(typeof store.getPublishedRoomConfigHeads === 'function' ? { getPublishedRoomConfigHeads: async pack => heads.get(pack.operatorId) ?? null } : {}),
   };
   const roomReader = createPublicOperatorRooms({ store: frozenStore, policy: {
     readSaved: async () => saved,
@@ -60,8 +78,12 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     ...project.dealers.map(row => ({ id: row.id, name: row.label, archived: false })),
     ...(project.dealerTrash ?? []).map(row => ({ id: row.dealer.id, name: row.dealer.label, archived: true })),
   ];
+  // A lane's saved miljöbild, for Admin's own pictures (scene cards, room pictures) through Admin's layer route.
+  const illustrationOf = lane => typeof lane?.illustration === 'string' && (project.layerAssets ?? []).some(asset => asset.id === lane.illustration && asset.role === 'illustration')
+    ? '/studio/api/layer-assets/' + encodeURIComponent(lane.illustration) : null;
   const compositions = (project.lanes ?? []).map(row => ({ id: row.id, name: row.label,
-    dealerIds: [...row.layers.dealer.allowed], defaultDealerId: row.layers.dealer.default }));
+    dealerIds: [...row.layers.dealer.allowed], defaultDealerId: row.layers.dealer.default,
+    ...(illustrationOf(row) ? { illustration: illustrationOf(row) } : {}) }));
   const rooms = (saved.administration.rooms ?? []).filter(isPresentationRoom).map(row => {
     const operator = operators.find(item => item.id === row.operatorId);
     const pack = packages.get(row.operatorId);
@@ -78,8 +100,12 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       compositionId: row.presentationLaneId, laneId: row.gameLaneId, published, playable: Boolean(playable),
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
       environment: playable ? roomEnvironment(playable, operator.slug) : null,
+      ...(composition?.illustration ? { illustration: composition.illustration } : {}),
       playUrl: playable?.playUrl ?? null,
-      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
+      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}),
+      // The shared table admits a blackjack seat only with the package's game settings binding and its published
+      // head (services/game/shared-room-access.mjs room_config_missing); Admin warns until they are published.
+      ...(published&&roomGame(row)==='blackjack'&&roomSettingsMissing(pack,row.id,heads.get(row.operatorId)??null)?{settingsMissing:true}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
     administration: { revisions: { project: saved.projectRevision, administration: saved.administrationRevision },

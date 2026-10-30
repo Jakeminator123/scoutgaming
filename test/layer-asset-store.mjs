@@ -12,9 +12,11 @@ import {validateLayerAsset,layerAssetPath,layerAssetFitsGame} from '../packages/
 import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 import {inspectLayerMedia} from '../apps/studio/lib/layer-media-inspection.mjs';
 import {layerImage,layerBlobFixture} from './fixtures/layer-media.mjs';
+import {createHmac} from 'node:crypto';
+import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 const scope={environment:'test',workspaceId:'layers'},actor='layer-admin';
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example','https://studio.example'],publicHosts:['public.example','studio.example']};
-const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
+const env={BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
 async function fixture() {
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{actor,value:createSeedProject()});
@@ -45,6 +47,18 @@ test('invalid MIME, SVG, role, dimension and byte limits cannot mint upload capa
   const {uploads,prepare,counts}=await fixture();
   for(const changes of [{contentType:'image/svg+xml'},{role:'dealer'},{size:134217729},{width:0},{label:'<script>'},{contentType:'constructor'}])await assert.rejects(uploads.prepare({...prepare,...changes},{actor}));
   assert.equal(counts().tokens,0);
+});
+test('a layer upload never mints or commits a miljöbild (illustration), which bypasses the v33 check',async()=>{
+  const {uploads,repository,prepare,counts}=await fixture();
+  await assert.rejects(uploads.prepare({...prepare,role:'illustration',label:'Miljö · miljöbild v1'},{actor}),error=>error.code==='studio_invalid_media'&&error.statusCode===422);
+  assert.equal(counts().tokens,0);
+  // A ticket signed before this restriction (same key, illustration record) is refused before any read.
+  const draft={schemaVersion:1,id:'00000000-0000-4000-8000-0000000000b1',sha256:prepare.sha256,size:prepare.size,contentType:'image/png',role:'illustration',label:'Miljö · miljöbild v1',width:720,height:1280};
+  const record={...draft,pathname:layerAssetPath(draft)},encoded=Buffer.from(canonicalStudioJson({v:1,actor,scope,record,expiresAt:1000000+60000})).toString('base64url');
+  const ticket=`${encoded}.${createHmac('sha256',Buffer.alloc(32,7)).update(`studio-layer-upload-v1\0${encoded}`).digest('base64url')}`;
+  const context={actor,request:new Request('https://public.example/studio/api/layer-assets/upload'),stillAuthorized:async()=>true,mutationTransaction:work=>work()};
+  await assert.rejects(uploads.commit({operation:'commit',ticket},context),error=>error.code==='studio_upload_grant_invalid'&&error.statusCode===403);
+  assert.equal(counts().reads,0);assert.equal((await repository.readDocument('project')).value.layerAssets,undefined);
 });
 test('library API keeps native role, scope and Origin gates; IDs cannot escape the scoped library',async()=>{
   const {uploads,repository}=await fixture();

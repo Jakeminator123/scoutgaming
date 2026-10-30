@@ -17,12 +17,12 @@ const ticketSecret = 'fixture-ticket-secret-longer-than-32-characters';
 const origin = 'https://game.example.test';
 const configuration = () => validateCloudConfig({
   NODE_ENV: 'production', PORT: '10000', CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-cloud-ws-fixture'),
-  CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
-  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'websocket-fixture',
-  CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
+  CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'websocket-fixture',
+  BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   PUBLIC_URL: origin, BO_URL: 'https://bo.example.test', LAB_PUBLIC_URL: 'https://lab.example.test',
   CROUPIER_GAME_ORIGIN: origin, BETTALOTTO_PARTNER_BASE_URL: origin,
-  CROUPIER_STREAM_LANE: 'lissabon-stream-lane', OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
+  OPENCLAW_PRODUCT_SPEECH_URL: 'https://speech.example.test',
   OPENCLAW_PRODUCT_SPEECH_TOKEN: 'fixture-token', CROUPIER_GENERATED_SPEECH: '1',
   CROUPIER_CLOUD_GENERATED_SPEECH: '1', CROUPIER_GENERATED_SPEECH_STREAMING: '1',
   CARTESIA_API_KEY: 'fixture-key', RUNPOD_API_KEY: 'fixture-key',
@@ -86,5 +86,16 @@ test('cloud gateway rejects speech upgrades when streaming is disabled', { timeo
   try {
     const url = `ws://127.0.0.1:${gateway.address().port}`;
     assert.match(await rejected(connect(url, '/speech-stream', { clientOrigin: origin })), /421/);
+  } finally { await new Promise(resolve => gateway.close(resolve)); }
+});
+
+test('cloud gateway rejects speech upgrades when the still-image path is off', { timeout: 5000 }, async () => {
+  const config = { ...configuration(), streaming: true, speechProvider: null };
+  const gateway = createCloudGateway(config, {  });
+  gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
+  try {
+    const url = `ws://127.0.0.1:${gateway.address().port}`;
+    assert.match(await rejected(connect(url, '/speech-stream', { clientOrigin: origin })), /421/);
+    assert.match(await rejected(connect(url, '/lipsync-worker', { authorization: `Bearer ${workerSecret}`, workerId: 'gpu-fixture' })), /421/);
   } finally { await new Promise(resolve => gateway.close(resolve)); }
 });

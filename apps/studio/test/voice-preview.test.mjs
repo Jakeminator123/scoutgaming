@@ -1,9 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import lockfile from 'proper-lockfile';
 import { VOICE_PREVIEW, VOICE_PHRASES, readVoiceSettings, voicePreviewStatus, voicePreviewText, voicePreviewId, generateVoicePreview, voicePreviewResponse, voicePreviewEndpoint } from '../lib/voice-preview.mjs';
 
 // Isolated test directories and fake provider only. Never read root .env or spend credits.
@@ -26,36 +25,18 @@ test('stock voice and three demo phrases are fixed, separate from game event con
   assert.ok(VOICE_PHRASES.every(item => item.text.length <= 500 && !Object.hasOwn(item, 'eventId')));
 });
 
-test('Cartesia credential is required and never appears in status', () => {
-  const settings = readVoiceSettings({ env: { CARTESIA_API_KEY: 'a-secret' }, envFiles: [] });
-  assert.equal(settings.key, 'a-secret');
-  assert.equal(voicePreviewStatus(settings).configured, true);
-  assert.ok(!JSON.stringify(voicePreviewStatus(settings)).includes('a-secret'));
-  assert.equal(voicePreviewStatus(readVoiceSettings({ env: { ELEVENLABS_API_KEY: 'old-provider' }, envFiles: [] })).configured, false);
-  assert.equal(voicePreviewStatus(readVoiceSettings({ env: {}, envFiles: [] })).configured, false);
-  assert.equal(readVoiceSettings({ env: { LAB_STUDIO_DATA_DIR: 'retired-storage' }, envFiles: [] }).cacheDir,
-    readVoiceSettings({ env: {}, envFiles: [] }).cacheDir);
-});
-
 test('shared Neon and native Studio fail before secret/cache/provider access even with caller settings', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-disabled-voice-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const cacheDir = join(directory, 'must-not-exist'), settings = { key: 'fixture-only', mismatch: false, cacheDir };
-  for (const key of ['CROUPIER_STUDIO_NEON_POLICY', 'CROUPIER_STUDIO_NATIVE_ADMIN']) {
-    const env = { [key]: '1' };
+  // Neon and native Admin are fixed, so even an empty environment is disabled.
+  for (const env of [{}, { CROUPIER_PUBLIC_ORIGIN: 'https://www.example.invalid' }]) {
     const disabled = readVoiceSettings({ env, envFiles: [directory] }); // Directory read would fail if attempted.
     assert.equal(disabled.disabled, true); assert.equal(disabled.key, '');
     assert.equal(voicePreviewStatus(disabled).configured, false);
     await assert.rejects(generateVoicePreview({ text: 'Hej' }, { env, settings, fetchImpl: noFetch }), error => error.statusCode === 503);
     await assert.rejects(voicePreviewResponse(request('GET'), 'a'.repeat(64), { env, settings }), error => error.statusCode === 503);
     for (const method of ['GET', 'POST']) assert.equal((await voicePreviewEndpoint(request(method), { env, settings, fetchImpl: noFetch })).status, 503);
-  }
-  const previous = process.env.CROUPIER_STUDIO_NEON_POLICY;
-  try {
-    process.env.CROUPIER_STUDIO_NEON_POLICY = '1';
-    await assert.rejects(generateVoicePreview({ text: 'Hej' }, { env: {}, settings, fetchImpl: noFetch }), error => error.statusCode === 503);
-  } finally {
-    if (previous === undefined) delete process.env.CROUPIER_STUDIO_NEON_POLICY; else process.env.CROUPIER_STUDIO_NEON_POLICY = previous;
   }
   assert.deepEqual(await readdir(directory), []);
 });
@@ -67,116 +48,9 @@ test('text validation rejects oversized input and arbitrary provider parameters 
   assert.notEqual(voicePreviewId('Hej'), voicePreviewId('Godkväll'));
 });
 
-test('explicit generation writes content-addressed audio/metadata then reuses cache with no new call', async t => {
-  const settings = await fixture(t); let calls = 0;
-  const result = await generateVoicePreview({ text: 'Hej!' }, { settings, fetchImpl: async (url, options) => {
-    calls++;
-    assert.equal(String(url), 'https://api.cartesia.ai/tts/bytes');
-    assert.equal(options.headers.Authorization, `Bearer ${settings.key}`);
-    assert.equal(options.headers['Cartesia-Version'], '2026-08-14');
-    assert.equal(options.redirect, 'error');
-    assert.ok(options.signal instanceof AbortSignal);
-    assert.deepEqual(JSON.parse(options.body), { transcript: 'Hej!', voice: VOICE_PREVIEW.voiceId, model_id: VOICE_PREVIEW.modelId, output_format: VOICE_PREVIEW.outputFormat });
-    return provider();
-  } });
-  assert.equal(calls, 1); assert.equal(result.cached, false);
-  assert.equal(result.id, voicePreviewId('Hej!'));
-  assert.equal(result.audioUrl, `/api/voice/${result.id}`);
-  assert.ok(!JSON.stringify(result).includes(settings.key));
-  assert.ok(!JSON.stringify(result).includes(settings.cacheDir));
-  assert.equal(result.productionApproved, false); assert.equal(result.syncedVideo, null);
-  const files = await readdir(settings.cacheDir);
-  assert.deepEqual(files.sort(), [`${result.id}.json`, `${result.id}.mp3`].sort());
-  const metadata = JSON.parse(await readFile(join(settings.cacheDir, `${result.id}.json`), 'utf8'));
-  assert.equal(metadata.text, 'Hej!'); assert.equal(metadata.voiceId, VOICE_PREVIEW.voiceId);
-  assert.equal(metadata.purpose, 'standalone-lab-voice-preview');
-  const cached = await generateVoicePreview({ text: 'Hej!' }, { settings, fetchImpl: noFetch });
-  assert.equal(cached.cached, true); assert.equal(cached.id, result.id);
-});
-
-test('concurrent same-text requests share one paid generation', async t => {
-  const settings = await fixture(t); let calls = 0;
-  const fetchImpl = async () => { calls++; await new Promise(resolve => setTimeout(resolve, 20)); return provider(); };
-  const results = await Promise.all(Array.from({ length: 6 }, () => generateVoicePreview({ text: 'Samma text' }, { settings, fetchImpl })));
-  assert.equal(calls, 1);
-  assert.equal(new Set(results.map(item => item.id)).size, 1);
-  assert.equal(results.filter(item => !item.cached).length, 1);
-});
-
-test('a cross-process disk lock blocks duplicate spending and is not silently bypassed', async t => {
-  const settings = await fixture(t);
-  await mkdir(settings.cacheDir, { recursive: true });
-  const release = await lockfile.lock(settings.cacheDir, { lockfilePath: join(settings.cacheDir, '.generation.lock'), stale: 120000, retries: 0 });
-  try { await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: noFetch }), error => error.statusCode === 429); }
-  finally { await release(); }
-});
-
 test('missing or conflicting keys never trigger a provider request', async t => {
   const settings = await fixture(t);
   for (const patch of [{ key: '' }, { mismatch: true }]) await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings: { ...settings, ...patch }, fetchImpl: noFetch }), error => error.statusCode === 503);
-});
-
-test('HTTP failure is not retried and provider bodies/secrets are never reflected', async t => {
-  const settings = await fixture(t); let calls = 0;
-  const response = await voicePreviewEndpoint(request(), { settings, fetchImpl: async () => { calls++; return Response.json({ secret: settings.key, arbitrary: 'upstream-private' }, { status: 401 }); } });
-  assert.equal(response.status, 502); assert.equal(calls, 1);
-  const body = await response.text();
-  assert.match(body, /401/); assert.ok(!body.includes(settings.key)); assert.ok(!body.includes('upstream-private'));
-  assert.deepEqual(await readdir(settings.cacheDir), []);
-});
-
-test('network failure is bounded to a safe error and never auto-retried', async t => {
-  const settings = await fixture(t); let calls = 0;
-  await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: async () => { calls++; throw new Error('network dump: fixture-voice-secret'); } }), error => error.statusCode === 502 && !error.message.includes(settings.key));
-  assert.equal(calls, 1);
-});
-
-test('non-audio, invalid MP3 and oversized response declarations are rejected', async t => {
-  const settings = await fixture(t);
-  for (const response of [new Response('not audio'), new Response('abc', { headers: { 'Content-Type': 'audio/mpeg' } }), new Response(MP3, { headers: { 'Content-Type': 'audio/mpeg', 'Content-Length': String(6 * 1024 * 1024) } })]) {
-    await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: async () => response }), error => error.statusCode === 502);
-  }
-  assert.deepEqual(await readdir(settings.cacheDir), []);
-});
-
-test('streamed audio limit is enforced even without Content-Length', async t => {
-  const settings = await fixture(t); let cancelled = false;
-  const response = new Response(new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(5 * 1024 * 1024 + 1)); }, cancel() { cancelled = true; } }), { headers: { 'Content-Type': 'audio/mpeg' } });
-  await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: async () => response }), error => error.statusCode === 502);
-  assert.equal(cancelled, true);
-});
-
-test('corrupt or incomplete cache is preserved and never silently regenerated', async t => {
-  const settings = await fixture(t);
-  const made = await generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: provider });
-  await writeFile(join(settings.cacheDir, `${made.id}.mp3`), 'ID3-corrupt');
-  await assert.rejects(generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: noFetch }), error => error.statusCode === 409);
-  const orphan = voicePreviewId('Ofullständig');
-  await writeFile(join(settings.cacheDir, `${orphan}.mp3`), MP3);
-  await assert.rejects(generateVoicePreview({ text: 'Ofullständig' }, { settings, fetchImpl: noFetch }), error => error.statusCode === 409);
-});
-
-test('audio GET/HEAD only serve verified cached bytes; unknown IDs and other origins are blocked', async t => {
-  const settings = await fixture(t);
-  const made = await generateVoicePreview({ text: 'Hej' }, { settings, fetchImpl: provider });
-  const get = await voicePreviewResponse(request('GET'), made.id, { settings });
-  assert.equal(get.headers.get('content-type'), 'audio/mpeg');
-  assert.deepEqual(Buffer.from(await get.arrayBuffer()), MP3);
-  const head = await voicePreviewResponse(request('HEAD'), made.id, { settings });
-  assert.equal((await head.arrayBuffer()).byteLength, 0);
-  for (const id of ['../../.env', 'https://untrusted.test', 'a'.repeat(64)]) await assert.rejects(voicePreviewResponse(request('GET'), id, { settings }), error => error.statusCode === 404);
-  await assert.rejects(voicePreviewResponse(request('GET', null, { Origin: 'https://untrusted.test' }), made.id, { settings }), error => error.statusCode === 403);
-});
-
-test('HTTP entrypoint checks localhost/origin, JSON and text before any paid request', async t => {
-  const settings = await fixture(t);
-  assert.equal((await voicePreviewEndpoint(request('POST', { text: 'Hej' }, { Origin: 'https://untrusted.test' }), { settings, fetchImpl: noFetch })).status, 403);
-  assert.equal((await voicePreviewEndpoint(request('POST', { text: 'Hej' }, { Host: 'public.example.test' }), { settings, fetchImpl: noFetch })).status, 403);
-  assert.equal((await voicePreviewEndpoint(request('POST', { text: 'Hej' }, { 'Content-Type': 'text/plain' }), { settings, fetchImpl: noFetch })).status, 415);
-  assert.equal((await voicePreviewEndpoint(request('POST', { text: 'a'.repeat(501) }), { settings, fetchImpl: noFetch })).status, 400);
-  const status = await voicePreviewEndpoint(request('GET'), { settings, fetchImpl: noFetch });
-  assert.equal(status.status, 200);
-  assert.equal((await status.json()).configured, true);
 });
 
 test('voice UI never autoplays generated audio', async () => {

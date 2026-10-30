@@ -8,13 +8,16 @@ import type {PublicOperatorPreview} from '../../../packages/presentation/contrac
 import type {EditableBranding,PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 import styles from './partner-appearance.module.css';
 
+// Scenen så som spelaren ser den: paketets frysta lager för valt spelbord och dealer.
+// Med initiallyEnabled laddas den direkt när ytan är aktiv (Partnerportalen och Admin);
+// annars först på knappen. Saknas media visas ett tomläge i samma ruta.
 export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true,initiallyEnabled=false,compact=false,onMedia}: {
   server:PartnerAppearanceInitial;branding:EditableBranding;scope:string;operatorSlug:string;language?:string;onStale:()=>void;active?:boolean;initiallyEnabled?:boolean;compact?:boolean;onMedia?:(payload:PublicOperatorPreview|null)=>void;
 }) {
   const en=language==='en',t=(sv:string,english:string)=>en?english:sv;
   const [attempt,setAttempt]=useState(0);
   const [enabled,setEnabled]=useState(initiallyEnabled && active),[selectedLayout,setLayout]=useState<'desktop'|'mobile'>('desktop'),[chosenRoom,setChosenRoom]=useState('');
-  useEffect(()=>{if(!active)setEnabled(false);},[active]);
+  useEffect(()=>{if(!active)setEnabled(false);else if(initiallyEnabled)setEnabled(true);},[active,initiallyEnabled]);
   const [state,setState]=useState<{identity:string;status:'loading'|'ready'|'unavailable';payload?:PublicOperatorPreview}>({identity:'',status:'loading'});
   const stale=useRef(onStale);stale.current=onStale;
   const defaultLane=branding.lane??server.presentation?.lanes[0]?.id;
@@ -59,26 +62,28 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
   const table=payload?.media.tables.find(row=>row.id===tableId),background=payload?.media.backgrounds.find(row=>row.id===backgroundId);
   const media=(row:typeof table)=>row?{url:row.src,label:row.label,contentType:row.contentType}:null;
   const missingLayers=payload?.independentLayers&&Boolean(tableId&&!table||backgroundId&&lane?.layers.background.mode!=='baked'&&!background);
-  const composition=(overlay?:ReactNode)=>payload?.settings?<CompositionPreview language={language} dealer={payload.media.dealer?{url:payload.media.dealer.src,label:payload.dealer.label,contentType:payload.media.dealer.contentType}:null} table={media(table)} background={media(background)} settings={payload.settings} layout={layout} overlay={overlay} show={{dealer:Boolean(payload.media.dealer),table:Boolean(table),background:Boolean(background)}} compositing={payload.media.dealer?.compositing} framing={payload.media.dealer?.framing}/>:null;
-  const previewControls = <div className={styles.actions}><button type="button" className="sg-btn" data-action="open-preview" aria-label={enabled?(compact?t('Uppdatera förhandsvisning','Refresh preview'):t('Ladda om förhandsvisning','Reload preview')):t('Visa förhandsvisning','Show preview')} onClick={()=>{if(!dealerId)return;setEnabled(true);setAttempt(value=>value+1);}} disabled={!dealerId||enabled&&current.status==='loading'}>{enabled?(compact?t('Uppdatera','Refresh'):t('Ladda om förhandsvisning','Reload preview')):t('Visa förhandsvisning','Show preview')}</button><button type="button" className="sg-btn" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop</button>{room?.game==='blackjack'&&<button type="button" className="sg-btn" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>{t('Mobil','Mobile')}</button>}</div>;
-  return <section className={styles.preview} aria-label={t('Förhandsvisning av valda lager','Selected layers preview')}>
-    {compact?<header className={styles.previewHeader}><h4>{t('Förhandsvisning','Preview')}</h4>{room&&lane&&previewControls}</header>:<h4>{t('Förhandsvisning av valda lager','Selected layers preview')}</h4>}
-    {!compact&&<p className={styles.hint}>{t('Visar valda lager och grundloop från paketets frysta media. Bordsfärgens gränssnittsdetaljer och spelets händelser ingår inte i denna bild.','Shows selected layers and the idle clip from the package’s frozen media. Table-colour interface details and game events are not shown in this image.')}</p>}
-    {!scope?<label className={styles.row}>{t('Förhandsvisa rum','Preview room')}<select aria-label={t('Förhandsvisa rum','Preview room')} value={room?.id??''} onChange={event=>setChosenRoom(event.target.value)}>{server.rooms?.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:null}
-    {!room||!lane?<p>{t('Det finns inget publicerat spelrum för denna sammansättning att förhandsvisa.','There is no published room for this presentation to preview.')}</p>:<>
-      {!compact&&<p>{room.label} · {t('paketversion','package version')} {server.packageRevision}</p>}
-      {!dealerId?<p role="status" className={styles.hint}>{chosenDealer?t('Det sparade dealervalet kan inte användas i det här rummet. Välj en tillåten dealer i inställningarna ovan, eller be intern personal uppdatera publiceringen.','The saved dealer choice cannot be used in this room. Choose an allowed dealer in the settings above, or ask internal staff to update the publication.'):t('Sammansättningen saknar ett publicerat dealerval. Välj en dealer i inställningarna ovan, eller be intern personal publicera ett val.','This composition has no published dealer choice. Choose a dealer in the settings above, or ask internal staff to publish a choice.')}</p>:null}
-      {!compact&&previewControls}
+  const composition=(overlay?:ReactNode)=>payload?.settings?<CompositionPreview minimal language={language} dealer={payload.media.dealer?{url:payload.media.dealer.src,label:payload.dealer.label,contentType:payload.media.dealer.contentType}:null} table={media(table)} background={media(background)} settings={payload.settings} layout={layout} overlay={overlay} show={{dealer:Boolean(payload.media.dealer),table:Boolean(table),background:Boolean(background)}} compositing={payload.media.dealer?.compositing} framing={payload.media.dealer?.framing}/>:null;
+  const empty=(text:ReactNode,role?:'status'|'alert')=><div className={styles.stageEmpty} data-layout={layout} role={role}><span>{text}</span></div>;
+  const previewControls = <div className={styles.segment} role="group" aria-label={t('Visa som','Show as')}>
+    <button type="button" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>{t('Dator','Desktop')}</button>
+    {room?.game==='blackjack'&&<button type="button" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>{t('Mobil','Mobile')}</button>}
+  </div>;
+  const reload = <button type="button" className={styles.linkButton} data-action="open-preview" onClick={()=>{if(!dealerId)return;setEnabled(true);setAttempt(value=>value+1);}} disabled={!dealerId||enabled&&current.status==='loading'}>{enabled?t('Ladda om','Reload'):t('Visa förhandsvisning','Show preview')}</button>;
+  return <section className={styles.preview} aria-label={t('Så ser spelaren det','What the player sees')}>
+    <header className={styles.previewHeader}><h4>{t('Så ser spelaren det','What the player sees')}</h4>{room&&lane?<div className={styles.previewTools}>{previewControls}{reload}</div>:null}</header>
+    {!scope?<label className={styles.row}>{t('Visa spelbord','Show table')}<select aria-label={t('Förhandsvisa spelbord','Preview table')} value={room?.id??''} onChange={event=>setChosenRoom(event.target.value)}>{server.rooms?.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:null}
+    {!room||!lane?empty(t('Det finns inget öppet spelbord med den här scenen att visa.','There is no open table with this scene to show.')):<>
+      {!dealerId?empty(chosenDealer?t('Det sparade dealervalet kan inte användas på det här spelbordet. Välj en av dealerna.','The saved dealer choice cannot be used at this table. Choose one of the dealers.'):t('Scenen saknar ett publicerat dealerval. Välj en dealer.','This scene has no published dealer choice. Choose a dealer.'),'status'):null}
       {room.game==='roulette'&&<p className={styles.hint}>{t('Roulette använder Desktop 16:9 även på mobil.','Roulette uses Desktop 16:9 on mobile too.')}</p>}
-      {enabled&&dealerId&&current.status==='loading'?<p role="status">{t('Hämtar frysta lager…','Loading frozen layers…')}</p>:null}
-      {enabled&&dealerId&&current.status==='unavailable'?<p role="alert">{t('Förhandsvisningen kunde inte hämtas för denna version och dealer. Utkastet finns kvar.','The preview could not be loaded for this version and dealer. Your draft is preserved.')}</p>:null}
+      {dealerId&&!enabled?empty(t('Förhandsvisningen startar när du trycker på Visa förhandsvisning.','The preview starts when you press Show preview.')):null}
+      {enabled&&dealerId&&current.status==='loading'?<div className={styles.stageEmpty} data-layout={layout} role="status" aria-busy="true"><span className={styles.shimmer}/><span>{t('Hämtar scenen…','Loading the scene…')}</span></div>:null}
+      {enabled&&dealerId&&current.status==='unavailable'?empty(t('Förhandsvisningen kunde inte hämtas just nu. Utkastet finns kvar.','The preview could not be loaded right now. Your draft is preserved.'),'alert'):null}
       {enabled&&dealerId&&payload?<>
-        {!payload.media.dealer?<p className={styles.hint}>{t('Denna dealer saknar tillgänglig fryst grundloop i förhandsvisningen. Övriga tillgängliga lager visas.','This dealer has no frozen idle clip available in the preview. Other available layers are shown.')}</p>:null}
-        {missingLayers?<p role="alert">{t('Ett valt lager saknar tillgänglig förhandsvisningsfil. Bilden är ofullständig.','A selected layer has no available preview file. This image is incomplete.')}</p>:null}
+        {!payload.media.dealer?<p className={styles.hint}>{t('Dealern saknar vila i förhandsvisningen. Övriga lager visas.','The dealer has no idle clip in the preview. Other layers are shown.')}</p>:null}
+        {missingLayers?<p role="alert" className={styles.hint}>{t('Ett valt lager saknar bild i förhandsvisningen. Bilden är ofullständig.','A selected layer has no image in the preview. The picture is incomplete.')}</p>:null}
         {payload.independentLayers&&payload.settings?composition()
           :payload.media.dealer?<DealerClipPreview key={payload.media.dealer.src} url={payload.media.dealer.src} compositing={payload.media.dealer.compositing} framing={payload.media.dealer.framing} label={payload.dealer.label}/>:null}
       </>:null}
     </>}
-    {compact&&<details className={styles.previewHelp}><summary>{t('Om förhandsvisningen','About the preview')}</summary><p className={styles.hint}>{t('Visar valda lager och grundloop från paketets frysta media. Bordsfärgens gränssnittsdetaljer och spelets händelser ingår inte i denna bild.','Shows selected layers and the idle clip from the package’s frozen media. Table-colour interface details and game events are not shown in this image.')}</p></details>}
   </section>;
 }

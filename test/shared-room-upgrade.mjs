@@ -172,3 +172,50 @@ test('service shutdown closes an open real socket with 1012 before the transport
     const [code,reason]=await closed;assert.equal(code,1012);assert.equal(reason.toString(),'shared_room_restart');
   } finally { client.terminate();if(server.listening)await new Promise(resolve=>server.close(resolve)); }
 });
+
+// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a browser sees a rejected handshake only as 1006 and retried
+// for a minute (receipt O02 partner-key-shared-table). A partner refused by name for its key's company
+// gets 101 and at once 1008 with that code instead; no other refusal opens a socket.
+// Preview 29 Oct 2026: an open room without published game settings is refused by name the same way.
+test('a partner refused for its key company, or a room without game settings, is closed with 1008 and the code, never attached', async t => {
+  for (const code of ['partner_operator_mismatch', 'partner_key_unbound', 'room_config_missing']) {
+    const closed = [], attached = [];
+    class Refused extends Client { close(status, reason) { closed.push([status, reason]); this.terminate(); } }
+    class Server {
+      handleUpgrade(request, socket, head, done) { socket.writes.push('101'); done(new Refused()); }
+      close(callback) { callback(); }
+    }
+    const channel = { prepare: async () => { throw Object.assign(new Error(code), { code, statusCode: 403 }); }, close() {} };
+    const adapter = createSharedRoomUpgrade({ engineOrigin, origin, WebSocketServer: Server, channel });
+    t.after(() => adapter.close());
+    const request = incoming(), socket = new Raw();
+    assert.equal(await adapter.handleUpgrade(request, socket, Buffer.alloc(0)), true);
+    assert.deepEqual(closed, [[1008, code]]); assert.deepEqual(attached, []);
+    assert.deepEqual(socket.writes, ['101']); assert.equal(socket.paused, false); clean(request, socket);
+  }
+  for (const [error, status] of [[{ code: 'studio_forbidden', statusCode: 403 }, 403], [{ code: 'partner_operator_mismatch', statusCode: 503 }, 503],
+    [{ code: 'partner_key_operator_invalid', statusCode: 403 }, 403], [{ code: 'shared_room_unauthorized', statusCode: 401 }, 401],
+    [{ code: 'room_config_missing', statusCode: 503 }, 503]]) {
+    const h = setup(t, { channel: { prepare: async () => { throw Object.assign(new Error(error.code), error); } } });
+    const request = incoming(), socket = new Raw();
+    assert.equal(await h.adapter.handleUpgrade(request, socket, Buffer.alloc(0)), true);
+    assert.match(socket.writes[0], new RegExp(`^HTTP/1.1 ${status} `)); assert.equal(h.calls.upgrade.length, 0); clean(request, socket);
+  }
+});
+
+test('a real socket of a partner refused for its key company sees 1008 with the code and no room frame',
+  {skip:!realWs&&'Existing gateway ws dependency is unavailable',timeout:5000},async()=>{
+  const server=createServer((_req,res)=>{res.writeHead(404);res.end();});
+  let reads=0;
+  const channel=createSharedRoomChannel({origin,authorize:async()=>{throw Object.assign(Error('partner_operator_mismatch'),{code:'partner_operator_mismatch',statusCode:403});},
+    revalidate:async()=>assert.fail('a refused socket is never revalidated'),readSnapshot:async()=>{reads++;return null;},readPresentation:async()=>null});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;
+  const adapter=createSharedRoomUpgrade({engineOrigin:`http://127.0.0.1:${port}`,origin,channel,WebSocketServer:realWs.WebSocketServer});
+  server.on('upgrade',(request,socket,head)=>{void Promise.resolve(adapter.handleUpgrade(request,socket,head)).then(handled=>{if(!handled)socket.destroy();});});
+  const client=new realWs.WebSocket(`ws://127.0.0.1:${port}/shared-room/room-a`,{origin,headers:{cookie:'player_session=partner'}});
+  try {
+    const messages=[];client.on('message',data=>messages.push(data));
+    const [code,reason]=await once(client,'close');
+    assert.equal(code,1008);assert.equal(reason.toString(),'partner_operator_mismatch');assert.deepEqual(messages,[]);assert.equal(reads,0);
+  } finally { client.terminate();await adapter.close();channel.close();if(server.listening)await new Promise(resolve=>server.close(resolve)); }
+});

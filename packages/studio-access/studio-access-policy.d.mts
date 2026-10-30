@@ -2,14 +2,14 @@ export type StudioRole = 'admin' | 'superadmin';
 /** Only admin is issued; superadmin is accepted for legacy stored identities. */
 export function normalizeStudioRole(value: unknown): 'admin' | null;
 export type StudioAdminSectionId = 'ops' | 'lanes' | 'clips' | 'gens' | 'apikeys'
-  | 'emails' | 'users' | 'rooms' | 'dealers' | 'pit' | 'tours' | 'players' | 'pay' | 'shoes';
+  | 'emails' | 'users' | 'rooms' | 'dealers' | 'players' | 'pay' | 'shoes';
 export type StudioAdminActionId = 'overview' | 'config' | 'clips'
   | 'generations' | 'gen-verdicts' | 'apikeys' | 'users' | 'players' | 'transactions' | 'emails' | 'shoes'
-  | 'tournament' | 'pitboss' | 'tier' | 'room' | 'clip-landing' | 'game-lane' | 'game-lanes/create' | 'game-lanes/remove'
+  | 'tier' | 'clip-landing' | 'game-lane' | 'game-lanes/create' | 'game-lanes/remove'
   | 'clip-never' | 'gen-landing' | 'gen-verdict' | 'players/create' | 'players/status' | 'players/password'
   | 'users/invite' | 'users/resend' | 'users/role' | 'users/remove' | 'apikeys/create'
   | 'apikeys/revoke' | 'apikeys/rotate' | 'apikeys/launch' | 'apikeys/credit' | 'moving-drift'
-  | 'operator-package' | 'operator-create-demo' | 'operator-create' | 'operator-role' | 'operator-membership';
+  | 'operator-package' | 'operator-create' | 'operator-role' | 'operator-membership';
 export type StudioAdminHandlerRequirement = 'player-lifecycle-and-ledger'
   | 'cancel-player-runtime' | 'forbid-self-role-change' | 'forbid-self-removal'
   | 'revoke-changed-identity' | 'game-authority' | 'moving-drift-control';

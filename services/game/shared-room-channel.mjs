@@ -15,6 +15,8 @@
  * origin is the allowed browser/UI origin. The future listener must validate its own
  * configured engine host and ingress before prepare; forwarded-host headers are not trusted.
  */
+/** Chat text never carries control (except \n), bidi override/isolate/mark or zero-width characters. */
+export const unsafeChatText=/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/;
 const fail = (code='shared_room_unavailable',statusCode=503) => { throw Object.assign(new Error(code),{code,statusCode}); };
 const id = value => typeof value==='string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const integer = value => Number.isSafeInteger(value) && value>=0;
@@ -38,8 +40,9 @@ const snapshotShape = {
 // K04 F5c: a filmed step's server choice (shared-room-filmed-steps.mjs); never a card.
 const clipRef = fields('id sha256');
 const filmed = {filmedTake:fields('profileId takeKey id sha256'),filmedTransitions:{before:clipRef,after:clipRef}};
+// Speech lag (28 Oct 2026): a spoken line's standard clip (shared-room-filmed-steps.mjs withSpeechTakes).
 const eventShapes = {
-  speak:fields('type line blocking family'),idle:fields('type family'),
+  speak:{...fields('type line blocking family'),speechTake:clipRef},idle:fields('type family'),
   deal:{...fields('type to box handIndex faceDown shoeDraw family'),card,clip:fields('action prefer fallback'),...filmed},
   reveal:{...fields('type to shoeDraw family'),card,...filmed},
   settle:{...fields('type dealerTotal dealerBlackjack'),hands:list(fields('box stake returned outcome'),28)},
@@ -91,6 +94,7 @@ function publicPair(rawSnapshot,rawPresentation,binding) {
     const sha=ref=>typeof ref?.sha256==='string'&&/^[a-f0-9]{64}$/.test(ref.sha256)&&id(ref.id);
     if(take!==undefined&&(!sha(take)||!id(take.profileId)||!id(take.takeKey)))fail();
     if(moves!==undefined&&(take===undefined||!object(moves)||['before','after'].some(key=>moves[key]!==null&&!sha(moves[key]))))fail();
+    if(value.speechTake!==undefined&&!sha(value.speechTake))fail();
     return value;
   });
   if(!Array.isArray(p.lines))fail();
@@ -124,7 +128,7 @@ function bounded(work,controller,timeoutMs) {
 }
 export function createSharedRoomChannel({origin,authorize,revalidate,readSnapshot,readPresentation,touch,now=Date.now,
   readTimeoutMs=2000,maxBufferedBytes=256*1024,maxReadAttempts=3,maxConnections=128,consistencyTimeoutMs=10000,
-  presenceIntervalMs=10000,observeRetryMs=1000}={}) {
+  presenceIntervalMs=10000,observeRetryMs=1000,chatLimit=30}={}) {
   let parsed;try{parsed=new URL(origin);}catch{fail();}
   if(parsed.origin!==origin||!['https:','http:'].includes(parsed.protocol)
     ||![authorize,revalidate,readSnapshot,readPresentation,now].every(port=>typeof port==='function')
@@ -135,8 +139,9 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
     ||!Number.isSafeInteger(maxConnections)||maxConnections<1||maxConnections>10000
     ||touch!==undefined&&typeof touch!=='function'
     ||!Number.isSafeInteger(presenceIntervalMs)||presenceIntervalMs<1||presenceIntervalMs>60000
-    ||!Number.isSafeInteger(observeRetryMs)||observeRetryMs<1||observeRetryMs>30000)fail();
-  const rooms=new Map(),actors=new Map(),connections=new Set();let stopped=false;
+    ||!Number.isSafeInteger(observeRetryMs)||observeRetryMs<1||observeRetryMs>30000
+    ||!Number.isSafeInteger(chatLimit)||chatLimit<1||chatLimit>200)fail();
+  const rooms=new Map(),actors=new Map(),connections=new Set(),chats=new Map();let stopped=false;
   async function prepare(request) {
     if(stopped)fail();
     const header=request?.headers?.get?.bind(request.headers);
@@ -155,12 +160,16 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(binding.expiresAt<=now()){socket.close(1008,'shared_room_unauthorized');fail('shared_room_unauthorized',403);}
       if(connections.size>=maxConnections){socket.close(1013,'shared_room_capacity');fail();}
       let closed=false,running=false,dirty=false,generation=0,expiryTimer,operation,consistencyTimer,presenceTimer,presence;
+      // Aborts with this socket: a speech ticket issued to it can no longer be redeemed or keep streaming (PR 4).
+      const lifetime=new AbortController();
       let sentVersion=-1,sentPresentation=-1,observed=null;
       const cleanup=()=>{
         if(closed)return;closed=true;clearTimeout(expiryTimer);clearTimeout(consistencyTimer);clearTimeout(presenceTimer);
-        operation?.abort();presence?.abort();
+        operation?.abort();presence?.abort();lifetime.abort();
         socket.off('message',inbound);socket.off('close',cleanup);socket.off('error',broken);
-        connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);if(!group?.size)rooms.delete(roomId);
+        connections.delete(connection);const group=rooms.get(roomId);group?.delete(connection);
+        // The last socket out takes the room's chat with it: the next company starts empty.
+        if(!group?.size){rooms.delete(roomId);chats.delete(roomId);}
         const own=actors.get(binding.actorId);own?.delete(connection);if(!own?.size)actors.delete(binding.actorId);
       };
       const close=(code=1000,reason='shared_room_closed')=>{if(closed)return;cleanup();try{socket.close(code,reason);}catch{}};
@@ -237,11 +246,28 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
         } finally {presence=null;}
         if(!closed){presenceTimer=setTimeout(beat,presenceIntervalMs);presenceTimer.unref?.();}
       }
-      const connection={close,requestRefresh,observe,roomId};
+      // Chat (PR 1): server -> client only. who is per socket; the actor id never leaves the server.
+      const chat=(entry,speech)=>{
+        if(closed)return;
+        const data=JSON.stringify({type:'shared-room-chat',roomId,lineId:entry.lineId,requestId:entry.requestId,
+          who:entry.actorId===null?'dealer':entry.actorId===binding.actorId?'you':'player',seat:entry.seat,text:entry.text,at:entry.at,...(speech?{speech}:{})});
+        if(socket.readyState!==1||!Number.isFinite(socket.bufferedAmount)||socket.bufferedAmount<0
+          ||socket.bufferedAmount+Buffer.byteLength(data)>maxBufferedBytes){close(1013,'shared_room_backpressure');return;}
+        socket.send(data,error=>{if(error)broken();});
+      };
+      // PR 4: the dealer's spoken answer for this socket only. issue gets this socket's session and lifetime and
+      // returns a descriptor with a ticket of its own, or null (this socket keeps the text it already has).
+      const speak=(entry,issue)=>{
+        if(closed)return;
+        let speech=null;
+        try{speech=issue(Object.freeze({owner:binding.sessionId,playerId:binding.actorId,signal:lifetime.signal}));}catch{}
+        if(speech)chat(entry,speech);
+      };
+      const connection={close,requestRefresh,observe,roomId,chat,speak};
       connections.add(connection);if(!rooms.has(roomId))rooms.set(roomId,new Set());rooms.get(roomId).add(connection);
       if(!actors.has(binding.actorId))actors.set(binding.actorId,new Set());actors.get(binding.actorId).add(connection);
       socket.on('message',inbound);socket.on('close',cleanup);socket.on('error',broken);
-      expire();requestRefresh();void beat();return Object.freeze({close});
+      expire();requestRefresh();void beat();for(const entry of chats.get(roomId)??[])chat(entry);return Object.freeze({close});
     }});
   }
   return Object.freeze({prepare,
@@ -260,8 +286,31 @@ export function createSharedRoomChannel({origin,authorize,revalidate,readSnapsho
       if(!id(roomId)||!integer(version)||!integer(presentationVer))fail('shared_room_request_rejected',400);
       for(const connection of rooms.get(roomId)??[])connection.observe(version,presentationVer);
     },
+    // Chat (PR 1): the last chatLimit lines per room live in memory only (no DB). A socket
+    // attaching later gets them first. actorId null is the dealer; seat is 1-7 or null. lineId is
+    // the server's own row id (q-/a-<hex>); clients deduplicate on it, never on requestId.
+    // A room without sockets keeps no log, and its log goes when its last socket closes.
+    emitChat(roomId,{lineId,requestId,actorId,seat,text,at}={}){
+      if(stopped)return;
+      if(!id(roomId)||typeof lineId!=='string'||!/^[qa]-[0-9a-f]{24}$/.test(lineId)||!id(requestId)||actorId!==null&&!id(actorId)
+        ||seat!==null&&!(Number.isSafeInteger(seat)&&seat>=1&&seat<=7)
+        ||typeof text!=='string'||!text.trim()||text.length>1000||unsafeChatText.test(text)||!integer(at))fail('shared_room_request_rejected',400);
+      const group=rooms.get(roomId);if(!group?.size)return;
+      const entry=Object.freeze({lineId,requestId,actorId,seat,text,at}),log=chats.get(roomId)??[];
+      log.push(entry);if(log.length>chatLimit)log.splice(0,log.length-chatLimit);chats.set(roomId,log);
+      for(const connection of group)connection.chat(entry);
+    },
+    // PR 4: a spoken dealer line, sent per socket with that socket's own ticket and never kept in the log: a
+    // socket that attaches later gets the text only. The text line itself went out earlier through emitChat.
+    emitSpeech(roomId,{lineId,requestId,text,at}={},issue){
+      if(stopped)return;
+      if(!id(roomId)||typeof lineId!=='string'||!/^a-[0-9a-f]{24}$/.test(lineId)||!id(requestId)||typeof text!=='string'||!text.trim()
+        ||text.length>1000||unsafeChatText.test(text)||!integer(at)||typeof issue!=='function')fail('shared_room_request_rejected',400);
+      const entry=Object.freeze({lineId,requestId,actorId:null,seat:null,text,at});
+      for(const connection of rooms.get(roomId)??[])connection.speak(entry,issue);
+    },
     // B2: the service closes only on shutdown/restart (SIGTERM). 1012 tells the client to
     // reconnect with a fresh authenticated snapshot; 1000 would stop it for good.
-    close(){if(stopped)return;stopped=true;for(const connection of [...connections])connection.close(1012,'shared_room_restart');}
+    close(){if(stopped)return;stopped=true;chats.clear();for(const connection of [...connections])connection.close(1012,'shared_room_restart');}
   });
 }

@@ -30,7 +30,7 @@ test('dealer reads report saved speech state for active and archived dealers',as
  assert.deepEqual(page.items.map(({id,archived,speechEnabled})=>({id,archived,speechEnabled})),[{id:'active',archived:false,speechEnabled:true},{id:'archived',archived:true,speechEnabled:false},{id:'draft',archived:false,speechEnabled:false}]);
 });
 test('navigation only builds known same-site routes and readers reject endpoint or SQL injection',()=>{
- assert.deepEqual(assistantNavigation({page:'import',targetId:'dragge'}),{href:'/admin/clips?tool=import&dealer=dragge',label:'Ladda upp klipp'});
+ assert.deepEqual(assistantNavigation({page:'import',targetId:'dragge'}),{href:'/admin/clips?panel=intake&dealer=dragge',label:'Lägg till klipp'});
  for(const value of [{page:'https://evil.invalid',targetId:null},{page:'import',targetId:'a&token=secret'},{page:'__proto__',targetId:null}])assert.throws(()=>assistantNavigation(value));
  for(const value of [{source:'sql',query:'SELECT *',offset:0},{source:'media',query:'',offset:-1},{source:'media',query:'',offset:0,url:'/secrets'}])assert.throws(()=>validateAssistantRead(value));
 });

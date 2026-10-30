@@ -16,6 +16,8 @@ import { createPlayerChatMemory } from '../services/game/storage/async-player-ch
 import { createPlayerProbeStore } from '../services/game/storage/async-player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
+import { depositAmount } from '../services/game/storage/deposit-amount.mjs';
+import { createPgliteStore } from './fixtures/pglite-pool.mjs';
 import { command as shoeCommand, newGame } from '../services/game/shoe-game.mjs';
 
 async function invoke(handler,url,{cookie='',body='',headers={},method='GET'}={}){
@@ -152,7 +154,8 @@ test('native project PUT and scoped memory serialize game then Studio without cr
 test('Postgres partner sessions require a current internal-wallet authority and fail closed',async()=>{
   const db={prepare(sql){return{async get(){return sql.includes('FROM player_sessions')?{player_id:'synthetic-player',source_stamp:'partner:synthetic-key'}:sql.includes('FROM players')?{status:'active'}:undefined;},async run(){return{changes:1};}};},async transaction(work){return work();}};
   let key={id:'synthetic-key',revoked_at:null,wallet_url:null};
-  const auth=playerAuth(db,()=>{throw Error('unexpected creation');},null,{partnerAuthority:async()=>key});
+  // This unstamped session is a legacy partner session, which the product refuses; enable it here to test the authority check alone.
+  const auth=playerAuth(db,()=>{throw Error('unexpected creation');},null,{partnerAuthority:async()=>key,allowLegacyPartnerSessions:true});
   const request={headers:{cookie:'player_session='+ 'a'.repeat(64)},socket:{}},claims={sub:'synthetic-player',partner:'synthetic-key'};
   assert.equal(await auth.user(request),'synthetic-player');assert.match(await auth.fromPartner(request,claims),/^player_session=/);
   for(const denied of [null,{...key,id:'another-key'},{...key,revoked_at:'revoked'},{...key,wallet_url:'https://wallet.example.invalid'}]){
@@ -161,6 +164,50 @@ test('Postgres partner sessions require a current internal-wallet authority and 
   assert.equal(await playerAuth(db,()=>{}).user(request),null);
   const broken=playerAuth(db,()=>{},null,{partnerAuthority:async()=>{throw Error('synthetic transport failure');}});
   await assert.rejects(broken.user(request),/transport failure/,'a failed authority lookup cannot fall back to guest access');
+});
+
+test('demo deposit amounts accept whole cents and normalize binary noise within each route limit',()=>{
+  for(const value of [0,-1,0.001,1.001,NaN,Infinity,'1.01',100000.01]) assert.equal(depositAmount(value),null);
+  for(const value of [0.01,1.01,1.15,100000]) assert.equal(depositAmount(value),value);
+  assert.equal(depositAmount(0.1+0.2),0.3);
+  const native={min:1,max:100_000_000};
+  for(const value of [0.99,1.001,100_000_000.01]) assert.equal(depositAmount(value,native),null);
+  for(const value of [1,1.01,100_000_000]) assert.equal(depositAmount(value,native),value);
+});
+
+test('both partner deposit routes reject sub-cent amounts and journal exactly the credited cents',async t=>{
+  const store=await createPgliteStore();t.after(()=>store.close());
+  const {db,boDb}=store,origin='https://wallet.example.invalid';
+  const partner=installPartnerApi({db,boDb,shoeCommand,newGame,
+    getPlayer:id=>db.prepare('SELECT * FROM players WHERE id=?').get(id),
+    logTx:(id,type,amount,currency,meta)=>db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at) VALUES(?,?,?,?,?,?)').run(id,type,amount,currency,meta,new Date().toISOString()),
+    jwtSign:()=> 'synthetic',publicUrl:origin,root:'.'});
+  const key=await partner.keys.create({name:'Synthetic wallet',scopes:['wallet']},null);
+  async function signed(input){
+    const path='/api/v1/demo-credit',body=JSON.stringify(input),ts=String(Math.floor(Date.now()/1000));
+    const response=await invoke(partner.handle,origin+path,{method:'POST',body,headers:{'x-api-key':key.key,'x-timestamp':ts,
+      'x-signature':createHmac('sha256',key.secret).update(`${ts}.POST.${path}.${body}`).digest('hex')}});
+    return {status:response.status,...JSON.parse(response.body)};
+  }
+  for(const route of ['admin','partner']){
+    const playerId='synthetic-'+route;
+    const credit=amount=>route==='admin'?partner.keys.credit(key.id,{playerId,amount}):signed({playerId,amount});
+    for(const amount of [1.001,0.001,0,-1,100000.01,'1.01']){
+      if(route==='admin') await assert.rejects(credit(amount),/whole cents/);
+      else assert.equal((await credit(amount)).status,400);
+    }
+    assert.equal(await db.prepare('SELECT player_id FROM partner_players WHERE key_id=? AND partner_player=?').get(key.id,playerId),undefined);
+    let expected=0;
+    for(const amount of [0.01,1.01,1.15,0.1+0.2,100000]){
+      const result=await credit(amount),normalized=Math.round(amount*100)/100;
+      expected=Math.round((expected+normalized)*100)/100;
+      assert.equal(result.balance,expected);if(route==='partner') assert.equal(result.status,200);
+      const mapping=await db.prepare('SELECT player_id FROM partner_players WHERE key_id=? AND partner_player=?').get(key.id,playerId);
+      const ledger=await db.prepare("SELECT amount FROM transactions WHERE player_id=? AND type='deposit' ORDER BY id DESC LIMIT 1").get(mapping.player_id);
+      assert.equal(ledger.amount,normalized);
+      assert.equal((await db.prepare('SELECT balance FROM players WHERE id=?').get(mapping.player_id)).balance,expected);
+    }
+  }
 });
 
 const enabled=Boolean(process.env.CROUPIER_POSTGRES_QA_CONFIG);

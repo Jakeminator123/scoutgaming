@@ -21,7 +21,6 @@ import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../../packages/presentation/server/saved-game-policy.mjs';
 import { createRegisteredDealerIdle } from '../../../packages/presentation/server/registered-dealer-idle.mjs';
-import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 import { createRuntimeMetadataReader } from '../../../tools/runtime-media-catalog.mjs';
 import { createStudioAdminAccounts } from './studio-admin-accounts.mjs';
 import { createStudioAdminReadouts } from './studio-admin-readouts.mjs';
@@ -39,9 +38,12 @@ import { presentationCapabilitiesForVersion } from '../../../packages/presentati
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
+import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
+import { movingDriftDealerIds } from '../../../packages/presentation/contracts/moving-drift.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
+import { createPermanentDeletionApi } from './permanent-deletion-api.mjs';
 import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {materialTrashPlan} from './material-trash.mjs';
@@ -52,34 +54,37 @@ import { performance } from 'node:perf_hooks';
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 // The cause stays server-side for the 503 log; responses never serialize it.
+// Admin › Röst och tal: which dealers have a drift profile with a bank hash
+// here (Vercel's CROUPIER_STUDIO_MOVING_DRIFT_PROFILES). Ids only, no endpoints.
+export function withMovingSpeechDealers(readCatalog, env) {
+  return async () => ({ ...await readCatalog(), movingSpeech: { dealerIds: movingDriftDealerIds(env) } });
+}
 const unavailable = cause => { throw Object.assign(cause === undefined ? new Error('studio_native_unavailable') : new Error('studio_native_unavailable', { cause }), { statusCode: 503 }); };
 const denied = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };
 // SQL is bundled source, not persistent user state. Explicit tracing preserves
 // it outside the Lab project; no webpack asset URL is passed to Node fs.
 const schemaRoot = () => resolve(studioRoots().repositoryRoot, 'ops');
-export const nativeStudioAdminEnabled = (env = process.env) => env.CROUPIER_STUDIO_NATIVE_ADMIN === '1';
+// Admin always runs natively on Vercel, on the one public origin, under the fixed
+// basePath /studio. No variable selects this (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+export const nativeStudioAdminEnabled = () => true;
 
 export function nativeStudioAdminConfiguration(env = process.env) {
-  if (!nativeStudioAdminEnabled(env)) return null;
   if (!studioGamePolicyConfiguration(env)) unavailable();
-  const unifiedUi = env.CROUPIER_VERCEL_UNIFIED_UI === '1';
-  const origins = unifiedUi ? [env.CROUPIER_PUBLIC_ORIGIN] : [env.CROUPIER_PUBLIC_ORIGIN, env.CROUPIER_LAB_UI_ORIGIN];
+  const origins = [env.CROUPIER_PUBLIC_ORIGIN];
   for (const value of origins) {
     let url; try { url = new URL(value); } catch { unavailable(); }
     if (url.origin !== value || url.protocol !== 'https:' || url.username || url.password
       || ['localhost','127.0.0.1','[::1]'].includes(url.hostname)) unavailable();
   }
-  if (new Set(origins).size !== (unifiedUi ? 1 : 2) || !['', '/studio'].includes(env.CROUPIER_LAB_BASE_PATH || '')) unavailable();
   let scope, connectionString;
   try {
     scope = validateStudioScope({ environment: env.CROUPIER_STUDIO_ENVIRONMENT_ID, workspaceId: env.CROUPIER_STUDIO_WORKSPACE_ID });
     connectionString = validateGameConnection(env.CROUPIER_GAME_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);
   } catch { unavailable(); }
   if (!new URL(connectionString).hostname.endsWith('.neon.tech')) unavailable();
-  return Object.freeze({ scope, connectionString, allowedOrigins: origins, ...(unifiedUi ? { unifiedUi: true } : {}),
+  return Object.freeze({ scope, connectionString, allowedOrigins: origins, unifiedUi: true,
     publicHosts: origins.map(origin => new URL(origin).host),
-    apiBase: env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio/api/admin' : '/api/admin',
-    authBase: env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio/api/auth' : '/api/auth' });
+    apiBase: '/studio/api/admin', authBase: '/studio/api/auth' });
 }
 
 export function assertNativeStudioRequest(request, config) {
@@ -142,6 +147,19 @@ export function createNativePresentationMutationTransaction({repository,boDb,poo
   };
 }
 
+// Nytt spelbord och spelbordets spelinställningar: samma koppling i produkten och i
+// presentation-room-quick-create.test.mjs (POST presentation-room med gameConfig behöver roomGameConfig).
+export function createNativeRoomApis({ repository, scope, videoRegistry, materials }) {
+  const roomGameConfig = createRoomGameConfigApi({repository,scope,resolveMaterial:input=>resolveNativeRoomGameMaterial(input,{version:2})});
+  const rooms = createPresentationRoomApi({ repository, videoRegistry, scope, materials, roomGameConfig,
+    // Verify the negotiated format before reporting readiness. This metadata
+    // never substitutes for the saved dealer registry or frozen media record.
+    runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation?.registeredDealers?.some(row=>row.filmedProfile)?34:presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
+      [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
+  });
+  return { roomGameConfig, rooms };
+}
+
 // Lazy initialization: importing/building does not connect, migrate, bootstrap
 // identities, read old disk state, or silently change the active writer.
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
@@ -200,24 +218,21 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       clientAddress: request => request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() || 'shared-unknown' });
     const videoRegistry = Object.freeze({ loadCaptured: media.videoRegistryCaptured, verifyCapturedMedia: media.verifyCapturedMedia });
     const preparations = new Map();
+    // Bolagets eget material in every publication that rebuilds a presentation; empty without 021.
+    const materials = sql => createOperatorMaterialStore({ sql, scope: config.scope });
     const lanePackages = createOperatorPackageApi({
-      pool, repository, videoRegistry, scope: config.scope,
+      pool, repository, videoRegistry, scope: config.scope, materials,
       project: async () => (await gamePolicy.readSaved()).project,
       gameLanes: async () => (await gamePolicy.readGameConfiguration()).gameLanes,
     });
     for (const [key, handler] of lanePackages.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
-      // Verify the negotiated format before reporting readiness. This metadata
-      // never substitutes for the saved dealer registry or frozen media record.
-      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation&&presentationPackageRequiresV30(presentation)?30:presentation&&presentationPackageRequiresV29(presentation)?29:presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
-        [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
-    });
+    const { roomGameConfig, rooms } = createNativeRoomApis({ repository, scope: config.scope, videoRegistry, materials });
     for (const service of [lanePackages, rooms]) {
       for (const [key, prepare] of service.preparations ?? []) { if (preparations.has(key)) unavailable(); preparations.set(key, prepare); }
     }
     // Pure frozen-material resolution stays inside the captured SQL snapshot;
     // byte inspection is a separate capability and runs before mutation admission.
-    for (const service of [createRoomGameConfigApi({repository,scope:config.scope,resolveMaterial:input=>resolveNativeRoomGameMaterial(input,{version:2})}),createSharedTableProofReadout({repository,scope:config.scope})]) {
+    for (const service of [roomGameConfig,createSharedTableProofReadout({repository,scope:config.scope})]) {
       for (const [key,handler] of service.handlers) { if(handlers.has(key))unavailable();handlers.set(key,handler); }
     }
     for (const [key, handler] of rooms.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
@@ -225,7 +240,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       pool, boDb: store.boDb, gameDb: store.db, scope: config.scope, mail, publicOrigin: env.CROUPIER_PUBLIC_ORIGIN,
     });
     for (const [key, handler] of operatorAdmin.handlers) { if (handlers.has(key)) unavailable(); handlers.set(key, handler); }
-    for (const [key, handler] of createResourceLifecycleApi({ repository, scope: config.scope }).handlers) {
+    for (const [key, handler] of [...createResourceLifecycleApi({ repository, scope: config.scope }).handlers, ...createPermanentDeletionApi({ repository, scope: config.scope }).handlers]) {
       if (handlers.has(key)) unavailable(); handlers.set(key, handler);
     }
     const drift = createMovingDriftAdminApi({pool,boDb:store.boDb,scope:config.scope,env});
@@ -235,7 +250,8 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     const native={ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
       replyRepository:createSpeechReplyRepository({sql:pool,scope:config.scope}),
-      readDesignCatalog: createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }),
+      readDesignCatalog: withMovingSpeechDealers(createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }), env),
+      movingSpeechDealers: () => movingDriftDealerIds(env),
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction, ...media,
@@ -269,7 +285,7 @@ export async function studioNativeRuntime() {
 // context is trusted caller metadata ({method, route: pathname}); bare
 // {statusCode:503} objects are deliberate "feature off" answers and stay quiet.
 export function nativeStudioErrorResponse(error, context) {
-  const status = [400,401,403,404,405,408,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
+  const status = [400,401,403,404,405,408,409,413,415,422,423,429,503].includes(error?.statusCode) ? error.statusCode : 503;
   const inspectionMessage=layerMediaInspectionMessage(error?.code);
   const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
   if (status === 503 && !readiness && error instanceof Error) logStudioServerFailure(error, context);
@@ -278,7 +294,9 @@ export function nativeStudioErrorResponse(error, context) {
   const lifecycleCodes=new Set(['studio_dealer_background_required','studio_conflict','studio_dealer_not_registered','studio_dealer_base_protected','studio_dealer_missing','studio_dealer_in_use','studio_dealer_published',
     'studio_dealer_delete_pending','studio_dealer_speech_enabled','studio_dealer_restore_conflict','studio_dealer_archived','studio_dealer_lifecycle_required',
     'studio_media_delete_coverage_incomplete','studio_media_upload_grant_active','studio_media_owned_elsewhere','studio_media_delete_failed','studio_media_already_deleted','studio_media_deletion_pending','studio_media_archive_required','studio_media_published','studio_retained_media_immutable',
-    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified']);
+    'studio_speech_take_missing','studio_speech_identity_changed','studio_speech_source_unverified','studio_dealer_voice_invalid','studio_speech_bank_missing',
+    // Bolagets eget material: fixed codes, incl. 429 for the daily AI limit.
+    'operator_materials_unavailable','operator_materials_blocked','operator_materials_limit_reached','operator_ai_limit_reached']);
   const body = inspectionMessage ? {error:inspectionMessage,code:error.code}
     : status===415&&error?.code===STUDIO_MEDIA_TYPE_UNSUPPORTED ? {error:STUDIO_MEDIA_TYPE_MESSAGE,code:STUDIO_MEDIA_TYPE_UNSUPPORTED} : lifecycleCodes.has(error?.code) ? {error:error.code,code:error.code} : readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
     code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }

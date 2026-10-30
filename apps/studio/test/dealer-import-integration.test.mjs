@@ -75,7 +75,7 @@ async function fixture(t) {
       const result = capability(version); return result instanceof Response ? result : Response.json(result);
     } });
   const uploads = createStudioUploadService({ repository: wrapped, scope, ticketKey: Buffer.alloc(32, 8),
-    env: { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-only-secret' },
+    env: { BLOB_READ_WRITE_TOKEN: 'fixture-only-secret' },
     clientToken: async args => { tokens.push(args); return 'fixture-only-client-token'; },
     options: { cacheDir, blobClient: { async get(pathname) {
       blobReads++; const object = objects.get(pathname); if (!object) return null;

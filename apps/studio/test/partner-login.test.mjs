@@ -10,7 +10,7 @@ import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import { studioLoginReturnTo } from '../lib/studio-login-client.mjs';
 import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-session.mjs';
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
-import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, PARTNER_VIEWS, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
@@ -70,7 +70,7 @@ const rejectedReturns = [undefined, [' /partner'], ['/partner/north','/partner/s
   '/partner/north/rooms?room='+'a'.repeat(65),'/partner/north\r\nLocation: https://outside.invalid',
 ];
 
-safeReturns.push(...PARTNER_PREVIEW_VIEWS.flatMap(view=>{
+safeReturns.push(...PARTNER_VIEWS.flatMap(view=>{
   const path=workspaceSurfacePath('partner',view,'north');
   return [[path+'?scope=company',path+'?scope=company'],['/studio'+path+'?room=room-7',path+'?room=room-7']];
 }),['/studio/partner/north/tables?scope=company','/partner/north/rooms?scope=company']);
@@ -105,7 +105,6 @@ test('internal administrators are sent to the N1 login with a return to /partner
   for (const authBase of ['/studio/api/partner', '/api/partner']) {
     const html = renderToStaticMarkup(React.createElement(PartnerLogin, { authBase }));
     assert.ok(html.includes(`href="${internalLoginHref(authBase).replace(/&/g, '&amp;')}"`), html);
-    assert.match(html, /Logga in som intern administratör/);
     assert.ok(html.includes(`action="${authBase}/login"`), 'the operator form still posts to the partner login');
   }
 });
@@ -134,12 +133,30 @@ test('successful partner login retains the requested company and actual room for
   }
 });
 
-test('the failed-login notice stays generic and does not reveal the account role', () => {
-  const source = readFileSync(sourceUrl, 'utf8');
-  const notice = source.match(/status === 401 \|\| status === 400\) return '([^']+)'/);
-  assert.ok(notice, 'the 401/400 notice is defined');
-  assert.match(notice[1], /^Inloggningen kunde inte verifieras\./);
-  assert.doesNotMatch(notice[1], /\b(admin\w*|roll|role)\b/i);
+// The rendered notice after a refused login: identical for 400 and 401 and for every account, so it
+// cannot tell an operator account from an internal one. Checked on behaviour, not on the source text.
+test('the failed-login notice stays generic and does not reveal the account role', async () => {
+  async function noticeAfter(status, user) {
+    let notice = '';
+    const fakeReact = { ...React, useState: initial => [initial, value => { if (typeof value === 'string') notice = value || notice; }] };
+    class Input { value = 'secret'; }
+    const loaded = loadPartnerLogin({ react: fakeReact }, {
+      FormData: class { get(key) { return key === 'user' ? user : 'secret'; } },
+      HTMLInputElement: Input,
+      fetch: async () => ({ ok: false, status }),
+      window: { location: { assign: () => assert.fail('a refused login never navigates') } },
+    });
+    const all = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(all) : [node, ...all(node.props?.children)];
+    const form = all(loaded.PartnerLogin({ authBase: '/api/partner' })).find(node => node.type === 'form');
+    form.props.onSubmit({ preventDefault() {}, currentTarget: { elements: { namedItem: () => new Input() } } });
+    await new Promise(resolve => setImmediate(resolve));
+    return notice;
+  }
+  const notices = [];
+  for (const status of [400, 401]) for (const user of ['north-staff', 'internal-admin@example.test']) notices.push(await noticeAfter(status, user));
+  assert.ok(notices[0], 'a refused login is explained');
+  assert.equal(new Set(notices).size, 1, 'the notice does not vary by status or account');
+  assert.notEqual(notices[0], await noticeAfter(429, 'north-staff'), 'rate limiting is explained separately');
 });
 
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
@@ -198,7 +215,7 @@ test('actual browser partner login returns to the authorized operator and room w
           const module={exports:{}}, unused=()=>assert.fail('unexpected fixture preview or control');
           const overrides={
             'next/headers':{headers:async()=>request.headers},'next/navigation':navigation,
-            '@/components/kevin-bo/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
+            '@/components/partner/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
             '@/components/partner-workspace':{PartnerWorkspace:()=>null},
             '@/lib/partner-data.mjs':{partnerWorkspaceInitialData:(req,options)=>partnerWorkspaceInitialData(req,{...options,config,store})},
 
@@ -267,12 +284,12 @@ test('actual browser partner login returns to the authorized operator and room w
         await page.waitForURL(origin+'/partner/login?returnTo='+encodeURIComponent(target));
         // Both deployed login document addresses consume the same safe return.
         await page.goto(origin+prefix+'/partner/login?returnTo='+encodeURIComponent(prefix+target));
-        const internal=page.getByRole('link',{name:'Logga in som intern administratör'});
+        const internal=page.getByRole('link',{name:'Logga in i Admin'});
         assert.equal(await internal.getAttribute('href'),'/admin/login?returnTo='+encodeURIComponent(target));
         await page.getByLabel('Användarnamn eller e-post').fill('north-staff');await page.getByLabel('Lösenord').fill(password);
         await page.getByRole('button',{name:'Logga in',exact:true}).click();await page.waitForURL(origin+target);
-        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'bj'});
-        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'bj'});
+        assert.deepEqual(JSON.parse(await page.locator('#receipt').textContent()),{operator:'north',room:'room-7',view:'rooms'});
+        await page.reload();assert.deepEqual(receipts.at(-1),{operator:'north',room:'room-7',view:'rooms'});
         const cookies=await context.cookies();assert.equal(cookies.length,1);
         assert.equal(cookies[0].name,'partner_session');assert.equal(cookies[0].httpOnly,true);assert.equal(cookies[0].secure,true);assert.equal(cookies[0].sameSite,'Lax');
         assert.equal((await page.goto(origin+'/partner/south/rooms?room=room-7')).status(),403);
