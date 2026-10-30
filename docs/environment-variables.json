@@ -537,26 +537,12 @@
         "audit": "2026-10-29: Vercel names read 16:10; Render names from the 2026-10-28 REST read. Order: code stops reading, merge, deploy, then Jakob removes the panel entry. The previous Vercel list (speech flags, DEMO_GUEST_ACCESS, CROUPIER_LAB_REMOTE_UI, CROUPIER_MEDIA_BLOB_INDEX, CROUPIER_DATABASE, CROUPIER_STREAM_LANE, CROUPIER_LAB_UI_ORIGIN) is done: none is in the panel.",
         "afterDeployOfThisChange": [
           {
-            "where": "vercel scoutgaming (production)",
-            "names": [
-              "CROUPIER_VERCEL_UI"
-            ],
-            "reason": "Always 1; CROUPIER_BACKEND_ORIGIN now switches the transport on."
-          },
-          {
             "where": "render croupier-v3",
             "names": [
               "CROUPIER_DATABASE",
               "CROUPIER_STREAM_LANE"
             ],
             "reason": "Single legal value hard-coded in ops/cloud/config.mjs; no source reads the panel entry."
-          },
-          {
-            "where": "vercel scoutgaming-preview (production scope)",
-            "names": [
-              "CROUPIER_VERCEL_UI"
-            ],
-            "reason": "Same as scoutgaming; only once branch preview has #664 (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, the preview build silently loses the transport."
           },
           {
             "where": "render scoutgaming-preview-engine",
@@ -569,34 +555,12 @@
         ],
         "afterDeployOfMiljovariabler2": [
           {
-            "where": "vercel scoutgaming (production)",
-            "names": [
-              "CROUPIER_VERCEL_UNIFIED_UI",
-              "CROUPIER_STUDIO_NATIVE_ADMIN",
-              "CROUPIER_LAB_BASE_PATH",
-              "CROUPIER_STUDIO_NEON_POLICY",
-              "CROUPIER_MEDIA_STORAGE"
-            ],
-            "reason": "Single value fixed in code (ENVIRONMENT-VARIABLES.md#fasta-värden); CROUPIER_STUDIO_NATIVE_ADMIN and CROUPIER_LAB_BASE_PATH were also read at build time, so remove them only after a deployment with the change has been built."
-          },
-          {
             "where": "render croupier-v3",
             "names": [
               "CROUPIER_STUDIO_NEON_POLICY",
               "CROUPIER_MEDIA_STORAGE"
             ],
             "reason": "Fixed in ops/cloud/config.mjs and services/game/server.mjs; no longer forwarded to the game child."
-          },
-          {
-            "where": "vercel scoutgaming-preview (production scope)",
-            "names": [
-              "CROUPIER_VERCEL_UNIFIED_UI",
-              "CROUPIER_STUDIO_NATIVE_ADMIN",
-              "CROUPIER_LAB_BASE_PATH",
-              "CROUPIER_STUDIO_NEON_POLICY",
-              "CROUPIER_MEDIA_STORAGE"
-            ],
-            "reason": "Same as scoutgaming; only once branch preview has the change (main -> preview, node tools/push-github-work.mjs --environment preview) and is deployed. Removed earlier, Studio builds without /studio and the transport throws."
           },
           {
             "where": "render scoutgaming-preview-engine",
@@ -645,7 +609,45 @@
           "scoutgaming CROUPIER_BACKEND_ORIGIN is Sensitive although it is a public URL; Plain is consistent with scoutgaming-preview."
         ],
         "nextChange": "Done in Miljövariabler 2 (afterDeployOfMiljovariabler2). Follow-up workflow PR: .github/workflows/product-container-check.yml:66-67 still passes -e CROUPIER_STUDIO_NEON_POLICY=1 and -e CROUPIER_MEDIA_STORAGE=blob, and since #664 :65 -e CROUPIER_DATABASE=postgres and :67 -e CROUPIER_STREAM_LANE; none is read.",
-        "verifyAfter": "/admin login, /lobby, /game with a played hand, /studio/api/assistant returns 200, Render /__cloud/health."
+        "verifyAfter": "/admin login, /lobby, /game with a played hand, /studio/api/assistant returns 200, Render /__cloud/health.",
+        "completed": [
+          {
+            "where": "vercel scoutgaming (production)",
+            "completedDate": "2026-10-30",
+            "names": [
+              "CROUPIER_VERCEL_UI",
+              "CROUPIER_VERCEL_UNIFIED_UI",
+              "CROUPIER_STUDIO_NATIVE_ADMIN",
+              "CROUPIER_STUDIO_NEON_POLICY",
+              "CROUPIER_MEDIA_STORAGE",
+              "CROUPIER_LAB_BASE_PATH"
+            ],
+            "verifiedReadySha": "abb7ad800fa2b7dac0d033ad87386842cbc5f7bc",
+            "backup": "arkiv/2026-10-30/vercel-env-cleanup/scoutgaming.before.json",
+            "beforeCount": 41,
+            "afterCleanupCount": 35,
+            "currentProductionCount": 38,
+            "verification": "MAIN performed the six scoped removals after READY and reported unchanged unrelated env IDs. Independent readback confirms all six names absent. scoutgaming subsequently gained the three owner-requested voice-ID references. Render was not changed."
+          },
+          {
+            "where": "vercel scoutgaming-preview (production)",
+            "completedDate": "2026-10-30",
+            "names": [
+              "CROUPIER_STUDIO_NATIVE_ADMIN",
+              "CROUPIER_VERCEL_UI",
+              "CROUPIER_VERCEL_UNIFIED_UI",
+              "CROUPIER_LAB_BASE_PATH",
+              "CROUPIER_MEDIA_STORAGE",
+              "CROUPIER_STUDIO_NEON_POLICY"
+            ],
+            "verifiedReadySha": "989858d39be31081f87f05ac6bee33d24f8f105f",
+            "backup": "arkiv/2026-10-30/vercel-env-cleanup/scoutgaming-preview.before.json",
+            "beforeCount": 16,
+            "afterCleanupCount": 10,
+            "currentProductionCount": 10,
+            "verification": "MAIN performed the six scoped removals after READY and reported unchanged unrelated env IDs. Independent readback confirms all six names absent. scoutgaming subsequently gained the three owner-requested voice-ID references. Render was not changed."
+          }
+        ]
       }
     },
     "github-actions-tooling": {
