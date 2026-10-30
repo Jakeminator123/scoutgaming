@@ -9,6 +9,14 @@ Ingången är [START-HERE.md](START-HERE.md) (produktväg, identiteter, publicer
 - Ord: [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) är den korta ordlistan: tre nivåer, kärnord, gamla namn → nya och tre regler; Admins Hjälp (`/admin/guide`) är den korta beskrivningen i produkten. Ingen dokumentation låser Admins sektioner, ord, menyantal eller layout; Jakob avgör UX. Användarsteg: [användarguiden](apps/studio/docs/README.md). Kontrakt och medieformat: [runtimeguiden](docs/LOCAL-PRESENTATION-RUNTIME.md). Alla dokument står i [docs/README](docs/README.md); daterade kvitton (`docs/<datum>-*`) är bevis, inte läge, och raderas när aktiviteten är verifierad. docs/history är raderad; lägg ingen ny historikmapp, Git är historiken, och ett raderat dokument får en rad i [docs/HISTORIK](docs/HISTORIK.md). `migrering/status.json` är enda statuskällan; skapa inga konkurrerande trackers och återöppna inte genomförd Neon-/Blob-migrering utan ett konkret runtimefel.
 - Uppdatera befintliga sakdokument; en uttryckligt beställd plan eller rapport är tillåten. OpenClaw-arbete börjar i [dess guide](docs/AI/openclaw/README.md): bara `docs.openclaw.ai` och `github.com/openclaw/openclaw` är auktoritativa ([källindex](docs/AI/openclaw/OPENCLAW-DOCS.md)), den pinnade imagen i `services/openclaw/lab/deploy/Dockerfile.gateway` uppgraderas inte tyst, och ingen dokumentations-MCP installeras.
 
+## Spelkärnan är en ansvarsgräns, inte en låst mapp
+
+Jakobs beslut 30 oktober: spelkärnan är regler, slump, sko, kort och beräkning av spelutfall. Blackjackreglerna finns i `services/game/games/blackjack/round.mjs` och `core.mjs`, med serverns slump-/skoadaptrar. Hela `services/game` är inte denna kärna: där ligger även HTTP, sessioner, plånboksadaptrar, spelklient, presentation och talintegration.
+
+Kod runt kärnan får förenklas, flyttas, ersättas och raderas tillsammans med sina konsumenter och förbrukade tester. Inget generellt ändringsförbud gäller `services/game`, Admin, navigation eller publicering. Bevara serverns auktoritet, behörighet, bolagsisolering och atomiska pengatransaktioner; det är beteendekrav, inte bevarandekrav för en viss implementation. Ändra inte spelregler, slump eller utbetalningsmodell som bieffekt av UI-, städ- eller integrationsarbete.
+
+Raderingsskyddet för aktiva referenser är inte ett krav att spara allt. Radera ersatt kod och förbrukade arbetsfiler. Sparade paket kan däremot fortfarande vara källan för ett rums låsta konfiguration; följ den referensen innan paket eller mediebytes tas bort. Historik som ingen aktiv eller uttryckligen bevarad konsument behöver kan bedömas för separat, verifierbar gallring.
+
 ## Arbetsflöde med agenter
 
 - Kontrollera rätt checkout, branch/HEAD och egna ändringar före redigering. Bevara andras filer, index och arbete; ingen bred reset, stash, clean eller processnedstängning för att få en ren arbetsyta.
