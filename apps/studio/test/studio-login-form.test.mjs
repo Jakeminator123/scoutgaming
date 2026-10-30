@@ -227,7 +227,7 @@ test('actual browser expired Admin login restores the real room view through his
     await page.waitForURL(url=>url.pathname==='/admin/scenes');
     assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),{tab:'miljoer',composition:expectedContext.composition,game:expectedContext.game},
       'Miljöer opens the clip map\'s environment and game, never the room context');
-    await page.getByRole('heading',{name:expectedLabels.composition,exact:true}).first().waitFor();
+    await page.getByRole('heading',{level:1}).filter({hasText:expectedLabels.composition}).waitFor();
     const uses = page.getByRole('list',{name:'Spelbord som använder miljön',exact:true});
     await uses.getByRole('link',{name:expectedLabels.room,exact:true}).first().waitFor();
     assert.equal(await page.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'opening the environment must not create a draft');
