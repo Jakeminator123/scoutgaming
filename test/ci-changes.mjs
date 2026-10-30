@@ -765,7 +765,9 @@ test('migration readiness reads the preview ledger on preview runs, production o
     const choose = (env) => {
       const output = join(root, `output-${n++}`);
       writeFileSync(output, '');
-      const result = spawnSync('bash', ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      const shell = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+      const result = spawnSync(shell, ['-c', script], {encoding: 'utf8', env: {PATH: process.env.PATH, GITHUB_OUTPUT: output, GITHUB_REF: '', GITHUB_BASE_REF: '', ...env}});
+      assert.ifError(result.error);
       return {status: result.status, output: readFileSync(output, 'utf8'), log: result.stdout + result.stderr};
     };
     const cases = [
