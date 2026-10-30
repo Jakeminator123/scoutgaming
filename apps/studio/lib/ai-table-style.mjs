@@ -30,13 +30,6 @@ export const AI_TABLE_STYLES = Object.freeze({
   free:Object.freeze({stroke:'rgba(255,255,255,0.72)',look:null,text:null}),
 });
 
-// The pre-made tables in Bordsgrafik, described in words only (never embedded).
-export const AI_TABLE_REFERENCES = 'STYLE REFERENCES (described in words only; match their finish and depth, never copy them): '
-  +'"Grön filt": classic deep-green woven felt, black padded leather rail, thin gold pinstripe, warm light. '
-  +'"Lila neon": near-black felt with a violet neon glow along the rail edge and a dark glossy rail. '
-  +'"Ljus ek": a light oak rail and apron with a warm, pale felt. '
-  +'Production\'s Privé table: black felt, rosewood inlay, a thick black leather rail, gold trim and warm light from behind the dealer.';
-
 export function aiTableStyle(preset) {
   if (!AI_IMAGE_PRESETS.some(row=>row.id===preset)||!Object.hasOwn(AI_TABLE_STYLES,preset)) throw Error('invalid_table_style');
   return AI_TABLE_STYLES[preset];
@@ -64,7 +57,7 @@ export function aiTableBrief({preset,staff,inspiration,template,size,sceneTempla
     `FRAME: the FIRST attached image is a rendered 3D mock-up at ${size.width}x${size.height}: black is outside the table and is cut away by the server along the table's silhouette. Inside it: the felt lit from the dealer's side, the rail's shadow on the felt, a wood inlay band, a thick padded rail, the apron under the rail and the pedestal. White outlines are the betting boxes and the dealer card spot, which the server draws afterwards at exact positions.`,
     'EDIT the mock-up into a photorealistic table: keep its silhouette, the rail, apron and pedestal positions, the perspective and the scale exactly; replace the flat colours with real materials (woven felt with a soft light pool from the dealer side, stitched padded leather with specular highlights, polished wood, metal), contact shadows and ambient occlusion. Inside each white outline keep plain, even felt; the boxes are drawn later.',
     `LOOK: ${style.text??'follow the staff description and the reference photo; choose bold, rich materials.'}`,
-    AI_TABLE_REFERENCES,
+    'REFERENCE PRIORITY: the first image alone defines geometry, camera and size. Any last reference photo supplies colours, textures and material finish only, never its outline, perspective, crop, furniture or layout. Use only the selected look and staff description; do not mix unrelated table styles.',
     `FORBIDDEN: ${forbidden}; painted box outlines, circles, arcs, payout lines, chip trays, cup holders or any object on the table.`,
     staff,inspiration,
     `LANDINGS: dealer ${template.dealerId}, ${template.seats.length} boxes from the filmed profile, placed for ${sceneTemplate?`scene template ${sceneTemplate.id}`:'the default composition'}.`,variation].filter(Boolean).join('\n');

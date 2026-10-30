@@ -137,6 +137,27 @@ test('measured landings need the dealer\'s own clips at their frames; delete is 
 // Dealer-fabriken: -iu clips are Kevin's N:i take plus an appended return, 68-81 frames (frames 0-59 identical).
 const factoryFrames=take=>take.variant==='i'&&take.target!=='hole'?68+(Number(take.target)||8)+(take.target==='dealer'?5:0):take.frames;
 
+test('an explicit factory source is held until Render v35 and survives the real journalled save',async t=>{
+  const records=clips('jakob-2',{frames:take=>take.key==='1:v'?60:take.frames}),profile=factoryProfile(records);
+  const destination=profile.takes.find(take=>take.key==='1:v'),source=paow.takes.find(take=>take.key==='1:base');
+  Object.assign(destination,{...source,key:'1:v',variant:'v',endPose:'VILA',sha256:destination.sha256,
+    frames:60,sourceTakeKey:'1:base'});
+  for(const version of [34,35]){
+    const f=await fixture(t,{records,runtimeVersion:version});
+    const response=await json(await f.api.handle(req('jakob-2','PUT',{expectedRevision:f.revision,profile})));
+    assert.deepEqual(f.fetches,['35']);
+    if(version===34){
+      assert.equal(response.status,503);assert.equal(response.body.code,PRESENTATION_RUNTIME_UPDATE_REQUIRED);
+      assert.deepEqual(await f.journal(),[]);
+    }else{
+      assert.equal(response.status,200);
+      assert.deepEqual(response.body.project.dealers.find(row=>row.id==='jakob-2').filmedProfile.takes['1:v'],
+        {sha256:destination.sha256,frames:60,sourceTakeKey:'1:base'});
+      assert.deepEqual((await f.journal()).map(row=>row.action),['save_document']);
+    }
+  }
+});
+
 test('copy from PAOW keeps a factory dealer\'s longer -iu clips with their own frame count',async t=>{
   const f=await fixture(t,{records:clips('jakob-2',{frames:factoryFrames})});
   const put=await json(await f.api.handle(req('jakob-2','PUT',{expectedRevision:f.revision,copyFrom:'paow'})));

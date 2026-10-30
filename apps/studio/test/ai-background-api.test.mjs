@@ -218,7 +218,7 @@ test('table mode sends the computed landing template and draws the boxes exactly
   const sent=calls[0].body,[brief,landing]=sent.input[0].content;
   assert.equal(sent.tools[0].action,'edit');assert.equal(sent.tools[0].size,`${size.width}x${size.height}`);
   assert.match(brief.text,/rendered 3D mock-up/);assert.match(brief.text,/FORBIDDEN: text, letters, digits/);assert.match(brief.text,/painted box outlines/);
-  assert.match(brief.text,/LOOK: Classic casino/);assert.match(brief.text,/"Grön filt".*"Lila neon".*"Ljus ek"/s,'the pre-made tables as words');
+  assert.match(brief.text,/LOOK: Classic casino/);
   const reference=await sharp(Buffer.from(landing.image_url.split(',')[1],'base64')).metadata();
   assert.deepEqual([reference.format,reference.width,reference.height],['png',size.width,size.height]);
   const {data,info}=await sharp(Buffer.from(proposal.dataUrl.split(',')[1],'base64')).ensureAlpha().raw().toBuffer({resolveWithObject:true});

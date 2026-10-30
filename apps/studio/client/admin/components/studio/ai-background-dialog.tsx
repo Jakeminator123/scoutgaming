@@ -1,10 +1,10 @@
 'use client';
 import {Check, ImagePlus, Layers, RefreshCw, Sparkles} from 'lucide-react';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {CompositionSettings} from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {AI_IMAGE_MAX_PROPOSALS, AI_IMAGE_PRESETS, AI_IMAGE_PROMPT_LENGTH, AI_IMAGE_REFERENCE_TYPES, aiImageLabel, type AiImagePresetId} from '../../../../lib/ai-image-contract.mjs';
-import {AI_THEME_ENVIRONMENT_NOTE, adoptInRoom, adoptInTemplate, aiImageErrorMessage, aiSceneTemplates, aiTableDealers, aiTableWidthSuggestion, prepareReferenceImage, readAiImageStatus,
+import {adoptInRoom, adoptInTemplate, aiImageErrorMessage, aiReferenceMaterials, aiSceneTemplates, aiTableDealers, aiTableShapePreview, aiTableWidthSuggestion, prepareMaterialReference, prepareReferenceImage, readAiImageStatus,
   registerAiProposal, requestAiProposals, type AiAdoptMaterial, type AiImageStatus, type AiProposal, type AiSceneTemplate} from '../../lib/ai-background.mjs';
 import type {AiTableFit} from '../../../../lib/ai-image-contract.mjs';
 import {layerUploadFailureMessage} from '../../../../../../packages/presentation/contracts/layer-upload-errors.mjs';
@@ -57,14 +57,15 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   const [status, setStatus] = useState<AiImageStatus | null>(null), [statusError, setStatusError] = useState('');
   const [prompt, setPrompt] = useState(''), [preset, setPreset] = useState<AiImagePresetId>('dark-luxury'), [count, setCount] = useState(2);
   const [dealerId, setDealerId] = useState(''), [templateId, setTemplateId] = useState(''), [reference, setReference] = useState<string | null>(null), [referenceName, setReferenceName] = useState('');
+  const [referenceBusy, setReferenceBusy] = useState(false), referenceRequest = useRef<AbortController | null>(null);
   const [fitWidth, setFitWidth] = useState(true), [adopt, setAdopt] = useState(true), [drawn, setDrawn] = useState<Drawn | null>(null);
   const [proposals, setProposals] = useState<Record<Role, AiProposal[]>>({table: [], background: []});
   const [selected, setSelected] = useState<Record<Role, string | null>>({table: null, background: null}), [fit, setFit] = useState<AiTableFit | null>(null);
   const [error, setError] = useState(''), [progress, setProgress] = useState<number | null>(null), [confirmation, setConfirmation] = useState('');
   const request = useRef<AbortController | null>(null), mounted = useRef(true), busyCallback = useRef(onBusyChange);
   busyCallback.current = onBusyChange;
-  const busy = phase === 'generating' || phase === 'saving';
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; request.current?.abort(); busyCallback.current?.(false); }; }, []);
+  const busy = phase === 'generating' || phase === 'saving' || referenceBusy;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; request.current?.abort(); referenceRequest.current?.abort(); busyCallback.current?.(false); }; }, []);
   useEffect(() => { busyCallback.current?.(busy); }, [busy]);
   const filmedIds = filmed.map(row => row.id).join(',');
   useEffect(() => { const ids = filmedIds ? filmedIds.split(',') : []; if (table && !ids.includes(dealerId)) setDealerId(ids[0] ?? ''); }, [table, filmedIds, dealerId]);
@@ -85,15 +86,18 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   }, [open]);
 
   // The table follows the dealer's reach: the boxes fill 70-80 % of its width, written to the template's Bordsbredd %.
-  const suggestion = table && dealerId ? aiTableWidthSuggestion(dealerId, scene?.composition) : null;
+  const suggestion = useMemo(() => table && dealerId ? aiTableWidthSuggestion(dealerId, scene?.composition) : null, [table, dealerId, scene?.composition]);
   const widened = fitWidth && Boolean(suggestion?.changed);
   const drawComposition = widened ? suggestion!.suggested.composition : scene?.composition;
+  const shape = useMemo(() => table ? aiTableShapePreview(dealerId, drawComposition, preset) : null, [table, dealerId, drawComposition, preset]);
+  const libraryReferences = aiReferenceMaterials(project?.layerAssets, role);
   const noun = table ? 'bordsgrafik' : 'bakgrund', place = table ? 'Bordsgrafik' : 'Bakgrunder';
-  const text = prompt.replace(/\s+/g, ' ').trim();
+  const description = prompt.replace(/\s+/g, ' ').trim();
+  const text = description || (preset !== 'free' ? AI_IMAGE_PRESETS.find(row => row.id === preset)?.label ?? '' : reference ? 'Följ inspirationsbildens färger och material.' : '');
   const off = status?.enabled === false, misconfigured = status?.enabled === true && status.problem === 'invalid_setting';
   const offline = status?.enabled === true && !status.configured && !misconfigured;
   const available = (theme: boolean) => status?.configured === true && status.remaining >= count * (theme ? 2 : 1);
-  const ready = text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(dealerId)) && status !== null && !off && !misconfigured && !offline && !unsupported;
+  const ready = !referenceBusy && text.length >= AI_IMAGE_PROMPT_LENGTH.min && text.length <= AI_IMAGE_PROMPT_LENGTH.max && (!table || Boolean(shape)) && status !== null && !off && !misconfigured && !offline && !unsupported;
   const exhausted = status?.configured === true && !available(false);
   // Where "Använd" puts the material: the drawn table's template (a theme's background too), a background's preview template.
   const target = drawn ? (table ? drawn.templateId : previewId) : '';
@@ -104,13 +108,20 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   function close(next: boolean) {
     if (next) { setOpen(true); setConfirmation(''); return; }
     request.current?.abort(); request.current = null;
+    referenceRequest.current?.abort(); referenceRequest.current = null; setReferenceBusy(false);
     setOpen(false); setPhase('form'); setProposals({table: [], background: []}); setSelected({table: null, background: null}); setFit(null); setDrawn(null); setError(''); setProgress(null);
   }
-  async function pickReference(file: File | undefined) {
-    if (!file || busy) return;
-    setError('');
-    try { const value = await prepareReferenceImage(file); if (mounted.current) { setReference(value); setReferenceName(file.name); } }
-    catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'Inspirationsbilden kunde inte läsas.'); }
+  async function pickReference(source: File | {id: string; label: string} | undefined) {
+    if (!source || busy) return;
+    referenceRequest.current?.abort();
+    const controller = new AbortController(); referenceRequest.current = controller;
+    setError(''); setReferenceBusy(true);
+    try {
+      const material = 'id' in source;
+      const value = material ? await prepareMaterialReference(source.id, {signal: controller.signal}) : await prepareReferenceImage(source);
+      if (mounted.current && !controller.signal.aborted) { setReference(value); setReferenceName(material ? source.label : source.name); setPreset('free'); }
+    } catch (cause) { if (mounted.current && !controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Inspirationsbilden kunde inte läsas.'); }
+    finally { if (referenceRequest.current === controller) { referenceRequest.current = null; if (mounted.current) setReferenceBusy(false); } }
   }
   // One run: this role's proposals, and with a theme a table and a background from the same description, style and image.
   async function generate(theme = false) {
@@ -188,7 +199,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
   const theme = table;
   const footer = phase === 'saving' ? undefined : <>
     {phase === 'generating' ? <Button onClick={() => request.current?.abort()}>Avbryt</Button> : null}
-    {phase === 'form' && theme ? <Button disabled={!ready || !available(true)} onClick={() => void generate(true)}><Layers aria-hidden="true" />Skapa bord + bakgrund + miljöbild från samma tema</Button> : null}
+    {phase === 'form' && theme ? <Button disabled={!ready || !available(true)} onClick={() => void generate(true)}><Layers aria-hidden="true" />Skapa bord + bakgrund</Button> : null}
     {phase === 'form' ? <Button variant="primary" disabled={!ready || exhausted} onClick={() => void generate(false)}><Sparkles aria-hidden="true" />Skapa förslag</Button> : null}
     {phase === 'results' ? <>
       <Button disabled={!ready || !available(Boolean(drawn?.theme))} onClick={() => void generate(Boolean(drawn?.theme))}><RefreshCw aria-hidden="true" />Skapa nya</Button>
@@ -226,10 +237,10 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
 
         {phase === 'form' || phase === 'generating' ? <div className="grid gap-4">
           <label className="grid gap-1">
-            <span className="font-medium">Beskriv {table ? 'bordet' : 'bakgrunden'}</span>
+            <span className="font-medium">Beskriv {table ? 'bordet' : 'bakgrunden'} · valfritt med vald stil eller bild</span>
             <textarea className={field} rows={3} maxLength={AI_IMAGE_PROMPT_LENGTH.max} value={prompt} disabled={busy}
               placeholder={table ? 'T.ex. svart filt, tjock läderrail och guldkant' : 'T.ex. lugn kvällsstudio med mjukt sidoljus'} onChange={event => setPrompt(event.target.value)} />
-            <span className="text-xs text-sg-muted">{text.length}/{AI_IMAGE_PROMPT_LENGTH.max} tecken. Text, logotyper, personer, kort och marker tas aldrig med.</span>
+            <span className="text-xs text-sg-muted">{description.length}/{AI_IMAGE_PROMPT_LENGTH.max} tecken. Beskriv färg, material och känsla. Perspektiv och storlek anpassas automatiskt.</span>
           </label>
           <fieldset className="grid gap-2" disabled={busy}>
             <legend className="mb-1 font-medium">Stil</legend>
@@ -239,30 +250,41 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
             </div>
             {preset === 'free' ? <span className="text-xs text-sg-muted">Fri: din beskrivning och inspirationsbilden styr material och färg.</span> : null}
           </fieldset>
-          {table && filmed.length ? <label className="grid gap-1">
-            <span className="font-medium">Dealer</span>
-            <select className={field} value={dealerId} disabled={busy} onChange={event => setDealerId(event.target.value)}>
-              {filmed.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
-            </select>
-            <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
-          </label> : null}
-          {table && filmed.length ? <label className="grid gap-1">
-            <span className="font-medium">Miljö</span>
-            <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
-              {scenes.map(row => <option key={row.id} value={row.id}>{row.label}{row.id === roomTemplate ? ' · spelbordets' : ''}</option>)}
-              <option value="">Standardplacering (ingen miljö)</option>
-            </select>
-            <span className="text-xs text-sg-muted">Bordsgrafiken passar miljöns placering. Ändras placeringen senare behöver bordet ritas om.</span>
-          </label> : null}
-          {suggestion ? <div className="flex items-start gap-2">
-            <Checkbox id="ai-fit-width" checked={fitWidth} disabled={busy || !suggestion.changed} onCheckedChange={value => setFitWidth(value === true)} className="mt-0.5" />
-            <Label htmlFor="ai-fit-width" className="grid gap-0.5">
-              <span className="font-medium">Anpassa bordets bredd efter dealerns räckvidd</span>
-              <span className="text-xs text-sg-muted">{suggestion.changed
-                ? `Boxarna fyller ${share(suggestion.current.share)} av bordet; med Bordsbredd ${percent(suggestion.suggested.percent.desktop)} (dator) och ${percent(suggestion.suggested.percent.mobile)} (mobil) fyller de ${share(suggestion.suggested.share)}, så spelaren sitter nära och bordets ändar böjer mot dealern. Bredden följer med till miljön.`
-                : `Boxarna fyller redan ${share(suggestion.current.share)} av bordet.`}</span>
-            </Label>
+          {table && filmed.length ? <details className="rounded-lg border border-sg-border p-3">
+            <summary className="cursor-pointer text-sm font-medium">Placering · {filmed.find(row => row.id === dealerId)?.label ?? 'Dealer'} · {scene?.label ?? 'Standard'}</summary>
+            <div className="mt-3 grid gap-3">
+              <label className="grid gap-1">
+                <span className="font-medium">Dealer</span>
+                <select className={field} value={dealerId} disabled={busy} onChange={event => setDealerId(event.target.value)}>
+                  {filmed.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+                </select>
+                <span className="text-xs text-sg-muted">Bordet ritas efter dealerns filmade landningar.</span>
+              </label>
+              <label className="grid gap-1">
+                <span className="font-medium">Miljö</span>
+                <select className={field} value={templateId} disabled={busy} onChange={event => setTemplateId(event.target.value)}>
+                  {scenes.map(row => <option key={row.id} value={row.id}>{row.label}{row.id === roomTemplate ? ' · spelbordets' : ''}</option>)}
+                  <option value="">Standardplacering (ingen miljö)</option>
+                </select>
+                <span className="text-xs text-sg-muted">Bordsgrafiken passar miljöns placering. Ändras placeringen senare behöver bordet ritas om.</span>
+              </label>
+              {suggestion ? <div className="flex items-start gap-2">
+                <Checkbox id="ai-fit-width" checked={fitWidth} disabled={busy || !suggestion.changed} onCheckedChange={value => setFitWidth(value === true)} className="mt-0.5" />
+                <Label htmlFor="ai-fit-width" className="grid gap-0.5">
+                  <span className="font-medium">Anpassa bordets bredd efter dealerns räckvidd</span>
+                  <span className="text-xs text-sg-muted">{suggestion.changed
+                    ? `Rekommenderad bredd: ${percent(suggestion.suggested.percent.desktop)} (dator), ${percent(suggestion.suggested.percent.mobile)} (mobil). Boxarna fyller då ${share(suggestion.suggested.share)} av bordet. Bredden följer med till miljön.`
+                    : `Boxarna fyller redan ${share(suggestion.current.share)} av bordet.`}</span>
+                </Label>
+              </div> : null}
+            </div>
+          </details> : null}
+          {table && shape ? <div className="grid gap-2 rounded-lg border border-sg-border p-3">
+            <p className="m-0 font-medium">Bordets form och storlek</p>
+            <AiProposalPreview role="table" proposal={shape} project={project} inventory={inventory} laneId={scene?.id ?? ''} dealerId={dealerId} composition={drawComposition} />
+            <p className="m-0 text-xs text-sg-muted">Formmall före generering. AI ger bordet material och ljus; perspektivet, storleken och kortens platser behålls. Inspirationsbilden ändrar bara stilen.</p>
           </div> : null}
+          {table && dealerId && !shape ? <p role="alert" className={notice}>Bordet kan inte ritas för den här placeringen. Välj en annan miljö eller justera bordets och dealerns placering för dator och mobil.</p> : null}
           <div className="grid gap-1 rounded-lg border border-dashed border-sg-border p-3" onDragOver={event => { event.preventDefault(); }}
             onDrop={event => { event.preventDefault(); void pickReference(event.dataTransfer.files?.[0]); }}>
             <span className="font-medium">Inspirationsbild · valfri</span>
@@ -274,7 +296,17 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               <ImagePlus aria-hidden="true" />Välj bild
               <input type="file" className="sr-only" accept={AI_IMAGE_REFERENCE_TYPES.join(',')} disabled={busy} onChange={event => { const input = event.currentTarget, file = input.files?.[0]; input.value = ''; void pickReference(file); }} />
             </label>}
-            <span className="text-xs text-sg-muted">Dra in eller välj ett bord, en lokal eller ett foto att inspireras av; material och färg följer bilden. PNG, JPEG eller WebP; görs mindre till högst 1536 px och under 2 MB. Skickas bara med förfrågan och sparas inte.</span>
+            {libraryReferences.length ? <details>
+              <summary className="cursor-pointer py-2 text-sm font-medium">Välj från materialbiblioteket</summary>
+              <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                {libraryReferences.map(material => <button key={material.id} type="button" disabled={busy} onClick={() => void pickReference(material)} className="grid gap-1 rounded-lg border border-sg-border bg-sg-surface-2 p-2 text-left disabled:opacity-50">
+                  <img src={material.url} alt="" loading="lazy" className="aspect-video w-full rounded object-contain" />
+                  <span className="text-xs">{material.label}</span>
+                </button>)}
+              </div>
+            </details> : null}
+            {referenceBusy ? <p role="status" className="m-0 text-xs">Läser inspirationsbilden…</p> : null}
+            <span className="text-xs text-sg-muted">Välj en befintlig bild eller ladda upp PNG, JPEG eller WebP (högst 8 MB). Bilden väljer Fri stil och styr färg och material, aldrig perspektiv eller storlek. Den skickas med förfrågan utan att sparas igen.</span>
           </div>
           <label className="grid w-fit gap-1">
             <span className="font-medium">Antal förslag</span>
@@ -282,7 +314,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
               {Array.from({length: AI_IMAGE_MAX_PROPOSALS}, (_, index) => index + 1).map(value => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
-          {theme ? <p className="m-0 text-xs text-sg-muted">Samma tema: bord och bakgrund med samma beskrivning, stil och inspirationsbild ({count * 2} bilder). {AI_THEME_ENVIRONMENT_NOTE}</p> : null}
+          {theme ? <p className="m-0 text-xs text-sg-muted">Bord + bakgrund använder samma beskrivning, stil och inspirationsbild ({count * 2} bilder).</p> : null}
         </div> : null}
 
         {phase === 'generating' ? <div className="grid gap-2">
@@ -293,7 +325,7 @@ export function AiBackgroundDialog({role = 'background', game = 'blackjack', dea
         </div> : null}
 
         {phase === 'results' || phase === 'saving' ? <div className="grid gap-3">
-          {drawn?.theme ? <>{results('table')}{results('background')}<p className="m-0 text-xs text-sg-muted">{AI_THEME_ENVIRONMENT_NOTE}</p></> : results(role)}
+          {drawn?.theme ? <>{results('table')}{results('background')}</> : results(role)}
           {preview ? <div className="grid gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="m-0 font-medium">Förhandsvisning i scenen</p>

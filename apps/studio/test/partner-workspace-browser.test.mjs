@@ -88,7 +88,11 @@ test('the table editor works with the keyboard: tabs, card choices, review dialo
     // Tabs (Radix, manual activation): arrows move focus, Enter opens the panel.
     const dealers=page.getByRole('radiogroup',{name:'Dealer'});
     await page.getByRole('tab',{name:'Utseende'}).focus();await page.keyboard.press('ArrowRight');
-    await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Dealer');await page.keyboard.press('Enter');await dealers.waitFor();
+    await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Dealer');await page.keyboard.press('Enter');
+    const dealerDisclosure=page.locator('fieldset[data-kind="dealer"] summary');
+    await dealerDisclosure.waitFor();assert.equal(await dealers.isVisible(),false,'current choice is shown before alternatives');
+    await dealerDisclosure.focus();await page.keyboard.press('Enter');await dealers.waitFor();
+    await page.getByRole('tab',{name:'Dealer'}).focus();
     await page.keyboard.press('End');
     await focusOn(page,()=>document.activeElement?.textContent?.trim()==='Historik');await page.keyboard.press('Enter');
     await page.getByRole('heading',{name:'Publicerade versioner'}).waitFor();assert.equal(await dealers.isVisible(),false);

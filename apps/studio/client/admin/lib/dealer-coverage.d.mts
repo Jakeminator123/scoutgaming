@@ -7,4 +7,3 @@ export function dealerTemplates(project:StudioProject,dealerId:string):{id:strin
 export function dealerUses(catalog:Catalog,dealerId:string):{rooms:Catalog['administration']['rooms'];operators:Catalog['administration']['operators']};
 export function adminMenuCounts(workspace:Partial<Workspace>|null):Record<string,number>;
 export function dealerStill(project:StudioProject,inventory:VideoInventory,dealerId:string):{url:string;image:boolean;label:string}|null;
-export function dealerLandingsNote(dealerId:string):string|null;

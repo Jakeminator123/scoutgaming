@@ -9,6 +9,9 @@ import { createEmptyProject, addDealer } from '../packages/presentation/contract
 import { recordedSpeechIdentity, recordedSpeechForVideo } from '../packages/presentation/contracts/recorded-speech.mjs';
 import {recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { DRAGAN_KEVIN_PROFILE as profile } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import { PAOW_KEVIN_PROFILE } from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
+import { expandStudioFilmedProfile } from '../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
+import { cloneStudioJson } from '../packages/studio-registry/server/storage-contract.mjs';
 const first='10000000-0000-4000-8000-000000000001',second='10000000-0000-4000-8000-000000000002';
 const event={type:'deal',to:'box',box:3,handIndex:0,shoeDraw:4,faceDown:false,card:{r:'5',s:'♠',shoeDraw:4},clip:{action:'deal-centre'}};
 function fixture({dealerId='nora',sourceEvent=event,options={}}={}){
@@ -294,4 +297,43 @@ test('shared port cannot return a Response, getters, undefined or oversized JSON
 test('unlocked context revalidation rejects alias mutation rather than returning stale media',async()=>{
   const h=fixture({options:{select:async()=>{h.frozen.projectRevision='changed';return{videoGenerationId:first,decision:{}};}}});
   const reply=await h.request();assert.equal(reply.status,503);assert.equal(h.counts().reads,2);
+});
+
+function expandedSpeechFixture(options={}){
+  const h=fixture({sourceEvent:{type:'speak',line:'goodluck'},options});
+  h.video.classification.recordedSpeech=speech();
+  h.frozen.filmedProfile=expandStudioFilmedProfile({schemaVersion:1,id:'studio-nora-12345678',kind:'copy',base:PAOW_KEVIN_PROFILE.id,
+    takes:Object.fromEntries(PAOW_KEVIN_PROFILE.takes.map((take,index)=>[take.key,{sha256:createHash('sha256').update('synthetic-nora-'+index).digest('hex')}]))},{dealerId:'nora'});
+  // A published context carries the whole package inventory and private records,
+  // before selection narrows it to this room's captured media.
+  for(let index=3;index<=104;index++)h.frozen.inventory.videos.push({...structuredClone(h.video),
+    id:'10000000-0000-4000-8000-'+String(index).padStart(12,'0')});
+  h.frozen.records=structuredClone(h.frozen.inventory.videos);
+  return h;
+}
+
+test('recorded speech survives a frozen package with an expanded copied profile above the default JSON node budget',async()=>{
+  const h=expandedSpeechFixture(),before=structuredClone(h.frozen);
+  assert.throws(()=>cloneStudioJson(h.frozen,{maxBytes:8*1024*1024}),{code:'studio_invalid_data'},'fixture exceeds the ordinary 20000-node budget');
+  const reply=await h.request();
+  assert.equal(reply.status,200,JSON.stringify(reply.body)+' '+String(h.failure));
+  assert.equal(reply.body.video.id,first);assert.equal(reply.body.video.recordedSpeech.lineId,'goodluck');
+  assert.equal(reply.body.video.sha256,h.video.sha256);
+  assert.deepEqual(h.frozen,before,'selection does not mutate the published context');
+  assert.deepEqual(h.counts(),{reads:2,native:0,before:0,selects:1});
+});
+
+test('expanded frozen selection still rejects excessive nodes, bytes, depth and invalid JSON before selection',async()=>{
+  for(const corrupt of [
+    h=>{h.frozen.records=Array(200000).fill(null);},
+    h=>{h.frozen.configurationSource='x'.repeat(8*1024*1024);},
+    h=>{let nested=null;for(let i=0;i<25;i++)nested={nested};h.frozen.records=nested;},
+    h=>{h.frozen.records=undefined;},
+  ]){
+    let selected=0;
+    const h=expandedSpeechFixture({select:async()=>{selected++;throw Error('must not select invalid context');}});
+    corrupt(h);
+    const res=await h.request();
+    assert.equal(res.status,503);assert.deepEqual(res.body,{error:'shared_room_presentation_unavailable'});assert.equal(selected,0);
+  }
 });
