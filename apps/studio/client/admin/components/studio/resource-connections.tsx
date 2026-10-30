@@ -1,5 +1,5 @@
 import {useEffect,useState,type MouseEvent,type ReactNode} from 'react';
-import {createResourceDeletionClient,resourceAnchor,type ResourceDeletionTree,type ResourceNode,type ResourceRef,type DeletionRoom,type DeletionMedia,type ResourceKind,type PublishedRoomChoices} from '../../lib/resource-deletion.mjs';
+import {createResourceDeletionClient,resourceAnchor,type ResourceDeletionTree,type ResourceNode,type ResourceRef,type DeletionRoom,type DeletionMedia,type ResourceKind,type PublishedRoomChoices,type MissingResourceReference} from '../../lib/resource-deletion.mjs';
 
 const client=createResourceDeletionClient();
 const gameName=(id:string|null)=>id==='blackjack'?'Blackjack':id==='roulette'?'Roulette':id||'Spel ej angivet i registret';
@@ -42,6 +42,17 @@ function Uses({rows}:{rows:ResourceRef[]}){
   return rows.length?<ul className="space-y-1">{rows.map(row=><li key={row.kind+':'+row.id+':'+row.relation}>
     <a className="underline" href={resourceHref(row.kind,row.id)}>{row.label}</a>{row.relation&&<span className="text-sg-muted"> · {row.relation}</span>}
   </li>)}</ul>:<p className="text-sg-muted">Inga synliga användningar i denna läsning.</p>;
+}
+const resourceNames:Record<ResourceKind,string>={operator:'Bolag',room:'Spelbord',composition:'Miljö',dealer:'Dealer',material:'Material',media:'Fil',project:'Projekt'};
+function MissingReferences({rows}:{rows:MissingResourceReference[]}){
+  if(!rows.length)return null;
+  return <section role="status" aria-label="Saknade registerposter" className="space-y-3 rounded border border-amber-500 p-3">
+    <p className="text-amber-300">{rows.length===1?'1 post saknas':rows.length+' poster saknas'} i de lästa registren för hela arbetsytan.</p>
+    <ul className="space-y-3">{rows.map(row=><li key={row.kind+':'+row.id}>
+      <a className="underline" href={resourceHref(row.kind,row.id)}>{resourceNames[row.kind]}: {row.label}</a>{row.label!==row.id&&<> · <code className="break-all">{row.id}</code></>}
+      <div className="mt-1 text-sm"><Uses rows={row.uses}/></div>
+    </li>)}</ul>
+  </section>;
 }
 function MediaRows({rows}:{rows:DeletionMedia[]}){
   return <ul className="divide-y divide-sg-line">{rows.map(row=><li key={row.id} id={resourceAnchor('media',row.id)} className="scroll-mt-6 py-3">
@@ -123,6 +134,7 @@ export function ResourceConnections({embedded=false,context}:{embedded?:boolean;
     {tree&&<div className="mt-6 space-y-6">
       {!tree.lifecycleAvailable&&<p role="alert" className="rounded border border-amber-500 p-3">Bolagens och spelbordens arkiv kunde inte läsas. Trädet är ofullständigt. Uppdatera för att försöka igen.</p>}
       {tree.warnings.length>0&&<ul role="status" className="space-y-1 text-amber-300">{tree.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
+      <MissingReferences rows={tree.missingReferences}/>
       <section role="tabpanel" id="structure-panel-operators" aria-labelledby="structure-tab-operators" hidden={tab!=='operators'} className="space-y-4"><h2 className="text-xl font-semibold">Bolag, spel och spelbord</h2>
         <p className="text-sm text-sg-muted">Bolaget äger spelbordet. Dealers, bord och bakgrunder är delade filer som flera bolags spelbord kan använda.</p>
         {!tree.operators.length&&<p>Inga bolag i det lästa registret.</p>}

@@ -188,10 +188,17 @@ export function buildResourceDeletionTree(workspace,lifecycle=null){
     for(const base of list(entry.globalIdlePolicy?.base))useMedia(base.videoId,entry.dealer.id,'Arkiverad gemensam grundloop');
     for(const variant of list(entry.globalIdlePolicy?.variants))useMedia(variant.videoId,entry.dealer.id,'Arkiverad gemensam grundloopvariant');
   }
-  const all=[...operators.values(),...rooms.values(),...compositions.values(),...dealers.values(),...materials.values(),...media.values()];
-  const missingCount=all.filter(row=>row.missing).length;
-  if(missingCount)warnings.push(missingCount+' referenser saknar en egen post i de lästa registren.');
-  return {readAt:catalog.readAt,projectRevision:project.revision,lifecycleAvailable:Boolean(lifecycle),historyCoverage,warnings,
+  // Missing targets belong to the whole workspace, not the dealer used to open this view.
+  // Keep the exact target and incoming references so a warning can identify its cause.
+  const missingReferences=[];
+  for(const [kind,registry] of [['operator',operators],['room',rooms],['composition',compositions],['dealer',dealers],['material',materials],['media',media]]){
+    for(const row of registry.values())if(row.missing){
+      const uses=[...row.uses];
+      if(kind==='dealer')for(const id of row.mediaIds)addRef(uses,ref('media',id,media.get(id)?.label,'Registrerad dealerägare'));
+      missingReferences.push({kind,id:row.id,label:row.label,uses});
+    }
+  }
+  return {readAt:catalog.readAt,projectRevision:project.revision,lifecycleAvailable:Boolean(lifecycle),historyCoverage,warnings,missingReferences:sort(missingReferences),
     operators:sort([...operators.values()]),rooms:sort([...rooms.values()]),compositions:sort([...compositions.values()]),
     dealers:sort([...dealers.values()]),materials:sort([...materials.values()]),media:sort([...media.values()]),
     unownedRoomIds:[...rooms.values()].filter(row=>!operators.has(row.operatorId)).map(row=>row.id),

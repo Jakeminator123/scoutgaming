@@ -1,6 +1,7 @@
 import type {Workspace} from './connected-studio.mjs';
 export type ResourceKind='operator'|'room'|'composition'|'dealer'|'media'|'material'|'project';
 export type ResourceRef={kind:ResourceKind;id:string;label:string;relation:string};
+export type MissingResourceReference={kind:ResourceKind;id:string;label:string;uses:ResourceRef[]};
 export type ResourceNode={id:string;label:string;archived:boolean;missing:boolean;publishedOnly:boolean;uses:ResourceRef[]};
 export type DeletionOperator=ResourceNode&{status:string;roomIds:string[]};
 export type DeletionRoom=ResourceNode&{operatorId:string;game:string|null;compositionId:string|null;published:boolean;playable:boolean;state:string;publishedDealerIds:string[];publication:PublishedRoomChoices|null;choicesPath:string|null};
@@ -12,7 +13,7 @@ export type DeletionDealer=ResourceNode&{mediaIds:string[]};
 export type DeletionMaterial=ResourceNode&{role:'background'|'table'|'illustration';game:string|null;contentType:string|null};
 export type DeletionMedia=ResourceNode&{kind:'video'|'image'|'audio';ownerIds:string[];primaryOwnerId:string|null;eventId:string;situation:string;game:string|null;available:boolean};
 export type ResourceDeletionTree={
-  readAt:string;projectRevision:string;lifecycleAvailable:boolean;historyCoverage:'complete'|'incomplete'|'unavailable';warnings:string[];
+  readAt:string;projectRevision:string;lifecycleAvailable:boolean;historyCoverage:'complete'|'incomplete'|'unavailable';warnings:string[];missingReferences:MissingResourceReference[];
   operators:DeletionOperator[];rooms:DeletionRoom[];compositions:DeletionComposition[];
   dealers:DeletionDealer[];materials:DeletionMaterial[];media:DeletionMedia[];
   unownedRoomIds:string[];coverage:string[];
