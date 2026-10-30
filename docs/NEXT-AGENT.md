@@ -24,6 +24,8 @@ Två integrationsspärrar återstår på kodbas `638a138d`: delad presentation s
 
 ## Egen Jakob 2-bank och RunPod, 30 oktober
 
+Preview-CI:s faktiska mål var `neondb` med rollen `croupier_staging_app`, verifierat i en tillfällig skrivskyddad [diagnos](https://github.com/Jakeminator123/scoutgaming/actions/runs/41049640677). Samma befintliga app-roll pekas nu mot verifierade `croupier_staging`; full readiness passerade före uppdateringen av GitHub-secreten. Ingen DDL eller rolländring behövdes. Återläsningen visar rätt databas och båda registren; preview-CI 41047120409 är grön efter omkörning av endast de misslyckade jobben. Diagnos-PR #703 är stängd utan merge och inför ingen produktfunktion.
+
 LIPSNK har färdigställt ett privat CPU-underlag för tal i vila: 39 bildrutor, 1080×1920, CFR24, explicit viloruta 0, verifierat mot samma registrerade original som paket 10. ZIP:en och dess kvitton finns i den kanoniska checkoutens `.cache/jakob2-moving-bank-20261030/`; ZIP-SHA256 är `927ce139a66823c6280e6ccb6ee28b56c32a488cea3932fef3f5483735eb9ee7`. Detta är varken GPU-preparerad bank, nygenererat ljud/bild eller godkänd läppsynk. Källklipp, talprofil och ZIP är oförändrade.
 
 Den befintliga moving-imagen är en renderare. Dess `forbered`-väg saknar MediaPipe-helper, wheel och tre modellfiler. [Det separata prep-paketet](../services/moving-gpu-prep/README.md) lägger till hashbundna förberedelseberoenden ovanpå exakt renderdigest och byggs endast i molnet. Den förseglade renderaren och v3 ändras inte. Lokala integritetsprov ska skiljas från det separata molnbygget, ett verkligt GPU-bankbygge och senare AV-/spelacceptans.
