@@ -32,7 +32,7 @@ Spelmotorn behåller sina pooler, miljöval och läsarportar. Blandning, kort, p
 
 ## Köra och testa
 
-- `services/game/package.json` kräver Node `>=22.16.0`; containern kör Node 24. Installera med `npm ci` i `services/game`.
+- `services/game/package.json` kräver Node `>=24`; containern kör Node 24. Installera med `npm ci` i `services/game`.
 - Enda devDependency är `@electric-sql/pglite` (PostgreSQL i WASM) för modultester via `test/fixtures/pglite-pool.mjs`, som installerar schemat från `ops/neon-game/`. PGlite har en session och bevisar inte låsning mellan anslutningar; det gör CI:s PostgreSQL. Containern installerar med `--omit=dev`.
 - Motorn över HTTP mot riktig PostgreSQL: `node tools/run-engine-qa.mjs --postgres-bin <bin>`; sviten `sh .githooks/pre-commit-full engine`.
 - Produkten öppnas via den publicerade lobbyn (`node apps/studio/start.mjs --no-open` skriver adressen). Det finns ingen lokal serverstart av produkten.

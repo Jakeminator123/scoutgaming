@@ -78,7 +78,7 @@ packages:
 
   '@croupier/server-transport@file:../../packages/server-transport':
     resolution: {directory: ../../packages/server-transport, type: directory}
-    engines: {node: '>=22.16.0'}
+    engines: {node: '>=24'}
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
