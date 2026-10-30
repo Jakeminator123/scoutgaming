@@ -673,7 +673,9 @@
         "CROUPIER_STUDIO_WORKSPACE_ID"
       ],
       "firstBoot": [],
-      "conditional": [],
+      "conditional": [
+        "CROUPIER_REPUBLISH_CONFIRM"
+      ],
       "managed": [],
       "blocked": []
     },

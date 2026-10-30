@@ -203,10 +203,9 @@ export async function countPackagesWithoutRooms({ pool } = {}) {
   try {
     rows = (await pool.query(`/* readiness:packages-without-rooms */
       SELECT p.environment_id, p.workspace_id, count(*)::integer AS missing
-      FROM croupier_studio.operator_packages p
-      JOIN (SELECT environment_id, workspace_id, operator_id, max(package_revision) AS package_revision
-        FROM croupier_studio.operator_packages GROUP BY environment_id, workspace_id, operator_id) latest
-        USING (environment_id, workspace_id, operator_id, package_revision)
+      FROM (SELECT DISTINCT ON (environment_id, workspace_id, operator_id) *
+        FROM croupier_studio.operator_packages
+        ORDER BY environment_id, workspace_id, operator_id, package_revision DESC) p
       WHERE to_jsonb(p)->>'rooms' IS NULL GROUP BY p.environment_id, p.workspace_id ORDER BY p.environment_id, p.workspace_id`))?.rows;
   } catch { return null; }
   if (!Array.isArray(rows)) return null;

@@ -308,20 +308,21 @@ test('readiness counts the companies whose current package has no rooms, per sco
   const actor = 'readiness-test';
   const production = await createOperatorStore({ sql: pool, scope: { environment: 'production', workspaceId: 'croupier' } });
   const preview = await createOperatorStore({ sql: pool, scope: { environment: 'staging_k06_k07', workspaceId: 'croupier' } });
+  const otherWorkspace = await createOperatorStore({ sql: pool, scope: { environment: 'production', workspaceId: 'other' } });
   const publish = (store, operatorId) => store.publishPackage({ actor, operatorId, lanes: [], games: ['blackjack'], tables: [], branding: { name: operatorId } });
-  for (const [store, operatorId] of [[production, 'alpha'], [production, 'beta'], [preview, 'gamma'], [production, 'empty']]) {
+  for (const [store, operatorId] of [[production, 'alpha'], [production, 'beta'], [preview, 'alpha'], [otherWorkspace, 'alpha'], [production, 'empty']]) {
     await store.createOperator({ operatorId, slug: operatorId, name: operatorId, status: 'active', actor });
     if (operatorId !== 'empty') await publish(store, operatorId);
   }
   // Without 023 every current package lacks rooms; a company counts once, and one without a package not at all.
   await publish(production, 'alpha');
-  assert.equal(await line(), 'paket utan rooms: 3 (production/croupier: 2, staging_k06_k07/croupier: 1)');
+  assert.equal(await line(), 'paket utan rooms: 4 (production/croupier: 2, production/other: 1, staging_k06_k07/croupier: 1)');
   const plan = await planStudioMigrations({ pool });
   await applyStudioMigrations({ pool, expectedTarget: plan.target, confirm: true });
   // With 023 a new revision carries rooms: only the current package counts, not the history.
   assert.deepEqual((await publish(production, 'alpha')).rooms, []);
-  assert.equal(await line(), 'paket utan rooms: 2 (production/croupier: 1, staging_k06_k07/croupier: 1)');
-  for (const [store, operatorId] of [[production, 'beta'], [preview, 'gamma']]) await publish(store, operatorId);
+  assert.equal(await line(), 'paket utan rooms: 3 (production/croupier: 1, production/other: 1, staging_k06_k07/croupier: 1)');
+  for (const [store, operatorId] of [[production, 'beta'], [preview, 'alpha'], [otherWorkspace, 'alpha']]) await publish(store, operatorId);
   assert.equal(await line(), 'paket utan rooms: 0');
   // An unreadable count is `okänt`, never an error and never a driver message.
   const failing = { async query() { throw new Error(`count failed ${secret}`); } };
