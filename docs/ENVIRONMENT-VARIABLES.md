@@ -140,7 +140,7 @@ Vercel-raderna och båda Render-motorernas rader är utförda 2026-10-30. I prev
 
 | Tjänst / projekt | Variabel | Varför |
 | --- | --- | --- |
-| Render `croupier-v3` | `CROUPIER_MOVING_SPEECH_BANK_RECORD`, `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` | Läses inte sedan T3 (28 oktober); ersatta av `CROUPIER_MOVING_SPEECH_BANK_RECORDS` och driftprofilens endpoint |
+| Render `croupier-v3` | `CROUPIER_MOVING_SPEECH_BANK_RECORD`, `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` | **Utfört 2026-10-30 16:50 UTC**, med krypterad lokal backup och oförändrade övriga värden. Ingen kod läser namnen sedan T3; bankkartan läggs in först vid godkänd talaktivering |
 | Vercel `scoutgaming`, Preview och Development | `CROUPIER_DEALER_IMPORT_AI` | Gör inget där; Production behålls |
 
 ### Separata beslut: integrationsposter
@@ -209,17 +209,17 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 
 `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` och `BETTALOTTO_PARTNER_*` läses inte av spelmotorns start.
 
-### Kända felkonfigurationer: måste rättas av Jakob före aktivering
+### Verifierad tal- och miljöstatus, 30 oktober 2026
 
-Ingen av dem stoppar spelet i dag, men de gör att inget AI-tal fungerar i produktionen. Ordningen och ersättningsvärdena står i [TALKEDJA-RUNPOD](TALKEDJA-RUNPOD.md#aktivera); inget är ändrat i någon panel.
+Jakob har pausat Jakob-2:s genererade läppsynk. Detta är en avstämning och rensning, inte talaktivering.
 
-1. **Stillbildsparet pekar inte på en endpoint** (rapporterat 22–23 oktober, inte omläst): `RUNPOD_API_KEY` är Kevins/Emils RunPod-nyckel och endpointen är `kiud9j0a7fp5gn`, som är Kevins staging-pod, inte en serverless-endpoint; RunPod svarar 404. Kevins nyckel mot vår `zsudl8tmzcmiv1` ger 401. Vilket namn som bär `kiud9j0a7fp5gn` (`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` eller den olästa `CROUPIER_MOVING_SPEECH_ENDPOINT_ID`) kontrolleras i panelen. Rättning: `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID` pekar på en endpoint med vår astrid-gpu-worker i samma konto som nyckeln.
-2. **Callback mot raderad tjänst:** RunPod-mallen `5dkkc3wolw` för den rörliga endpointen `zjsdlni6cn8dvo` har `MOVING_CALLBACK_ORIGIN=https://croupier-v2.onrender.com`. Den ska vara `https://croupier-v3.onrender.com` innan `CROUPIER_MOVING_SPEECH_ENABLED=1`; workern avvisar jobb med fel callback-värd, så det kan inte läcka till fel motor.
-3. **Gamla bankvariabler kvar, ny saknas:** `croupier-v3` har `CROUPIER_MOVING_SPEECH_BANK_RECORD` och `CROUPIER_MOVING_SPEECH_ENDPOINT_ID`, som ingen kod läser sedan T3, men saknar `CROUPIER_MOVING_SPEECH_BANK_RECORDS`. Ta bort de gamla; lägg in kartan när rörligt tal ska på.
-4. **Rörlig nyckel och endpoint:** att `CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY` hör till samma konto som driftprofilens endpoint är inte verifierat efter flytten från `croupier-v2`.
-5. **Dragans profil är rörlig medan rörligt är av:** stillbildsvägen nekar en `motion-video`-profil (`services/game/dealer-speech-runtime.mjs:60`), så Dragan får inget AI-tal förrän rörligt är på eller profilen sparas om som `video-frame`. Det är en Admin-inställning, ingen variabel.
-
-Render-namnen lästes senast 2026-10-28 via REST ([inventeringen](2026-10-29-ENV-INVENTORY.md)); Render MCP visar inga namn, så en ny läsning kräver `RENDER_API_KEY` i `.env.local`.
+- **Preview:** `scoutgaming-preview-engine` är live på `56e153b8` efter omdeployen 16:25 UTC. De tre `CROUPIER_SPEECH_STREAM_WORKER_SECRET`, `CROUPIER_SPEECH_STREAM_TICKET_SECRET` och `CROUPIER_MOVING_SPEECH_TICKET_SECRET` är olika, 64 tecken vardera och skiljer sig från produktionens. Generated/moving är av; streamingflaggan saknas. Behåll hemligheterna: de har olika konsumenter.
+- **ElevenLabs:** previews nyckel är samma som produktionens och API-listan innehåller Jakob och ABYDM, inte Paow/Dragan. Det bekräftar inte överlämningens uppgift om byte till Kevins vanliga konto. Inga nycklar eller röstprofiler har bytts av avslutsgranskningen.
+- **Workerautentisering:** `generated-speech-session.mjs` skickar aktuell worker-hemlighet som `input.ws_token` när en session begärs. Någon ny permanent kopia i RunPod/Vercel behövs inte för denna kodväg. Ticket-hemligheterna ligger kvar på respektive motor.
+- **Callback:** mall `5dkkc3wolw`, kopplad till `zjsdlni6cn8dvo`, ändrades med Jakobs uttryckliga godkännande 16:46 UTC till `MOVING_CALLBACK_ORIGIN=https://croupier-v3.onrender.com`. Image och övrig env återlästes oförändrade. Previews separata mall ska använda previews origin; den här mallen ska inte återanvändas mellan miljöerna.
+- **Rensat:** produktionens olästa `CROUPIER_MOVING_SPEECH_BANK_RECORD` och `CROUPIER_MOVING_SPEECH_ENDPOINT_ID` togs bort 16:50 UTC, 42 → 40 poster. Krypterad lokal återställningskopia finns i `.cache/closeout-20261030/`. Övriga värden är oförändrade; preview hade inte dessa namn.
+- **Åtkomst:** produktionens stillbildspar `zsudl8tmzcmiv1` och rörliga par `zjsdlni6cn8dvo` gav autentiserad health 200, utan pågående eller köade jobb, 16:52 UTC. Lokal RunPod-nyckel når ett annat konto än produktionens movingnyckel; generell env-synk är fel.
+- **Återstår före ny aktivering:** matchad bankkarta `CROUPIER_MOVING_SPEECH_BANK_RECORDS`, dealerprofil/endpoint och faktiskt uppspelningsprov. Rörligt tal är av även i produktionen. Health 200 är inget genererings- eller läppsynkskvitto.
 
 ## Delade Blackjackrum — avgränsad inkoppling
 
@@ -289,7 +289,7 @@ Preview, den tidigare stagingen (se [START-HERE](../START-HERE.md#preview)), anv
 | `local-runtime-media-import` | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_RUNTIME_IMPORT_CONFIRM` | `ops/neon-studio/runtime-media-import-run.mjs` byter runtime-katalogen ([REN-START](plans/REN-START.md) steg 6–7). Scope krävs alltid; `prepare` läser ingen databas, `plan` läser och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Sätts bara i Jakobs terminal, aldrig i CI, Vercel eller Render |
 | `local-republish-rooms` | `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`; `CROUPIER_REPUBLISH_CONFIRM` krävs vid `--apply` | `tools/republish-rooms.mjs` (L3 PR 4) publicerar om bolag vars aktuella paket saknar `rooms` (pkg+1; kräver Studio 023 och kolumnen). Standard är provkörning, även utan `--dry-run`. Skrivning kräver `--apply` och exakt `<databas>/<environment>/<workspace>` i `CROUPIER_REPUBLISH_CONFIRM`; kontrolleras mot läst mål. Sätts bara i Jakobs terminal för körningen, aldrig i CI, Vercel eller Render; ta bort bekräftelsen efteråt. Mål och ordning finns i [återställningsguiden](ENVIRONMENT-RESTORATION.md) |
 | `render-gpu-relay` | `WORKER_SECRET`, `TICKET_SECRET`, `ALLOWED_ORIGINS`, `PORT` | Separat GPU-relä i `services/astrid-gpu-worker/gateway/server.mjs`; inte driftsatt |
-| `runpod-gpu-worker` | `AVATAR_ID`, `NVIDIA_DRIVER_CAPABILITIES`, `NVENC`, `MOVING_CALLBACK_ORIGIN`, `MOVING_BANK_STORE` | GPU-workrarna på RunPod (`services/astrid-gpu-worker`, `services/moving-gpu-worker`); endpoint, nyckel och mallens miljö hanteras i RunPod och läses inte härifrån. `MOVING_CALLBACK_ORIGIN` måste vara spelmotorns exakta origin (`https://croupier-v3.onrender.com`, i preview `https://croupier-k06-k07-staging.onrender.com`, alltså en mall per miljö); mallen pekar enligt [TALKEDJA](plans/TALKEDJA.md) ännu på den raderade `croupier-v2`. Endpoints i Kevins RunPod-konto med våra images: se [TALKEDJA-RUNPOD](TALKEDJA-RUNPOD.md) |
+| `runpod-gpu-worker` | `AVATAR_ID`, `NVIDIA_DRIVER_CAPABILITIES`, `NVENC`, `MOVING_CALLBACK_ORIGIN`, `MOVING_BANK_STORE` | GPU-workrarna på RunPod (`services/astrid-gpu-worker`, `services/moving-gpu-worker`); endpoint, nyckel och mallens miljö hanteras i RunPod och läses inte härifrån. `MOVING_CALLBACK_ORIGIN` måste vara spelmotorns exakta origin (`https://croupier-v3.onrender.com`, i preview `https://croupier-k06-k07-staging.onrender.com`, alltså en mall per miljö); mall `5dkkc3wolw` är rättad och återläst mot `croupier-v3` den 30 oktober 16:46 UTC. Endpoints i Kevins RunPod-konto med våra images: se [TALKEDJA-RUNPOD](TALKEDJA-RUNPOD.md) |
 | `local-lab-openclaw` | Mallen `services/openclaw/lab/.env.example` | Lokala verktyg; ingen lokal produktstart läser den. Den inaktuella `apps/studio/.env.example` raderades 2026-10-29. `CROUPIER_ZONES_DATABASE_URL` (Zones-projektet är raderat) och namnen som bara den mallen listade togs samtidigt bort ur posten |
 | `local-emil-provider-check` | `EMIL_RUNPOD_API_KEY`, `EMIL_RUNPOD_ENDPOINT_ID`, `EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY` | `node tools/check-provider-profile.mjs --profile <scoutgaming\|emil> --env-file <fil>` läser bara den valda filen och nekar blandade par. `RUNPOD_ENDPOINT_ID` är inget alias |
 | `vercel-zones-qa` | `CROUPIER_ZONES_*` | Historik: projektet `croupier-player-preview-qa` raderades 8 oktober 2026 |
