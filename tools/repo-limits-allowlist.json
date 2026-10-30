@@ -60,6 +60,11 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
+    "path": "apps/studio/components/dealer-table-assets/olive-blackjack-v1.png",
+    "maxBytes": 2237524,
+    "reason": "Beställt transparent PNG-original för återanvändbar dealerbordsmall; runtime använder optimerad WebP på 229550 byte. Metadata och alfagränser verifieras mot originalet."
+  },
+  {
     "path": "apps/web/public/about/scout-lounge.mp4",
     "maxBytes": 7402897,
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"

@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "id": "olive-blackjack-v1",
+  "name": "Oliv / läder / valnöt",
+  "asset": {
+    "variant": "olive-leather-walnut",
+    "width": 2048,
+    "height": 768,
+    "alphaBounds": {
+      "x": 19,
+      "y": 33,
+      "width": 2011,
+      "height": 642,
+      "threshold": 1
+    },
+    "visibleBounds": {
+      "x": 24,
+      "y": 126,
+      "width": 2001,
+      "height": 545,
+      "threshold": 128
+    },
+    "sources": {
+      "png": {
+        "filename": "olive-blackjack-v1.png",
+        "contentType": "image/png",
+        "size": 2237524,
+        "sha256": "650c1431e32320e2ec4182c096fd745893526a77a5f270f6495badcb4b6856a0"
+      },
+      "webp": {
+        "filename": "olive-blackjack-v1.webp",
+        "contentType": "image/webp",
+        "size": 229550,
+        "sha256": "4dca31a10e2940648c51571cfa11c4cc0633b25056cc120c5b6390ab28f33f33"
+      }
+    }
+  },
+  "palette": {
+    "felt": "#41462b",
+    "rail": "#3a291e",
+    "trim": "#967348",
+    "apron": "#372519"
+  },
+  "pivot": {
+    "x": 0.5,
+    "y": 0
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "description": "Förslag i bildplanet. Ingen verklig dealer, handkontakt, kortstorlek eller fysisk bordsvinkel är kalibrerad."
+  },
+  "layouts": {
+    "desktop": {
+      "scene": {
+        "width": 1920,
+        "height": 1080
+      },
+      "placement": {
+        "width": 0.8597301349325337,
+        "x": -0.00020989505247377417,
+        "y": 0.47596701649175405
+      },
+      "anchors": {
+        "cardWidth": 0.04,
+        "dealer": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "seats": [
+          {
+            "card": {
+              "x": 0.17,
+              "y": 0.285
+            },
+            "bet": {
+              "x": 0.17,
+              "y": 0.365
+            }
+          },
+          {
+            "card": {
+              "x": 0.28,
+              "y": 0.355
+            },
+            "bet": {
+              "x": 0.28,
+              "y": 0.435
+            }
+          },
+          {
+            "card": {
+              "x": 0.39,
+              "y": 0.4
+            },
+            "bet": {
+              "x": 0.39,
+              "y": 0.48
+            }
+          },
+          {
+            "card": {
+              "x": 0.5,
+              "y": 0.415
+            },
+            "bet": {
+              "x": 0.5,
+              "y": 0.495
+            }
+          },
+          {
+            "card": {
+              "x": 0.61,
+              "y": 0.4
+            },
+            "bet": {
+              "x": 0.61,
+              "y": 0.48
+            }
+          },
+          {
+            "card": {
+              "x": 0.72,
+              "y": 0.355
+            },
+            "bet": {
+              "x": 0.72,
+              "y": 0.435
+            }
+          },
+          {
+            "card": {
+              "x": 0.83,
+              "y": 0.285
+            },
+            "bet": {
+              "x": 0.83,
+              "y": 0.365
+            }
+          }
+        ]
+      }
+    },
+    "mobile": {
+      "scene": {
+        "width": 1080,
+        "height": 1920
+      },
+      "placement": {
+        "width": 1.18,
+        "x": 0,
+        "y": 0.61
+      },
+      "anchors": {
+        "cardWidth": 0.06,
+        "dealer": {
+          "x": 0.5,
+          "y": 0.3
+        },
+        "seats": [
+          {
+            "card": {
+              "x": 0.32,
+              "y": 0.355
+            },
+            "bet": {
+              "x": 0.32,
+              "y": 0.435
+            }
+          },
+          {
+            "card": {
+              "x": 0.5,
+              "y": 0.415
+            },
+            "bet": {
+              "x": 0.5,
+              "y": 0.495
+            }
+          },
+          {
+            "card": {
+              "x": 0.68,
+              "y": 0.355
+            },
+            "bet": {
+              "x": 0.68,
+              "y": 0.435
+            }
+          }
+        ]
+      }
+    }
+  }
+}
