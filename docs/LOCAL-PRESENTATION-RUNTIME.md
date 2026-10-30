@@ -85,6 +85,7 @@ Vercel (Admin) och Render (spelmotorn) uppdateras vid olika tidpunkter, och spel
 | 32 | `idleRotationOffers: 'rest-proposals-v1'` (ett viloklipp i vilosekvensen får `use` `openclaw`/`rules`) |
 | 33 | `laneIllustration: 'environment-image-v1'` (miljöbild `lane.illustration` och materialrollen `illustration`) |
 | 34 | `filmedProfiles: 'frozen-studio-profile-v1'` (v33 + dealerns egna landningar `dealers[].filmedProfile`, frysta i paketets dealerrad och i rummets material som `film` schemaVersion 2; kodprofilerna dragan/paow är frö och fallback) |
+| 35 | `filmedTakeSources: 'registered-take-source-v1'` (v34 + explicit `sourceTakeKey` på kopierade tagningar med påhängd återgång; skrivning spärras tills Render kan läsa formatet) |
 
 ## Fryst paket och presentationskuvert
 
@@ -259,6 +260,24 @@ Posekedjan VILA/REDO (v22) är authoringmetadata på `deal.*`, `reveal.*` och `t
 Samma poser gör inte `-u` till `-v`. I Kevins material för plats 1–7 och dealerns öppna kort är `-u` grundtagningen med en påbyggd återgång till VILA (60–66 bildrutor mot grundtagningens 39), medan `-v` är en egen filmad tagning på 39 bildrutor med eget rörelseförlopp, eget kortspår (`<plats>v`) och egna landningsrutor; `-iu` och `-iv` skiljer sig på samma sätt (`poseMetadata.frames` i `apps/studio/lib/dealer-import-kevin-source*.json`, `track` och `landFrame` i profilerna). De filmade profilerna i `packages/presentation/contracts/filmed-profiles/` har därför bara `base`, `i`, `v` och `iv` för plats 1–7 och dealerns öppna kort, plus `hole:base`, `hole:i` och `flip:base`. `planFilmedDealSequence` byter `u` mot `v` när profilen har en v-tagning för platsen och binder varje steg till tagningens exakta SHA-256, och **Koppla hela givbanken** binder bara profilens tagningar. Den filmade utdelningen spelar alltså aldrig `-u` eller `-iu`. Ladda inte upp dem: importkällorna (`apps/studio/lib/dealer-import-sources.mjs`) märker dem bara som förladdning och reserv i Kevins egen klient, och för `hole` och `flip` är de samma bytes som filen utan suffix respektive `-i`.
 
 Importassistenten på `/admin/clips?tool=import` registrerar högst tio MP4/WebM-filer per gång som alternativ för en redan registrerad dealer; ingen standard, grundloop, mall eller publicering byts automatiskt. Frysta Kevin-källor (`apps/studio/lib/dealer-import-sources.mjs`) ger fack, poskedja, språk och tagning med hög konfidens när filnamn och storlek matchar exakt. Rådgivaren (`/studio/api/dealers/import-proposal`, N1-session) får bara en begränsad projektion av dealer- och fackkatalogen; servern väljer modell, och svaret är råd, aldrig en sparad ändring. Se [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) för modellinställningarna.
+
+### Standard för exporterade dealerklipp
+
+Kontrakten i `packages/presentation/contracts/` är standarden; ett exportmanifest är överföringsunderlag, inte ett andra produktregister. Neon sparar dealer, klassning, mätning och profil; Blob sparar de exakta mediebytesen.
+
+| Uppgift | Auktoritet | Kontroll |
+| --- | --- | --- |
+| Fack och VILA/REDO-poser | `clip-naming.mjs` föreslår; sparad klassning beslutar | Namn och AI-förslag är inte bevis för filens innehåll |
+| Filidentitet och speltid | `media-timing.mjs` | SHA-256 för hela filen, media-id, byteantal och verkliga MP4-rutor/fps måste höra ihop |
+| Giv, landning och kortbana | `filmed-profiles/studio-profile.mjs` | `filmed_profile.json` importeras mot dealerns egna uppladdade och uppmätta klipp |
+| Sekvens och skoövergångar | `filmed-deal-coverage.mjs` och `filmed-bank-bindings.mjs` | Alla nåbara givkedjor måste gå ihop med de valda skoövergångarna |
+| Inspelat tal | `recorded-speech.mjs` | Text, språk, tagning, video/ljudspår, poser, bytes och AV-granskning binds tillsammans |
+
+Fabriksnamnet `pos1-v` beskriver en posevariant. När filmen faktiskt är `pos1` med påhängd återgång anger exporttagningen `sourceTakeKey: "1:base"`; `1:iv` anger `"1:i"`. Importen kräver samma mål och startpose, slutpose VILA, hela källans registrerade kortbana/rutnummer samt ett exakt uppmätt längre klipp (högst dubbla källängden). Den kompakta kopian sparar exempelvis `"1:v": {"sha256":"<hela filens SHA-256>","frames":60,"sourceTakeKey":"1:base"}`. Ingen godtycklig retiming, annan plats eller uppskattad kortbana accepteras. Äldre kopior utan fältet behåller sin betydelse. Dessa deklarationer bevisar inte att AI-genereringen bevarat handens rörelse: kortkontakt, skarvar och läppsynk granskas separat.
+
+Admin › Dealers › Landningar läser profilfilen, visar antal tagningar och importerar med projektets revision. Klippkartan använder därefter dealerns sparade profil även för en egen dealer; **Koppla för delat bord** binder de tagningar som de valda övergångarna kräver. Saknad mätning, fel filhash eller fel pose blockerar kopplingen. För äldre givklipp utan separata posetiketter gäller den exakt hashbundna profilens poser, precis som vid publicering; en uttrycklig motstridig klassning avvisas. Skoövergångar kräver fortfarande egna start-/slutposer. Importen ändrar ingen publicerad paketversion.
+
+OpenClaw får fortsatt föreslå valbara uttrycks-, vilo- och talvarianter genom befintlig policy. Givbankens filmvarianter har `selection.model/random/rules: false`: serverns kort och den verifierade posekedjan styr given. Ett AI-förslag kan aldrig ändra filidentitet, mätning, kortordning eller AV-godkännande.
 
 ## Livscykel
 
