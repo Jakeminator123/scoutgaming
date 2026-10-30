@@ -1,5 +1,6 @@
 import {validateProject} from './studio-model.mjs';
-import {registeredFilmedProfile} from './filmed-profiles/registry.mjs';
+import {filmedProfileFor} from './filmed-profiles/studio-profile.mjs';
+import {normalizeMediaTiming} from './media-timing.mjs';
 import {videoFitsLine} from './video-intake.mjs';
 import {requiredNativeFilmedTakes} from '../runtime/filmed-deal-coverage.mjs';
 import {transitionClipsForDealer} from '../runtime/shoe-transitions.mjs';
@@ -14,8 +15,8 @@ export {placement as filmedTakePlacement};
 
 // The legacy full bank is a sequence, not randomly interchangeable clips.
 // Registration alone never activates it: binding remains an explicit draft edit.
-export function filmedBankState(inventory,dealerId) {
-  const profile=registeredFilmedProfile(dealerId);
+export function filmedBankState(inventory,dealerId,{project}={}) {
+  const profile=filmedProfileFor(dealerId,{project});
   if(!profile)return null;
   const entries=profile.takes.map(take=>{
     const slot=placement(take);
@@ -24,11 +25,23 @@ export function filmedBankState(inventory,dealerId) {
     const video=inventory.videos.filter(row=>row.available===true&&row.integrity!=='unavailable'&&row.sha256===take.sha256
       &&Number.isSafeInteger(row.bytes)&&row.bytes>0&&videoFitsLine(row,dealerId,slot.eventId)
       &&row.classification?.dealerId===dealerId&&row.classification.archived!==true&&row.classification.game!=='roulette'
-      &&!['image','audio'].includes(row.classification.mediaType)&&row.classification.eventId===slot.eventId&&row.classification.situation===slot.situation)
+      &&!['image','audio'].includes(row.classification.mediaType)&&row.classification.eventId===slot.eventId&&row.classification.situation===slot.situation
+      &&(!profile.source?.studio||studioTakeFits(row,take,profile.plane.fps)))
       .sort((a,b)=>Number(canonicalName(b))-Number(canonicalName(a))||a.id.localeCompare(b.id))[0]??null;
     return {take,video,...slot};
   });
   return {profileId:profile.id,entries,complete:entries.every(row=>row.video),missing:entries.filter(row=>!row.video).map(row=>row.take.key)};
+}
+
+function studioTakeFits(row,take,fps){
+  try{
+    const timing=normalizeMediaTiming(row.mediaTiming,{mediaId:row.id,sha256:row.sha256,size:row.bytes});
+    // A registered, exact-hash profile supplies poses for older unannotated
+    // media too. Explicit annotations must agree, as in publication/import.
+    const {startPose,endPose}=row.classification;
+    return timing.video.fps===fps&&timing.video.frameCount===take.frames
+      &&(startPose===undefined&&endPose===undefined||startPose===take.startPose&&endPose===take.endPose);
+  }catch{return false;}
 }
 
 function compatibleShoeVideo(video,dealerId,situation) {
@@ -43,7 +56,7 @@ export function hasSeparateShoeTransitions(inventory,dealerId) {
   return ['to-shoe','from-shoe'].some(situation=>inventory.videos.some(video=>compatibleShoeVideo(video,dealerId,situation)));
 }
 export function nativeFilmedBankState(project,inventory,dealerId) {
-  const bank=filmedBankState(inventory,dealerId),profile=registeredFilmedProfile(dealerId);
+  const bank=filmedBankState(inventory,dealerId,{project}),profile=filmedProfileFor(dealerId,{project});
   if(!bank||!profile)return null;
   const transitions=transitionClipsForDealer(project,inventory,dealerId);
   const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='transition.shoe');
@@ -61,7 +74,7 @@ export function nativeFilmedBankState(project,inventory,dealerId) {
 function bindBank(project,inventory,dealerId,native) {
   validateProject(project);
   if(!project.dealers.some(row=>row.id===dealerId))throw Error('Dealern finns inte i projektet.');
-  const bank=native?nativeFilmedBankState(project,inventory,dealerId):filmedBankState(inventory,dealerId);
+  const bank=native?nativeFilmedBankState(project,inventory,dealerId):filmedBankState(inventory,dealerId,{project});
   if(bank?.reason==='shoe_transition_invalid')throw Error('Ett valt skoklipp saknas eller har fel riktning. Välj ett giltigt standardklipp först.');
   if(!bank?.complete)throw Error('Givbanken saknar verifierade filmvarianter: '+(bank?.missing.join(', ')||bank?.reason||dealerId));
   const next=structuredClone(project);
@@ -87,10 +100,11 @@ export function bindFilmedBank(project,inventory,dealerId) { return bindBank(pro
 // native producer rechecks the exact saved topology and identities at publication.
 export function bindNativeFilmedBank(project,inventory,dealerId) { return bindBank(project,inventory,dealerId,true); }
 
-export function hasEmbeddedShoeTransitions(dealerId) {
-  const profile=registeredFilmedProfile(dealerId);
+export function hasEmbeddedShoeTransitions(dealerId,{project}={}) {
+  const profile=filmedProfileFor(dealerId,{project});
   if(!profile)return false;
-  return profile.takes.filter(take=>take.variant==='').every(base=>{
+  const bases=profile.takes.filter(take=>take.variant==='');
+  return bases.length>0&&bases.every(base=>{
     const variant=(base.startPose==='VILA'?'':'i')+(base.endPose==='VILA'?'':'v');
     return profile.takes.some(take=>take.target===base.target&&take.variant===variant&&take.startPose==='VILA'&&take.endPose==='VILA');
   });

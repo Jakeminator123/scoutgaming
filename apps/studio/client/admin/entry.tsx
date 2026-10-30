@@ -86,7 +86,7 @@ function App() {
           <ConnectedClipMap route={lastMapRoute} active={mapActive} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} onWorkspaceChange={workspaceChanged} refreshKey={studioRefresh}/>
         </Clips>}
       </div>
-      {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved}/>}
+      {show('dealer')&&<DealerHub part="tail" dealerId={route.id} tab={dealerTab} workspace={workspace.current} saved={workspace.saved} onMaterialChanged={materialChanged}/>}
       {visited.includes('scenes')&&<div hidden={!show('scenes')}><ScenesPage tab={sceneTab} filter={route.page==='scenes'?query.get('filter'):null} compositionId={route.page==='scenes'?query.get('composition')??'':''} game={route.page==='scenes'?query.get('game'):null}
         operator={route.page==='scenes'?query.get('operator'):null} table={route.page==='scenes'?query.get('table'):null}
         visible={show('scenes')} blocked={studioDirty||importBusy} onChanged={materialChanged} refreshKey={studioRefresh+':'+studioRevision}/></div>}

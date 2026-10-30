@@ -61,7 +61,9 @@ export function validateFilmedDealProfile(profile) {
         ||seen.has(take.key)||hashes.has(take.sha256)||!hash.test(take.sha256)||typeof take.repositoryPath!=='string'||take.repositoryPath.includes('..')) fail();
     seen.add(take.key);hashes.add(take.sha256);
     if (!['VILA','REDO'].includes(take.startPose)||!['VILA','REDO'].includes(take.endPose)
-        ||take.track!==take.target+(take.variant.endsWith('v')?'v':'')||(!profile.tracks[take.track]&&take.track!=='hole'&&!studio)) fail();
+        ||!(take.track===take.target+(take.variant.endsWith('v')?'v':'')
+          ||studio&&profile.source.studio.kind==='copy'&&['v','iv'].includes(take.variant)&&take.track===take.target)
+        ||(!profile.tracks[take.track]&&take.track!=='hole'&&(!studio||profile.source.studio.kind==='copy'))) fail();
     if (![take.frames,take.offsetFrames,take.firstFaceFrame,take.contactFrame,take.landFrame,take.clearFrame].every(integer)
         ||take.frames<1||take.offsetFrames>=take.frames||take.firstFaceFrame<take.offsetFrames||take.contactFrame<take.offsetFrames
         ||take.contactFrame>take.landFrame||take.landFrame>take.clearFrame||Math.max(take.firstFaceFrame,take.clearFrame)>=take.frames) fail();

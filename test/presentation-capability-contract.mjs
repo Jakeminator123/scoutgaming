@@ -6,9 +6,19 @@ import {
 } from '../packages/presentation/capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
-const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34];
+const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
+
+test('v35 adds explicit source takes without changing existing frozen profiles or the default',()=>{
+  const cap=presentationCapabilitiesForVersion(35);
+  assert.equal(negotiatePresentationCapabilityVersion('35'),35);
+  assert.deepEqual(cap,{...presentationCapabilitiesForVersion(34),schemaVersion:35,filmedTakeSources:'registered-take-source-v1'});
+  assert.equal(validatePresentationCapabilities(parsed(35),{expectedVersion:35}),cap);
+  assert.throws(()=>validatePresentationCapabilities(parsed(34),{expectedVersion:35}),invalid);
+  assert.throws(()=>validatePresentationCapabilities({...parsed(35),filmedTakeSources:'guessed'}),invalid);
+  assert.equal(negotiatePresentationCapabilityVersion(undefined),2);
+});
 
 test('v30 explicitly adds embedded MP4 AV without changing v29 or the default', () => {
   assert.equal(negotiatePresentationCapabilityVersion('30'),30);
@@ -19,7 +29,7 @@ test('v30 explicitly adds embedded MP4 AV without changing v29 or the default', 
   assert.equal(negotiatePresentationCapabilityVersion(undefined),2);
   assert.throws(()=>validatePresentationCapabilities(parsed(29),{expectedVersion:30}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(30),recordedEmbeddedAv:'unverified'}),invalid);
-  for(const malformed of ['35','030','30, 30','30, 29'])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
+  for(const malformed of ['36','030','30, 30','30, 29'])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
 });
 
 test('v31 explicitly adds frozen native film planning without changing v30 or the default', () => {
@@ -32,7 +42,7 @@ test('v31 explicitly adds frozen native film planning without changing v30 or th
   assert.throws(()=>validatePresentationCapabilities(parsed(30),{expectedVersion:31}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(30),nativeFilmedPlanning:'frozen-topology-v2'}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(31),nativeFilmedPlanning:'unverified'}),invalid);
-  for(const malformed of ['35','031','31.0',' 31','31 ','31, 31','31, 30',31,new String('31')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
+  for(const malformed of ['36','031','31.0',' 31','31 ','31, 31','31, 30',31,new String('31')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
 });
 
 test('v32 explicitly adds proposed rest clips in a rotation without changing v31 or the default', () => {
@@ -44,7 +54,7 @@ test('v32 explicitly adds proposed rest clips in a rotation without changing v31
   assert.equal(negotiatePresentationCapabilityVersion(undefined),2);
   assert.throws(()=>validatePresentationCapabilities(parsed(31),{expectedVersion:32}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(31),idleRotationOffers:'rest-proposals-v1'}),invalid);
-  for(const malformed of ['35','032','32.0','32, 32','32, 31',32])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
+  for(const malformed of ['36','032','32.0','32, 32','32, 31',32])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
 });
 
 test('v33 explicitly adds the lane miljöbild without changing v32 or the default', () => {
@@ -57,7 +67,7 @@ test('v33 explicitly adds the lane miljöbild without changing v32 or the defaul
   assert.throws(()=>validatePresentationCapabilities(parsed(32),{expectedVersion:33}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(32),laneIllustration:'environment-image-v1'}),invalid);
   assert.throws(()=>validatePresentationCapabilities({...parsed(33),laneIllustration:'unverified'}),invalid);
-  for(const malformed of ['35','033','33.0',' 33','33 ','33, 33','33, 32',33,new String('33')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
+  for(const malformed of ['36','033','33.0',' 33','33 ','33, 33','33, 32',33,new String('33')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
 });
 
 test('v34 explicitly adds frozen studio filmed profiles on top of v33 without changing v33 or the default', () => {
@@ -73,7 +83,7 @@ test('v34 explicitly adds frozen studio filmed profiles on top of v33 without ch
   assert.throws(()=>validatePresentationCapabilities({...parsed(34),filmedProfiles:'live-project'}),invalid);
   const {laneIllustration:_omitted,...withoutIllustration}=parsed(34);
   assert.throws(()=>validatePresentationCapabilities(withoutIllustration,{expectedVersion:34}),invalid);
-  for(const malformed of ['35','034','34.0',' 34','34 ','34, 34','34, 33',34,new String('34')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
+  for(const malformed of ['36','034','34.0',' 34','34 ','34, 34','34, 33',34,new String('34')])assert.throws(()=>negotiatePresentationCapabilityVersion(malformed),unsupported);
 });
 
 test('negotiation preserves default v2 and opts into v3-v34 only with one exact supported header', () => {
@@ -113,7 +123,7 @@ test('negotiation preserves default v2 and opts into v3-v34 only with one exact 
   assert.equal(negotiatePresentationCapabilityVersion('32'), 32);
   assert.equal(negotiatePresentationCapabilityVersion('33'), 33);
   assert.equal(negotiatePresentationCapabilityVersion('34'), 34);
-  for (const malformed of ['', '1', '35', '034', '34, 34', '033', '33, 33', '032', '32, 32', '031', '31, 31', '31, 30', '030', '30, 30', '029', '29, 29', '28, 28', '028', '27, 27', '027', '026', '26, 26', '025', '25, 25', '024', '24, 24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  for (const malformed of ['', '1', '36', '034', '34, 34', '033', '33, 33', '032', '32, 32', '031', '31, 31', '31, 30', '030', '30, 30', '029', '29, 29', '28, 28', '028', '27, 27', '027', '026', '26, 26', '025', '25, 25', '024', '24, 24', '023', '23, 23', '022', '22, 22', '021', '21, 21', '020', '20, 20', '019', '19, 19', '018', '18, 18', '017', '17, 17', '016', '16, 16', '015', '15, 15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
@@ -164,7 +174,7 @@ test('expected-version validation rejects downgrade even when the old response i
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 35, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 36, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 

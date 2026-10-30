@@ -13,7 +13,7 @@ const sources:[string,string,string][]=[
   ['Dealers','GET /admin/_data/catalog + /studio/api/videos','doc.project dealers[], lines[]; media_records'],
   ['Dealers, fliken Klippkarta','GET /admin/_data/catalog + /studio/api/videos; PUT /studio/api/project; POST /studio/api/videos/upload','doc.project lines[], idlePolicy; media_records; Blob dealers/<id>/'],
   ['Dealers, fliken Röst och tal','samma läsning; POST /studio/api/dealers/voice (Röstprofil); POST /studio/api/speech-build; GET /studio/api/replies; POST /api/chat; A:moving-drift','doc.project dealers[].speechProfile; media_records; speech_reply_records; moving_drift_control'],
-  ['Dealers, fliken Landningar','filmad profil i koden (filmed-profiles/registry.mjs); doc.project lanes[]','ingen lagring per dealer ännu; fliken visar läget'],
+  ['Dealers, fliken Landningar','doc.project; PUT /studio/api/dealers/<id>/filmed-profile','dealers[].filmedProfile; importkontroll mot dealerns uppmätta media, publicering separat'],
   ['Dealers, fliken Används av','GET /admin/_data/catalog + /studio/api/project + /studio/api/videos; A:resource-lifecycle','doc.project, doc.administration, operators, operator_packages'],
   ['Dealers, fliken Inställningar','POST /studio/api/dealers/{archive,delete}; PUT /studio/api/project','doc.project dealers[], dealerTrash[], dealerSets[]; media_records; Blob'],
   ['Miljöer','GET /admin/_data/catalog + /studio/api/project + /studio/api/videos; PUT /studio/api/project','doc.project lanes[], layerAssets[]'],
