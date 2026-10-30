@@ -17,7 +17,7 @@ const insurance = (own, version) => { const s = tableSnapshot({ version, own, ph
   round: { id: 'round-a', phase: 'insurance', active: 0, holeDraw: 20, hands: cards(own), dealer: [{ r: 'A', s: 'D', shoeDraw: 1 }], legalActions: [] } });
   s.me.insuranceDue = true; return s; };
 const settled = (own, version) => tableSnapshot({ version, own, phase: 'settled', bets: Object.fromEntries(own.map(i => [i, { main: 25 }])), plan: past(),
-  lastSettlement: { roundId: 'round-a', returned: 50, hands: own.map(box => ({ box })) },
+  lastSettlement: { roundId: 'round-a', returned: 50, currency: 'USD', hands: own.map(box => ({ box })) },
   round: { id: 'round-a', phase: 'settled', active: 0, holeDraw: 20, hands: cards(own), dealer: [{ r: '9', s: 'D', shoeDraw: 1 }, { r: '8', s: 'C', shoeDraw: 20 }], legalActions: [] } });
 
 test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 and 320 px with one, two and seven own seats', { skip, timeout: 300000 }, async t => {
@@ -27,6 +27,7 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
     const phone = viewport.width < 860;
     for (const [label, snapshot, plane] of [
       ['one own seat with a bet', tableSnapshot({ own: [3], bets: { 3: { main: 25 } }, others: { 1: 'bob' } })],
+      ['legacy wallet without currency', tableSnapshot({ own: [3], currency: null, bets: { 3: { main: 25 } } })],
       ['two own neighbouring seats', tableSnapshot({ own: [2, 3], bets: { 2: { main: 10 }, 3: { main: 25, pp: 5 } } })],
       ['seven own seats', tableSnapshot({ own: [0, 1, 2, 3, 4, 5, 6], bets: { 3: { main: 25 } } })],
       ['no own seat', tableSnapshot({ others: { 1: 'bob', 5: 'carol' } })],
@@ -109,10 +110,10 @@ test('Chrome shared-table play path: every phase\'s controls take a real click a
       assert.equal(await page.evaluate(() => document.activeElement?.className), 'room-chat-toggle', `${where}: focus returns to Chatt`);
       await button('Välj plats 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
       await show(tableSnapshot({ version: 2, own: [3] }));
-      await button('Plats 4, huvudinsats, 0').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
+      await button('Plats 4, huvudinsats, 0 USD').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
       await pauses('betting');
       await show(tableSnapshot({ version: 3, own: [3], bets: { 3: { main: 5 } } }));
-      await button('Plats 4, par, 0').click(); assert.equal((await last()).field, 'pp');
+      await button('Plats 4, par, 0 USD').click(); assert.equal((await last()).field, 'pp');
       await button('Redo').click(); assert.equal((await last()).op, 'ready', `${where}: ready`);
       const transform = () => page.evaluate(() => document.getElementById('local-card-plane').getAttribute('transform'));
       await show(decision([3], 4));
@@ -146,7 +147,7 @@ test('Chrome shared-table focus: choosing another own seat and a round that empt
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), 'Plats 4, din plats', `${viewport.width}: circle keeps focus`);
     assert.equal(await other.getAttribute('aria-disabled'), 'true');
     if (viewport.width < 860) {
-      await page.getByRole('button', { name: 'Plats 4, huvudinsats, 0', exact: true }).focus();
+      await page.getByRole('button', { name: 'Plats 4, huvudinsats, 0 USD', exact: true }).focus();
       await show(decision([2, 3], 2));
       assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), 'BODY', 'the emptied dock hands focus on');
     }
