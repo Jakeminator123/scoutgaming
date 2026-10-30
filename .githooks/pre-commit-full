@@ -34,7 +34,6 @@ run_node_tests studio studio-tests apps/studio/test/*.test.mjs apps/studio/compo
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
 run_node_tests admin dealer-filmed-profile-import apps/studio/client/admin/lib/dealer-filmed-profile.test.mjs
-run_node_tests gameplay factory-filmed-profile test/factory-filmed-profile.mjs
 run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/saved-scene-preview.test.mjs apps/studio/client/admin/lib/scene-preview-media.test.mjs apps/studio/client/admin/lib/scene-preview.test.mjs apps/studio/client/admin/lib/ai-proposal-preview.test.mjs
 run_node_tests admin moving-drift-ui apps/studio/client/admin/lib/moving-drift-ui.test.mjs
 run_node_tests admin catalog apps/studio/client/lobby/lib/catalog.test.mjs apps/studio/client/lobby/components/lobby-provider.test.mjs apps/studio/client/admin/lib/dealer-artwork.test.mjs apps/studio/client/admin/lib/dealer-playback.test.mjs apps/studio/client/admin/lib/connected-studio.test.mjs apps/studio/client/admin/lib/studio-composition-panel.test.mjs apps/studio/client/admin/lib/studio-layout.test.mjs apps/studio/client/admin/lib/roulette-clip-map.test.mjs apps/studio/client/admin/lib/studio-policy.test.mjs apps/studio/client/admin/lib/studio-lifecycle.test.mjs apps/studio/client/admin/lib/studio-speech.test.mjs apps/studio/client/admin/lib/dealer-voice-profile.test.mjs apps/studio/lib/dealer-sets.test.mjs apps/studio/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
@@ -97,6 +96,7 @@ run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-co
 run_node_tests speech generated-speech-providers test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
 run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs
+run_node_tests gameplay factory-filmed-profile test/factory-filmed-profile.mjs
 run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/actor-edge-blend.mjs test/table-audio.mjs
 run_node_tests gameplay dealer-reach test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 run_node_tests gameplay action-placement test/action-placement.mjs
