@@ -52,6 +52,8 @@ Bolagsvyns route väljer bolaget: [CompaniesPage](apps/studio/client/admin/compo
 
 Admins isolerade Provspel går från [förhandsvisningen](apps/studio/client/admin/components/studio/saved-scene-preview.tsx) via [startklienten](apps/studio/lib/studio-preview-client.mjs) till [serverns sessionshanterare](services/game/studio-preview.mjs) och [tabellen i minnet](services/game/preview-table.mjs). Det är en levande klient-/lagringsadapter skild från det delade bordet; [gränsproven](test/studio-preview.mjs) kontrollerar bland annat scope och återkallad åtkomst. Avveckling kräver att konsumenten ersätts; se [spelbackendens guide](services/game/README.md). Tekniska ord som `operator`, `lane`, `studio` och `croupier` översätts i [ordlistan](apps/studio/docs/TERMINOLOGI.md). Namnet ensamt avgör inte om koden används.
 
+Generera den lokala, interaktiva kartan med `python tools/system-map.py` (Python 3.10+ och Git). Öppna `.cache/system-map/index.html` i webbläsaren. Kartan läser tabellen ovan och kontrollerar Git-spårade filreferenser; samband och provkrav kommer från dokumentationen, inte automatisk runtimeanalys. Utdata är privat arbetsmaterial och ska inte publiceras som en produktvy.
+
 ## Identiteter
 
 | Miljö | Tjänst | Identitet |

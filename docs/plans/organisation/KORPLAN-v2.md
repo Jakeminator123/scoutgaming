@@ -5,7 +5,7 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 ## Utgångsläge och mandat
 
 - Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. S1–S3 utgår från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Ändringar görs i egna worktrees under `.claude/worktrees`; orkestratorns branch är `jakob/codex-cleanup-integration-1031`.
-- Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, raderade brancher/worktrees, kollegors resurser eller RunPod-endpoints ingår.
+- Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, ingrepp i kollegors resurser eller RunPod-endpoints ingår. GitHubs normala auto-delete behålls vid godkända PR-merges; äldre brancher/worktrees har inte gallrats i denna leverans.
 - **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
 - Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
 
@@ -64,6 +64,14 @@ Brancher och worktrees för S1–S3 och integrationen är bevarade enligt uppdra
 Första publicerade provet fann ett ytterligare transportfel på Team; [#753](https://github.com/Jakeminator123/scoutgaming/pull/753) rättade det efter röd reproduktion, 65/65 riktade prov och exakt [CI 41210914261](https://github.com/Jakeminator123/scoutgaming/actions/runs/41210914261). Slutlig publicerad verifiering och revision redovisas i beslutsloggen; den första releasens gröna CI räckte inte som UI-acceptans.
 
 Efter första städvågen väljs en levande legacykedja åt gången: Admins isolerade provspel, sessionsutfärdande eller det äldre referens-/mappingflödet. Atomisk bolagspublicering och materialersättning är separata funktionsändringar. Namnbyten i molnet och stora workspaceomläggningar prioriteras inte framför belagda dubbletter. Talet väntar fortfarande.
+
+## Levererad systemkarta och smal CI-selektion: S4–S6
+
+Jakobs nästa uppdrag till de tre befintliga teamchattarna är genomfört. REPOAGENTEN #755 (`71af69d97351f3b21b737b5010ce3f03b76ad7a9`, CI 41212844431) verifierade och länkade kartans kod-/provgränser. ARKITEKTEN #757 (`6611a1398753cb6e16494441e2d08223a2772142`, CI 41213561936) byggde `tools/system-map.py`; 8/8 Pythonprov och oberoende granskning passerade. Orkestratorn genererade kartan på integrerad `1c920187b11f84b5c02abec72cad920a29428833`: sex områden, 37/37 referenser, inga fel eller varningar. Faktisk browserkontroll bekräftade läsbar layout, zoom och expandera/fäll ihop. Lokala fillänkar verifierades som referenser; klick från HTTP-preview till `file://` är inte ett accepterat webbflöde. Den fristående filen öppnas lokalt enligt START-HERE.
+
+DRIFTAGENTEN #756 (`07ca8ee6ee145d292c82826010ff6f220472ec80`, CI 41213034222) begränsar endast vanliga M/100644-ändringar i tre befintliga Admin-CSS-filer till `studio-admin-contracts` + `access-presentation`, med verkligt bygge/artefaktkontroll och obligatorisk Chrome. Databas/engine och tal/gameplay utelämnas för just denna klass. Orkestratorns 22/22 riktade prov passerade, inklusive riktiga Git-mergefixturer och negativa gateprov. Okända/blandade ändringar, nya/raderade/omdöpta filer och preview/nattlig/manuell körning behåller full täckning. Inga sparade minuter eller bredare totalprestandavinster är uppmätta.
+
+Alla tre PR:er är verifierat våra genom tilldelad teamchatt, rapporterad head och samma frysta GitHub-SHA. Ett commitnamn eller PR-kontot ensamt bevisar inte uppdragets ägare. Inga oklara kollegors PR:er ingick i denna mergeomgång.
 
 ## Avslutat underlag
 

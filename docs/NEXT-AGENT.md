@@ -4,7 +4,7 @@ Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scout
 
 ## Organisationsarbete
 
-[KORPLAN-v2](plans/organisation/KORPLAN-v2.md) är enda aktiva körordning. Den äldre inventeringen och områdesfilerna är ersatta; Git och [HISTORIK](HISTORIK.md) bevarar deras ursprung. Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan fler godkännandefrågor. Ägar-, CI-, SHA- och verifieringsgrindarna gäller fortfarande. Inga brancher/worktrees eller kollegors resurser raderas; RunPod-endpoints rörs inte.
+[KORPLAN-v2](plans/organisation/KORPLAN-v2.md) är enda aktiva körordning. Den äldre inventeringen och områdesfilerna är ersatta; Git och [HISTORIK](HISTORIK.md) bevarar deras ursprung. Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan fler godkännandefrågor. Ägar-, CI-, SHA- och verifieringsgrindarna gäller fortfarande. GitHubs normala auto-delete behålls vid godkända PR-merges. Äldre resurser gallras endast efter separat kontroll av ägarskap, merge och osparat arbete enligt AGENTS; kollegors resurser och RunPod-endpoints rörs inte.
 
 Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd samt verkliga kod-/CI-/deploy-/acceptansbevis står i [beslutsloggen](plans/organisation/BESLUTSLOGG.md). F11:s [verkliga driftkvitto](plans/organisation/F11-DRIFTKVITTO.md) omfattar två Render-instanser, pengar, återanslutning och negativa prov. Den särskilda F11-spärren är hävd för kompatibla releaser; flaggbyte/publicering och övrig acceptans följer egna kriterier. Äldre versionsuppgifter i kvittona nedan är daterade; aktuell leverans och kvarvarande prov finns i körplanen.
 
@@ -14,7 +14,9 @@ Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd sam
 
 **S1–S3 levererade av MERGEAGENTEN 2:** #752 integrerar de tre teamchattarnas ändringar och #753 rättar det transportfel som verkligt previewprov upptäckte. Konstanta övergångsval och döda medie-/klippmappningsvägar är borta. Skapa bolag och Team har egna komponenter; Team läser ett bolag utan projekt/video eller nästlad bolagskatalog. Byggartefakterna kontrolleras i befintligt CI-bygge och rådgivande browserjobb ligger utanför obligatorisk väntan. [Systemkartan](../START-HERE.md#systemkarta-vem-äger-vilket-beslut) visar produktväg, kod, data, drift, ansvar och prov. Exakta CI-/release-/UI-bevis finns i körplanen och beslutsloggen; privata bildbevis ligger i `.cache/cleanup-1031/`.
 
-De tre teamuppdragen är avslutade. Egna brancher/worktrees och den okända `.pnpm-store/` i kanonisk checkout är bevarade enligt mandatet. Nästa avgränsning väljs ur körplanen: en levande legacykedja eller bredare CI-selektion; atomisk material-/bolagspublicering och isolerat restore-prov återstår separat. Talet är fortsatt pausat. Återöppna inte migrationen eller F11 som generell startuppgift.
+**S4–S6 mergade genom #755–757:** systemkartans kodreferenser är förankrade i spårad kod. `python tools/system-map.py` skapar `.cache/system-map/index.html` från tabellen i START-HERE; sex områden och 37/37 referenser verifierade på integrerad kod, med zoom/expandering provade i webbläsare. CI kan välja två UI-/byggben i stället för fyra vid enbart vanliga ändringar i tre befintliga Admin-CSS-filer; obligatorisk Chrome och full körning för osäkra/blandade ändringar består. Exakt grön PR-CI, 8 Pythonprov och orkestratorns 22 CI-urvalsprov finns som bevis i körplanen.
+
+De tre nya teamuppdragen är avslutade. Normalt auto-delete används efter dessa PR-merges; äldre lokala brancher/worktrees och den okända `.pnpm-store/` har inte gallrats. Nästa avgränsning är en levande legacykedja; Provspel har belagda konsumenter och får inte bara raderas. Atomisk material-/bolagspublicering och isolerat restore-prov återstår separat. Talet är fortsatt pausat. Återöppna inte migrationen eller F11 som generell startuppgift.
 
 ## Spelkontroller och filmtempo, 31 oktober
 
