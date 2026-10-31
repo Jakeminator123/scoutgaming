@@ -1,70 +1,54 @@
 # Scoutgaming: orden
 
-Orden som produkten använder i dag. Svenska ord är UI-ord; kodens namn står inom parentes och visas aldrig i UI.
+En uppslagslista för att skilja produktens identiteter åt och hitta dem i kod. Orden och UI-strukturen får utvecklas med produkten; listan föreskriver ingen meny eller mappstruktur.
 
-## Tre nivåer
+## Vem använder produkten?
 
-| Nivå | Heter | Adress | Vem |
-| --- | --- | --- | --- |
-| 1 | **Admin** | `/admin` | Scoutgamings personal: skapar och tilldelar |
-| 2 | **Partnerportalen** | `/partner/<bolag>` | bolagets team: väljer inom tilldelningen |
-| 3 | **Spelaren** | `/lobby`, `/game` | spelar vid bolagets öppna spelbord |
-
-Det ett bolag kan ändra är en delmängd av det Admin kan ändra; spelaren ser bara det som är publicerat.
-
-## Kärnord
-
-- **Bolag** (`operator`): spelbolaget som får en tilldelning.
-- **Spelbord** (`room`): bolagets ingång till ett spel; **öppet** (`state: live`) eller **pausat**.
-- **Dealer** (`dealer`): en person med egna klipp, egen röst och egna repliker.
-- **Klipp** (`clip`): en filmad situation, till exempel utdelning eller kortvändning.
-- **Klippkarta** (`slots`): dealerns klipp ordnade per situation.
-- **Vila** (`idle`): dealerns grundloop mellan händelserna; **vilosekvens** (`rotation`) är flera viloklipp i följd.
-- **Körregel** (`idlePolicy`, `dealerIdlePolicies`, `mediaPolicy`): när och hur ett klipp spelas, till exempel Av, Ibland eller i vilosekvensen. Ordet står kvar eftersom OpenClaw ska kunna styra klipp genom körregeln.
-- **Replik** och **tagning** (`take`): en mening med exakt text, och en godkänd inspelning av den.
-- **Röst och tal** (`speech`): dealerns inspelade och genererade tal. **Röstprofil** (`speechProfile.voice`): dealerns sparade röst (ElevenLabs röst-ID och modell) i projektet i Neon; talet läser den, röstkatalogen föreslår bara.
-- **Landningar** (`landing`): var dealerns hand lägger korten i bild.
-- **Miljö** (`lane`): hur bakgrund, dealer och bordsgrafik placeras, och vad miljön tillåter. Bakgrunden är ett lager i miljön, aldrig miljön själv.
-- **Miljöbild** (`lane.illustration`, material med rollen `illustration`): miljöns bild i lobbyn och Admin, aldrig i spelet; **Exportera miljöbild** ritar den sparade scenen för dator.
-- **Placering** (`placement`): miljöns skala och läge per lager, för dator och mobil.
-- **Bakgrund** och **bordsgrafik** (`layerAssets`, `tableAsset`): uppladdat **material**; bordsgrafik är bilden av bordet, aldrig ett spelbord.
-- **Tilldelning** (`assignment`): det bolaget får använda och välja.
-- **Paket** (`operator package`): den publicerade tilldelningen med en **version** som bara räknas uppåt; spelet läser bara paketet.
-- **Utkast** och **live** (`draft`, `live`): sparat respektive publicerat; **Publicera** gör utkastet live.
-- **Utseende** (`branding`): spelbordets valda bakgrund, dealer och bordsgrafik.
-- **Spelinställningar** (`roomGameConfigs`): spelbordets språk, insatsprofil och tider.
-- **Insatsprofil** (`limitPreset`): gränser och marker, i dag Casual, Privé och High; bara insatser, ingen ort och ingen bild.
-- **Papperskorg** (`trash`): arkivering som går att ångra.
-- **Team** och **roll** (`operator_memberships`, `partner-admin|editor|viewer`): administratör, redaktör, läsare.
-- **Spelare** (`players`): konto med saldo, knutet till ett bolag.
-- **Integration** och **API-nyckel** (`api_keys`): bolagets nyckel för att starta spelare från sin sajt; Partner-API är `/api/v1/*`.
-- **Journal** (`operator_audit_events`): bolagets händelselogg.
-- **Spelmotorn** (`services/game`): äger kort, sko, regler och saldo; **delat bord** (`shared-table`) är enda spelvägen.
-
-## Gamla namn → nya namn
-
-Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på dem i förbigående; UI ska använda det nya ordet.
-
-| Gammalt namn | Finns kvar i | Nytt ord |
+| Yta | Adress | Användare |
 | --- | --- | --- |
-| Croupier, Croupier Studio | scheman `croupier_*`, `CROUPIER_*`-variabler, Render `croupier-v3`, Blob `croupier-media-private` | Scoutgaming, Admin |
-| Studio | `apps/studio`, basePath `/studio` | Admin (ingen egen produkt) |
-| Control, Kontrollpanelen | redirect `/control` | Admin |
-| Lab, labb | redirect `/lab`, `croupier-lab-*` på Render, `services/openclaw/lab`, `lab_sessions`, `lab-url.mjs` | Admin; talkedjans tjänst heter Director |
-| BO, Backoffice | tabeller `bo_*`, cookien `bo_jwt` | Admin |
-| Lissabon | tabeller `lissabon_*`, `lissabon-stream-lane`, redirect `/labb-lissabon` | inget produktord |
-| Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-team-loader.mjs` | bolag, bolagets team |
-| Rum, spelrum | kodnamnet `room`, adressen `/admin/rooms`; lobbyn och Admin säger spelbord | spelbord |
-| Scenmall (Admin och portalen till 2026-10-29) | kodnamnet `lane`, `composition`; adressen `/admin/scenes?tab=mallar` | miljö |
-| Mall, sammansättning | `lane`, `composition` | miljö |
-| Nivå 1/2/3, intern administration | i UI `studio-administration.tsx` | Admin, Partnerportalen, spelaren |
-| Sammanhängande vilosekvens | i UI vilopanelen | vilosekvens |
-| K0x, J0x, O0x | kodkommentarer, testnamn; i UI importvarningen "K05-urvalet" | beskriv saken, inte koden |
-| k06-k07-staging | databasen `croupier_staging`, Blob-lagret och Render-adressen för preview; Neon-projektet heter `scoutgaming-preview` | preview |
-| GitLab | en källkommentar; push-policyn nekar GitLab | GitHub |
+| Admin | `/admin` | Scoutgamings personal skapar och tilldelar |
+| Partnerportalen | `/partner/<bolag>` | Bolagets team väljer inom sin tilldelning |
+| Spelet | `/lobby`, `/play/{game}` | Spelaren väljer och startar ett publicerat spelbord |
 
-## Regler
+## Identiteter och innehåll
 
-1. Menynamnet är sidans rubrik.
-2. Inga kodnamn i UI.
-3. Ett ord per sak.
+| Ord | Betydelse | Kodnamn |
+| --- | --- | --- |
+| Bolag | Spelbolaget som får innehåll och har egna konton/behörigheter | `operator` |
+| Spelbord | Bolagets ingång till ett spel, öppet eller pausat | `room` |
+| Dealer | Person med egna klipp, röst och repliker | `dealer` |
+| Klipp och klippkarta | Filmad situation och klippens bindningar till situationer | `clip`, `slots` |
+| Vila och körregel | Grundloop, följd av viloklipp och villkor för uppspelning | `idle`, `rotation`, `idlePolicy`, `mediaPolicy` |
+| Replik och tagning | Exakt text och en godkänd inspelning av den | `take` |
+| Röstprofil | Dealerns sparade röst-ID och modell; katalogen föreslår röster | `speechProfile.voice` |
+| Landningar | Var dealerns hand lägger kort i bild | `landing` |
+| Miljö | Bakgrund, dealer och bordsgrafik med placering och tillåtna val | `lane`, `composition` |
+| Placering | Lagrets läge och skala för dator/mobil | `placement` |
+| Material | Uppladdad bakgrund eller bordsgrafik; bordsgrafik är en bild | `layerAssets`, `tableAsset` |
+| Miljöbild | Miljöns bild för lobby/Admin; separat från spelets lager | `lane.illustration` |
+| Tilldelning och paket | Bolagets urval och dess publicerade version | `assignment`, `operator package` |
+| Utkast och live | Sparat respektive publicerat innehåll | `draft`, `live` |
+| Utseende | Spelbordets valda bakgrund, dealer och bordsgrafik | `branding` |
+| Spelinställningar och insatsprofil | Språk, tider, gränser och marker | `roomGameConfigs`, `limitPreset` |
+| Papperskorg | Arkivering som kan återställas enligt livscykelkontraktet | `trash` |
+| Team och roll | Bolagets administratör, redaktör eller läsare | `operator_memberships` |
+| Spelare | Konto med saldo och bolagsbindning | `players` |
+| Integration och API-nyckel | Bolagets start av spelare från egen sajt via Partner-API `/api/v1/*` | `api_keys` |
+| Journal | Bolagets händelselogg | `operator_audit_events` |
+| Spelmotor och delat bord | Servern äger regler, kort, sko och saldo; delat bord är spelvägen | `services/game`, `shared-table` |
+
+En vald dealer, en miljö, ett spelbord och ett publicerat paket är olika identiteter. Ett valt rum gör inte en delad mall rumsspecifik. Behörighet och publicering avgör vad nästa användare kan se och ändra.
+
+## Tekniska namn som finns kvar
+
+| Namn i kod eller drift | Produktens ord |
+| --- | --- |
+| `apps/studio`, basePath `/studio` | Admin, lobby och partner i samma produkt |
+| `croupier_*`, `CROUPIER_*`, Render `croupier-v3` | Scoutgaming; byt tekniska namn med deras konsumenter när uppdraget kräver det |
+| `/control`, `/lab` | Redirect till Admin |
+| `services/openclaw/lab`, `croupier-lab-*` | Talkedjans Director och Gateway |
+| `bo_*`, `bo_jwt`, `operator`, `room`, `lane` | Tekniska namn; UI beskriver sakens betydelse |
+| `k06-k07-staging`, `croupier_staging` | Preview; vissa lagrings- och värdnamn är kvar |
+| K0x, J0x, O0x | Äldre aktivitets-ID:n; använd begriplig saktext i UI |
+
+Visa tekniska detaljer när de hjälper användarens beslut. Använd samma ord för samma sak och skilj en bild av ett bord från ett spelbord.
