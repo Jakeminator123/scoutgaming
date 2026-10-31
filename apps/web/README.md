@@ -57,7 +57,8 @@ pnpm build
 dem före `next build`. Typkontrollen krävs separat eftersom Next-konfigurationen
 hoppar över byggets typfel. Integrationsproven mot talservicen och spelmotorn är
 `test/platform-native-websocket.mjs` och `test/platform-moving-speech.mjs` i
-reporoten. Talservicen använder Node 22 och egen lockfil: kör
+reporoten. Talservicen använder Node 24.21.0 enligt Volta-pinnen i
+[`apps/speech/package.json`](../speech/package.json) och har egen lockfil: kör
 `npm ci --ignore-scripts` i `apps/speech`.
 
 `node_modules/`, `.next/`, `runtime-ui/` och spelresurserna som
@@ -65,5 +66,6 @@ reporoten. Talservicen använder Node 22 och egen lockfil: kör
 Git-ignorerade. Ändra spelkällan i `services/game/public` och den delade
 presentationen i `packages/presentation`.
 
-Preview är inte automatiskt isolerad från produktion. Syntetiska spelprov körs
-i staging med egen databas och hostname.
+Preview har egna Vercel-, Render-, Neon- och Blob-resurser enligt
+[START-HERE: Identiteter](../../START-HERE.md#identiteter). Syntetiska spelprov
+körs i preview med egen databas och hostname.

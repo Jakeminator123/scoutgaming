@@ -47,20 +47,20 @@ Bara namn som fortfarande finns i kod, databas eller drift. Byt inte namn på de
 
 | Gammalt namn | Finns kvar i | Nytt ord |
 | --- | --- | --- |
-| Croupier, Croupier Studio | scheman `croupier_*`, `CROUPIER_*`-variabler, Render `croupier-v3`, Blob `croupier-media-private`; i UI flikrubriken (`app/layout.tsx`) och inloggningstexten (`partner-login.tsx`) | Scoutgaming, Admin |
+| Croupier, Croupier Studio | scheman `croupier_*`, `CROUPIER_*`-variabler, Render `croupier-v3`, Blob `croupier-media-private` | Scoutgaming, Admin |
 | Studio | `apps/studio`, basePath `/studio` | Admin (ingen egen produkt) |
-| Control, Kontrollpanelen | redirect `/control`; i UI inloggningstexten (`partner-login.tsx`) | Admin |
+| Control, Kontrollpanelen | redirect `/control` | Admin |
 | Lab, labb | redirect `/lab`, `croupier-lab-*` på Render, `services/openclaw/lab`, `lab_sessions`, `lab-url.mjs` | Admin; talkedjans tjänst heter Director |
 | BO, Backoffice | tabeller `bo_*`, cookien `bo_jwt` | Admin |
 | Lissabon | tabeller `lissabon_*`, `lissabon-stream-lane`, redirect `/labb-lissabon` | inget produktord |
-| Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-login.tsx` och `partner-team-loader.mjs` | bolag, bolagets team |
+| Operatör, operatörspersonal | kodnamnet `operator`; i UI `partner-team-loader.mjs` | bolag, bolagets team |
 | Rum, spelrum | kodnamnet `room`, adressen `/admin/rooms`; lobbyn och Admin säger spelbord | spelbord |
 | Scenmall (Admin och portalen till 2026-10-29) | kodnamnet `lane`, `composition`; adressen `/admin/scenes?tab=mallar` | miljö |
 | Mall, sammansättning | `lane`, `composition` | miljö |
 | Nivå 1/2/3, intern administration | i UI `studio-administration.tsx` | Admin, Partnerportalen, spelaren |
 | Sammanhängande vilosekvens | i UI vilopanelen | vilosekvens |
 | K0x, J0x, O0x | kodkommentarer, testnamn; i UI importvarningen "K05-urvalet" | beskriv saken, inte koden |
-| k06-k07-staging | Neon, Blob och Render-adressen för preview | preview |
+| k06-k07-staging | databasen `croupier_staging`, Blob-lagret och Render-adressen för preview; Neon-projektet heter `scoutgaming-preview` | preview |
 | GitLab | en källkommentar; push-policyn nekar GitLab | GitHub |
 
 ## Regler

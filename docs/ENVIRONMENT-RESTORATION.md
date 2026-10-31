@@ -27,7 +27,7 @@ Kodåtergång, när en deploy är fel:
 3. Spelmotorn: deploya SHA:n låst med Render REST, `POST /v1/services/srv-dbd6nfon74is73aiblf0/deploys` med `{"commitId":"<40 hex>"}`. Render MCP `trigger_deploy` tar branchens senaste commit och duger inte för återgång. Vercel: befordra en tidigare READY-deploy (panelens Instant Rollback eller `POST /v10/projects/<prj>/promote/<dpl_…>`); därefter får nya main-deployer inte produktionsdomänerna förrän en deploy befordras igen. Den varaktiga återgången är en revert-PR med full CI. Director och Gateway deployas bara om deras kod ändrats.
 4. Läs om `/__cloud/version`, `/__cloud/health` och det berörda flödet (med delat bord på: en spelad hand, eftersom `/__cloud/shared-room-health` inte är publikt nåbar): Admin → publicering → lobby → spel. Render låter den gamla instansen svara i ungefär tre minuter efter bytet; mät först när versionen är stabil.
 
-**Deploy med delat bord på (F11).** Under Render-överlappet får spelare på den gamla instansen inga ögonblicksbilder från bordet och missar dealerns spel tills anslutningen stängs med 1012. Tills rättningen är mergad deployas `croupier-v3` bara när bordet är tomt: `SELECT count(*) FROM croupier_game.shared_table_members WHERE active` och `SELECT count(*) FROM croupier_game.shared_wallet_reservations` ska båda vara 0, annars vänta en runda.
+**Deploy med delat bord på (F11).** F11 gällde uteblivna ögonblicksbilder på den gamla instansen under Render-överlappet. Rättningen är mergad i #529: `services/game/shared-room-channel.mjs` observerar bordets revisioner med `observeRoom` och stänger anslutningar med 1012 vid SIGTERM. Driftacceptansen återstår. Tills den är kvitterad deployas `croupier-v3` bara när bordet är tomt: `SELECT count(*) FROM croupier_game.shared_table_members WHERE active` och `SELECT count(*) FROM croupier_game.shared_wallet_reservations` ska båda vara 0, annars vänta en runda.
 
 **Delat bord av.** `CROUPIER_SHARED_TABLE_ENABLED=1` i produktionen sedan 2026-10-28 13:52Z (deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`, live 13:53:25Z; bordet var tomt före). Återgång till nativebordet: kontrollera att bordet är tomt enligt ovan, sätt flaggan till `0` med REST (`PUT /v1/services/<srv>/env-vars/<nyckel>` startar ingen deploy) och deploya samma SHA låst. Reservationer som ändå står kvar ligger kvar i Neon tills flaggan slås på igen; de raderas aldrig för hand. Jakob har förgodkänt återgången flagga av och låst deploy av `3415c310` (D7, 2026-10-28).
 
@@ -178,7 +178,7 @@ Varje talad replik är ett paket: exakt text, ljud, video, frameindex, kalibreri
 3. Restore kräver stoppad tjänst, verifierad snapshot, rätt profil och tom monterad målrot: `node tools/backup-render-state.mjs restore --profile <director|gateway> --snapshot <snapshot> --destination <tom målrot> --quiesced yes`. Director återställs till `/data/catalog`, Gateway till `/data/openclaw`.
 4. Verifiera katalogrevision och historik, companion-profilen och att ett sparat sökkvitto återanvänds efter start och ytterligare en omstart.
 
-Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar. En extern fullbackup av de två diskarna är ännu inte gjord. Director och Gateway kör `cc415cd8` sedan 27 oktober; O03 deployade dem inte.
+Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar. En extern fullbackup av de två diskarna är ännu inte gjord. Daterat bevis från 27 oktober: Director och Gateway körde `cc415cd8`; O03 deployade dem inte. Se [NEXT-AGENT](NEXT-AGENT.md) för senare versionskvitton.
 
 ## Historiska arkiv
 
