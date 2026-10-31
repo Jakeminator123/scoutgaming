@@ -2,9 +2,9 @@
 
 Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor. `migrering/status.json` är fortsatt migrationsplanens enda statuskälla.
 
-## Organisationsinventering
+## Organisationsarbete
 
-Jakobs nya [organisationsplan](plans/organisation/MASTERPLAN.md) sammanställer 16 externa underlag och riktad repo-/molnverifiering på main `e20fe6f143e447f805c63b75b328f39f48521ca3`. Den har tre faser, åtta områden, ett gemensamt spår och 31 aktiviteter; deras egna filer bär status. [Nuläget](plans/organisation/NULAGE.md) skiljer färska bevis från äldre rapportfel (bland annat `master`, previewskydd och redan levererade rättningar). MERGEAGENTEN samordnar; de nya områdeschattarna har granskat läsande. Inventeringen ändrar inte produkt, moln, schema eller historik. Välj en avgränsad genomförandevåg efter planen; återuppta inte gamla avslutade underagenter.
+[KORPLAN-v2](plans/organisation/KORPLAN-v2.md) ersätter körordningen i #722 och Fables alternativ efter jämförelse med färsk main `394fbb02bc3a46131bfcc553fd86a90458af7209`. [NULAGE](plans/organisation/NULAGE.md) och [UNDERLAG](plans/organisation/UNDERLAG.md) behålls som daterade bevis; äldre aktivitetsstatusar är inte en andra kö. Jakob har godkänt planens PR-merge och fortsatt genomförande med ARKITEKTEN, REPOAGENTEN och DRIFTAGENTEN. Första etappen: Secure-cookie, dokumentdrift och F11-startberedskap parallellt i avgränsade uppdrag. KORPLAN-v2 visar faktisk status och vilka senare merges/driftsteg som kräver uttryckligt ja. Inga brancher/worktrees eller kollegors resurser raderas; RunPod-endpoints rörs inte.
 
 ## Leveransen som avslutas
 

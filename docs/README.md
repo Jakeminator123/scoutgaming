@@ -57,9 +57,9 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | [plans/DESIGNSYSTEM](plans/DESIGNSYSTEM.md) | Kitet för Admin och Partnerportalen (shadcn-stil på Radix och `--sg-*`): komponenter, hur en vy konverteras, piloten och vyerna på tur | Den som bygger eller konverterar en vy | När alla vyer är konverterade |
 | [plans/VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) | Steg H: Admin-SPA:ns och lobbyns verktygskedja, alternativ A (behåll SPA:n med en Tailwind, en tokenfil och ett mörkt läge) och B (Admin som Next-sidor), rekommendation och PR-sekvens | Den som bygger steg H | Raderas när det valda alternativet är byggt och verifierat i drift |
 
-## Organisationsplan
+## Organisationsplan och daterat underlag
 
-Beställd sammanställning av systemgranskningen. Varje aktivitet har egen status; områdesplanerna är index.
+Beställd sammanställning av systemgranskningen. KORPLAN-v2 är enda aktiva körplan och statuskälla; äldre områdes- och aktivitetsfiler är daterat inventeringsunderlag.
 
 | Dokument | Vad | För vem | Uppdateras |
 | --- | --- | --- | --- |
@@ -69,7 +69,8 @@ Beställd sammanställning av systemgranskningen. Varje aktivitet har egen statu
 | [plans/organisation/gemensamt/aktiviteter/GEM-02.md](plans/organisation/gemensamt/aktiviteter/GEM-02.md) | GEM-02: Miljöinventering utan att läsa eller ändra hemligheter | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/gemensamt/aktiviteter/GEM-03.md](plans/organisation/gemensamt/aktiviteter/GEM-03.md) | GEM-03: Beslutsspår för Git-historik och eventuell ny produktrepo | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/gemensamt/OMRADESPLAN.md](plans/organisation/gemensamt/OMRADESPLAN.md) | Gemensamt: tvärgående förarbete och beslut | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/MASTERPLAN.md](plans/organisation/MASTERPLAN.md) | Organisation: masterplan | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
+| [plans/organisation/KORPLAN-v2.md](plans/organisation/KORPLAN-v2.md) | Aktiv gemensam körplan, första vågens briefs, mandat och etapplogg | MERGEAGENTEN och utförande agenter | Vid verifierad etapp eller ändrat beslut |
+| [plans/organisation/MASTERPLAN.md](plans/organisation/MASTERPLAN.md) | Ingång till körplanen och fryst områdesunderlag från inventeringen | Alla | När ingångar ändras |
 | [plans/organisation/NULAGE.md](plans/organisation/NULAGE.md) | Nuläge: inventeringsbas 31 oktober 2026 | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-01.md](plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-01.md) | DOC-01: Rätta dokumentdrift från aktuell kod | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-02.md](plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-02.md) | DOC-02: Förtydliga ord och levande tekniska namn | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |

@@ -1,6 +1,6 @@
 # Beslutslogg och nya fynd
 
-Loggen innehåller korta skäl och hänvisningar, inte en andra aktivitetsstatus. Ändra aktivitetsfilen när beslut påverkar dess ordning eller mandat. Nya fynd följer [arbetssättet](ARBETSSATT.md).
+Loggen innehåller korta skäl och hänvisningar, inte en andra aktivitetsstatus. Ändra [KORPLAN-v2](KORPLAN-v2.md) när beslut påverkar aktiv körordning eller mandat. Nya fynd följer [arbetssättet](ARBETSSATT.md).
 
 | ID / datum | Observation och beslut | Påverkan / bevis |
 | --- | --- | --- |
@@ -13,3 +13,10 @@ Loggen innehåller korta skäl och hänvisningar, inte en andra aktivitetsstatus
 | F-20261031-02 | Oberoende Astra/high-granskning fann att F11-kriteriet kunde godkänna en fryst klientvy före 1012. Kriteriet är skärpt till löpande snapshots/versioner/dealerhändelser på båda instanserna under överlapp, därefter reconnect. | [GAM-01](omraden/04-spel-och-adaptrar/aktiviteter/GAM-01.md), mot återställningsguidens beskrivna grundfel. Ett P2-fynd åtgärdat; ingen produktkod ändrad. |
 
 Nästa fynd skrivs med ID, datum, observation/reproduktion, full bas-SHA, berörda aktiviteter, bedömning och uttryckligt beslut. Ingen automatisk auktorisation följer av ett nytt fynd.
+
+## Reviderad körplan 31 oktober
+
+- B-006: Fables tre huvudfiler och sex briefs jämförda mot #722 och färsk main 394fbb02. KORPLAN-v2 blir enda aktiva körordning; äldre områdesfiler behålls som referenser. Färre samtidiga uppdrag, ingen branch-/worktree-/inboxstädning.
+- B-007: Jakob beställer därefter uttryckligen plan-PR och merge samt genomförande med de tre uppstartade agentchattarna. Planmergen är godkänd. Tidigare särskilda spärrar för övriga merges och driftändringar kvarstår. Etapploggen mäter verifierade leveranser och skiljer dem från driftsättning.
+- F-20261031-03: Pre-push-källan anropar enbart check-push-target.mjs. Mellanliggande nya Git-objekt har ingen motsvarande pushgrind; CI-04 går från misstanke till belagt kontrollgap. En framtida lösning får inte tyst hoppa över commits vid maxgräns/saknad bas.
+- F-20261031-04: Fables F11-brief behöver instansbevis, verifierade SQL-namn och korrekt revisionskontinuitet. Två klienter utan instansidentitet räcker inte; roundRevision behöver inte vara konstant när legitima kommandon sker. DRIFTAGENTEN förbereder underlaget före någon mutation.
