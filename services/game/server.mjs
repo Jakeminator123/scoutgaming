@@ -7,7 +7,7 @@ import { consumeSharedRoomQaContext } from './shared-room-qa-context.mjs';
 import { sharedRoomOrigins } from './shared-room-origins.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import { partnerLaunchOperator, partnerRefusalHtml, partnerRoomRefusal } from './partner-operator.mjs';
-import {currentBackofficeAccount} from './bo-player-session.mjs';
+import {currentAdministratorAccount} from './administrator-session.mjs';
 import { createPreviewPlayer } from './preview-session.mjs';
 import { isAdministratorRole } from '../../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
@@ -344,7 +344,7 @@ async function backofficeGameLogout(req) {
   const revoke=async()=>{
     const boCookies=(req.headers.cookie??'').split(';').filter(value=>value.trim().startsWith('bo_jwt='));
     if(boCookies.length>1)throw Error('Ambiguous backoffice session');
-    const account=await currentBackofficeAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
+    const account=await currentAdministratorAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
     if(!account)return;
     await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(account.id);
   };
@@ -482,7 +482,7 @@ const gameOrigin=sharedRoomQa?.publicOrigin??process.env.PUBLIC_URL??'https://be
 const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '');
 // Single-origin ingress has no separate frontend origin; shared rooms then accept the canonical public origin.
 const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
-const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
+const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,
   // The key's company reads as null until migration 012 adds the column (docs/plans/NYCKEL-BOLAG.md).
   partnerAuthority: async partnerKeyId => boDb.prepare("SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=?").get(partnerKeyId)}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
