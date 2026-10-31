@@ -7,7 +7,7 @@ import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { ciScope, ciSelection, ciOutputs, documentationOnly, parseDiff, migrationReadinessRequired, movingWorkerRequired,
-  gatewayContainerRequired, openClawDeployOnly, scopeOf, regressionLegs, draftPullRequest, REGRESSION_LEGS, SCOPE_LEGS, LIPSYNC_LEG,
+  gatewayContainerRequired, openClawDeployOnly, adminStylesOnly, scopeOf, regressionLegs, draftPullRequest, REGRESSION_LEGS, SCOPE_LEGS, LIPSYNC_LEG,
   BROWSER_MODES, BROWSER_CLIENT_PREFIXES, browserAcceptanceRequired } from '../tools/ci-changes.mjs';
 
 const change = (path, extra = {}) => ({ path, before: '100644', after: '100644', status: 'M', ...extra });
@@ -16,6 +16,43 @@ const complete = Object.freeze({ scope: 'full', migration: true, moving: true, g
 // Push main: integration checks only; the PR's own ready CI ran the regression.
 const integration = Object.freeze({ scope: 'integration', migration: true, moving: false, gateway: true, draft: false, browser: 'none' });
 const DEPLOY_LEGS = ['studio-admin-contracts', 'access-presentation'];
+const ADMIN_STYLE_PATHS = ['base.css', 'globals.css', 'studio.css'].map(name => `apps/studio/client/admin/app/${name}`);
+
+test('only edits to the three existing Admin stylesheets select UI/build legs and retain required browser coverage', () => {
+  const expected = ['studio-admin-contracts', 'access-presentation'];
+  for (const changes of [ADMIN_STYLE_PATHS.map(path => change(path)), ...ADMIN_STYLE_PATHS.map(path => [change(path)])]) {
+    assert.equal(adminStylesOnly(changes), true);
+    assert.equal(scopeOf(changes), 'admin-styles');
+    const legs = regressionLegs(scopeOf(changes));
+    assert.deepEqual(legs.map(({ leg }) => leg), expected);
+    assert.deepEqual(legs.flatMap(({ suites }) => suites.split(' ')), ['studio', 'admin', 'contracts', 'access', 'presentation']);
+    assert.equal(legs.filter(({ build }) => build).length, 1, 'the existing Studio build and artifact check remain');
+    assert.equal(browserAcceptanceRequired(changes), true);
+    assert.equal(migrationReadinessRequired(changes), false, 'unchanged: CSS does not read the live ledger');
+    assert.equal(gatewayContainerRequired(changes), false);
+    assert.equal(movingWorkerRequired(changes), false);
+  }
+  const css = change(ADMIN_STYLE_PATHS[0]);
+  for (const path of ['unknown', 'docs/guide.md', 'test/ui-tokens.mjs', 'tools/system-map.py', 'tools/ci-changes.mjs',
+    'apps/studio/client/admin/app/new.css', 'apps/studio/client/lobby/app/globals.css', 'apps/studio/client/runtime/preview.css',
+    'packages/ui/tokens.css', 'apps/studio/client/admin/app/page.tsx', 'apps/studio/client/build.mjs',
+    'apps/studio/client/package.json', 'apps/studio/client/package-lock.json', 'apps/studio/client/.env.local',
+    'apps/studio/client/admin/app/schema.sql', 'apps/studio/client/admin/app/config.json', '.github/workflows/croupier.yml',
+    'apps/studio/lib/auth.mjs', 'services/game/games/blackjack/round.mjs', 'services/game/wallet.mjs']) {
+    assert.equal(adminStylesOnly([change(path)]), false, path);
+    assert.equal(scopeOf([css, change(path)]), 'full', `mixed changes: ${path}`);
+    assert.deepEqual(regressionLegs(scopeOf([css, change(path)])), [...REGRESSION_LEGS]);
+  }
+  for (const extra of [{ status: 'A', before: '000000' }, { status: 'D', after: '000000' }, { status: 'R' },
+    { status: 'T' }, { before: '120000' }, { after: '120000' }, { before: '100755' }, { after: '100755' },
+    { before: '000000' }, { path: 'apps/studio/client/admin/app/../app/base.css' }, { path: ADMIN_STYLE_PATHS[0].replaceAll('/', '\\') }]) {
+    assert.equal(scopeOf([change(ADMIN_STYLE_PATHS[0], extra)]), 'full', JSON.stringify(extra));
+  }
+  assert.equal(scopeOf([change(ADMIN_STYLE_PATHS[0], { status: 'D', after: '000000' }),
+    change(ADMIN_STYLE_PATHS[1], { status: 'A', before: '000000' })]), 'full', '--no-renames deletion/addition cannot qualify');
+  assert.equal(adminStylesOnly([]), false);
+  assert.equal(scopeOf([]), 'full');
+});
 
 test('scope matrix: documentation, integration, openclaw-deploy and full select legs; shared paths and uncertain input stay full', () => {
   assert.deepEqual(SCOPE_LEGS.full, REGRESSION_LEGS.map(({ leg }) => leg));
@@ -448,7 +485,10 @@ test('real PR merge diff detects an earlier code commit even when the final comm
   try {
     git('init','-q','-b','main'); git('config','user.name','CI fixture'); git('config','user.email','ci@example.invalid');
     git('config','core.hooksPath',join(root,'no-hooks'));
-    mkdirSync(join(root,'docs')); put('README.md','base\n'); put('app.mjs','export const version = 1;\n'); commit('base');
+    mkdirSync(join(root,'docs')); put('README.md','base\n'); put('app.mjs','export const version = 1;\n');
+    mkdirSync(join(root, 'apps/studio/client/admin/app'), { recursive: true });
+    for (const path of ADMIN_STYLE_PATHS) put(path, 'body { color: black; }\n');
+    commit('base');
     git('checkout','-qb','docs'); put('docs/guide.md','guide\n'); commit('docs');
     git('checkout','main'); put('app.mjs','export const version = 2;\n'); commit('main advanced');
     git('merge','--no-ff','docs','-m','test merge');
@@ -484,6 +524,27 @@ test('real PR merge diff detects an earlier code commit even when the final comm
       assert.equal(ready.scope,'full',path); assert.equal(ready.draft,false); assert.equal(ready.browser,'required',path);
       assert.equal(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}).browser,'none','a draft runs no Chrome: '+path);
     }
+    git('checkout','-qb','admin-styles'); put(ADMIN_STYLE_PATHS[1], 'body { color: white; }\n'); commit('Admin CSS only');
+    git('checkout','main'); git('merge','--no-ff','admin-styles','-m','test Admin CSS merge');
+    const styles = ciSelection({cwd:root,env:prEnv()});
+    assert.deepEqual(styles, {scope:'admin-styles',migration:false,moving:false,gateway:false,draft:false,browser:'required'});
+    const styleOutputs = ciOutputs(styles);
+    assert.deepEqual(JSON.parse(styleOutputs.legs), ['studio-admin-contracts', 'access-presentation']);
+    assert.deepEqual(JSON.parse(styleOutputs.matrix).include, regressionLegs('admin-styles'));
+    assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_PATH:eventPath}}), {...styles,draft:true,browser:'none'});
+    for (const event of ['schedule', 'workflow_dispatch']) assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_NAME:event}}), complete);
+    const cssPush = join(root, '.git', 'css-push.json');
+    writeFileSync(cssPush, JSON.stringify({before:git('rev-parse','HEAD^1'),after:prEnv().GITHUB_SHA}));
+    assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/preview',GITHUB_EVENT_PATH:cssPush}}),
+      {...complete,moving:false}, 'even a verified CSS-only push to preview retains full product acceptance');
+    assert.deepEqual(ciSelection({cwd:root,env:{...prEnv(),GITHUB_SHA:'f'.repeat(40)}}), complete, 'unproven merge identity stays full');
+    git('checkout','-qb','runtime-then-css'); put('app.mjs','export const version = 7;\n'); commit('runtime change');
+    put(ADMIN_STYLE_PATHS[1], 'body { color: blue; }\n'); commit('last commit is CSS only');
+    git('checkout','main'); git('merge','--no-ff','runtime-then-css','-m','test mixed CSS merge');
+    assert.equal(ciScope({cwd:root,env:prEnv()}), 'full', 'CSS at the tip cannot hide earlier runtime changes');
+    git('checkout','-qb','rename-css'); git('mv', ADMIN_STYLE_PATHS[0], 'apps/studio/client/admin/app/renamed.css'); commit('rename CSS');
+    git('checkout','main'); git('merge','--no-ff','rename-css','-m','test CSS rename merge');
+    assert.equal(ciScope({cwd:root,env:prEnv()}), 'full', 'real rename is classified from both deletion and addition');
     git('checkout','-qb','deploy'); mkdirSync(join(root,'services','openclaw','lab','deploy'),{recursive:true});
     put('services/openclaw/lab/deploy/start-gateway.mjs','export const gateway = 1;\n'); commit('gateway deploy edit');
     git('checkout','main'); git('merge','--no-ff','deploy','-m','test deploy merge');
@@ -567,6 +628,25 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'browser-regression':{result:'skipped'}, 'gateway-container':{result:'success'},
     'migration-readiness':{result:'success'}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
+  const styles = structuredClone(full);
+  Object.assign(styles.changes.outputs, ciOutputs({scope:'admin-styles',migration:false,moving:false,gateway:false,draft:false,browser:'required'}));
+  styles['browser-regression'].result='success'; styles['gateway-container'].result='skipped'; styles['migration-readiness'].result='skipped';
+  delete styles['dealer-regression'].outputs;
+  assert.equal(run(styles),0,'Admin CSS requires UI/build and Chrome, with no unrelated lipsync receipt');
+  for (const browser of ['none','advisory',undefined]) {
+    const broken=structuredClone(styles); broken.changes.outputs.browser=browser; broken['browser-regression'].result='skipped';
+    assert.notEqual(run(broken),0,'Admin CSS cannot downgrade browser acceptance: '+browser);
+  }
+  for (const legs of [[],['studio-admin-contracts'],['access-presentation'],['studio-admin-contracts','studio-admin-contracts'],['studio-admin-contracts','unknown']]) {
+    const broken=structuredClone(styles); broken.changes.outputs.legs=JSON.stringify(legs);
+    assert.notEqual(run(broken),0,'Admin CSS cannot lose a UI/build leg: '+JSON.stringify(legs));
+  }
+  for (const job of ['dealer-regression','browser-regression']) for (const result of ['failure','cancelled','skipped',undefined]) {
+    const broken=structuredClone(styles); broken[job].result=result; assert.notEqual(run(broken),0,`Admin CSS requires ${job}: ${result}`);
+  }
+  const draftStyles=structuredClone(styles); draftStyles.changes.outputs.draft='true'; draftStyles.changes.outputs.browser='none';
+  draftStyles.targeted.result='success'; draftStyles['dealer-regression'].result='skipped'; draftStyles['browser-regression'].result='skipped';
+  assert.equal(run(draftStyles),0,'draft remains targeted with no required check named CI');
   const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.changes.outputs.gateway='false'; docs.changes.outputs.legs='[]'; docs.documentation.result='success';
   docs.changes.outputs.browser='none'; docs['browser-regression'].result='skipped';
   docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
