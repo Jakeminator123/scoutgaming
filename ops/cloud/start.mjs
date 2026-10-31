@@ -2,7 +2,7 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, validateCloudConfig } from './config.mjs';
+import { childSpecifications, inspectCloudBootstrap, inspectCloudDisk, resolveCloudConfig } from './config.mjs';
 import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
@@ -50,7 +50,7 @@ export async function stopCloudRuntime(gateway, children) {
 }
 
 async function preflight(env) {
-  const config = validateCloudConfig(env);
+  const config = resolveCloudConfig(env);
   await inspectCloudDisk(config);
   await inspectCloudBootstrap(config);
   return config;
@@ -62,8 +62,10 @@ export async function main(args = process.argv.slice(2), env = process.env) {
     throw new Error('Usage: node ops/cloud/start.mjs --check|--start');
   }
   const config = await preflight(env);
+  if (config.speechUnavailable) console.warn(JSON.stringify({event:'speech_startup_unavailable',reason:'configuration_invalid'}));
   if (args[0] === '--check') {
-    console.log('Cloud configuration valid. No services started; public TLS, login, persistence and playback are not verified.');
+    console.log((config.speechUnavailable ? 'Game configuration valid; optional speech unavailable.' : 'Cloud configuration valid.')
+      + ' No services started; public TLS, login, persistence and playback are not verified.');
     return 0;
   }
   assertCloudAccessReady(env);

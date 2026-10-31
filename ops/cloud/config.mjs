@@ -23,6 +23,8 @@ const samePath = (left, right) => {
   return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 };
 const fail = name => { throw new Error(`Invalid or missing ${name}.`); };
+class OptionalSpeechConfigError extends Error {}
+const speechFail = name => { throw new OptionalSpeechConfigError(`Invalid or missing ${name}.`); };
 
 function httpsOrigin(value, name) {
   let url;
@@ -41,18 +43,18 @@ function port(value) {
   return number;
 }
 
-function optionalPair(env, urlName, tokenName) {
+function optionalPair(env, urlName, tokenName, reject = fail) {
   const url = env[urlName]?.trim() || '';
   const token = env[tokenName]?.trim() || '';
-  if (Boolean(url) !== Boolean(token)) fail(`${urlName}/${tokenName}`);
+  if (Boolean(url) !== Boolean(token)) reject(`${urlName}/${tokenName}`);
   if (url) {
     try {
       const parsed = new URL(url);
       if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.hash
         || parsed.search || parsed.port || parsed.pathname !== '/' || url !== parsed.origin
-        || isIP(parsed.hostname) || !parsed.hostname.includes('.') || parsed.hostname.endsWith('.local')) fail(urlName);
-    } catch { fail(urlName); }
-    if (token.length > 2048 || /[\s\x00-\x1f]/.test(token)) fail(tokenName);
+        || isIP(parsed.hostname) || !parsed.hostname.includes('.') || parsed.hostname.endsWith('.local')) reject(urlName);
+    } catch { reject(urlName); }
+    if (token.length > 2048 || /[\s\x00-\x1f]/.test(token)) reject(tokenName);
   }
   return { url, token };
 }
@@ -77,41 +79,41 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
       || bootstrapPassword.length < 16 || bootstrapPassword.length > 256
       || /[\u0000-\u001f\u007f-\u009f]/u.test(bootstrapPassword)))) fail('CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/PASSWORD');
   const camera = env.CROUPIER_ASTRID_CAMERA === '1';
-  if (env.CROUPIER_ASTRID_CAMERA && !['0', '1'].includes(env.CROUPIER_ASTRID_CAMERA)) fail('CROUPIER_ASTRID_CAMERA');
+  if (env.CROUPIER_ASTRID_CAMERA && !['0', '1'].includes(env.CROUPIER_ASTRID_CAMERA)) speechFail('CROUPIER_ASTRID_CAMERA');
   const translationKey = env.CROUPIER_ASTRID_TRANSLATION_KEY || '';
-  if (camera && (!translationKey || translationKey.length > 2048 || /\s/.test(translationKey))) fail('CROUPIER_ASTRID_TRANSLATION_KEY');
+  if (camera && (!translationKey || translationKey.length > 2048 || /\s/.test(translationKey))) speechFail('CROUPIER_ASTRID_TRANSLATION_KEY');
   const generatedSpeech = env.CROUPIER_GENERATED_SPEECH === '1' && env.CROUPIER_CLOUD_GENERATED_SPEECH === '1';
   if (Boolean(env.CROUPIER_GENERATED_SPEECH === '1') !== Boolean(env.CROUPIER_CLOUD_GENERATED_SPEECH === '1')
     || (env.CROUPIER_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH))
     || (env.CROUPIER_CLOUD_GENERATED_SPEECH && !['0', '1'].includes(env.CROUPIER_CLOUD_GENERATED_SPEECH))) {
-    fail('CROUPIER_GENERATED_SPEECH/CROUPIER_CLOUD_GENERATED_SPEECH');
+    speechFail('CROUPIER_GENERATED_SPEECH/CROUPIER_CLOUD_GENERATED_SPEECH');
   }
   const streaming = env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
-  if (env.CROUPIER_GENERATED_SPEECH_STREAMING && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH_STREAMING)) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
-  if (streaming && !generatedSpeech) fail('CROUPIER_GENERATED_SPEECH_STREAMING');
+  if (env.CROUPIER_GENERATED_SPEECH_STREAMING && !['0', '1'].includes(env.CROUPIER_GENERATED_SPEECH_STREAMING)) speechFail('CROUPIER_GENERATED_SPEECH_STREAMING');
+  if (streaming && !generatedSpeech) speechFail('CROUPIER_GENERATED_SPEECH_STREAMING');
   const dealerSpeechProfiles = env.CROUPIER_DEALER_SPEECH_PROFILES === '1';
   if (env.CROUPIER_DEALER_SPEECH_PROFILES && !['0','1'].includes(env.CROUPIER_DEALER_SPEECH_PROFILES)
-    || dealerSpeechProfiles && !streaming) fail('CROUPIER_DEALER_SPEECH_PROFILES');
+    || dealerSpeechProfiles && !streaming) speechFail('CROUPIER_DEALER_SPEECH_PROFILES');
   const elevenLabsKey = dealerSpeechProfiles ? env.ELEVENLABS_API_KEY || '' : '';
-  if (elevenLabsKey && (elevenLabsKey.length > 2048 || /[\s\u0000-\u001f]/.test(elevenLabsKey))) fail('ELEVENLABS_API_KEY');
+  if (elevenLabsKey && (elevenLabsKey.length > 2048 || /[\s\u0000-\u001f]/.test(elevenLabsKey))) speechFail('ELEVENLABS_API_KEY');
   const workerSecret = env.CROUPIER_SPEECH_STREAM_WORKER_SECRET || '';
   const ticketSecret = env.CROUPIER_SPEECH_STREAM_TICKET_SECRET || '';
   const validSecret = value => value.length >= 32 && value.length <= 2048 && !/\s/.test(value);
   if (streaming && (!validSecret(workerSecret) || !validSecret(ticketSecret) || workerSecret === ticketSecret)) {
-    fail('CROUPIER_SPEECH_STREAM_WORKER_SECRET/TICKET_SECRET');
+    speechFail('CROUPIER_SPEECH_STREAM_WORKER_SECRET/TICKET_SECRET');
   }
   const sessionReserveUsd = env.CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD || '';
   if (streaming && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(sessionReserveUsd)
-    || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) fail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
+    || Number(sessionReserveUsd) <= 0 || Number(sessionReserveUsd) > 10)) speechFail('CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD');
   const dailyBudgetUsd = env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD || '';
   const fullfileBudgetRequired = generatedSpeech && !streaming;
   const fullfileReserveUsd = env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD || '';
   if (fullfileBudgetRequired && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(fullfileReserveUsd)
-    || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) fail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');
+    || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) speechFail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');
   if ((streaming || fullfileBudgetRequired) && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(dailyBudgetUsd)
     || Number(dailyBudgetUsd) <= 0 || Number(dailyBudgetUsd) > 20
     || (streaming && Number(sessionReserveUsd) > Number(dailyBudgetUsd))
-    || (fullfileBudgetRequired && Number(fullfileReserveUsd) > Number(dailyBudgetUsd)))) fail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
+    || (fullfileBudgetRequired && Number(fullfileReserveUsd) > Number(dailyBudgetUsd)))) speechFail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
   const cartesiaKey = env.CARTESIA_API_KEY || '';
   const runpodKey = env.RUNPOD_API_KEY || '';
   const runpodEndpointId = env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID || '';
@@ -119,7 +121,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   // Without it, moving speech still runs and registered still dealers answer text-only.
   const stillSpeech = generatedSpeech && (!streaming || Boolean(cartesiaKey || runpodKey || runpodEndpointId));
   if (stillSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
-    || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) fail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
+    || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) speechFail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
   // Neon is the one registry and private Blob the one media store in every product
   // process; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
   // Only the childless maintenance export runs without them.
@@ -151,7 +153,9 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (gameOrigin === labOrigin) fail('LAB_PUBLIC_URL');
     if (boOrigin === gameOrigin || boOrigin === labOrigin) fail('BO_URL');
   }
-  const vercelIngress = readVercelIngressConfig(env);
+  const vercelIngress = readVercelIngressConfig({...env, CROUPIER_MOVING_SPEECH_ENABLED:'0'});
+  // General Render/ingress identity remains mandatory even if speech is rejected.
+  if (env.RENDER_EXTERNAL_URL) httpsOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL');
   if (vercelIngress && (!singleOrigin || vercelIngress.publicOrigin !== gameOrigin)) fail('CROUPIER_PUBLIC_ORIGIN');
   // Maintenance exports never start product children. Every ordinary cloud
   // process uses the one scoped Neon catalog and private Blob, even with a mount.
@@ -161,14 +165,17 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     if (!studioPolicy || !blobToken) fail('BLOB_READ_WRITE_TOKEN');
   }
   const movingFlag = env.CROUPIER_MOVING_SPEECH_ENABLED;
-  if (movingFlag !== undefined && !['', '0', '1'].includes(movingFlag)) fail('CROUPIER_MOVING_SPEECH_ENABLED');
+  if (movingFlag !== undefined && !['', '0', '1'].includes(movingFlag)) speechFail('CROUPIER_MOVING_SPEECH_ENABLED');
   let movingSpeech = null;
   if (movingFlag === '1') {
     if (storageExport || !studioPolicy || !blobToken || !dealerSpeechProfiles)
-      fail('CROUPIER_MOVING_SPEECH_ENABLED requires Neon, private Blob and registered speech profiles');
+      speechFail('CROUPIER_MOVING_SPEECH_ENABLED requires Neon, private Blob and registered speech profiles');
     const prefix = 'CROUPIER_MOVING_SPEECH_';
-    const workerOrigin = httpsOrigin(env[prefix + 'WORKER_ORIGIN'], prefix + 'WORKER_ORIGIN');
-    if (workerOrigin !== httpsOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL')) fail(prefix + 'WORKER_ORIGIN');
+    let workerOrigin;
+    try { workerOrigin = httpsOrigin(env[prefix + 'WORKER_ORIGIN'], prefix + 'WORKER_ORIGIN'); }
+    catch { speechFail(prefix + 'WORKER_ORIGIN'); }
+    if (workerOrigin !== httpsOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL')
+      || vercelIngress && workerOrigin !== vercelIngress.transportOrigin) speechFail(prefix + 'WORKER_ORIGIN');
     // One private, hash-bound bank manifest per dealer: {"<dealerId>": <record>}.
     const banksName = prefix + 'BANK_RECORDS', banksJson = env[banksName];
     let bankRecords;
@@ -183,30 +190,30 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
           || !/^croupier\/media\/dealers\/[a-z][a-z0-9-]{0,39}\/runtime\/moving-bank\//.test(record.pathname)) throw Error();
         return [dealerId, record];
       }));
-    } catch { fail(banksName); }
+    } catch { speechFail(banksName); }
     for (const [dealerId, record] of Object.entries(bankRecords)) {
-      if (!record.pathname.startsWith(`croupier/media/dealers/${dealerId}/runtime/moving-bank/`)) fail(`${banksName} (bank of another dealer for ${dealerId})`);
+      if (!record.pathname.startsWith(`croupier/media/dealers/${dealerId}/runtime/moving-bank/`)) speechFail(`${banksName} (bank of another dealer for ${dealerId})`);
     }
     const runpodKey = env[prefix + 'RUNPOD_API_KEY'];
     const image = env[prefix + 'IMAGE'], releaseSha256 = env[prefix + 'RELEASE_SHA256'], movingTicket = env[prefix + 'TICKET_SECRET'];
     const credential = (value, minimum) => typeof value === 'string' && value.length >= minimum && value.length <= 2048
       && !/[\s\u0000-\u001f\u007f-\u009f]/u.test(value);
-    if (!credential(runpodKey, 1)) fail(prefix + 'RUNPOD_API_KEY');
-    if (!/^ghcr\.io\/jakeminator123\/moving-gpu-worker@sha256:[a-f0-9]{64}$/.test(image ?? '')) fail(prefix + 'IMAGE');
-    if (!/^[a-f0-9]{64}$/.test(releaseSha256 ?? '')) fail(prefix + 'RELEASE_SHA256');
+    if (!credential(runpodKey, 1)) speechFail(prefix + 'RUNPOD_API_KEY');
+    if (!/^ghcr\.io\/jakeminator123\/moving-gpu-worker@sha256:[a-f0-9]{64}$/.test(image ?? '')) speechFail(prefix + 'IMAGE');
+    if (!/^[a-f0-9]{64}$/.test(releaseSha256 ?? '')) speechFail(prefix + 'RELEASE_SHA256');
     if (!credential(movingTicket, 32) || [workerSecret, ticketSecret, translationKey, cartesiaKey, runpodKey,
-      env.RUNPOD_API_KEY, elevenLabsKey, blobToken, env.CROUPIER_VERCEL_INGRESS_SECRET].includes(movingTicket)) fail(prefix + 'TICKET_SECRET');
+      env.RUNPOD_API_KEY, elevenLabsKey, blobToken, env.CROUPIER_VERCEL_INGRESS_SECRET].includes(movingTicket)) speechFail(prefix + 'TICKET_SECRET');
     // Exactly one drift profile (own endpoint, this release) per bank, and no profile without a bank.
     let drift;
     try { drift = movingDriftConfiguration(env); }
-    catch { fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES'); }
+    catch { speechFail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES'); }
     if (!drift || drift.profiles.some(profile => !/^[a-z0-9]{6,64}$/.test(profile.endpointId)
-      || profile.releaseDigest !== releaseSha256)) fail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES');
+      || profile.releaseDigest !== releaseSha256)) speechFail('CROUPIER_STUDIO_MOVING_DRIFT_API/PROFILES');
     for (const { dealerId } of drift.profiles) {
-      if (!Object.hasOwn(bankRecords, dealerId)) fail(`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES (profile without a bank for ${dealerId})`);
+      if (!Object.hasOwn(bankRecords, dealerId)) speechFail(`CROUPIER_STUDIO_MOVING_DRIFT_PROFILES (profile without a bank for ${dealerId})`);
     }
     for (const dealerId of Object.keys(bankRecords)) {
-      if (!drift.profiles.some(profile => profile.dealerId === dealerId)) fail(`${banksName} (bank without a drift profile for ${dealerId})`);
+      if (!drift.profiles.some(profile => profile.dealerId === dealerId)) speechFail(`${banksName} (bank without a drift profile for ${dealerId})`);
     }
     movingSpeech = Object.freeze({ bankRecords: JSON.stringify(bankRecords), runpodKey, image, releaseSha256,
       ticketSecret: movingTicket, workerOrigin, driftProfiles: JSON.stringify(drift.profiles) });
@@ -233,16 +240,17 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     videoArchive = resolve(env.LAB_VIDEO_ARCHIVE);
   }
   const director = optionalPair(env, 'CROUPIER_PRESENTATION_DIRECTOR_URL', 'CROUPIER_PRESENTATION_DIRECTOR_TOKEN');
-  const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN');
+  const productSpeech = optionalPair(env, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN', speechFail);
   // Recorded-media games can run without AI. Enabled AI media still needs its
   // real relay; an absent pair must never be replaced by fixture credentials.
-  if ((generatedSpeech || camera || movingSpeech) && !productSpeech.url) fail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
+  if ((generatedSpeech || camera || movingSpeech) && !productSpeech.url) speechFail('OPENCLAW_PRODUCT_SPEECH_URL/TOKEN');
   const timeoutMs = Number(env.OPENCLAW_TIMEOUT_MS ?? 8000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 30000) fail('OPENCLAW_TIMEOUT_MS');
   const speechTimeoutMs = Number(env.OPENCLAW_SPEECH_TIMEOUT_MS ?? timeoutMs);
-  if (!Number.isInteger(speechTimeoutMs) || speechTimeoutMs < 1000 || speechTimeoutMs > 30000) fail('OPENCLAW_SPEECH_TIMEOUT_MS');
+  if (!Number.isInteger(speechTimeoutMs) || speechTimeoutMs < 1000 || speechTimeoutMs > 30000) speechFail('OPENCLAW_SPEECH_TIMEOUT_MS');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, publicPort, dataRoot, paths, videoArchive,
-    database, gameDatabaseUrl, vercelIngress, storageExport,
+    database, gameDatabaseUrl, vercelIngress: vercelIngress && {...vercelIngress,
+      ...(movingSpeech ? {movingWorkerOrigin:movingSpeech.workerOrigin} : {})}, storageExport,
     director, productSpeech, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     studioPolicy, blobToken, zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
@@ -252,6 +260,22 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     bootstrapAdmin: bootstrapUser ? { user: bootstrapUser, password: bootstrapPassword } : null,
     translationKey: camera ? translationKey : '',
     speechProvider: stillSpeech ? { cartesiaKey, runpodKey, runpodEndpointId } : null });
+}
+
+// Only explicitly classified optional speech validation failures permit degradation.
+// Revalidate the complete game configuration; a second, mandatory failure stays fatal.
+export function resolveCloudConfig(env, options) {
+  try { return validateCloudConfig(env, options); }
+  catch (error) {
+    if (!(error instanceof OptionalSpeechConfigError)) throw error;
+    const effective = {...env, CROUPIER_ASTRID_CAMERA:'0', CROUPIER_GENERATED_SPEECH:'0',
+      CROUPIER_CLOUD_GENERATED_SPEECH:'0', CROUPIER_GENERATED_SPEECH_STREAMING:'0',
+      CROUPIER_DEALER_SPEECH_PROFILES:'0', CROUPIER_MOVING_SPEECH_ENABLED:'0',
+      OPENCLAW_SPEECH_TIMEOUT_MS:undefined};
+    try { optionalPair(effective, 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN'); }
+    catch { effective.OPENCLAW_PRODUCT_SPEECH_URL=''; effective.OPENCLAW_PRODUCT_SPEECH_TOKEN=''; }
+    return Object.freeze({...validateCloudConfig(effective, options), speechUnavailable:true});
+  }
 }
 
 // Read-only check. Filesystem existence cannot prove that a mount is durable.
@@ -305,6 +329,7 @@ export function childSpecifications(config, env = process.env) {
         BO_URL: config.boOrigin, LAB_PUBLIC_URL: config.labOrigin,
         CROUPIER_VERCEL_FRONTEND_ORIGIN: config.frontendOrigin,
         CROUPIER_CLOUD_RUNTIME: '1',
+        CROUPIER_SPEECH_STARTUP_DISABLED: config.speechUnavailable ? '1' : '0',
         CROUPIER_CLOUD_LAYOUT: config.singleOrigin ? 'single-origin' : 'separate-hosts',
         CROUPIER_PLAYER_ACCOUNTS: config.playerAccounts ? '1' : '',
         CROUPIER_SHARED_TABLE_ENABLED: config.sharedTableEnabled ? '1' : '0',
