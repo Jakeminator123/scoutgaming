@@ -2,7 +2,7 @@
 
 ## En status per aktivitet
 
-Aktivitetens egen Markdownfil bär status, ägare, filomfång, beroenden, bevis och nästa steg. Master-/områdesplaner länkar dit utan att duplicera status. Äldre sakplaner beskriver kontrakt/detaljsekvenser; inventera deras genomförda delar före tilldelning. Skapa inget parallellt migrationsregister eller nytt produktregister.
+Den aktiva vågens status, ägare, filomfång, beroenden och bevis står i [KORPLAN-v2](KORPLAN-v2.md). Äldre aktivitetsfiler är frysta inventeringsunderlag, inte en parallell kö. Master-/områdesplaner länkar dit utan att duplicera status. Äldre sakplaner beskriver kontrakt/detaljsekvenser; inventera deras genomförda delar före tilldelning. Skapa inget parallellt migrationsregister eller nytt produktregister.
 
 | Status | Innebörd |
 | --- | --- |
@@ -20,10 +20,10 @@ Ingen automatisk procent av antal filer eller agenternas färdigmarkeringar. Nä
 
 ## Tilldelning och integration
 
-1. MERGEAGENTEN uppdaterar aktiviteten med färsk bas, ägare och **tillåtna filer**. Två skrivare delar inte fil eller paketrot. Gemensamma filer (`NEXT-AGENT`, dokumentindex, env-register, workflow, lockfiler) har en uttalad integrationsägare.
+1. MERGEAGENTEN uppdaterar vågens brief i KORPLAN-v2 med färsk bas, ägare och **tillåtna filer**. Två skrivare delar inte fil eller paketrot. Gemensamma filer (`NEXT-AGENT`, dokumentindex, env-register, workflow, lockfiler) har en uttalad integrationsägare.
 2. Agenten arbetar i egen worktree/branch enligt [AGENTS](../../../AGENTS.md). Läs bara aktiviteten, områdesplanens gräns och angivna källutdrag. Ingen ärvd chatthistorik, full rapportmapp eller återupptagen avslutad underagent.
 3. Agenten verifierar beteende/risk, gör egen buggranskning, committar med hookar och öppnar färdig PR. Ingen väntan på CI i underagenten; MERGEAGENTEN väntar blockerande och granskar.
-4. MERGEAGENTEN läser färsk PR-identitet och full head, verifierar Jakob-ägarskap, aktuell main och exakt CI, kör säkerhetsstatus och mergar bara med `tools/merge-pr.mjs`. Dokumentationens färdigmarkering ersätter aldrig dessa kontroller.
+4. MERGEAGENTEN läser färsk PR-identitet och full head, verifierar Jakob-ägarskap, aktuell main och exakt CI, kör säkerhetsstatus och mergar bara med `tools/merge-pr.mjs` efter det uttryckliga godkännande som uppdraget kräver. Planens egen merge är godkänd av Jakob; andra merges och driftsteg följer spärrarna i KORPLAN-v2. Dokumentationens färdigmarkering ersätter aldrig dessa kontroller.
 5. Kvitto skiljer kodtest, CI, deployment, data-/versionskontroll och mänsklig AV-/produktacceptans. Uppdatera aktivitet och befintlig sakguide i samma leverans.
 
 ### Kort startbrief
