@@ -44,7 +44,7 @@ test('public lobby routing preserves queries and leaves admin access on its exis
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   for (const path of ['/lobby', '/lobby/', '/lobby/_assets/lobby/app.js', '/lobby/_assets/fonts/inter.woff2', '/admin', '/admin/lobby']) {
     assert.deepEqual(platformRoute(new URL(path + '?operator=alpha', config.publicOrigin), config),
-      { kind: 'lab', destination: config.labUiOrigin + '/studio' + path + '?operator=alpha' });
+      { kind: 'studio', destination: config.labUiOrigin + '/studio' + path + '?operator=alpha' });
   }
   assert.equal(platformRoute(new URL('/lobby-other', config.publicOrigin), config).kind, 'frontend');
 });
