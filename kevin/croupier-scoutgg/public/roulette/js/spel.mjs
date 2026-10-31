@@ -161,7 +161,7 @@ function tider(P) {
     : Math.max(tS3 + 1400, I.vilaMs + 250);                             // S3 tills kulan ligger i fickan, sedan åker kameran in
   const tBricka = RYTM === "zooma_tidigt" ? Math.max(tFolj + 2200, I.vilaMs + 800) : tFolj + FOLJ_MS + 250;
   const tTillbaka = Math.max(tBricka + 2600, Math.min(I.stoppMs + 400, tBricka + 3200));
-  return { tS3, tFolj, tNara: tFolj, tBricka, tTillbaka, tPjas: tTillbaka + 800, tVinst: tTillbaka + 1950,
+  return { tS3, tFolj, tNara: tFolj, tBricka, tTillbaka, tPjas: tTillbaka - 200, tVinst: tTillbaka + 1950,
     tKlar: Math.max(tTillbaka + 2750, I.stoppMs + 100) };
 }
 // kulan sedd lite i efterhand och lite i förväg (±180 ms): kameran följer den mjukt utan att ligga efter

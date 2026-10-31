@@ -17,7 +17,6 @@ html,body{height:100%}
 .game-opt{display:flex;flex-direction:column;gap:4px;padding:16px 18px;text-decoration:none;color:var(--cream)}
 .game-opt .gt{font:600 18px var(--disp)}.game-opt .gd{font-size:13px;color:var(--mute)}
 .game-opt.off{opacity:.55}.game-opt.off:hover{opacity:.85;text-decoration:none}
-.dealer-opt.snart{opacity:.38;filter:grayscale(.7);cursor:not-allowed}
 .room-opt span small{display:block;margin-top:2px;font-weight:500;font-size:12px;color:var(--mute)}
 .steps{overflow:auto}
 

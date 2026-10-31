@@ -22,8 +22,7 @@ function chipEl(v) {
 const opt = (k, val, inner, cls) => `<button class="opt ${cls}" type="button" role="radio" data-k="${k}" data-val="${val}" aria-checked="false">${inner}</button>`;
 
 // ---------- valen ur katalogen ----------
-$("#dealerGrid").innerHTML = Object.entries(K.dealers).map(([id, d]) => opt("dealer", id, `<img src="${d.thumb}" alt=""><div class="meta"><strong>${d.namn}</strong><span>AI dealer · Roulette</span></div>`, "dealer-opt")).join("")
-  + [["Dragan", "assets/dragge.jpg"], ["Paow", "assets/paow.jpg"]].map(([n, img]) => `<div class="opt dealer-opt snart" aria-disabled="true"><img src="${img}" alt=""><div class="meta"><strong>${n}</strong><span>Coming soon</span></div></div>`).join("");
+$("#dealerGrid").innerHTML = Object.entries(K.dealers).map(([id, d]) => opt("dealer", id, `<img src="${d.thumb}" alt=""><div class="meta"><strong>${d.namn}</strong><span>AI dealer · Roulette</span></div>`, "dealer-opt")).join("");
 $("#wheelGrid").innerHTML = Object.entries(K.wheels).map(([id, w]) => opt("wheel", id, `<img src="${w.thumb}" alt=""><span>${w.namn}<small>${w.beskrivning}</small></span>`, "room-opt")).join("");
 $("#roomGrid").innerHTML = Object.entries(K.rooms).map(([id, r]) => opt("room", id, `<img src="${r.thumb}" alt=""><span>${r.namn}</span>`, "room-opt")).join("");
 $("#limitList").innerHTML = Object.entries(LIMITS).map(([id, L]) => opt("limit", id, `<span class="lt">${L.namn}<span class="tag">${id === "rl-high" ? "VIP" : "Standard"}</span></span>
