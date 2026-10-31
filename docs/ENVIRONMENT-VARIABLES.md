@@ -91,7 +91,7 @@ Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Ja
 
 <a id="fasta-värden"></a>
 
-Fem flaggor hade bara ett värde i produktionen och preview och är sedan Miljövariabler 2 fasta i koden. Ingen källfil läser dem; `node tools/check-environment-variables.mjs` fäller en källfil, ett prov eller ett byggskript som nämner något av namnen (`hardcodedNames` i registret; bara `docs/`, Markdown och `.github/workflows/` är undantagna).
+Fem flaggor hade bara ett värde i produktionen och preview och är sedan Miljövariabler 2 fasta i koden. Ingen källfil läser dem. `node tools/check-environment-variables.mjs` fäller env-läsningar och env-deklarationer av namnen i `hardcodedNames`, även i prov och byggskript. Kommentarer, beskrivande strängar och vanliga objektfält får nämna namnen. Kontrollen använder Studios låsta Babel-parser för JS/TS: direkta `process.env`-/`env`-medlemmar, destrukturering och lokala `const`-alias, samt env-objekt i konfiguration. Den kontrollerar också `.env`-mallar (inklusive kommenterade exempelnycklar), JSON-fältet `env` och Render-blueprints. Andra konfigurationsformat ingår inte. Godtyckligt beräknade nycklar, funktionsreturer och omtilldelade alias utvärderas inte. `docs/`, Markdown och `.github/workflows/` ligger fortsatt utanför denna audit. Kravet på båda inventeringsfilerna i samma commit vid env-ändringar är oförändrat.
 
 | Tidigare variabel | Fast värde | Var det står i koden |
 | --- | --- | --- |

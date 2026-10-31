@@ -1,8 +1,9 @@
 name: Foreign branch guard
 
-# Required check in the rulesets for main and preview: a pull request whose head is someone else's
-# branch (kevin*, codex/kevin-*, john*, emil*, ...) or that another GitHub account than Jakob's
-# opened fails here, so it can never be merged, not even with GitHub's merge button.
+# Runs for main and preview; main currently requires this check, preview does not.
+# Rejects pull requests from someone else's branch (kevin*, codex/kevin-*, john*, emil*, ...)
+# or opened by another GitHub account than Jakob's. GitHub blocks merging only where
+# the ruleset requires the check; agent merges must also use tools/merge-pr.mjs.
 # pull_request_target runs this file and the policy from the base side and main, never from the
 # pull request itself; it checks out no pull request code and uses no secrets.
 on:

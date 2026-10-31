@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { blueprintNames, compareKeys, hardcodedNameReferences, hardcodedNames, hasEnvChange, parseEnvNames, referencedNames, templateNames, validateRegistry } from '../tools/check-environment-variables.mjs';
+import { fileURLToPath } from 'node:url';
+import { blueprintNames, compareKeys, fixedEnvironmentUses, hardcodedNameReferences, hardcodedNames, hasEnvChange, parseEnvNames, referencedNames, templateNames, validateRegistry } from '../tools/check-environment-variables.mjs';
 
 const committedRegistry = () => JSON.parse(readFileSync(new URL('../docs/environment-variables.json', import.meta.url), 'utf8'));
 
@@ -55,7 +56,7 @@ test('separates Blueprint service environment keys', () => {
   assert.deepEqual([...blueprintNames(source, 'second')], ['SECOND']);
 });
 
-test('the fixed names are named nowhere in tracked code, tests, build scripts or config', () => {
+test('tracked code and configuration do not use fixed names as environment variables', () => {
   const names = hardcodedNames(committedRegistry());
   assert.ok(names.length > 0);
   assert.deepEqual(hardcodedNameReferences(names), []);
@@ -74,6 +75,12 @@ test('a reintroduced read of a fixed flag is caught in source, test, build scrip
     'test/example.mjs': `const env = { ${name}: '0' };\n`,
     'apps/studio/next.config.mjs': `export default { basePath: process.env['${name}'] };\n`,
     'vercel.json': `{"env":{"${name}":"1"}}\n`,
+    'apps/web/vercel.json': `{"build":{"env":{"${name}":"1"}}}\n`,
+    'services/example/.env.example': `# ${name}=\n`,
+    'services/example/.env': `${name}=1\n`,
+    'services/example/render.yaml': `services:\n  - type: web\n    envVars:\n      - key: ${name}\n`,
+    'packages/example/comment.mjs': `// process.env.${name} is retired.\nexport const description = "process.env.${name}";\nexport const metadata = { ${name}: 'historical' };\n`,
+    'packages/example/description.json': `{"description":"process.env.${name}","${name}":"historical"}\n`,
     'docs/ENVIRONMENT-VARIABLES.md': `| \`${name}\` | fixed |\n`,
     'services/game/README.md': `${name} is gone.\n`,
     '.github/workflows/check.yml': `env:\n  ${name}: '1'\n`,
@@ -84,34 +91,78 @@ test('a reintroduced read of a fixed flag is caught in source, test, build scrip
     writeFileSync(join(repository, path), text);
   }
   execFileSync('git', ['init', '-q'], { cwd: repository });
-  execFileSync('git', ['add', '.'], { cwd: repository });
+  execFileSync('git', ['-c', 'core.autocrlf=false', 'add', '.'], { cwd: repository });
   const found = hardcodedNameReferences([name], { cwd: repository });
-  assert.deepEqual(found.map(row => row.path).sort(), ['apps/studio/next.config.mjs', 'packages/example/runtime.mjs', 'test/example.mjs', 'vercel.json']);
-  assert.ok(found.every(row => row.line === 1 && row.names.length === 1 && row.names[0] === name));
+  assert.deepEqual(found.map(row => row.path).sort(), ['apps/studio/next.config.mjs', 'apps/web/vercel.json', 'packages/example/runtime.mjs', 'services/example/.env', 'services/example/.env.example', 'services/example/render.yaml', 'test/example.mjs', 'vercel.json']);
+  assert.ok(found.every(row => row.line > 0 && row.names.length === 1 && row.names[0] === name));
   assert.deepEqual(hardcodedNameReferences([], { cwd: repository }), []);
+  writeFileSync(join(repository, 'vercel.json'), `{"env":{"${name}":private-env-value}}`);
+  assert.throws(() => hardcodedNameReferences([name], { cwd: repository }), error => {
+    assert.match(error.message, /vercel\.json: Invalid environment configuration syntax/);
+    assert.equal(error.message.includes('private-env-value'), false);
+    return true;
+  });
 });
 
-test('the CLI fails a repository whose tracked code names a fixed flag, and passes it once the name is gone', t => {
+test('the CLI rejects an env read and passes when it becomes a comment and descriptive string', t => {
   const repository = mkdtempSync(join(tmpdir(), 'croupier-hardcoded-cli-'));
   t.after(() => rmSync(repository, { recursive: true, force: true }));
   const registry = { schema: 1, hardcodedNames: { names: ['FIXED_FLAG'] },
-    services: { sample: { sources: [], required: [], firstBoot: [], conditional: [], managed: [], blocked: [] } } };
+    services: { sample: { sources: ['packages/example/runtime.mjs'], required: [], firstBoot: [], conditional: [], managed: [], blocked: [] } } };
   const files = {
     'tools/check-environment-variables.mjs': readFileSync(new URL('../tools/check-environment-variables.mjs', import.meta.url), 'utf8'),
     'docs/environment-variables.json': JSON.stringify(registry),
+    'docs/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
     'packages/example/runtime.mjs': "export const on = process.env.FIXED_FLAG === '1';\n",
   };
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(join(repository, dirname(path)), { recursive: true });
     writeFileSync(join(repository, path), text);
   }
-  const git = (...args) => execFileSync('git', args, { cwd: repository });
+  mkdirSync(join(repository, 'apps/studio'), { recursive: true });
+  writeFileSync(join(repository, '.gitignore'), 'node_modules/\n');
+  symlinkSync(fileURLToPath(new URL('../apps/studio/node_modules', import.meta.url)), join(repository, 'apps/studio/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  const git = (...args) => execFileSync('git', ['-c', 'core.autocrlf=false', ...args], { cwd: repository });
   git('init', '-q'); git('add', '.');
   const cli = () => spawnSync(process.execPath, ['tools/check-environment-variables.mjs'], { cwd: repository, encoding: 'utf8' });
   const failed = cli();
   assert.equal(failed.status, 1, failed.stdout);
   assert.match(failed.stderr, /^packages\/example\/runtime\.mjs:1 names FIXED_FLAG, which is hard-coded/m);
-  git('rm', '-q', '--cached', 'packages/example/runtime.mjs');
+  assert.match(failed.stderr, /FIXED_FLAG is read .* but missing from registry/);
+  writeFileSync(join(repository, 'packages/example/runtime.mjs'), '// process.env.FIXED_FLAG was removed\nexport const description = "process.env.FIXED_FLAG";\n');
   const passed = cli();
   assert.equal(passed.status, 0, passed.stderr);
+  writeFileSync(join(repository, 'packages/example/runtime.mjs'), 'export const port = process.env.ACTIVE_PORT;\n');
+  const unlisted = cli();
+  assert.equal(unlisted.status, 1);
+  assert.match(unlisted.stderr, /ACTIVE_PORT is read .* but missing from registry/);
+});
+
+test('fixed env syntax includes optional reads, destructuring, env objects and scoped const aliases', () => {
+  for (const source of [
+    'process.env.FIXED_FLAG;', 'env["FIXED_FLAG"];', 'process["env"]?.[`FIXED_FLAG`];',
+    'const { FIXED_FLAG: enabled = "0" } = process.env;', '({ FIXED_FLAG: enabled } = env);',
+    'const vars = process.env; const second = vars; second.FIXED_FLAG;',
+    'const vars = process.env; const { FIXED_FLAG } = vars;',
+    'import proc from "node:process"; proc.env.FIXED_FLAG;',
+    'import { env as vars } from "node:process"; vars.FIXED_FLAG;',
+    'export default { env: { FIXED_FLAG: "1" } };', 'process.env = { FIXED_FLAG: "1" };',
+    'Object.assign(process.env, { FIXED_FLAG: "1" });',
+    'const vars = {}; function read() { const vars = process.env; return vars.FIXED_FLAG; }',
+  ]) assert.deepEqual(fixedEnvironmentUses(source, 'source.mjs', ['FIXED_FLAG']), [{ line: 1, names: ['FIXED_FLAG'] }], source);
+});
+
+test('descriptions, types, unrelated properties and shadowed aliases do not become env reads', () => {
+  for (const source of [
+    '// process.env.FIXED_FLAG\nconst text = "env.FIXED_FLAG";',
+    'const text = `process.env.FIXED_FLAG`; const metadata = { FIXED_FLAG: "old" };',
+    'process.env.FIXED_FLAG_EXTRA;', 'const key = "FIXED_FLAG"; metadata[key];',
+    'function example(process) { return process.env.FIXED_FLAG; }',
+    'const vars = process.env; function example(vars) { return vars.FIXED_FLAG; }',
+    'const vars = {}; { const vars = process.env; } vars.FIXED_FLAG;',
+    'const vars = process.env; function example() { { var vars = {}; } return vars.FIXED_FLAG; }',
+    'const vars = process.env; try {} catch (vars) { vars.FIXED_FLAG; }',
+    'type Example = { FIXED_FLAG: string }; const text: Example = { FIXED_FLAG: "old" };',
+  ]) assert.deepEqual(fixedEnvironmentUses(source, 'source.ts', ['FIXED_FLAG']), [], source);
+  assert.deepEqual(fixedEnvironmentUses('declare const env: { FIXED_FLAG: string };', 'types.d.ts', ['FIXED_FLAG']), []);
 });
