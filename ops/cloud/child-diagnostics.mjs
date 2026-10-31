@@ -1,11 +1,12 @@
 // Production children keep their stdout discarded except for this allowlist of
-// finite moving-speech/drift diagnostics. Every forwarded field is an enum, a
+// finite moving-speech/drift and room-socket diagnostics. Every forwarded field is an enum, a
 // safe application code or a bounded identifier; text, URLs, tickets, provider
 // responses and arbitrary objects never reach the parent log.
 import { sanitizeDriftGuardDiagnostic } from '../../services/game/moving-drift-diagnostics.mjs';
 
 const CODE = /^[a-z][a-z0-9_]{0,63}$/, PHASE = /^[a-z][a-z0-9_-]{0,63}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, HEX32 = /^[a-f0-9]{32}$/;
+const SOCKET_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const DEALER = /^[a-z][a-z0-9-]{0,39}$/;
 const READBACK_PHASES = new Set(['claim', 'configuration', 'cancel', 'reconcile', 'provider_observation', 'session_read', 'controller_observe']);
 const own = (value, key) => {
@@ -28,6 +29,11 @@ const nullableId = pattern => candidate => candidate === null || typeof candidat
 const receipt = value => pick(value, { code, phase, streamId: nullableId(HEX32), requestId: nullableId(UUID) });
 
 export const CHILD_DIAGNOSTIC_EVENTS = Object.freeze({
+  shared_room_socket_identity: value => pick(value, {
+    processId: candidate => typeof candidate === 'string' && SOCKET_UUID.test(candidate),
+    socketNonce: candidate => typeof candidate === 'string' && SOCKET_UUID.test(candidate),
+    at: candidate => Number.isSafeInteger(candidate) && candidate >= 0 && candidate <= 8640000000000000,
+  }),
   speech_startup_unavailable: value => pick(value, {state:oneOf(new Set(['unavailable'])),
     reason:oneOf(new Set(['configuration_invalid','configuration_or_bank_invalid','bank_preflight_timeout']))}),
   moving_drift_guard_rejected: value => { const { event: _event, ...rest } = value; return sanitizeDriftGuardDiagnostic(rest); },
@@ -66,7 +72,7 @@ export function createChildDiagnosticForwarder({ emit = value => console.warn(va
   };
 }
 
-// The game logs these events with console.warn (stderr); the same allowlist
+// The game logs events with console.info (stdout) or console.warn (stderr); the same allowlist
 // filter is applied to both streams and shares one per-process cap.
 export function withChildDiagnostics(specifications, options) {
   const forward = createChildDiagnosticForwarder(options);
