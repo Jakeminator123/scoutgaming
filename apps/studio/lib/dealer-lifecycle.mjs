@@ -24,10 +24,6 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
       activeMediaIds:owned.filter(row=>!row.retainedBank&&!row.classification.archived).map(row=>row.id),archivedAt:now};
     const categories=next.dealerSets?.filter(row=>row.dealerId===dealerId)??[];
     if(categories.length){entry.dealerSets=categories;next.dealerSets=next.dealerSets.filter(row=>row.dealerId!==dealerId);if(!next.dealerSets.length)delete next.dealerSets;}
-    if(next.legacyClipPolicy){
-      entry.legacyClipPolicy=next.legacyClipPolicy.filter(row=>row.dealerId===dealerId||owns(row));
-      next.legacyClipPolicy=next.legacyClipPolicy.filter(row=>!entry.legacyClipPolicy.includes(row));
-    }
     if(next.mediaPolicy){
       entry.mediaPolicy=next.mediaPolicy.map(row=>({...row,variants:row.variants.filter(variant=>mediaIds.has(variant.videoId))})).filter(row=>row.variants.length);
       next.mediaPolicy=next.mediaPolicy.map(row=>({...row,variants:row.variants.filter(variant=>!mediaIds.has(variant.videoId))})).filter(row=>row.variants.length);
@@ -60,7 +56,6 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
     if(entry.dealerSets?.length)next.dealerSets=[...(next.dealerSets??[]),...entry.dealerSets];
     if(compositions.length)next.lanes=[...(next.lanes??[]),...compositions];
     if(entry.idlePolicy)next.dealerIdlePolicies=[...(next.dealerIdlePolicies??[]),{dealerId,policy:entry.idlePolicy}];
-    if(entry.legacyClipPolicy?.length)next.legacyClipPolicy=[...(next.legacyClipPolicy??[]),...entry.legacyClipPolicy];
     if(entry.globalIdlePolicy){if(next.idlePolicy)fail('studio_dealer_restore_conflict');next.idlePolicy=entry.globalIdlePolicy;}
     for(const family of entry.mediaPolicy??[]){
       next.mediaPolicy??=[];

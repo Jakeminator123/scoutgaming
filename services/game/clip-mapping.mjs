@@ -107,7 +107,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null,
       'Original speech uses the original bank/engine or the exact native embedded-audio override. V2 greenSpeech has separate exact text, video, paired MP3 and delay; never substitute one route\'s caption for another.',
       'Engine clips are h264 elementary streams spliced on a canonical pose; performance/green takes are mp4 atlases composited over the table.',
       'Astrid V2 filmed dealing is paused. Original staged playback remains opt-in; base staged entries do not describe the alternative rhythm/smooth60 manifests.',
-      'Active choices are edited in Backoffice/Lab and saved in project.json: mediaPolicy/idlePolicy for Astrid local presentation, legacyClipPolicy for the existing original engine/staged path. Historical BO picks remain read-only review data and are not runtime fallbacks. Never-again blocks exact legacy Lab bindings/imports, not every independent automatic selector.',
+      'This mapping describes historical review data. Local media playback and legacyClipPolicy bindings are retired; historical BO picks and never-again annotations do not activate clips or select runtime fallbacks. Active registered media is configured in Admin and stored in scoped Neon documents.',
       'Landing annotations and want/no verdicts are human metadata, not measured card contact, acceptance or runtime promotion.'
     ],
     clipControl: { editor: 'Backoffice/Lab', source: 'lab/project.json', legacyBackofficeActive: false },

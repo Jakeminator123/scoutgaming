@@ -9,7 +9,6 @@ import contract from './policies/studio-contract.json' with { type: 'json' };
 import { createDefaultIdlePolicy, validateIdlePolicy, MAX_IDLE_VARIANTS } from '../runtime/idle-policy.mjs';
 import { validateMediaPolicy } from '../runtime/media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
-import { validateLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
 import { validateRouletteIdleBinding } from './roulette-idle-contract.mjs';
 import { validateRouletteStartBinding } from './roulette-start-contract.mjs';
@@ -33,6 +32,10 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const VIDEO_GENERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const validVideoGenerationId = value => typeof value === 'string' && VIDEO_GENERATION_ID.test(value)
   && !value.includes('..') && !value.includes('\\') && !value.startsWith('/') && !value.includes('://') && !/^[A-Za-z]:\//.test(value);
+// Saved empty fields remain readable; retired bindings cannot select or restore media.
+function validateRetiredClipPolicy(value) {
+  if (!Array.isArray(value) || value.length) throw new Error('Avvecklade klippkopplingar stöds inte. legacyClipPolicy ska vara tom.');
+}
 const LABEL_MAX = 120;
 export const LANE_ID = /^[a-z][a-z0-9-]{0,63}$/;
 export const RESERVED_LANE_IDS = new Set(['original', 'constructor', 'prototype']);
@@ -395,7 +398,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
   if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets', 'dealerTrash', 'layerAssetTrash', 'dealerSets'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
-    try { validateLegacyClipPolicy(project.legacyClipPolicy); }
+    try { validateRetiredClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
   }
   if (Object.hasOwn(project, 'probePolicy')) {
@@ -605,7 +608,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
             dealers:[...project.dealers,...trash.map(row=>row.dealer)],
             lines:[...project.lines,...trash.flatMap(row=>Array.isArray(row.lines)?row.lines:[])],
             lanes:entry.compositions??[]};
-          if(entry.legacyClipPolicy!==undefined)validateLegacyClipPolicy(entry.legacyClipPolicy);
+          if(entry.legacyClipPolicy!==undefined)validateRetiredClipPolicy(entry.legacyClipPolicy);
           if(entry.mediaPolicy!==undefined)validateMediaPolicy(entry.mediaPolicy,project.triggers.map(row=>row.id));
           if(entry.globalIdlePolicy!==undefined){validateIdlePolicy(entry.globalIdlePolicy);if(entry.globalIdlePolicy.familyId!=='astrid/idle.ready/ready')throw Error();}
           delete restored.dealerTrash;
