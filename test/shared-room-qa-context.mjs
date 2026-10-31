@@ -1,5 +1,132 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createF11Observer, validateF11Manifest, runF11EvidenceCli } from '../tools/shared-room-f11-observer.mjs';
+
+const f11Manifest = () => ({ schemaVersion: 1, sha: 'a'.repeat(40), syntheticOnly: true,
+  origin: 'https://preview.scoutgaming.tech', engineOrigin: 'https://croupier-k06-k07-staging.onrender.com',
+  serviceId: 'srv-dbf61l0m7kps73ft7mk0', projectId: 'prj_7dgyvW5zakx1qJ8YaH5pueVTVi14',
+  neonProjectId: 'red-violet-36066351', branchId: 'br-plain-voice-b9yu49xi', database: 'croupier_staging',
+  environment: 'staging_k06_k07', workspaceId: 'croupier', roomId: 'f11-room', runId: 'f11-run',
+  actors: ['f11-alice','f11-bob'], startedAt: 0, endedAt: 120000 });
+function f11Capture() {
+  const m = f11Manifest(), events = [];
+  const add = (type,at,data) => events.push({type,at,...data});
+  const target = at => add('target',at,{...m,source:'provider-api',engineSha:m.sha,vercelSha:m.sha,healthStatus:200,ready:true,suspended:false});
+  const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,fingerprint:'b'.repeat(64),
+    sourceKey:JSON.stringify(['tick',m.roomId,`tick-${id}`,'round-2',actorId,type])});
+  const wallet = (at,stage,{holds=false,hands=0,settled=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
+    balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?9500:10500):10000})),
+    reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
+    ledger:settled?[ledger('1',m.actors[0],-500,'consume:stake'),ledger('2',m.actors[1],-500,'consume:stake'),ledger('3',m.actors[0],1000,'payout')]:[],
+    settlements:settled?[{roundId:'round-2',actorId:m.actors[0],ledgerId:'3',returnedCents:1000},
+      {roundId:'round-2',actorId:m.actors[1],ledgerId:null,returnedCents:0}]:[]});
+  const open = (at,connectionId,actorId,instanceId) => add('open',at,{connectionId,actorId,roomId:m.roomId,connectionNonce:`nonce-${connectionId}`,
+    instanceProof:{source:'render-app-log',logId:`log-${connectionId}`,connectionNonce:`nonce-${connectionId}`,instanceId,serviceId:m.serviceId,sha:m.sha,at}});
+  const frame = (at,connectionId,actorId,version,phase='round') => add('frame',at,{connectionId,frame:{type:'shared-room-state',roomId:m.roomId,
+    snapshot:{roomId:m.roomId,me:{id:actorId},version,presentationVer:version,roundId:version<5?'round-1':'round-2',phase,
+      roundRevision:version,round:{dealer:[{rank:'8',suit:'H'}]}},
+    presentation:{roomId:m.roomId,ver:version,events:[{type:phase==='round'?'deal':'idle'}]}}});
+  target(0);wallet(1,'before');open(1000,'old','f11-alice','instance-old');
+  frame(2000,'old','f11-alice',1,'bets');frame(20000,'old','f11-alice',2);wallet(52000,'during',{holds:true});
+  frame(40000,'old','f11-alice',3);wallet(61000,'during',{hands:2});
+  open(50000,'new','f11-bob','instance-new');
+  for(const [at,version,phase] of [[51000,4,'bets'],[60000,5,'round'],[75000,6,'round'],[89500,7,'round']]) {
+    frame(at,'old','f11-alice',version,phase);frame(at+100,'new','f11-bob',version,phase);
+  }
+  add('close',90000,{connectionId:'old',code:1012});open(91000,'again','f11-alice','instance-new');
+  frame(92000,'again','f11-alice',7);frame(105000,'new','f11-bob',8);frame(118000,'again','f11-alice',9,'settled');
+  add('negative',118100,{source:'socket-capture',probe:'wrong-room',connectionId:'negative-room',actorId:m.actors[0],roomId:'f11-other',stateFrames:0,status:403});
+  add('negative',118200,{source:'socket-capture',probe:'revoked-session',connectionId:'negative-session',actorId:m.actors[1],roomId:m.roomId,stateFrames:0,status:1008});
+  wallet(119000,'after',{settled:true});target(120000);
+  return {manifest:m,events:events.sort((a,b)=>a.at-b.at)};
+}
+function f11Review(capture=f11Capture()) {
+  const observer=createF11Observer(capture.manifest);
+  for(const event of capture.events) observer.observe(event);
+  return observer.finish();
+}
+test('F11 accepts advancing revisions, simultaneous observed instances and reconciled money only for evidence review',()=>{
+  const result=f11Review();
+  assert.equal(result.status,'evidence-complete-review-required');assert.equal(result.acceptance,false);
+  assert.equal(result.overlap.durationMs,40000);assert.equal(result.walletEffects,3);
+  assert.equal(new Set(result.overlap.instances).size,2);
+});
+test('F11 rejects wrong host, full SHA, resource or synthetic scope before observing',()=>{
+  for(const [key,value] of [['origin','https://www.scoutgaming.tech'],['engineOrigin','https://evil.invalid'],['sha','abcdef'],
+    ['serviceId','srv-production'],['database','croupier_game'],['roomId','production-room'],['syntheticOnly',false],['actors',['alice','bob']]]) {
+    assert.throws(()=>validateF11Manifest({...f11Manifest(),[key]:value}),/f11_/);
+  }
+  const c=f11Capture();c.events[0].engineSha='c'.repeat(40);assert.throws(()=>f11Review(c),/target_evidence_invalid/);
+});
+test('F11 refuses missing or request-only instance evidence and two sockets on the same instance',()=>{
+  for(const mutate of [e=>delete e.instanceProof,e=>{e.instanceProof.source='rndr-id';},e=>{e.instanceProof.sha='c'.repeat(40);},
+    e=>{e.instanceProof.connectionNonce='unrelated';}]) {
+    const c=f11Capture();mutate(c.events.find(e=>e.type==='open'));assert.throws(()=>f11Review(c),/instance_evidence_required/);
+  }
+  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='open'))e.instanceProof.instanceId='instance-one';
+  assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+});
+test('F11 refuses a frozen old socket that only catches up after reconnect and one-sided dealer events',()=>{
+  for(const mutate of [c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='old'&&e.at>51000));},
+    c=>{for(const e of c.events.filter(e=>e.type==='frame'&&e.connectionId==='old'))e.frame.presentation.events=[];}]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+  }
+});
+test('F11 rejects conflicting state, revision regression, missing 1012 and reconnecting to another hand',()=>{
+  for(const [mutate,code] of [
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='new').frame.snapshot.round.dealer[0].rank='9';},'state_conflict'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='old'&&e.at===89500).frame.snapshot.roundRevision=0;},'revision_regressed'],
+    [c=>{c.events.find(e=>e.type==='close').code=1006;},'continuous_overlap_not_proven'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='again').frame.snapshot.roundId='other-hand';},'state_conflict']]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
+  }
+});
+test('F11 requires both negative probes without leaked state and actual reservation/settlement accounting',()=>{
+  for(const [mutate,code] of [
+    [c=>{c.events=c.events.filter(e=>e.type!=='negative');},'negative_probes_required'],
+    [c=>{c.events.find(e=>e.type==='negative').stateFrames=1;},'negative_probe_invalid'],
+    [c=>{c.events=c.events.filter(e=>e.stage!=='during');},'active_money_not_observed'],
+    [c=>{c.events.find(e=>e.stage==='after').balances[0].balanceCents++;},'balance_mismatch'],
+    [c=>{c.events.find(e=>e.stage==='after').hands=1;},'unsettled_money'],
+    [c=>{const r=c.events.find(e=>e.stage==='after');r.ledger.push({...r.ledger[0],id:'99'});},'duplicate_wallet_effect'],
+    [c=>{const r=c.events.find(e=>e.stage==='after');r.settlements.push({...r.settlements[0]});},'duplicate_settlement'],
+    [c=>{c.events.find(e=>e.stage==='after').settlements[0].returnedCents++;},'payout_mismatch']]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
+  }
+});
+test('F11 observer cannot recover after rejected evidence or mutate an already consumed monetary sample',()=>{
+  const c=f11Capture(),o=createF11Observer(c.manifest);
+  assert.throws(()=>o.observe({type:'token-secret',at:0}),/event_type_invalid/);
+  assert.throws(()=>o.observe(c.events[0]),/observer_poisoned/);
+  const good=createF11Observer(c.manifest);
+  for(const row of c.events) {good.observe(row);if(row.stage==='after')row.balances[0].balanceCents=1;}
+  assert.equal(good.finish().acceptance,false);
+});
+test('F11 reports and errors omit credentials, cookie/header fields, dealer text and filesystem details',async()=>{
+  const c=f11Capture(),secret='secret-never-in-receipt';
+  c.manifest.cookie=secret;
+  for(const e of c.events) {e.authorization=secret;if(e.type==='frame') {e.frame.headers={cookie:secret};e.frame.presentation.events.push({type:'speak',line:secret});}}
+  const serialized=JSON.stringify(f11Review(c));assert.equal(serialized.includes(secret),false);assert.equal(serialized.includes('cookie'),false);
+  const output=[];
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{output:x=>output.push(x),size:async()=>{throw Error(secret);}}),1);
+  assert.deepEqual(output.map(x=>JSON.parse(x)),[{status:'unverifiable',acceptance:false,code:'f11_evidence_unavailable'}]);
+});
+test('F11 help, absent --run and malformed arguments never read files or invoke external work',async()=>{
+  for(const args of [[],['--help'],['--manifest','m','--events','e'],['--run','--help']]) {
+    let reads=0;await runF11EvidenceCli(args,{read:()=>{reads++;throw Error('read');},size:()=>{reads++;throw Error('stat');},output:()=>{}});
+    assert.equal(reads,0);
+  }
+});
+test('F11 explicit offline CLI validates bounded evidence and keeps missing instance metadata unverifiable',async()=>{
+  const c=f11Capture(),files={m:JSON.stringify(c.manifest),e:c.events.map(e=>JSON.stringify(e)).join('\n')},output=[];
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{
+    size:async path=>({size:files[path].length}),read:async path=>files[path],output:x=>output.push(x)}),0);
+  assert.equal(JSON.parse(output[0]).acceptance,false);
+  delete c.events.find(e=>e.type==='open').instanceProof;files.e=c.events.map(e=>JSON.stringify(e)).join('\n');
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{
+    size:async path=>({size:files[path].length}),read:async path=>files[path],output:x=>output.push(x)}),1);
+  assert.deepEqual(JSON.parse(output.at(-1)),{status:'unverifiable',acceptance:false,code:'f11_instance_evidence_required'});
+});
 
 let sequence = 0;
 const fresh = () => import(`../services/game/shared-room-qa-context.mjs?case=${++sequence}`);

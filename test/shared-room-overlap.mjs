@@ -8,6 +8,7 @@ import { createSharedRoomService } from '../services/game/shared-room-service.mj
 import { installGracefulShutdown } from '../services/game/graceful-shutdown.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
+import { F11_MONEY_SQL } from '../tools/shared-room-f11-observer.mjs';
 
 // F11 (K04 RERUN-6, K06 RERUN-2): during a Render deploy or restart the old and the new engine
 // instance run side by side for about three minutes. Both runtimes tick rooms; a socket on the
@@ -78,6 +79,9 @@ test('F11: commits by another engine instance reach this instance\'s sockets wit
   await within(LIMIT_MS, () => alice.frames.length && bob.frames.length, 'first snapshots');
   const start = last(alice).snapshot;
   assert.equal(start.phase, 'bets'); assert.equal(start.bets[0].main, 5); assert.ok(start.deadline > T0);
+  const reserved = (await pool.query(F11_MONEY_SQL, [roomId, ['alice', 'bob']])).rows[0];
+  assert.deepEqual(reserved.balances.map(x => x.balanceCents), [100000, 100000]);
+  assert.equal(reserved.reservations[0].amountCents, 500); assert.equal(reserved.hands, 0);
 
   // 1. A command committed on the fresh instance: its hint goes to the fresh channel only.
   await fresh.command('bob', 'bet', { windowId, seat: 1, field: 'main', chip: 5 });
@@ -95,6 +99,10 @@ test('F11: commits by another engine instance reach this instance\'s sockets wit
     assert.equal(frame.presentation?.ver, frame.snapshot.presentationVer, 'never a mixed-version frame: the receiver row arrived too');
   }
   assert.ok(alice.frames.length - framesBefore <= 3, 'an observation is one reread, not a stream of frames');
+  const consumed = (await pool.query(F11_MONEY_SQL, [roomId, ['alice', 'bob']])).rows[0];
+  assert.equal(consumed.reservations.length, 0); assert.equal(consumed.hands, 2);
+  assert.equal(consumed.ledger.reduce((sum, row) => sum + row.amountCents, 0), -1000);
+  assert.deepEqual(consumed.settlements, []);
   // Already up to date: further passes of the old runtime send nothing new.
   const settled = alice.frames.length; await delay(700);
   assert.equal(alice.frames.length, settled, 'an unchanged room costs no frame');
