@@ -5,7 +5,7 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 ## Utgångsläge och mandat
 
 - Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. S1–S3 utgår från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Ändringar görs i egna worktrees under `.claude/worktrees`; orkestratorns branch är `jakob/codex-cleanup-integration-1031`.
-- Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, raderade brancher/worktrees, kollegors resurser eller RunPod-endpoints ingår.
+- Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, ingrepp i kollegors resurser eller RunPod-endpoints ingår. GitHubs normala auto-delete behålls vid godkända PR-merges; äldre brancher/worktrees har inte gallrats i denna leverans.
 - **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
 - Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
 

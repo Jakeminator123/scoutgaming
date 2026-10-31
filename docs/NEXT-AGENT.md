@@ -4,7 +4,7 @@ Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scout
 
 ## Organisationsarbete
 
-[KORPLAN-v2](plans/organisation/KORPLAN-v2.md) är enda aktiva körordning. Den äldre inventeringen och områdesfilerna är ersatta; Git och [HISTORIK](HISTORIK.md) bevarar deras ursprung. Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan fler godkännandefrågor. Ägar-, CI-, SHA- och verifieringsgrindarna gäller fortfarande. Inga brancher/worktrees eller kollegors resurser raderas; RunPod-endpoints rörs inte.
+[KORPLAN-v2](plans/organisation/KORPLAN-v2.md) är enda aktiva körordning. Den äldre inventeringen och områdesfilerna är ersatta; Git och [HISTORIK](HISTORIK.md) bevarar deras ursprung. Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan fler godkännandefrågor. Ägar-, CI-, SHA- och verifieringsgrindarna gäller fortfarande. GitHubs normala auto-delete behålls vid godkända PR-merges. Äldre resurser gallras endast efter separat kontroll av ägarskap, merge och osparat arbete enligt AGENTS; kollegors resurser och RunPod-endpoints rörs inte.
 
 Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd samt verkliga kod-/CI-/deploy-/acceptansbevis står i [beslutsloggen](plans/organisation/BESLUTSLOGG.md). F11:s [verkliga driftkvitto](plans/organisation/F11-DRIFTKVITTO.md) omfattar två Render-instanser, pengar, återanslutning och negativa prov. Den särskilda F11-spärren är hävd för kompatibla releaser; flaggbyte/publicering och övrig acceptans följer egna kriterier. Äldre versionsuppgifter i kvittona nedan är daterade; aktuell leverans och kvarvarande prov finns i körplanen.
 
