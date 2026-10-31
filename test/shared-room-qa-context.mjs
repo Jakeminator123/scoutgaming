@@ -12,8 +12,8 @@ function f11Capture() {
   const m = f11Manifest(), events = [];
   const add = (type,at,data) => events.push({type,at,...data});
   const target = at => add('target',at,{...m,source:'provider-api',engineSha:m.sha,vercelSha:m.sha,healthStatus:200,ready:true,suspended:false});
-  const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,fingerprint:'b'.repeat(64),
-    sourceKey:JSON.stringify(['tick',m.roomId,`tick-${id}`,'round-2',actorId,type])});
+  const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,roundId:'round-2',fingerprint:'b'.repeat(64),
+    sourceKey:JSON.stringify(['tick',m.roomId,'system',`tick-${id}`,actorId,type])});
   const wallet = (at,stage,{holds=false,hands=0,settled=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
     balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?9500:10500):10000})),
     reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
@@ -23,8 +23,12 @@ function f11Capture() {
   const open = (at,connectionId,actorId,instanceId) => add('open',at,{connectionId,actorId,roomId:m.roomId,connectionNonce:`nonce-${connectionId}`,
     instanceProof:{source:'render-app-log',logId:`log-${connectionId}`,connectionNonce:`nonce-${connectionId}`,instanceId,serviceId:m.serviceId,sha:m.sha,at}});
   const frame = (at,connectionId,actorId,version,phase='round') => add('frame',at,{connectionId,frame:{type:'shared-room-state',roomId:m.roomId,
-    snapshot:{roomId:m.roomId,me:{id:actorId},version,presentationVer:version,roundId:version<5?'round-1':'round-2',phase,
-      roundRevision:version,round:{dealer:[{rank:'8',suit:'H'}]}},
+    snapshot:{contract:'blackjack-table/1',configVersion:'config-1',roomId:m.roomId,me:{id:actorId},version,
+      presentationVer:version,roundId:version<5?'round-1':'round-2',phase,turnSeq:version,windowId:`window-${version<5?1:2}`,
+      owners:[...m.actors,null,null,null,null,null],seatGen:Array(7).fill(1),bets:Array.from({length:7},()=>({main:0,pp:0,tp:0})),
+      round:phase==='round'?{phase:'decisions',active:0,boxes:[],hands:[],legalActions:['stand'],dealer:[{r:'8',s:'H',shoeDraw:2}]}:null,
+      shoe:{id:'shoe-1',total:312,remaining:300,dealt:12,cutAfter:260,cutReached:false,commitment:'d'.repeat(64),shufflePending:false,decks:6,burn:1},
+      plan:null,deadline:phase==='bets'?version*20000:null,actionDeadline:phase==='round'?version*15000:null},
     presentation:{roomId:m.roomId,ver:version,events:[{type:phase==='round'?'deal':'idle'}]}}});
   target(0);wallet(1,'before');open(1000,'old','f11-alice','instance-old');
   frame(2000,'old','f11-alice',1,'bets');frame(20000,'old','f11-alice',2);wallet(52000,'during',{holds:true});
@@ -74,8 +78,8 @@ test('F11 refuses a frozen old socket that only catches up after reconnect and o
 });
 test('F11 rejects conflicting state, revision regression, missing 1012 and reconnecting to another hand',()=>{
   for(const [mutate,code] of [
-    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='new').frame.snapshot.round.dealer[0].rank='9';},'state_conflict'],
-    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='old'&&e.at===89500).frame.snapshot.roundRevision=0;},'revision_regressed'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='new'&&e.frame.snapshot.phase==='round').frame.snapshot.round.dealer[0].r='9';},'state_conflict'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='old'&&e.at===89500).frame.snapshot.turnSeq=0;},'revision_regressed'],
     [c=>{c.events.find(e=>e.type==='close').code=1006;},'continuous_overlap_not_proven'],
     [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='again').frame.snapshot.roundId='other-hand';},'state_conflict']]) {
     const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
@@ -94,6 +98,42 @@ test('F11 requires both negative probes without leaked state and actual reservat
     const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
   }
 });
+test('F11 requires settlement for every debited actor and exact audited round, including losing hands',()=>{
+  for(const mutate of [r=>{r.settlements=r.settlements.filter(s=>s.returnedCents>0);},
+    r=>{r.settlements.find(s=>s.returnedCents===0).roundId='different-round';},
+    r=>{r.ledger.find(e=>e.actorId==='f11-bob').roundId='different-round';}]) {
+    const c=f11Capture();mutate(c.events.find(e=>e.stage==='after'));
+    assert.throws(()=>f11Review(c),/consumption_without_settlement/);
+  }
+  const c=f11Capture();delete c.events.find(e=>e.stage==='after').ledger[0].roundId;
+  assert.throws(()=>f11Review(c),/ledger_invalid/);
+});
+
+test('F11 requires complete shared snapshots and consistent ownership but permits player-specific projections',()=>{
+  for(const key of ['contract','configVersion','windowId','turnSeq','round','shoe','plan','deadline','actionDeadline','owners','seatGen','bets']) {
+    const c=f11Capture();for(const e of c.events.filter(e=>e.type==='frame'))delete e.frame.snapshot[key];
+    assert.throws(()=>f11Review(c),/frame_invalid|snapshot_contract_incomplete/,key);
+  }
+  for(const key of ['owners','seatGen']) {
+    const c=f11Capture(),s=c.events.find(e=>e.type==='frame'&&e.connectionId==='new').frame.snapshot;
+    s[key][0]=key==='owners'?'f11-bob':2;
+    assert.throws(()=>f11Review(c),/state_conflict/,key);
+  }
+  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='frame')) {
+    e.frame.snapshot.me.available=e.connectionId==='new'?5:10;
+    e.frame.snapshot.serverNow=e.at;e.frame.snapshot.players=[{id:'f11-alice',online:e.connectionId==='new'}];
+  }
+  assert.equal(f11Review(c).acceptance,false);
+});
+
+test('F11 reconnect cannot conceal a regressed presentation behind a newer room version',()=>{
+  const c=f11Capture(),e=c.events.find(e=>e.type==='frame'&&e.connectionId==='again');
+  e.frame.snapshot.version=8;e.frame.snapshot.presentationVer=1;e.frame.presentation.ver=1;
+  // Keep subsequent global room revisions distinct so the cross-connection reconnect gate must catch this.
+  for(const row of c.events.filter(row=>row.type==='frame'&&row.at>e.at))row.frame.snapshot.version++;
+  assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+});
+
 test('F11 observer cannot recover after rejected evidence or mutate an already consumed monetary sample',()=>{
   const c=f11Capture(),o=createF11Observer(c.manifest);
   assert.throws(()=>o.observe({type:'token-secret',at:0}),/event_type_invalid/);

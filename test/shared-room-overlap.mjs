@@ -9,6 +9,7 @@ import { installGracefulShutdown } from '../services/game/graceful-shutdown.mjs'
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
 import { F11_MONEY_SQL } from '../tools/shared-room-f11-observer.mjs';
+import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-chain.mjs';
 
 // F11 (K04 RERUN-6, K06 RERUN-2): during a Render deploy or restart the old and the new engine
 // instance run side by side for about three minutes. Both runtimes tick rooms; a socket on the
@@ -56,6 +57,20 @@ function instance(pool, name) {
 }
 const last = socket => socket.frames.at(-1);
 
+test('F11 SQL decodes the stored audit envelope and includes zero-return settlements in the selected scope', async t => {
+  const pool=await createPglitePool();t.after(()=>pool.end());
+  let previous=GENESIS,seq=0;
+  for(const [room,playerId,returned] of [[roomId,'alice',0],[roomId,'bob',10],[roomId,'other',10],['other-room','alice',10]]) {
+    const row={seq:++seq,...chainRow(previous,{room,roundId:'round-1',at:T0,type:'wallet.settlement',
+      payload:{playerId,roundId:'round-1',returned,ledgerId:returned?'3':null}})};
+    previous=row.hash;
+    await pool.query('INSERT INTO croupier_game.shared_table_audit(seq,room_id,body) VALUES($1,$2,$3)',[seq,room,row]);
+  }
+  const sample=(await pool.query(F11_MONEY_SQL,[roomId,['alice','bob']])).rows[0];
+  assert.deepEqual(sample.settlements,[{roundId:'round-1',actorId:'alice',ledgerId:null,returnedCents:0},
+    {roundId:'round-1',actorId:'bob',ledgerId:'3',returnedCents:1000}]);
+});
+
 test('F11: commits by another engine instance reach this instance\'s sockets within 2 s; SIGTERM ends them with 1012 and drains commands atomically', async t => {
   const pool = await createPglitePool();
   let old, fresh, server;
@@ -102,6 +117,8 @@ test('F11: commits by another engine instance reach this instance\'s sockets wit
   const consumed = (await pool.query(F11_MONEY_SQL, [roomId, ['alice', 'bob']])).rows[0];
   assert.equal(consumed.reservations.length, 0); assert.equal(consumed.hands, 2);
   assert.equal(consumed.ledger.reduce((sum, row) => sum + row.amountCents, 0), -1000);
+  assert.deepEqual(consumed.ledger.map(row => row.roundId), consumed.ledger.map(() => last(alice).snapshot.roundId),
+    'ledger round identity comes from its engine audit, not the command/tick idempotency key');
   assert.deepEqual(consumed.settlements, []);
   // Already up to date: further passes of the old runtime send nothing new.
   const settled = alice.frames.length; await delay(700);

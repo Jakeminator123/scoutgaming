@@ -43,13 +43,17 @@ export const F11_MONEY_SQL = `SELECT current_database() AS database,
     FROM croupier_game.shared_wallet_reservations WHERE room_id=$1 AND player_id=ANY($2::text[])), '[]'::jsonb) AS reservations,
   (SELECT count(*)::int FROM croupier_game.shared_wallet_hands WHERE room_id=$1 AND player_id=ANY($2::text[])) AS hands,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id::text,'actorId',player_id,'amountCents',(amount*100)::bigint,
-      'sourceKey',source_key,'fingerprint',source_fingerprint,'type',type) ORDER BY id)
-    FROM croupier_game.transactions WHERE player_id=ANY($2::text[])), '[]'::jsonb) AS ledger,
-  COALESCE((SELECT jsonb_agg(jsonb_build_object('roundId',body::jsonb->>'roundId',
-      'actorId',body::jsonb->'payload'->>'playerId','ledgerId',body::jsonb->'payload'->>'ledgerId',
-      'returnedCents',((body::jsonb->'payload'->>'returned')::numeric*100)::bigint) ORDER BY seq)
+      'sourceKey',source_key,'fingerprint',source_fingerprint,'type',type,
+      'roundId',(SELECT min(a.body::jsonb->>'round_id') FROM croupier_game.shared_table_audit a
+        WHERE a.room_id=$1 AND a.body::jsonb->>'type' LIKE 'engine.%'
+          AND (a.body::jsonb->>'payload')::jsonb->'ledgerIds' ? t.id::text
+        HAVING count(DISTINCT a.body::jsonb->>'round_id')=1)) ORDER BY id)
+    FROM croupier_game.transactions t WHERE player_id=ANY($2::text[])), '[]'::jsonb) AS ledger,
+  COALESCE((SELECT jsonb_agg(jsonb_build_object('roundId',body::jsonb->>'round_id',
+      'actorId',(body::jsonb->>'payload')::jsonb->>'playerId','ledgerId',(body::jsonb->>'payload')::jsonb->>'ledgerId',
+      'returnedCents',(((body::jsonb->>'payload')::jsonb->>'returned')::numeric*100)::bigint) ORDER BY seq)
     FROM croupier_game.shared_table_audit WHERE room_id=$1 AND body::jsonb->>'type'='wallet.settlement'
-      AND body::jsonb->'payload'->>'playerId'=ANY($2::text[])), '[]'::jsonb) AS settlements;`;
+      AND (body::jsonb->>'payload')::jsonb->>'playerId'=ANY($2::text[])), '[]'::jsonb) AS settlements;`;
 
 function scope(row, manifest) {
   need(row.roomId === manifest.roomId && equal(row.actors, manifest.actors), 'scope_mismatch');
@@ -67,7 +71,7 @@ function money(row, manifest) {
   need(Array.isArray(row.ledger) && row.ledger.length <= 10000, 'ledger_invalid');
   const keys = new Set(), ids = new Set();
   for (const entry of row.ledger) {
-    need(id(entry.id) && manifest.actors.includes(entry.actorId) && Number.isSafeInteger(entry.amountCents)
+    need(id(entry.id) && id(entry.roundId) && manifest.actors.includes(entry.actorId) && Number.isSafeInteger(entry.amountCents)
       && /^[a-f0-9]{64}$/.test(entry.fingerprint) && ['consume:stake', 'consume:insurance', 'double', 'split', 'payout'].includes(entry.type)
       && (entry.type === 'payout' ? entry.amountCents > 0 : entry.amountCents < 0), 'ledger_invalid');
     let key; try { key = JSON.parse(entry.sourceKey); } catch { fail('ledger_key_invalid'); }
@@ -85,13 +89,13 @@ function money(row, manifest) {
     const key = hash([entry.roundId,entry.actorId]);
     need(!settled.has(key), 'duplicate_settlement'); settled.add(key);
     if (entry.returnedCents) need(row.ledger.some(e => e.id === entry.ledgerId && e.actorId === entry.actorId
-      && e.type === 'payout' && e.amountCents === entry.returnedCents), 'payout_mismatch');
+      && e.roundId === entry.roundId && e.type === 'payout' && e.amountCents === entry.returnedCents), 'payout_mismatch');
   }
   need(row.ledger.filter(e => e.type === 'payout').every(e => row.settlements.filter(s => s.ledgerId === e.id).length === 1), 'payout_without_settlement');
   return { stage: row.stage, at: row.at, hands: row.hands, reservations: row.reservations.map(x => ({ id: x.id, amountCents: x.amountCents })),
     settlements: row.settlements.map(x => ({ roundId: x.roundId, actorId: x.actorId, ledgerId: x.ledgerId, returnedCents: x.returnedCents })),
     balances: row.balances.map(x => ({ actorId: x.actorId, balanceCents: x.balanceCents })),
-    ledger: row.ledger.map(x => ({ id: x.id, actorId: x.actorId, amountCents: x.amountCents,
+    ledger: row.ledger.map(x => ({ id: x.id, roundId: x.roundId, actorId: x.actorId, amountCents: x.amountCents,
       sourceKey: x.sourceKey, fingerprint: x.fingerprint, type: x.type })) };
 }
 
@@ -130,22 +134,31 @@ export function createF11Observer(input) {
       const c = connections.get(row.connectionId), f = row.frame, s = f?.snapshot, p = f?.presentation;
       need(c && c.closedAt === null && object(f) && f.type === 'shared-room-state' && f.roomId === manifest.roomId
         && object(s) && s.roomId === manifest.roomId && s.me?.id === c.actor && integer(s.version)
+        && s.contract === 'blackjack-table/1' && id(s.configVersion) && id(s.windowId) && integer(s.turnSeq)
         && integer(s.presentationVer) && ['bets', 'round', 'settled'].includes(s.phase)
         && (s.roundId === null || id(s.roundId)) && (s.phase !== 'round' || id(s.roundId)), 'frame_invalid');
+      // These fields always exist in coordinator.snapshot, including explicit nulls.
+      // Missing evidence is not equivalent to a legitimately unopened/cleared field.
+      need(['round','shoe','plan','deadline','actionDeadline'].every(key => Object.hasOwn(s,key))
+        && [s.round,s.shoe,s.plan].every(value => value === null || object(value))
+        && [s.deadline,s.actionDeadline].every(value => value === null || integer(value))
+        && (s.phase !== 'round' || object(s.round) && object(s.shoe))
+        && Array.isArray(s.owners) && s.owners.length === 7 && s.owners.every(value => value === null || id(value))
+        && Array.isArray(s.seatGen) && s.seatGen.length === 7 && s.seatGen.every(integer)
+        && Array.isArray(s.bets) && s.bets.length === 7 && s.bets.every(bet => object(bet)
+          && ['main','pp','tp'].every(key => Number.isFinite(bet[key]) && bet[key] >= 0)), 'snapshot_contract_incomplete');
       need(p === null ? s.presentationVer === 0 : object(p) && p.roomId === manifest.roomId && p.ver === s.presentationVer
         && Array.isArray(p.events) && p.events.length <= 128 && p.events.every(e => eventTypes.has(e.type)), 'presentation_mismatch');
       const previous = c.frames.at(-1);
       need(!previous || s.version >= previous.version && s.presentationVer >= previous.presentationVer, 'version_regressed');
-      need(s.roundRevision === undefined || integer(s.roundRevision), 'revision_invalid');
-      need(!previous || previous.roundId !== s.roundId || previous.roundRevision === undefined
-        || s.roundRevision === undefined || s.roundRevision >= previous.roundRevision, 'revision_regressed');
+      need(!previous || previous.roundId !== s.roundId || s.turnSeq >= previous.turnSeq, 'revision_regressed');
       // Common server state excludes per-player projection, online presence and serverNow.
-      const state = ['version','presentationVer','phase','roundId','roundRevision','windowId','shoe','round','bets','plan','deadline','actionDeadline']
-        .map(key => [key, s[key] ?? null]);
+      const state = ['contract','version','configVersion','presentationVer','phase','roundId','turnSeq','windowId',
+        'owners','seatGen','shoe','round','bets','plan','deadline','actionDeadline'].map(key => [key, s[key]]);
       const stateHash = hash(state);
       need(!versions.has(s.version) || versions.get(s.version) === stateHash, 'state_conflict'); versions.set(s.version,stateHash);
       c.frames.push({ at: row.at, version: s.version, presentationVer: s.presentationVer, phase: s.phase,
-        roundId: s.roundId ?? null, roundRevision: s.roundRevision, stateHash,
+        roundId: s.roundId, turnSeq: s.turnSeq, stateHash,
         presentationHash: hash(p), eventTypes: p?.events.map(e => e.type) ?? [] }); return;
     }
     if (row.type === 'close') {
@@ -193,7 +206,9 @@ export function createF11Observer(input) {
       if (!consistent || !a.some(f => f.eventTypes.includes('deal')) || !b.some(f => f.eventTypes.includes('deal'))) continue;
       const last = old.frames.at(-1), again = all.find(c => c !== old && c.actor === old.actor && c.instance === fresh.instance
         && c.openedAt >= old.closedAt && c.openedAt - old.closedAt <= 10000 && c.frames.length);
-      if (!again || !last?.roundId || again.frames[0].roundId !== last.roundId || again.frames[0].version < last.version) continue;
+      if (!again || !last?.roundId || again.frames[0].roundId !== last.roundId || again.frames[0].version < last.version
+        || again.frames[0].presentationVer < last.presentationVer || again.frames[0].turnSeq < last.turnSeq
+        || again.frames[0].presentationVer === last.presentationVer && again.frames[0].presentationHash !== last.presentationHash) continue;
       overlap = { startedAt: start, endedAt: end, durationMs: end - start, frames: a.length + b.length,
         instances: [hash(old.instance),hash(fresh.instance)], reconnect: true }; break;
     }
@@ -210,6 +225,8 @@ export function createF11Observer(input) {
     need(first.ledger.every(e => last.ledger.some(x => equal(x,e))), 'ledger_history_changed');
     need(first.settlements.every(e => last.settlements.some(x => equal(x,e))), 'settlement_history_changed');
     const delta = last.ledger.filter(e => !baseline.has(e.id));
+    need(last.ledger.filter(e => e.amountCents < 0).every(e => last.settlements.some(s => s.roundId === e.roundId
+      && s.actorId === e.actorId)), 'consumption_without_settlement');
     need(delta.some(e => e.type === 'payout' && e.amountCents > 0) && delta.some(e => e.amountCents < 0), 'settlement_not_observed');
     for (const actor of manifest.actors) need(BigInt(last.balances.find(x => x.actorId === actor).balanceCents)
       - BigInt(first.balances.find(x => x.actorId === actor).balanceCents) === delta.filter(e => e.actorId === actor)
