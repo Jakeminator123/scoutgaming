@@ -86,8 +86,10 @@ Den gamla inventeringen, områdesplanerna och deras tomma aktiviteter är ersatt
 Den externa uppföljningens små efterrättningar: **#762 mergad** (gemensamt
 agentmandat och borttagna kosmetiska testlås), **#763 mergad** (avstängt
 fristående röstprov avvecklat, social fallback kvar). Båda har grön exakt CI.
-Tilldelningens dubbla katalogläsning är nästa avgränsade ändring. Atomisk
-publicering/materialbyte är ett eget produktuppdrag. Hela repoets filer och
+Tilldelning återanvänder förälderns katalog i **#764**; nio browserprov verifierar
+läsantal, uppdatering, CAS, fel och bolagsbundna utkast. Publiceringsordningen
+och partialresultaten består. Atomisk publicering/materialbyte är ett eget
+produktuppdrag. Hela repoets filer och
 tester är inte därmed granskade eller nödvändighetsbevisade.
 
 [Atlas, PR #761](https://github.com/Jakeminator123/scoutgaming/pull/761) förenar de
