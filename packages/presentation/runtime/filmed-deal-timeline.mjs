@@ -4,8 +4,8 @@ import {planFilmedDealSequence,orderFilmedPresentationEvents} from './filmed-dea
 // readyTimeline (K server/shared-table.mjs:114-135) gives every dealing step the real length of the
 // take it plays (meta frames at 24 fps, :129-130), joins REDO->REDO takes back to back and leaves
 // 80 ms between takes that do not join (:132); a plan opens 700 ms after its command, 1500 ms when
-// it opens on the flip (:150). Main's game window stays the coordinator's startAt + leadMs +
-// draws*cardMs (material-revision.mjs): this module never moves a deadline, it reports deviationMs
+// it opens on the flip (:150). The coordinator commits natural realEndMs for speech-free native
+// v2 chains, otherwise leadMs + draws*cardMs. This module never moves a deadline; it reports deviationMs
 // and a per-step fit when the real chain would run past the window (K04-mappning G3).
 // Pure: no DOM, no clock. Times are milliseconds relative to the plan's startAt (table clock).
 export const FILMED_TAKE_GAP_MS=80;                                       // K shared-table.mjs:132
