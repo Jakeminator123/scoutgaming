@@ -14,6 +14,8 @@
 
 Blackjack har en gemensam handregelklass men ännu olika kommando- och lagringsadaptrar. Nativeadaptern behövs bland annat av Admins Provspel och sparade rundor; den får inte raderas enbart för att det delade bordet är påslaget. [Blackjackguiden](../../docs/games/blackjack/README.md) beskriver gränsen, testerna och villkoren för fortsatt avveckling.
 
+Spelarsessioner från den pensionerade BO-överlämningen (`bo:`) godtas inte längre; de kräver en ny inloggning. Aktuella konto-, lokala och partnerinloggningar behåller sina behörighetskontroller. [administrator-session.mjs](administrator-session.mjs) läser den aktuella administratörens signerade session för gemensam utloggning; den skapar inga spelarsessioner. Partnerportalens aktiva `lab_sessions` är en separat konsument och påverkas inte av denna avveckling.
+
 ## Vad som får ändras
 
 Spelkärnan bestämmer regler, slump, sko, kort och utfall. Presentation, navigation, sittperspektiv, insatsrutornas UI, rumspublicering och tal är andra ansvar och får förbättras eller ersättas. En befintlig adapter får också avvecklas när dess aktiva anrop har ersatts. Mappnamnet är inget ändringsförbud. Behörighet, atomisk bokföring och serverägda utfall ska fortfarande fungera efter ändringen.

@@ -1,7 +1,6 @@
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../../packages/studio-access/server/account-credentials.mjs';
-import { readBackofficePlayerSource } from '../bo-player-session.mjs';
 import { claimedOperator, keyOperator, partnerRefusal, PARTNER_OPERATOR_MISMATCH } from '../partner-operator.mjs';
 import { playerOperator } from '../../../packages/storage/server/player-operator.mjs';
 
@@ -23,7 +22,7 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
   return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,authEpoch,
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,
   allowLegacyPartnerSessions = false } = {}) {
 
   const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
@@ -62,12 +61,11 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(String(session.source_stamp??'').startsWith('local:')) {
       if(identity && !playerAccounts || accountStamp((await db.prepare('SELECT salt,hash FROM player_accounts WHERE player_id=?').get(session.player_id)))!==session.source_stamp)return null;
     } else if(!String(session.source_stamp??'').startsWith('partner:') && (identity || session.source_stamp!=null)) {
-      const source=readBackofficePlayerSource(session.source_stamp),credential=/^credential:([a-f0-9]{64})$/.exec(session.source_stamp??'');
-      // Old bare fingerprints have ambiguous provenance and require a fresh login.
-      if(!identity || !source && !credential)return null;
+      const credential=/^credential:([a-f0-9]{64})$/.exec(session.source_stamp??'');
+      // Retired BO handoffs and old bare fingerprints require a fresh login.
+      if(!identity || !credential)return null;
       const link=await db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);
-      if(!link || (await identity.stamp(link.craig_user_id))!==(source?.stamp??credential[1]))return null;
-      if(source && (typeof authEpoch!=='function' || (await authEpoch(link.craig_user_id))!==source.authEpoch))return null;
+      if(!link || (await identity.stamp(link.craig_user_id))!==credential[1])return null;
     }
     const partnerSource = String(session.source_stamp ?? '');
     const partner = partnerSource.startsWith('partner:') ? /^partner:([^:]+)(?::([a-f0-9]{64}))?$/.exec(partnerSource) : null;

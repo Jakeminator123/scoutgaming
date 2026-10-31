@@ -5,8 +5,26 @@ import { createServer } from 'node:http';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
 import { playerAuth } from '../services/game/storage/async-player-auth.mjs';
+import { currentAdministratorAccount } from '../services/game/administrator-session.mjs';
 import { createAccountCredentialResolver, effectiveAccountRole } from '../packages/studio-access/server/account-credentials.mjs';
 import { createPgliteStore } from './fixtures/pglite-pool.mjs';
+
+test('current administrator authority remains bound to one signed, unexpired cookie and the current account',async()=>{
+  const account={id:'7',stamp:'a'.repeat(64)},claims={sub:'operator',aud:'backoffice',role:'admin',source_stamp:account.stamp,auth_epoch:3,exp:Date.now()/1000+60};
+  const request={headers:{cookie:'bo_jwt=signed-token'}};
+  const options={identity:{find:async()=>account},boSession:async()=>claims};
+  assert.deepEqual(await currentAdministratorAccount(request,options),{...account,authEpoch:3});
+  for(const cookie of ['', 'lab_session=opaque-token', 'bo_jwt=one; bo_jwt=two']) {
+    assert.equal(await currentAdministratorAccount({headers:{cookie}},options),null);
+  }
+  for(const changed of [null,{...claims,partner:true},{...claims,aud:'player'},{...claims,role:'partner'},
+    {...claims,exp:Date.now()/1000-1},{...claims,auth_epoch:-1},{...claims,auth_epoch:1.5},{...claims,source_stamp:'changed'}]) {
+    assert.equal(await currentAdministratorAccount(request,{...options,boSession:async()=>changed}),null);
+  }
+  assert.equal(await currentAdministratorAccount(request,{...options,identity:{find:async()=>null}}),null);
+  assert.equal(await currentAdministratorAccount(request,{...options,boSession:async()=>({...claims,role:'reader'})}),null);
+  assert.ok(await currentAdministratorAccount(request,{...options,roles:['reader'],boSession:async()=>({...claims,role:'reader'})}));
+});
 
 // The engine's PostgreSQL stores (croupier_auth users, croupier_game players) on
 // PGlite with the product schema, wired as services/game/server.mjs wires them.
@@ -24,14 +42,13 @@ async function fixture() {
   const count=async table=>(await players.prepare(`SELECT count(*) AS n FROM ${table}`).get()).n;
   return {users,players,password,identity,resolver,admin,player,local,authEpoch,revoke,count,close:()=>store.close()};
 }
-// A player session issued by the retired BO handoff: nothing mints `bo:<epoch>:<stamp>`
-// provenance any more, but rows that still exist must keep their epoch checks.
-async function retainedBackofficeSession(f,account,playerId) {
+// Seed a credential session through the same identity link used by current login.
+async function linkedPlayerSession(f,account,playerId) {
   let id=(await f.players.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(account.id))?.player_id;
   if(!id){id=playerId;await f.player(id);await f.players.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(account.id,id);}
   const token=randomBytes(32).toString('hex');
   await f.players.prepare('INSERT INTO player_sessions (digest,player_id,expires,source_stamp,display_name) VALUES (?,?,?,?,?)')
-    .run(createHash('sha256').update(token).digest('hex'),id,Date.now()+86400000,`bo:${account.authEpoch}:${account.stamp}`,null);
+    .run(createHash('sha256').update(token).digest('hex'),id,Date.now()+86400000,`credential:${account.stamp}`,null);
   return 'player_session='+token;
 }
 test('resolver preserves credentials and resolves admin aliases and game-only roles',async()=>{
@@ -102,9 +119,9 @@ test('shared-origin logout revokes its BO epoch while separate-origin logout rev
       const origin='https://www.fixture.invalid';
       const req={url:'/api/auth/logout',method:'POST',headers:{host:'www.fixture.invalid',origin},socket:{encrypted:true}};
       let revocations=0,revocationFails=false;
-      const auth=playerAuth(f.players,async()=>{await f.player('own');return {id:'own'};},f.identity,{gameOrigin:origin,sharedBackofficeOrigin,authEpoch:f.authEpoch,backofficeLogout:async()=>{revocations++;if(revocationFails)throw Error('Private storage error');await f.revoke(1);}});
+      const auth=playerAuth(f.players,async()=>{await f.player('own');return {id:'own'};},f.identity,{gameOrigin:origin,sharedBackofficeOrigin,backofficeLogout:async()=>{revocations++;if(revocationFails)throw Error('Private storage error');await f.revoke(1);}});
       const account={...await f.identity.find('operator'),authEpoch:0};
-      const cookie=await retainedBackofficeSession(f,account,'own'),other=await retainedBackofficeSession(f,account,'own');
+      const cookie=await linkedPlayerSession(f,account,'own'),other=await linkedPlayerSession(f,account,'own');
       const response=()=>({writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=JSON.parse(body);}});
       let res=response();await auth.handle({...req,headers:{...req.headers,origin:'https://attacker.invalid',cookie}},res);
       assert.equal(res.status,403);assert.equal(res.headers['Set-Cookie'],undefined);assert.equal(await auth.user({...req,headers:{cookie}}),'own');
@@ -118,8 +135,8 @@ test('shared-origin logout revokes its BO epoch while separate-origin logout rev
       res=response();await auth.handle({...req,headers:{...req.headers,cookie}},res);
       assert.equal(res.status,200);assert.equal(await auth.user({...req,headers:{cookie}}),null);
       assert.equal(revocations,sharedBackofficeOrigin?2:0);
-      assert.equal(await auth.user({...req,headers:{cookie:other}}),sharedBackofficeOrigin?null:'own',
-        'N1 logout revokes the same BO epoch in another browser; a separate game-origin logout does not');
+      assert.equal(await f.authEpoch(account.id),sharedBackofficeOrigin?1:0,'shared-origin logout still revokes administrator authority');
+      assert.equal(await auth.user({...req,headers:{cookie:other}}),'own','credential sessions in other browsers remain independent');
       const cleared=[res.headers['Set-Cookie']].flat();
       assert.equal(cleared.length,sharedBackofficeOrigin?3:1);
       assert.ok(cleared.every(value=>value.includes('Max-Age=0')&&value.includes('HttpOnly')&&value.includes('Secure')));
@@ -131,13 +148,13 @@ test('shared-origin logout revokes its BO epoch while separate-origin logout rev
   }
 });
 
-test('N1 revocation preserves new credential, local, partner and other-account sessions while denying ambiguous legacy stamps',async()=>{
+test('retired BO handoffs are rejected while credential, local, partner and other-account sessions remain valid',async()=>{
   const f=await fixture();await f.admin();await f.admin(2,'other');await f.local();
   try {
     const db=f.players;
     const origin='https://www.fixture.invalid',partnerSecret='isolated-partner-secret';let created=0;
     const auth=playerAuth(db,async()=>{const id='linked-'+(++created);await f.player(id);return {id};},f.identity,
-      {playerAccounts:true,gameOrigin:origin,authEpoch:f.authEpoch,allowLegacyPartnerSessions:false,
+      {playerAccounts:true,gameOrigin:origin,allowLegacyPartnerSessions:false,
         partnerAuthority:async id=>({id,secret:partnerSecret,revoked_at:null,wallet_url:null})});
     const req={headers:{host:'www.fixture.invalid',origin},socket:{encrypted:true}};
     async function login(email) {
@@ -147,13 +164,13 @@ test('N1 revocation preserves new credential, local, partner and other-account s
       return [response.headers['Set-Cookie']].flat().find(value=>value.startsWith('player_session=')).split(';')[0];
     }
     const account={...await f.identity.find('operator'),authEpoch:0};
-    const boCookie=await retainedBackofficeSession(f,account,'linked-1');
-    const otherCookie=await retainedBackofficeSession(f,{...await f.identity.find('other'),authEpoch:0},'linked-2');
+    const existingCookie=await linkedPlayerSession(f,account,'linked-1');
+    const otherCookie=await linkedPlayerSession(f,{...await f.identity.find('other'),authEpoch:0},'linked-2');
     const credentialCookie=await login('operator'),localCookie=await login('player');
     await f.player('partner-player');
     const partnerCookie=(await auth.fromPartner(req,{sub:'partner-player',partner:'fixture-key',
       partner_key_stamp:createHash('sha256').update(partnerSecret).digest('hex')})).split(';')[0];
-    const ownId=await auth.user({headers:{cookie:boCookie}}),otherId=await auth.user({headers:{cookie:otherCookie}});
+    const ownId=await auth.user({headers:{cookie:existingCookie}}),otherId=await auth.user({headers:{cookie:otherCookie}});
     assert.equal(await auth.user({headers:{cookie:credentialCookie}}),ownId);
     const oldToken=randomBytes(32).toString('hex');
     await db.prepare('INSERT INTO player_sessions VALUES(?,?,?,?,?)').run(createHash('sha256').update(oldToken).digest('hex'),ownId,Date.now()+60000,account.stamp,null);
@@ -162,7 +179,7 @@ test('N1 revocation preserves new credential, local, partner and other-account s
     assert.equal(await noIdentity.user({headers:{cookie:'player_session='+oldToken}}),null,'missing identity configuration cannot revive legacy BO authority');
     const sessionCount=await f.count('player_sessions');
     await f.revoke(account.id);
-    assert.equal(await auth.user({headers:{cookie:boCookie}}),null);
+    assert.equal(await auth.user({headers:{cookie:existingCookie}}),ownId);
     assert.equal(await auth.user({headers:{cookie:otherCookie}}),otherId);
     assert.equal(await auth.user({headers:{cookie:credentialCookie}}),ownId);
     assert.equal(await auth.user({headers:{cookie:localCookie}}),'player-1');
@@ -172,7 +189,7 @@ test('N1 revocation preserves new credential, local, partner and other-account s
   } finally {await f.close();}
 });
 
-test('async internal bindings share credential, BO epoch and partner validation without changing public sessions',async()=>{
+test('async internal bindings share current credential and partner validation without reviving retired BO sessions',async()=>{
   const f=await fixture();await f.admin();await f.local();
   try {
     const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -184,11 +201,11 @@ test('async internal bindings share credential, BO epoch and partner validation 
     const partnerStamp=hash(key.secret),expiresAt=Date.now()+60000,reads=[];
     const db={prepare(sql){assert.match(sql,/^SELECT /);reads.push(sql);return f.players.prepare(sql);}};
     const auth=playerAuth(db,()=>assert.fail('binding cannot create a player'),f.identity,{playerAccounts:true,
-      authEpoch:f.authEpoch,allowLegacyPartnerSessions:false,partnerAuthority:async()=>key});
+      allowLegacyPartnerSessions:false,partnerAuthority:async()=>key});
     const sources=[
       ['player-1',`local:${hash(`${local.salt}:${local.hash}`)}`,{playerId:'player-1',partnerKeyId:null}],
       ['linked-player',`credential:${account.stamp}`,{playerId:'linked-player',partnerKeyId:null}],
-      ['linked-player',`bo:0:${account.stamp}`,{playerId:'linked-player',partnerKeyId:null}],
+      ['linked-player',`bo:0:${account.stamp}`,null],
       ['partner-player',`partner:fixture-key:${partnerStamp}`,{playerId:'partner-player',partnerKeyId:'fixture-key',partnerKeyStamp:partnerStamp,displayName:'fixture'}],
     ];
     const sessions=[];
@@ -199,6 +216,11 @@ test('async internal bindings share credential, BO epoch and partner validation 
     }
     const before=await f.players.prepare('SELECT * FROM player_sessions ORDER BY digest').all();
     for(const s of sessions){
+      if(s.publicSession===null){
+        assert.equal(await auth.binding(s.request),null);assert.equal(await auth.bindingById(s.sessionId),null);
+        assert.equal(await auth.session(s.request),null);assert.equal(await auth.user(s.request),null);
+        continue;
+      }
       // A partner binding also names its key's company; this fixture key has none (before 012).
       const expected={actorId:s.actorId,sessionId:s.sessionId,expiresAt,partnerKeyId:s.publicSession.partnerKeyId,
         ...(s.publicSession.partnerKeyId?{operatorId:null}:{})};

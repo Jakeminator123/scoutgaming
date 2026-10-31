@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { readBackofficePlayerSource } from '../bo-player-session.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { keyOperator } from '../partner-operator.mjs';
 
@@ -53,10 +52,9 @@ export function createSharedCommandAuth({ db, boDb, scope, playerAccounts = fals
       || first.expires <= clock() || typeof first.source_stamp !== 'string') return null;
     const local = /^local:([a-f0-9]{64})$/.exec(first.source_stamp);
     const credential = /^credential:([a-f0-9]{64})$/.exec(first.source_stamp);
-    const backoffice = readBackofficePlayerSource(first.source_stamp);
     // Only stamped partner sessions: an older stampless one never becomes a command binding.
     const partner = /^partner:([^:]+):([a-f0-9]{64})$/.exec(first.source_stamp);
-    if (!local && !credential && !backoffice && !partner || local && !playerAccounts) return null;
+    if (!local && !credential && !partner || local && !playerAccounts) return null;
 
     const player = await read(db, 'SELECT id,status FROM players WHERE id=? FOR SHARE', [actorId], signal);
     if (!player || player.id !== actorId || player.status !== 'active') return null;
@@ -79,13 +77,7 @@ export function createSharedCommandAuth({ db, boDb, scope, playerAccounts = fals
       if (!link || typeof link.craig_user_id !== 'string' || !link.craig_user_id) return null;
       const user = await read(boDb, 'SELECT id,salt,hash FROM users WHERE id=? FOR SHARE', [link.craig_user_id], signal);
       if (!user || String(user.id) !== link.craig_user_id
-        || fingerprint(user) !== (backoffice?.stamp ?? credential[1])) return null;
-      if (backoffice) {
-        const row = await read(boDb, 'SELECT epoch FROM bo_auth_epochs WHERE user_id=? FOR SHARE', [link.craig_user_id], signal);
-        const epoch = Number(row?.epoch ?? 0);
-        if (!Number.isSafeInteger(epoch) || epoch < 0) throw new Error('Invalid authentication epoch');
-        if (epoch !== backoffice.authEpoch) return null;
-      }
+        || fingerprint(user) !== credential[1]) return null;
     }
     const locked = await read(db,
       'SELECT player_id,source_stamp,display_name,expires FROM player_sessions WHERE digest=? AND expires>? FOR SHARE',

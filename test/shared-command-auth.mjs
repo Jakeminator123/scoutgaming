@@ -14,19 +14,17 @@ const deferred = () => {
   return { promise, resolve };
 };
 
-function fixture({ source = 'local', playerAccounts = true, epoch = 7, onRead } = {}) {
+function fixture({ source = 'local', playerAccounts = true, onRead } = {}) {
   const state = {
     time: 1000, active: true, serialized: true, scope, boJoined: true,
     player: { id: actorId, status: 'active' },
     account: { player_id: actorId, salt: 'account-salt', hash: 'account-hash' },
     link: { craig_user_id: '42' }, user: { id: 42, salt: 'bo-salt', hash: 'bo-hash' },
     key: { id: 'key-a', secret: 'key-secret', revoked_at: null, wallet_url: null, operator_id: 'north' },
-    epoch: epoch === null ? undefined : { epoch },
   };
   const sources = {
     local: `local:${stamp(state.account)}`,
     credential: `credential:${stamp(state.user)}`,
-    bo: `bo:${epoch ?? 0}:${stamp(state.user)}`,
     partner: `partner:key-a:${createHash('sha256').update(state.key.secret).digest('hex')}`,
   };
   state.session = { player_id: actorId, source_stamp: sources[source] ?? source,
@@ -47,16 +45,16 @@ function fixture({ source = 'local', playerAccounts = true, epoch = 7, onRead } 
           const query = { schema, table, locked, sql, parameters };
           queries.push(query);
           await onRead?.(query, state, queries.length);
-          assert.equal(schema, ['users', 'bo_auth_epochs', 'api_keys'].includes(table) ? 'auth' : 'game');
+          assert.equal(schema, ['users', 'api_keys'].includes(table) ? 'auth' : 'game');
           const row = {
             player_sessions: state.session, players: state.player, player_accounts: state.account,
-            craig_player_links: state.link, users: state.user, bo_auth_epochs: state.epoch, api_keys: state.key,
+            craig_player_links: state.link, users: state.user, api_keys: state.key,
           }[table];
           if (table === 'player_sessions') {
             assert.equal(parameters[0], digest);
             if (!row || !(row.expires > parameters[1])) return undefined;
           } else {
-            assert.equal(parameters[0], ['users', 'bo_auth_epochs'].includes(table) ? '42' : table === 'api_keys' ? 'key-a' : actorId);
+            assert.equal(parameters[0], table === 'users' ? '42' : table === 'api_keys' ? 'key-a' : actorId);
           }
           return row && { ...row };
         } };
@@ -82,18 +80,18 @@ test('local binding locks player and current credential before the final session
     && Object.isFrozen(g.options.studioScope)));
 });
 
-test('credential and BO binding use current locked link/user, with an epoch lock for BO provenance', async () => {
-  for (const source of ['credential', 'bo']) {
+test('credential binding uses the current locked link and user', async () => {
+  for (const source of ['credential']) {
     const h = fixture({ source });
     assert.ok(await h.bind());
     assert.deepEqual(h.queries.map(q => [q.table, q.locked]), [
       ['player_sessions', false], ['players', true], ['craig_player_links', true], ['users', true],
-      ...(source === 'bo' ? [['bo_auth_epochs', true]] : []), ['player_sessions', true],
+      ['player_sessions', true],
     ]);
   }
 });
 
-test('local accounts require the explicit server option, while credential/BO do not inherit that switch', async () => {
+test('local accounts require the explicit server option, while credential sessions do not inherit that switch', async () => {
   const h = fixture();
   for (const playerAccounts of [undefined, false]) {
     const options = { ...h.options, playerAccounts };
@@ -101,7 +99,7 @@ test('local accounts require the explicit server option, while credential/BO do 
     assert.equal(await createSharedCommandAuth(options).bindingById(sessionId, { actorId }), null);
   }
   assert.ok(h.queries.every(q => q.table === 'player_sessions' && !q.locked));
-  for (const source of ['credential', 'bo']) assert.ok(await fixture({ source, playerAccounts: false }).bind());
+  for (const source of ['credential']) assert.ok(await fixture({ source, playerAccounts: false }).bind());
 });
 
 test('stampless partner, null, old bare fingerprints and malformed provenance cannot become a command binding', async () => {
@@ -169,29 +167,14 @@ test('deleted/reassigned links and deleted/rotated BO credentials cannot reuse a
   }
 });
 
-test('BO logout or epoch changes observed at the lock reject the session, and corrupt epochs remain errors', async () => {
-  for (const epoch of [8, 6]) {
-    const h = fixture({ source: 'bo', onRead(query, state) {
-      if (query.table === 'bo_auth_epochs') state.epoch.epoch = epoch;
-    } });
+test('retired BO handoff sessions never bind, including an otherwise valid current stamp', async () => {
+  const h = fixture({ source: 'credential' });
+  for (const epoch of [0, 7, 999]) {
+    h.state.session.source_stamp = `bo:${epoch}:${stamp(h.state.user)}`;
+    h.queries.length = 0;
     assert.equal(await h.bind(), null);
+    assert.deepEqual(h.queries.map(q => q.table), ['player_sessions']);
   }
-  for (const epoch of [-1, 'bad', Number.MAX_SAFE_INTEGER + 1]) {
-    const h = fixture({ source: 'bo' });
-    h.state.epoch.epoch = epoch;
-    await assert.rejects(h.bind(), /Invalid authentication epoch/);
-  }
-});
-
-test('an absent BO epoch retains existing zero semantics only inside the serialized bridge', async () => {
-  const h = fixture({ source: 'bo', epoch: null });
-  assert.ok(await h.bind());
-  h.state.serialized = false;
-  await assert.rejects(h.bind(), error => error === h.failure);
-  const revoked = fixture({ source: 'bo', epoch: null, onRead(query, state) {
-    if (query.table === 'bo_auth_epochs') state.epoch = { epoch: 1 };
-  } });
-  assert.equal(await revoked.bind(), null);
 });
 
 test('the final locked session must equal every field of its first read, including display name and expiry', async () => {
@@ -236,10 +219,10 @@ test('abort before SQL and during an awaited read preserves the reason and stops
   assert.equal(h.queries.at(-1).table, 'player_accounts');
 });
 
-test('SQL failures are preserved on every BO read without fallback queries or binding', async () => {
-  for (let failingRead = 1; failingRead <= 6; failingRead++) {
+test('SQL failures are preserved on every credential read without fallback queries or binding', async () => {
+  for (let failingRead = 1; failingRead <= 5; failingRead++) {
     const failure = new Error(`SQL read ${failingRead} failed`);
-    const h = fixture({ source: 'bo', onRead(query, state, count) {
+    const h = fixture({ source: 'credential', onRead(query, state, count) {
       if (count === failingRead) throw failure;
     } });
     await assert.rejects(h.bind(), error => error === failure);
