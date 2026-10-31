@@ -8,7 +8,7 @@ import { BlackjackCoreError, newGame, publicView, step } from '../core.mjs';
 import { verifyShoe } from '../shoe-proof.mjs';
 import { LockSetExceeded, TableError, WalletDenied, fingerprint, ledgerKey, tickIdOf } from './ports.mjs';
 import { presentationEvents } from '../../../partner-presentation.mjs';
-import { assertNativeRoomSequenceBudget, isNativeRoomMaterial } from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
+import { assertNativeRoomSequenceBudget, isNativeRoomMaterial, nativeRoomSequenceDurationMs } from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
 
 export const TABLE_CONTRACT = 'blackjack-table/1';
 export const PRESENTATION_CONTRACT = 'blackjack-presentation/1';
@@ -129,6 +129,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     const steps = presentation.kind === 'window' ? presentationEvents(null, null, 'collect')
       : presentationEvents(presentation.before, presentation.after, presentation.op, { action: presentation.action });
     assertNativeRoomSequenceBudget({ material: cfg.material, steps, draws, presentationContract: presentation.contract, kind: presentation.kind });
+    return steps;
   }
 
   // Presentation plan (:201-217) without media: a server rule from the frozen config gives the
@@ -136,8 +137,9 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   // a stored version. Delivery happens only after COMMIT (deliverOutbox).
   async function present(tx, r, cfg, { out, engineSeq, draws, before }, action = null) {
     const presentation = publicPresentation('plan', r, { op: out.events.at(-1).type.slice('engine.'.length), action, before });
-    assertNativePresentation(cfg, presentation, draws);
-    const startAt = now(), endAt = startAt + cfg.leadMs + draws * cfg.cardMs;
+    const steps = assertNativePresentation(cfg, presentation, draws);
+    const durationMs = steps ? nativeRoomSequenceDurationMs(cfg.material, steps) : null;
+    const startAt = now(), endAt = startAt + (durationMs ?? cfg.leadMs + draws * cfg.cardMs);
     const plan = { id: random.uuid(), startAt, endAt, turnAt: endAt };
     r.plan = plan;
     r.actionDeadline = ['decisions', 'insurance'].includes(r.roundPhase) ? endAt + cfg.actionMs : null;

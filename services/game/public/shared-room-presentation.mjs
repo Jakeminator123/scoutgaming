@@ -167,11 +167,14 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
       // K04 R2b (review of #481): a newer committed plan waits behind this one, a player's hit for instance. Once this
       // plan's time is over on the table clock all of its cards are due (R2a: turnAt = endAt bounds every step), so a
       // take that still plays is left and the rest of the plan shows its committed cards now. The newer plan's cards
-      // still wait for its own steps. A window or collect presentation (speech, no card) plays to its end.
+      // still wait for its own steps. A newer server presentation retires a window or collect immediately:
+      // its speech has no remaining cards and must not hold the next decision behind an old invitation.
       let skipRest=false,leaveCurrent=null,supersedeTimer;const hold={};
       const fastForward=()=>{if(closed||signal?.aborted||skipRest)return;skipRest=true;atTurn();leaveCurrent?.();hold.wake?.();};
       const onSuperseded=()=>{
-        if(presentation.kind!=='plan'||skipRest)return;
+        if(skipRest)return;
+        if(['window','collect'].includes(presentation.kind)){fastForward();return;}
+        if(presentation.kind!=='plan')return;
         const wait=presentation.endAt-tableNow();clearTimeout(supersedeTimer);
         if(wait<=0)fastForward();else supersedeTimer=setTimeout(fastForward,Math.min(MAX_TIMER_MS,wait));
       };

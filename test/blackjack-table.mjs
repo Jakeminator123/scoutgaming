@@ -12,6 +12,9 @@ import { deterministicRandom } from './fixtures/blackjack-deterministic-random.m
 import { nativeRoomMaterialFixture, withNativeFilmTransitions } from './fixtures/native-room-game-material.mjs';
 import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
 import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
+import { nativeRoomFilmedPlanning } from '../packages/presentation/contracts/native-room-filmed-planning.mjs';
+import { planFilmedTimeline, filmedStepPhase } from '../packages/presentation/runtime/filmed-deal-timeline.mjs';
+import { reconnectPresentation } from '../packages/presentation/contracts/shared-room-replay.mjs';
 
 function setup({ hooks, funds = { kevin: 1000, john: 1000, ana: 1000 } } = {}) {
   const store = createMemoryTableStore({ hooks });
@@ -97,6 +100,90 @@ test('native material drives real start, double, insurance and next-window prese
       [{type:'speak',line:'placebets'},{type:'idle'}]);
     assert.equal(t.store.test.balance('kevin'), 1000 + t.store.test.ledger().reduce((sum,row) => sum + row.amountCents / 100, 0));
     assert.equal((await t.store.audit.verifyChain()).ok, true);
+  }
+});
+
+test('native Hit and Split commit the full selected film chain without unused speech/reveal reserves', async () => {
+  for (const action of ['hit', 'split']) for (const shoeTransitions of [false, true]) {
+    // A copied dealer carries its own hashes and longer source frames, as a
+    // published factory profile does; the timing must not use the seed's frames.
+    const fixture = nativeRoomMaterialFixture({ dealerId: 'timing-copy', copyOf: 'paow', copyFrames: { '1:iv': 81, '1:base': 60 } });
+    if (shoeTransitions) withNativeFilmTransitions(fixture);
+    const material = resolveNativeRoomGameMaterial(fixture.input, { version: 2 });
+    const cfg = { material, language: material.language, leadMs: material.leadMs, cardMs: material.cardMs };
+    const t = setup(); t.store.test.publish('native-timed', cfg);
+    await t.join('kevin', [0]); await t.bet('kevin', 0, 25);
+    t.setShoe('party', action === 'hit' ? ['5', '6', '6', '10', '2', '2'] : ['8', '6', '8', '10', '2', '3', '2']);
+    await t.ready('kevin');
+    const opening = await t.snap();
+    assert.equal(opening.plan.endAt - opening.plan.startAt, cfg.leadMs + 4 * cfg.cardMs, 'opening still reserves speech');
+    await t.act('kevin', action);
+    const snapshot = await t.snap(), row = t.store.test.outbox().at(-1), presentation = presentationForRow(row);
+    const draws = action === 'hit' ? 1 : 2;
+    assert.equal(presentation.events.filter(event => event.type === 'deal').length, draws);
+    assert.equal(presentation.events.some(event => event.type === 'speak'), false);
+    const planning = nativeRoomFilmedPlanning(material);
+    const timeline = planFilmedTimeline({ ...planning, events: presentation.events, startAt: presentation.startAt, endAt: presentation.endAt });
+    assert.equal(timeline.complete, true, timeline.reason);
+    assert.equal(timeline.fit, null, 'no take is sped up to fit');
+    const fullChainMs = 700 + timeline.steps.reduce((total, step) => {
+      const take = planning.profile.takes.find(take => take.key === step.takeKey);
+      assert.ok(material.media.some(media => media.id === step.videoId && media.sha256 === take.sha256));
+      assert.equal(step.durationMs, take.frames * 1000 / planning.profile.plane.fps);
+      assert.ok(step.landMs < step.endMs - step.startMs);
+      return total + step.durationMs + (step.beforeMs ?? 0) + (step.afterMs ?? 0) + step.gapAfterMs;
+    }, 0);
+    assert.equal(snapshot.plan.endAt - snapshot.plan.startAt, Math.ceil(fullChainMs));
+    assert.ok(Math.ceil(fullChainMs) < cfg.leadMs + draws * cfg.cardMs);
+    assert.equal(snapshot.plan.turnAt, presentation.endAt);
+    assert.equal(snapshot.actionDeadline, presentation.endAt + 15000);
+    const last = timeline.steps.at(-1);
+    t.time = snapshot.plan.startAt + last.startMs + last.landMs;
+    t.restart();
+    const restored = await t.snap();
+    assert.deepEqual(restored.plan, snapshot.plan);
+    assert.equal(restored.actionDeadline, snapshot.actionDeadline);
+    assert.equal(reconnectPresentation(restored, presentation).apply, true);
+    assert.equal(filmedStepPhase(last, t.time - presentation.startAt).expired, false, 'reconnect remains inside the original take');
+    const command = { action: 'stand', roundId: restored.roundId, turnSeq: restored.turnSeq,
+      box: restored.round.hands[restored.round.active].box, handIndex: restored.round.active };
+    t.time = snapshot.plan.endAt - 1;
+    await rejects(t.send('kevin', 'act', command), 'NOT_YOUR_TURN');
+    t.time = snapshot.plan.endAt;
+    await t.send('kevin', 'act', command);
+    assert.equal((await t.store.audit.verifyChain()).ok, true);
+  }
+});
+
+test('native turn-only Stand opens the next own or other hand immediately with its full decision window', async () => {
+  const material = resolveNativeRoomGameMaterial(nativeRoomMaterialFixture().input, { version: 2 });
+  for (const nextOwner of ['kevin', 'john']) {
+    const t = setup();
+    t.store.test.publish('native-turn', { material, language: material.language, leadMs: material.leadMs, cardMs: material.cardMs });
+    await t.join('kevin', nextOwner === 'kevin' ? [0, 1] : [0]);
+    if (nextOwner !== 'kevin') await t.join(nextOwner, [1]);
+    await t.bet('kevin', 0, 25); await t.bet(nextOwner, 1, 25);
+    t.setShoe('party', ['8', '7', '6', '8', '7', '10', '2']);
+    await t.ready('kevin');
+    if (nextOwner !== 'kevin') await t.ready(nextOwner);
+    const opening = await t.snap(), firstBox = opening.round.hands[opening.round.active].box;
+    const firstOwner = opening.owners[firstBox], nextBox = 1 - firstBox, actor = opening.owners[nextBox];
+    await t.act(firstOwner, 'stand');
+    const snapshot = await t.snap(actor), presentation = presentationForRow(t.store.test.outbox().at(-1));
+    assert.deepEqual(presentation.events.map(event => event.type), ['turn']);
+    assert.equal(snapshot.round.hands[snapshot.round.active].box, nextBox);
+    assert.equal(actor === firstOwner, nextOwner === 'kevin');
+    assert.equal(snapshot.plan.startAt, t.time);
+    assert.equal(snapshot.plan.endAt, t.time);
+    assert.equal(snapshot.plan.turnAt, t.time);
+    assert.equal(snapshot.actionDeadline, t.time + 15000);
+    t.restart();
+    const restored = await t.snap(actor);
+    assert.deepEqual(restored.plan, snapshot.plan);
+    assert.equal(reconnectPresentation(restored, presentation).apply, true);
+    await t.send(actor, 'act', { action: 'hit', roundId: restored.roundId, turnSeq: restored.turnSeq,
+      box: nextBox, handIndex: restored.round.active });
+    assert.equal((await t.snap(actor)).round.hands[restored.round.active].cards.length, 3);
   }
 });
 
