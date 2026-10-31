@@ -66,7 +66,6 @@ const denied = () => { throw Object.assign(new Error('studio_request_rejected'),
 const schemaRoot = () => resolve(studioRoots().repositoryRoot, 'ops');
 // Admin always runs natively on Vercel, on the one public origin, under the fixed
 // basePath /studio. No variable selects this (docs/ENVIRONMENT-VARIABLES.md, fixed values).
-export const nativeStudioAdminEnabled = () => true;
 
 export function nativeStudioAdminConfiguration(env = process.env) {
   if (!studioGamePolicyConfiguration(env)) unavailable();

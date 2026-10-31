@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation';
-import { assertLocalPageRequest } from './http-guard.mjs';
-import { studioInitialData } from './studio-server.mjs';
-import { nativeStudioAdminEnabled, nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from './studio-native-runtime.mjs';
+import { nativeStudioAdminConfiguration, assertNativeStudioRequest, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { nextStudioLoginRedirect } from './next-page-navigation.mjs';
 
@@ -31,19 +29,14 @@ async function nativeUi(request: Request) {
 }
 
 export async function authorizeUiPage(request: Request) {
-  if (nativeStudioAdminEnabled()) { await nativeUi(request); return; }
-  assertLocalPageRequest(request);
+  await nativeUi(request);
 }
 
 export async function studioUiInitialData(request: Request) {
-  if (nativeStudioAdminEnabled()) {
-    const native = await nativeUi(request);
-    if (typeof native.videoRegistry !== 'function' || typeof native.gamePolicy?.readSaved !== 'function') throw Object.assign(new Error('studio_media_registry_unavailable'), {statusCode: 503});
-    const [saved, videos] = await Promise.all([
-      native.gamePolicy.readSaved(), native.videoRegistry(),
-    ]);
-    return {project: saved.project, videos, status: {configured: true, provider: 'neon', message: 'Sparad Studio-policy läses från Neon.'}};
-  }
-  assertLocalPageRequest(request);
-  return studioInitialData();
+  const native = await nativeUi(request);
+  if (typeof native.videoRegistry !== 'function' || typeof native.gamePolicy?.readSaved !== 'function') throw Object.assign(new Error('studio_media_registry_unavailable'), {statusCode: 503});
+  const [saved, videos] = await Promise.all([
+    native.gamePolicy.readSaved(), native.videoRegistry(),
+  ]);
+  return {project: saved.project, videos, status: {configured: true, provider: 'neon', message: 'Sparad Studio-policy läses från Neon.'}};
 }

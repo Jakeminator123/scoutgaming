@@ -284,7 +284,7 @@ test('actual browser expired Admin login restores the real room view through his
         const expiredToken = expired.headers.get('set-cookie').match(/^bo_jwt=([^;]+)/)[1];
         clock.now += 8 * 86400_000;
         await context.addCookies([{name:'bo_jwt',value:expiredToken,domain:'admin.fixture.invalid',path:'/',secure:true,httpOnly:true,sameSite:'Lax'}]);
-        const runtime = {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest,
+        const runtime = {nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest,
           studioNativeRuntime:async()=>({authorize,readDesignCatalog:()=>catalog.registeredDesignCatalog({store,policy})})};
         const guard = load('../lib/ui-server.ts', {
           './studio-native-runtime.mjs':runtime,'./next-page-navigation.mjs':nextPage,

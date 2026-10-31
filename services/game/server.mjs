@@ -41,9 +41,7 @@ import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createNativeObservationPublisher } from './native-observation-publisher.mjs';
 import { installGenerationsApi } from './generations-api.mjs';
-import { serveGenerationMedia } from './generation-media.mjs';
 import { publicRoutePaths, isRetiredGenerationRoute, isRetiredLocalDealerRoute } from './retired-public-routes.mjs';
-import { clipMapping } from './clip-mapping.mjs';
 import { installGracefulShutdown } from './graceful-shutdown.mjs';
 const persistenceFailure = error => Boolean(error?.severity)
   || /^[0-9A-Z]{5}$/.test(error?.code || '')
@@ -53,9 +51,9 @@ const publicFailure = (error, statusCode = 400) => persistenceFailure(error)
   ? { error: 'Service temporarily unavailable', statusCode: 503 }
   : { error: String(error?.message || error), statusCode };
 import { readFileSync as readSync } from 'node:fs';
-import { statSync, createReadStream, existsSync, realpathSync, closeSync } from 'node:fs';
+import { statSync, createReadStream, existsSync, realpathSync } from 'node:fs';
 import { join, normalize, extname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
@@ -71,18 +69,6 @@ const mediaRepository = resolve(root, '../../..');
 // Neon is the one Studio registry and private Blob the one media store on every
 // deployment; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
 // The local media layout is therefore never served.
-const neonStudioEnabled = true;
-const localMediaEnabled = false;
-const mediaLayout = localMediaEnabled && existsSync(join(mediaRepository, 'media/layout.json'))
-  ? await import(pathToFileURL(join(mediaRepository, 'tools/media-layout.mjs')).href) : null;
-const publicAssetPath = (...parts) => {
-  const name = parts.join('/').replace(/\\/g, '/').replace(/^\/+/, '');
-  return mediaLayout ? mediaLayout.resolveMediaPath(`web/public/${name}`, {
-    repositoryRoot: mediaRepository, sourcePath: `services/game/public/${name}`,
-  }) : join(root, ...parts);
-};
-const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
-  ? (await import(pathToFileURL(join(mediaRepository, 'services/game/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
 // One product path: PostgreSQL only; no variable selects a backend.
 // The retired SQLite directory must not linger in an environment.
@@ -101,12 +87,12 @@ const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs
 const { gameEntryRedirect, playerLoginDestination, publicGamePath } = await import('../../packages/navigation/game-entry.mjs');
 const { launchGameStart } = await import('./game-start.mjs');
 const { gameLaneSelection } = await import('../../packages/presentation/contracts/game-selection.mjs');
-const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
-const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
-const { createStudioNativeAuth } = neonStudioEnabled ? await import('../../packages/studio-access/studio-native-auth.mjs') : {};
-const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
-const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
-const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? (neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null);
+const { createRenderStudioPolicy } = await import('./storage/studio-runtime.mjs');
+const { createStudioGameCommandApi } = await import('./studio-game-commands.mjs');
+const { createStudioNativeAuth } = await import('../../packages/studio-access/studio-native-auth.mjs');
+const { createStudioLabSessionCheck } = await import('./studio-lab-session.mjs');
+const { createStudioMediaRuntime } = await import('./storage/studio-media-runtime.mjs');
+const studioPolicyRuntime = sharedRoomQa?.studioPolicyRuntime ?? await createRenderStudioPolicy({ storage });
 const studioMediaRuntime = sharedRoomQa?.studioMediaRuntime ?? (studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null);
 const speechReplyLibrary = studioPolicyRuntime
   ? (await import('../../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
@@ -282,9 +268,9 @@ API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
 let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
-  mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
+  mapping: () => null });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(), root,
-  nativeMode:!localMediaEnabled, operatorById: partnerOperatorById,
+  nativeMode:true, operatorById: partnerOperatorById,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
 // ---------- native Studio identity and retained BO handoff/session ----------
@@ -692,7 +678,7 @@ const server = createServer(async (req, res) => {
       originOk: playerPostOriginOk(req, {gameOrigin, frontendOrigin}),
     })) return;
   }
-  if (neonStudioEnabled && ['/blackjack','/blackjack/'].includes(pathname) && !authenticated && ['GET','HEAD'].includes(req.method)) {
+  if (['/blackjack','/blackjack/'].includes(pathname) && !authenticated && ['GET','HEAD'].includes(req.method)) {
     res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
     res.end(); return;
   }
@@ -1073,38 +1059,12 @@ const server = createServer(async (req, res) => {
     res.writeHead(410, {'Content-Type':'application/json','Cache-Control':'no-store'});
     res.end(JSON.stringify({error:'local_dealer_retired'})); return;
   }
-  if(!localMediaEnabled&&(/^\/(?:dealers|media|sfx|kevin-cards|assets|review)\//i.test(generationPath)
+  if((/^\/(?:dealers|media|sfx|kevin-cards|assets|review)\//i.test(generationPath)
     ||/^\/(?:scene\.jpg|dealer-fallback\.png|speech-media\.json)$/i.test(generationPath)
     ||/\.(?:mp4|webm|h264|mp3|wav|ogg|m4a)$/i.test(generationPath))){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
-  if (mediaLayout) {
-    if (publicBlobMedia) {
-      const response = await publicBlobMedia(url.pathname,
-        new Request(gameOrigin + url.pathname, { method: req.method, headers: req.headers }),
-        { repositoryRoot: mediaRepository, trustedProxyOrigin: frontendOrigin });
-      if (response) {
-        res.writeHead(response.status, Object.fromEntries(response.headers));
-        if (!response.body) { res.end(); return; }
-        const source = Readable.fromWeb(response.body);
-        res.once('close', () => source.destroy());
-        source.once('error', () => res.destroy());
-        source.pipe(res); return;
-      }
-    }
-    let media;
-    try { media = mediaLayout.openPublicMedia(url.pathname, { repositoryRoot: mediaRepository }); }
-    catch { res.writeHead(503, { 'Cache-Control': 'no-store' }); res.end('media unavailable'); return; }
-    if (media) {
-      const etag = `"${media.sha256}"`;
-      if (!req.headers.range && ['GET', 'HEAD'].includes(req.method) && req.headers['if-none-match'] === etag) {
-        closeSync(media.fd); res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' }); res.end(); return;
-      }
-      serveGenerationMedia(req, res, media, { ETag: etag, 'Cache-Control': 'no-cache' }); return;
-    }
-  }
   if (['/game', '/game/'].includes(decoded)) path = '/index.html';
-  if (decoded === '/blackjack' || decoded === '/blackjack/') path = neonStudioEnabled ? '/index.html' : '/blackjack-entry.html';
+  if (decoded === '/blackjack' || decoded === '/blackjack/') path = '/index.html';
   if (decoded === '/player-login' || decoded === '/player-login/') {
-    if (!neonStudioEnabled) { res.writeHead(404); res.end('not found'); return; }
     path = '/blackjack-entry.html';
   }
   if (path === '/' || path === '\\') path = '/index.html';
@@ -1115,7 +1075,7 @@ const server = createServer(async (req, res) => {
   }
   const size = statSync(file).size;
   const type = MIME[extname(file)] ?? 'application/octet-stream';
-  if (neonStudioEnabled && type === 'text/html') {
+  if (type === 'text/html') {
     let selection;
     if (['/blackjack','/blackjack/'].includes(pathname)) {
       let entry;
@@ -1135,11 +1095,6 @@ const server = createServer(async (req, res) => {
     }
     const html=withSharedRoomEntry(decorateGameEntryHtml(readSync(file,'utf8'),selection),{enabled:sharedRoomsEnabled,selection});
     res.writeHead(200,{'Content-Type':type,'Content-Length':Buffer.byteLength(html),...noStore(file)});
-    res.end(req.method === 'HEAD' ? undefined : html); return;
-  }
-  if (!neonStudioEnabled && path === '/index.html') {
-    const html = '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Välj en presentation</title><main><h1>Ingen presentation vald</h1><p>Starta ett publicerat bord eller öppna ett provspel från Sammansättning.</p><a href="/control/preview">Öppna Sammansättning</a></main></html>';
-    res.writeHead(503, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(html), ...noStore(file) });
     res.end(req.method === 'HEAD' ? undefined : html); return;
   }
   const range = req.headers.range?.match(/bytes=(\d*)-(\d*)/);
