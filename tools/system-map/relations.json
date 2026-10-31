@@ -1,0 +1,936 @@
+{
+  "version": 1,
+  "origin": "Handgranskade samband från ARKITEKTEN; varje kodankare återkontrolleras vid generering. Textens innebörd kräver mänsklig granskning.",
+  "graphs": [
+    {
+      "id": "runtime",
+      "category": "runtime",
+      "title": "Anrop och data",
+      "note": "Pilen går från anroparen till mottagaren. SQL och media visar åtkomst, inte replikerade databaser. Talvägarna är villkorade; ingen driftmätning ingår.",
+      "nodes": [
+        {
+          "id": "studio",
+          "label": "Admin / lobby",
+          "place": "Vercel · apps/studio",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "web",
+          "label": "Spelstart",
+          "place": "Vercel · apps/web",
+          "col": 1,
+          "row": 0
+        },
+        {
+          "id": "ingress",
+          "label": "Realtidsingress",
+          "place": "Vercel · apps/speech",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "engine",
+          "label": "Spelmotor",
+          "place": "Render · services/game",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "neon",
+          "label": "Neon",
+          "place": "PostgreSQL · register och spel",
+          "col": 0,
+          "row": 2
+        },
+        {
+          "id": "director",
+          "label": "Director",
+          "place": "Render · services/openclaw/lab",
+          "col": 2,
+          "row": 2
+        },
+        {
+          "id": "blob",
+          "label": "Blob",
+          "place": "Privata mediebytes",
+          "col": 0,
+          "row": 3
+        },
+        {
+          "id": "gateway",
+          "label": "OpenClaw Gateway",
+          "place": "Render · separat tjänst",
+          "col": 2,
+          "row": 3
+        }
+      ],
+      "edges": [
+        {
+          "id": "web-engine",
+          "source": "web",
+          "target": "engine",
+          "kind": "HTTP",
+          "label": "Speldokument och session",
+          "explanation": "Webbskalet hämtar blackjackdokumentet och kontrollerar spelarsessionen hos backend.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/web/lib/server-ui.mjs",
+              "match": "upstream = await fetchImpl(`${config.backendOrigin}/blackjack${query ? `?${query}` : ''}`,{method:request.method,headers:upstreamHeaders,"
+            },
+            {
+              "path": "apps/web/lib/server-ui.mjs",
+              "match": "const response = await fetchImpl(config.backendOrigin+endpoint,{headers:upstreamHeaders,"
+            }
+          ]
+        },
+        {
+          "id": "ingress-engine",
+          "source": "ingress",
+          "target": "engine",
+          "kind": "WebSocket",
+          "label": "Förmedlar anslutningen",
+          "explanation": "Ingressen använder server-transport för att ansluta till konfigurerad backend. Sessioner och providerjobb ägs av Render.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/speech/service.mjs",
+              "match": "[path, createPlatformNativeWebSocketServer(path, options)]));"
+            },
+            {
+              "path": "packages/server-transport/socket-core.mjs",
+              "match": "return {url: configuration.backendOrigin.replace('https:', 'wss:') + path + url.search, headers, protocols,"
+            }
+          ]
+        },
+        {
+          "id": "studio-neon",
+          "source": "studio",
+          "target": "neon",
+          "kind": "SQL",
+          "label": "Register och bolag",
+          "explanation": "Studio skapar poolen och injicerar den i registerlagringen. Anropen körs med serverns scope.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "return new Pool({ connectionString, max: 4, connectionTimeoutMillis: 10_000, idleTimeoutMillis: 15_000 });"
+            },
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "const repository = wrapNativePresentationRepository(repositoryFactory({ pool, scope: config.scope }), { env, fetchImpl });"
+            },
+            {
+              "path": "packages/studio-registry/server/repository.mjs",
+              "match": "try { return await current.client.query(sql, [...parameters, ...values]); }"
+            }
+          ]
+        },
+        {
+          "id": "engine-neon",
+          "source": "engine",
+          "target": "neon",
+          "kind": "SQL",
+          "label": "Spel, konton och saldo",
+          "explanation": "Spelappen äger PostgreSQL-poolen och ger den till den delade transaktionskoden.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/storage/postgres-store.mjs",
+              "match": "pool = new Pool({ connectionString:secureUrl.href,max:8,connectionTimeoutMillis:10000,idleTimeoutMillis:30000 });"
+            },
+            {
+              "path": "services/game/storage/postgres-store.mjs",
+              "match": "return createPostgresCore({ pool,"
+            }
+          ]
+        },
+        {
+          "id": "studio-blob",
+          "source": "studio",
+          "target": "blob",
+          "kind": "Media",
+          "label": "Läser och skriver mediebytes",
+          "explanation": "Studio binder sin Blob-provider till den gemensamma medieläsaren. Registeridentitet och bytes är separata.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/cloud-media-store.mjs",
+              "match": "const mediaStore=createBlobMediaStore({clientFactory:()=>import('@vercel/blob'),defaultCacheDir:join(tmpdir(),'croupier-private-media')});"
+            },
+            {
+              "path": "packages/studio-registry/server/blob-reader.mjs",
+              "match": "try { result = await client.get(record.pathname, { access: 'private', token, useCache: false, abortSignal: signal }); }"
+            },
+            {
+              "path": "packages/studio-registry/server/blob-reader.mjs",
+              "match": "const result = await client.put(pathname, body, { access: 'private', token, addRandomSuffix: false, allowOverwrite: false,"
+            }
+          ]
+        },
+        {
+          "id": "engine-blob",
+          "source": "engine",
+          "target": "blob",
+          "kind": "Media",
+          "label": "Läser mediebytes",
+          "explanation": "Spelmotorn använder samma Blob-läsare genom en egen adapter.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/blob-media.mjs",
+              "match": "const mediaStore=createBlobMediaStore({clientFactory:()=>import('@vercel/blob'),defaultCacheDir:join(tmpdir(),'croupier-private-media')});"
+            },
+            {
+              "path": "packages/studio-registry/server/blob-reader.mjs",
+              "match": "try { result = await client.get(record.pathname, { access: 'private', token, useCache: false, abortSignal: signal }); }"
+            }
+          ]
+        },
+        {
+          "id": "engine-director",
+          "source": "engine",
+          "target": "director",
+          "kind": "HTTP",
+          "label": "Talbeslut via Director",
+          "explanation": "När talrelä är konfigurerat skickas en validerad projektion av spelets publika tillstånd till Director.",
+          "conditional": true,
+          "evidence": [
+            {
+              "path": "services/game/openclaw-chat.mjs",
+              "match": "? await relayProductSpeech(envelope, settings, fetchImpl)"
+            },
+            {
+              "path": "packages/director/product-speech.mjs",
+              "match": "const response = await fetchImpl(speechRelayEndpoint(settings.speechUrl), {"
+            }
+          ]
+        },
+        {
+          "id": "director-gateway",
+          "source": "director",
+          "target": "gateway",
+          "kind": "HTTP",
+          "label": "Modellanrop",
+          "explanation": "Director-tjänsten använder director-bibliotekets validering och Gateway-transport. Gateway avgör inte spelets kort eller saldo.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/openclaw/lab/src/server.mjs",
+              "match": "import { createProductSpeechService, PRODUCT_SPEECH_AGENT, PRODUCT_SPEECH_PATH } from '../../../../packages/director/product-speech.mjs';"
+            },
+            {
+              "path": "packages/director/product-speech.mjs",
+              "match": "try { return await decideProductSpeech(envelope, settingsProvider(), fetchImpl, completeImpl, { signal, now, onRouting }); }"
+            },
+            {
+              "path": "packages/director/openclaw.mjs",
+              "match": "const response = await fetchImpl(endpoint, {"
+            }
+          ]
+        },
+        {
+          "id": "engine-gateway",
+          "source": "engine",
+          "target": "gateway",
+          "kind": "HTTP",
+          "label": "Alternativ direktväg",
+          "explanation": "Utan speechUrl/speechToken väljer adaptern decideProductSpeech i processen i stället för HTTP-relä till Director. Den vägen är inte en bekräftelse på aktuell konfiguration.",
+          "conditional": true,
+          "evidence": [
+            {
+              "path": "services/game/openclaw-chat.mjs",
+              "match": ": await decideProductSpeech(envelope, settings, fetchImpl, completeImpl ?? undefined);"
+            },
+            {
+              "path": "packages/director/openclaw.mjs",
+              "match": "const response = await fetchImpl(endpoint, {"
+            }
+          ]
+        }
+      ],
+      "defaultEdge": "web-engine"
+    },
+    {
+      "id": "team",
+      "category": "code",
+      "title": "Team och behörighet",
+      "note": "UI → HTTP → behörighet → bolagsuppslagning → SQL. Scope tillförs på servern; valt bolag är en uppslagsnyckel.",
+      "nodes": [
+        {
+          "id": "companies",
+          "label": "Bolagssida",
+          "place": "CompaniesPage · apps/studio",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "team",
+          "label": "Team",
+          "place": "CompanyTeam · apps/studio",
+          "col": 1,
+          "row": 0
+        },
+        {
+          "id": "api",
+          "label": "Workspace-API",
+          "place": "route.ts + admin-workspace-data",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "auth",
+          "label": "Behörighet",
+          "place": "Session, adminroll och request",
+          "col": 2,
+          "row": 1
+        },
+        {
+          "id": "directory",
+          "label": "Bolagsuppslagning",
+          "place": "operator-admin-api.mjs",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "operators",
+          "label": "Bolagslagring",
+          "place": "packages/operators",
+          "col": 0,
+          "row": 1
+        },
+        {
+          "id": "neon",
+          "label": "Neon",
+          "place": "Scope: miljö + arbetsyta",
+          "col": 0,
+          "row": 2
+        }
+      ],
+      "edges": [
+        {
+          "id": "companies-team",
+          "source": "companies",
+          "target": "team",
+          "kind": "Komponent",
+          "label": "Renderar teamvyn",
+          "explanation": "Bolagets id från sidan skickas till CompanyTeam.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/client/admin/components/studio/companies-page.tsx",
+              "match": "<CompanyTeam operatorId={id} active={active&&teamTab} disabled={disabled} onIdentity={(requestedId,value)=>setTeamIdentity({requestedId,operator:value})}/>"
+            }
+          ]
+        },
+        {
+          "id": "team-api",
+          "source": "team",
+          "target": "api",
+          "kind": "HTTP",
+          "label": "Hämtar valt team",
+          "explanation": "Komponenten läser company-team med operator-id och samma ursprungs autentiseringscookie.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/components/company-team.tsx",
+              "match": "const response=await fetch(labUrl('/api/admin/workspace/company-team?'+new URLSearchParams({operator:operatorId})),{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal});"
+            },
+            {
+              "path": "apps/studio/app/api/admin/workspace/[section]/route.ts",
+              "match": "return await serveAdminWorkspaceData(normalized, {"
+            }
+          ]
+        },
+        {
+          "id": "api-auth",
+          "source": "api",
+          "target": "auth",
+          "kind": "Anrop",
+          "label": "Kontrollerar åtkomst först",
+          "explanation": "Routen normaliserar och kontrollerar requesten. Läsaren väntar på authorize innan den läser bolaget; injicerad funktion kontrollerar session och adminroll.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/app/api/admin/workspace/[section]/route.ts",
+              "match": "assertNativeStudioRequest(normalized, config);"
+            },
+            {
+              "path": "apps/studio/lib/admin-workspace-data.mjs",
+              "match": "await authorize(request);"
+            },
+            {
+              "path": "apps/studio/app/api/admin/workspace/[section]/route.ts",
+              "match": "if (!['admin', 'superadmin'].includes(session.role)) throw Object.assign(new Error('studio_request_rejected'), {statusCode: 403});"
+            }
+          ]
+        },
+        {
+          "id": "api-directory",
+          "source": "api",
+          "target": "directory",
+          "kind": "Anrop",
+          "label": "Läser ett bolag",
+          "explanation": "Workspace-läsaren anropar den runtimebundna listOperatorDirectory med det begärda bolags-id:t.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/admin-workspace-data.mjs",
+              "match": "const [operator]=await native.listOperatorDirectory(operatorId);"
+            },
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "listOperatorDirectory: operatorAdmin.listOperatorDirectory,"
+            }
+          ]
+        },
+        {
+          "id": "directory-operators",
+          "source": "directory",
+          "target": "operators",
+          "kind": "Anrop",
+          "label": "Slår upp inom scope",
+          "explanation": "API:t slår upp id eller slug via lagringsadaptern. Det enumererar inte andra bolags team.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/operator-admin-api.mjs",
+              "match": "const operator = await operators.getOperatorById(operatorId)"
+            },
+            {
+              "path": "apps/studio/lib/operator-admin-api.mjs",
+              "match": "?? (isOperatorSlug(operatorId) ? await operators.getOperatorBySlug(operatorId) : null);"
+            }
+          ]
+        },
+        {
+          "id": "operators-neon",
+          "source": "operators",
+          "target": "neon",
+          "kind": "SQL",
+          "label": "Binder miljö och arbetsyta",
+          "explanation": "Lagringen lägger till serverns environment och workspaceId i SQL-parametrarna.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "packages/operators/server/operator-store.mjs",
+              "match": "const parameters = [scope.environment, scope.workspaceId];"
+            },
+            {
+              "path": "packages/operators/server/operator-store.mjs",
+              "match": "try { result = await run(text, [...parameters, ...values]); }"
+            }
+          ]
+        }
+      ],
+      "defaultEdge": "companies-team"
+    },
+    {
+      "id": "game",
+      "category": "code",
+      "title": "Spelregler och pengar",
+      "note": "Regelkärna och transaktion är olika ansvar. Plånboken får samma SQL-klient som bordstransaktionen.",
+      "nodes": [
+        {
+          "id": "runtime",
+          "label": "Bordsruntime",
+          "place": "postgres-runtime.mjs",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "coordinator",
+          "label": "Samordnare",
+          "place": "table/coordinator.mjs",
+          "col": 1,
+          "row": 0
+        },
+        {
+          "id": "core",
+          "label": "Regelkärna",
+          "place": "blackjack/core.mjs",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "round",
+          "label": "Handregler",
+          "place": "blackjack/round.mjs",
+          "col": 2,
+          "row": 1
+        },
+        {
+          "id": "store",
+          "label": "Bordstransaktion",
+          "place": "table/postgres-store.mjs",
+          "col": 0,
+          "row": 1
+        },
+        {
+          "id": "wallet",
+          "label": "Plånbok",
+          "place": "table/postgres-wallet.mjs",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "neon",
+          "label": "Neon",
+          "place": "Bord, lås, saldo och journal",
+          "col": 0,
+          "row": 2
+        }
+      ],
+      "edges": [
+        {
+          "id": "runtime-coordinator",
+          "source": "runtime",
+          "target": "coordinator",
+          "kind": "Injektion",
+          "label": "Tillför store, klocka och slump",
+          "explanation": "Runtime skapar lagringsadaptern och skickar den till samordnaren. Här binds porten till PostgreSQL.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/postgres-runtime.mjs",
+              "match": "const store = createStore({ pool, walletMode, lockTimeoutMs, statementTimeoutMs });"
+            },
+            {
+              "path": "services/game/games/blackjack/table/postgres-runtime.mjs",
+              "match": "const coordinator = createCoordinator({ store, clock: checkedClock, random, authorizeCommand });"
+            }
+          ]
+        },
+        {
+          "id": "coordinator-core",
+          "source": "coordinator",
+          "target": "core",
+          "kind": "Anrop",
+          "label": "Beräknar nästa tillstånd",
+          "explanation": "Samordnaren importerar step och anropar regelkärnan med spelstatus, kommando, gränser och injicerad slump.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/coordinator.mjs",
+              "match": "import { BlackjackCoreError, newGame, publicView, step } from '../core.mjs';"
+            },
+            {
+              "path": "services/game/games/blackjack/table/coordinator.mjs",
+              "match": "try { out = step(r.game, command, { limits: cfg.limits }, { random, funding }); }"
+            }
+          ]
+        },
+        {
+          "id": "core-round",
+          "source": "core",
+          "target": "round",
+          "kind": "Anrop",
+          "label": "Skapar handen",
+          "explanation": "Kärnan importerar Round och skapar en hand med den fasta regelimplementationen.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/core.mjs",
+              "match": "import { Round, RANKS, SUITS } from './round.mjs';"
+            },
+            {
+              "path": "services/game/games/blackjack/core.mjs",
+              "match": "g.round = new Round(bets, []); g.paid = false;"
+            }
+          ]
+        },
+        {
+          "id": "coordinator-store",
+          "source": "coordinator",
+          "target": "store",
+          "kind": "Portanrop",
+          "label": "Kör under lås",
+          "explanation": "Samordnaren anropar store.runLocked. Den konkreta PostgreSQL-adaptern har injicerats av bordsruntime.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/coordinator.mjs",
+              "match": "try { return await store.runLocked(plan, tx => work(tx, plan, attempt)); }"
+            },
+            {
+              "path": "services/game/games/blackjack/table/postgres-store.mjs",
+              "match": "async function runLocked(input, work) {"
+            }
+          ]
+        },
+        {
+          "id": "store-wallet",
+          "source": "store",
+          "target": "wallet",
+          "kind": "Injektion",
+          "label": "Delar transaktionens SQL-klient",
+          "explanation": "Plånbokens adapter skapas med samma klient och samma deklarerade spelar- och rumslås.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/postgres-store.mjs",
+              "match": "const wallet = createPostgresTableWallet({ client, assertPlayer, assertRoom });"
+            },
+            {
+              "path": "services/game/games/blackjack/table/postgres-wallet.mjs",
+              "match": "export function createPostgresTableWallet({ client, assertPlayer, assertRoom }) {"
+            }
+          ]
+        },
+        {
+          "id": "store-neon",
+          "source": "store",
+          "target": "neon",
+          "kind": "SQL",
+          "label": "Transaktion och lås",
+          "explanation": "PostgreSQL-adaptern öppnar och committar transaktionen. runLocked tar också spelar- och rumslås.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/postgres-store.mjs",
+              "match": "await client.query('BEGIN');"
+            },
+            {
+              "path": "services/game/games/blackjack/table/postgres-store.mjs",
+              "match": "const result = await client.query('COMMIT');"
+            }
+          ]
+        },
+        {
+          "id": "wallet-neon",
+          "source": "wallet",
+          "target": "neon",
+          "kind": "SQL",
+          "label": "Ändrar saldo och journal",
+          "explanation": "Saldot ändras med en parameteriserad UPDATE och transaktionen journalförs genom samma SQL-klient.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/games/blackjack/table/postgres-wallet.mjs",
+              "match": "await client.query('UPDATE croupier_game.players SET balance=balance+$2::numeric WHERE id=$1', [p, decimal(pennies)]);"
+            },
+            {
+              "path": "services/game/games/blackjack/table/postgres-wallet.mjs",
+              "match": "const result = await first(client, `INSERT INTO croupier_game.transactions(player_id,type,amount,currency,meta,at,source_key,source_fingerprint)"
+            }
+          ]
+        }
+      ],
+      "defaultEdge": "runtime-coordinator"
+    },
+    {
+      "id": "media",
+      "category": "code",
+      "title": "Gemensam medialäsning",
+      "note": "Två appägda adaptrar delar en implementation. Biblioteket körs i respektive process; det är ingen extra tjänst.",
+      "nodes": [
+        {
+          "id": "studio",
+          "label": "Studio-adapter",
+          "place": "apps/studio/lib/cloud-media-store",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "engine",
+          "label": "Speladapter",
+          "place": "services/game/blob-media",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "reader",
+          "label": "Gemensam läsare",
+          "place": "packages/studio-registry",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "blob",
+          "label": "Privat Blob",
+          "place": "Mediebytes via injicerad provider",
+          "col": 1,
+          "row": 2
+        }
+      ],
+      "edges": [
+        {
+          "id": "studio-reader",
+          "source": "studio",
+          "target": "reader",
+          "kind": "Import + anrop",
+          "label": "Skapar Studio-adaptern",
+          "explanation": "Studio importerar createBlobMediaStore och tillför @vercel/blob som provider.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/cloud-media-store.mjs",
+              "match": "import {createBlobMediaStore} from '../../../packages/studio-registry/server/blob-reader.mjs';"
+            },
+            {
+              "path": "apps/studio/lib/cloud-media-store.mjs",
+              "match": "const mediaStore=createBlobMediaStore({clientFactory:()=>import('@vercel/blob'),defaultCacheDir:join(tmpdir(),'croupier-private-media')});"
+            }
+          ]
+        },
+        {
+          "id": "engine-reader",
+          "source": "engine",
+          "target": "reader",
+          "kind": "Import + anrop",
+          "label": "Skapar speladaptern",
+          "explanation": "Spelmotorn binder samma factory till sin appägda Blob-provider.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/blob-media.mjs",
+              "match": "import {createBlobMediaStore} from '../../packages/studio-registry/server/blob-reader.mjs';"
+            },
+            {
+              "path": "services/game/blob-media.mjs",
+              "match": "const mediaStore=createBlobMediaStore({clientFactory:()=>import('@vercel/blob'),defaultCacheDir:join(tmpdir(),'croupier-private-media')});"
+            }
+          ]
+        },
+        {
+          "id": "reader-blob",
+          "source": "reader",
+          "target": "blob",
+          "kind": "Provideranrop",
+          "label": "Hämtar privata objekt",
+          "explanation": "Den gemensamma läsaren hämtar record.pathname med access private och med avbrottssignal. Providern är injicerad av appen.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "packages/studio-registry/server/blob-reader.mjs",
+              "match": "async function clientFor(options) { return options.blobClient ?? await clientFactory(); }"
+            },
+            {
+              "path": "packages/studio-registry/server/blob-reader.mjs",
+              "match": "try { result = await client.get(record.pathname, { access: 'private', token, useCache: false, abortSignal: signal }); }"
+            }
+          ]
+        }
+      ],
+      "defaultEdge": "studio-reader"
+    },
+    {
+      "id": "shared",
+      "category": "code",
+      "title": "Appar och delade bibliotek",
+      "note": "Urval av direkta kodberoenden i apparnas runtime och adaptrar. Importpilar visar kodberoenden, inte nätverk eller verifierad aktivering.",
+      "nodes": [
+        {
+          "id": "studio",
+          "label": "Studio",
+          "place": "apps/studio",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "engine",
+          "label": "Spelmotor",
+          "place": "services/game",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "access",
+          "label": "Behörighet",
+          "place": "packages/studio-access",
+          "col": 0,
+          "row": 1
+        },
+        {
+          "id": "storage",
+          "label": "SQL och transaktion",
+          "place": "packages/storage",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "operators",
+          "label": "Bolagsregler",
+          "place": "packages/operators",
+          "col": 2,
+          "row": 1
+        },
+        {
+          "id": "registry",
+          "label": "Register och media",
+          "place": "packages/studio-registry",
+          "col": 0,
+          "row": 2
+        },
+        {
+          "id": "presentation",
+          "label": "Presentation",
+          "place": "packages/presentation",
+          "col": 1,
+          "row": 2
+        },
+        {
+          "id": "director",
+          "label": "Director-bibliotek",
+          "place": "packages/director",
+          "col": 2,
+          "row": 2
+        }
+      ],
+      "edges": [
+        {
+          "id": "studio-access",
+          "source": "studio",
+          "target": "access",
+          "kind": "Import",
+          "label": "Delad behörighet",
+          "explanation": "Studio importerar den gemensamma behörighetsfactoryn och tillför databas och scope.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "import { createStudioNativeAuth } from '../../../packages/studio-access/studio-native-auth.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "studio-storage",
+          "source": "studio",
+          "target": "storage",
+          "kind": "Import",
+          "label": "Delad SQL-kod",
+          "explanation": "Studio importerar lagringskärnan; appen äger poolen.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "import { createPostgresStore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "engine-storage",
+          "source": "engine",
+          "target": "storage",
+          "kind": "Import",
+          "label": "Samma SQL-kod",
+          "explanation": "Spelmotorns adapter importerar samma lagringskärna.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/storage/postgres-store.mjs",
+              "match": "import { createPostgresStore as createPostgresCore, validateGameConnection } from '../../../packages/storage/server/postgres-store.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "studio-operators",
+          "source": "studio",
+          "target": "operators",
+          "kind": "Import",
+          "label": "Bolagslager",
+          "explanation": "Studio importerar createOperatorStore.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "engine-operators",
+          "source": "engine",
+          "target": "operators",
+          "kind": "Dynamisk import",
+          "label": "Läser publicerade bolag",
+          "explanation": "Spelmotorn skapar bolagslagringen när Studio-policy finns.",
+          "conditional": true,
+          "evidence": [
+            {
+              "path": "services/game/server.mjs",
+              "match": "const publicOperatorStore = studioPolicyRuntime ? await (await import('../../packages/operators/server/operator-store.mjs')).createOperatorStore({"
+            }
+          ]
+        },
+        {
+          "id": "studio-registry",
+          "source": "studio",
+          "target": "registry",
+          "kind": "Import",
+          "label": "Registerrepository",
+          "explanation": "Studio använder document-repository med appens pool och scope.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "engine-registry",
+          "source": "engine",
+          "target": "registry",
+          "kind": "Import",
+          "label": "Gemensam mediaadapter",
+          "explanation": "Spelmotorn importerar Blob-läsaren från registerpaketet.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/blob-media.mjs",
+              "match": "import {createBlobMediaStore} from '../../packages/studio-registry/server/blob-reader.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "studio-presentation",
+          "source": "studio",
+          "target": "presentation",
+          "kind": "Import",
+          "label": "Sparad spelpolicy",
+          "explanation": "Studio importerar presentationspaketets policy för sparade spel.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-native-runtime.mjs",
+              "match": "import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../../packages/presentation/server/saved-game-policy.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "engine-presentation",
+          "source": "engine",
+          "target": "presentation",
+          "kind": "Import",
+          "label": "Talruntime",
+          "explanation": "Spelmotorns taladapter använder presentationspaketets runtimefactory.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "services/game/generated-speech-runtime.mjs",
+              "match": "import { acquireGeneratedSpeechRuntime } from '../../packages/presentation/server/generated-speech-runtime.mjs';"
+            }
+          ]
+        },
+        {
+          "id": "engine-director",
+          "source": "engine",
+          "target": "director",
+          "kind": "Dynamisk import",
+          "label": "Talbeslut och relä",
+          "explanation": "Importen sker vid produktchatt. Director-biblioteket kan användas i spelprocessen eller anropa Director-tjänsten.",
+          "conditional": true,
+          "evidence": [
+            {
+              "path": "services/game/openclaw-chat.mjs",
+              "match": "const { decideProductSpeech, normalizeProductSpeechEnvelope, relayProductSpeech } = await import('../../packages/director/product-speech.mjs');"
+            }
+          ]
+        }
+      ],
+      "defaultEdge": "studio-access"
+    }
+  ]
+}
