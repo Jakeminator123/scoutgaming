@@ -1,5 +1,172 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createF11Observer, validateF11Manifest, runF11EvidenceCli } from '../tools/shared-room-f11-observer.mjs';
+
+const f11Manifest = () => ({ schemaVersion: 1, sha: 'a'.repeat(40), syntheticOnly: true,
+  origin: 'https://preview.scoutgaming.tech', engineOrigin: 'https://croupier-k06-k07-staging.onrender.com',
+  serviceId: 'srv-dbf61l0m7kps73ft7mk0', projectId: 'prj_7dgyvW5zakx1qJ8YaH5pueVTVi14',
+  neonProjectId: 'red-violet-36066351', branchId: 'br-plain-voice-b9yu49xi', database: 'croupier_staging',
+  environment: 'staging_k06_k07', workspaceId: 'croupier', roomId: 'f11-room', runId: 'f11-run',
+  actors: ['f11-alice','f11-bob'], startedAt: 0, endedAt: 120000 });
+function f11Capture() {
+  const m = f11Manifest(), events = [];
+  const add = (type,at,data) => events.push({type,at,...data});
+  const target = at => add('target',at,{...m,source:'provider-api',engineSha:m.sha,vercelSha:m.sha,healthStatus:200,ready:true,suspended:false});
+  const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,roundId:'round-2',fingerprint:'b'.repeat(64),
+    sourceKey:JSON.stringify(['tick',m.roomId,'system',`tick-${id}`,actorId,type])});
+  const wallet = (at,stage,{holds=false,hands=0,settled=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
+    balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?9500:10500):10000})),
+    reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
+    ledger:settled?[ledger('1',m.actors[0],-500,'consume:stake'),ledger('2',m.actors[1],-500,'consume:stake'),ledger('3',m.actors[0],1000,'payout')]:[],
+    settlements:settled?[{roundId:'round-2',actorId:m.actors[0],ledgerId:'3',returnedCents:1000},
+      {roundId:'round-2',actorId:m.actors[1],ledgerId:null,returnedCents:0}]:[]});
+  const open = (at,connectionId,actorId,instanceId) => add('open',at,{connectionId,actorId,roomId:m.roomId,connectionNonce:`nonce-${connectionId}`,
+    instanceProof:{source:'render-app-log',logId:`log-${connectionId}`,connectionNonce:`nonce-${connectionId}`,instanceId,serviceId:m.serviceId,sha:m.sha,at}});
+  const frame = (at,connectionId,actorId,version,phase='round') => add('frame',at,{connectionId,frame:{type:'shared-room-state',roomId:m.roomId,
+    snapshot:{contract:'blackjack-table/1',configVersion:'config-1',roomId:m.roomId,me:{id:actorId},version,
+      presentationVer:version,roundId:version<5?'round-1':'round-2',phase,turnSeq:version,windowId:`window-${version<5?1:2}`,
+      owners:[...m.actors,null,null,null,null,null],seatGen:Array(7).fill(1),bets:Array.from({length:7},()=>({main:0,pp:0,tp:0})),
+      round:phase==='round'?{phase:'decisions',active:0,boxes:[],hands:[],legalActions:['stand'],dealer:[{r:'8',s:'H',shoeDraw:2}]}:null,
+      shoe:{id:'shoe-1',total:312,remaining:300,dealt:12,cutAfter:260,cutReached:false,commitment:'d'.repeat(64),shufflePending:false,decks:6,burn:1},
+      plan:null,deadline:phase==='bets'?version*20000:null,actionDeadline:phase==='round'?version*15000:null},
+    presentation:{roomId:m.roomId,ver:version,events:[{type:phase==='round'?'deal':'idle'}]}}});
+  target(0);wallet(1,'before');open(1000,'old','f11-alice','instance-old');
+  frame(2000,'old','f11-alice',1,'bets');frame(20000,'old','f11-alice',2);wallet(52000,'during',{holds:true});
+  frame(40000,'old','f11-alice',3);wallet(61000,'during',{hands:2});
+  open(50000,'new','f11-bob','instance-new');
+  for(const [at,version,phase] of [[51000,4,'bets'],[60000,5,'round'],[75000,6,'round'],[89500,7,'round']]) {
+    frame(at,'old','f11-alice',version,phase);frame(at+100,'new','f11-bob',version,phase);
+  }
+  add('close',90000,{connectionId:'old',code:1012});open(91000,'again','f11-alice','instance-new');
+  frame(92000,'again','f11-alice',7);frame(105000,'new','f11-bob',8);frame(118000,'again','f11-alice',9,'settled');
+  add('negative',118100,{source:'socket-capture',probe:'wrong-room',connectionId:'negative-room',actorId:m.actors[0],roomId:'f11-other',stateFrames:0,status:403});
+  add('negative',118200,{source:'socket-capture',probe:'revoked-session',connectionId:'negative-session',actorId:m.actors[1],roomId:m.roomId,stateFrames:0,status:1008});
+  wallet(119000,'after',{settled:true});target(120000);
+  return {manifest:m,events:events.sort((a,b)=>a.at-b.at)};
+}
+function f11Review(capture=f11Capture()) {
+  const observer=createF11Observer(capture.manifest);
+  for(const event of capture.events) observer.observe(event);
+  return observer.finish();
+}
+test('F11 accepts advancing revisions, simultaneous observed instances and reconciled money only for evidence review',()=>{
+  const result=f11Review();
+  assert.equal(result.status,'evidence-complete-review-required');assert.equal(result.acceptance,false);
+  assert.equal(result.overlap.durationMs,40000);assert.equal(result.walletEffects,3);
+  assert.equal(new Set(result.overlap.instances).size,2);
+});
+test('F11 rejects wrong host, full SHA, resource or synthetic scope before observing',()=>{
+  for(const [key,value] of [['origin','https://www.scoutgaming.tech'],['engineOrigin','https://evil.invalid'],['sha','abcdef'],
+    ['serviceId','srv-production'],['database','croupier_game'],['roomId','production-room'],['syntheticOnly',false],['actors',['alice','bob']]]) {
+    assert.throws(()=>validateF11Manifest({...f11Manifest(),[key]:value}),/f11_/);
+  }
+  const c=f11Capture();c.events[0].engineSha='c'.repeat(40);assert.throws(()=>f11Review(c),/target_evidence_invalid/);
+});
+test('F11 refuses missing or request-only instance evidence and two sockets on the same instance',()=>{
+  for(const mutate of [e=>delete e.instanceProof,e=>{e.instanceProof.source='rndr-id';},e=>{e.instanceProof.sha='c'.repeat(40);},
+    e=>{e.instanceProof.connectionNonce='unrelated';}]) {
+    const c=f11Capture();mutate(c.events.find(e=>e.type==='open'));assert.throws(()=>f11Review(c),/instance_evidence_required/);
+  }
+  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='open'))e.instanceProof.instanceId='instance-one';
+  assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+});
+test('F11 refuses a frozen old socket that only catches up after reconnect and one-sided dealer events',()=>{
+  for(const mutate of [c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='old'&&e.at>51000));},
+    c=>{for(const e of c.events.filter(e=>e.type==='frame'&&e.connectionId==='old'))e.frame.presentation.events=[];}]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+  }
+});
+test('F11 rejects conflicting state, revision regression, missing 1012 and reconnecting to another hand',()=>{
+  for(const [mutate,code] of [
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='new'&&e.frame.snapshot.phase==='round').frame.snapshot.round.dealer[0].r='9';},'state_conflict'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='old'&&e.at===89500).frame.snapshot.turnSeq=0;},'revision_regressed'],
+    [c=>{c.events.find(e=>e.type==='close').code=1006;},'continuous_overlap_not_proven'],
+    [c=>{c.events.find(e=>e.type==='frame'&&e.connectionId==='again').frame.snapshot.roundId='other-hand';},'state_conflict']]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
+  }
+});
+test('F11 requires both negative probes without leaked state and actual reservation/settlement accounting',()=>{
+  for(const [mutate,code] of [
+    [c=>{c.events=c.events.filter(e=>e.type!=='negative');},'negative_probes_required'],
+    [c=>{c.events.find(e=>e.type==='negative').stateFrames=1;},'negative_probe_invalid'],
+    [c=>{c.events=c.events.filter(e=>e.stage!=='during');},'active_money_not_observed'],
+    [c=>{c.events.find(e=>e.stage==='after').balances[0].balanceCents++;},'balance_mismatch'],
+    [c=>{c.events.find(e=>e.stage==='after').hands=1;},'unsettled_money'],
+    [c=>{const r=c.events.find(e=>e.stage==='after');r.ledger.push({...r.ledger[0],id:'99'});},'duplicate_wallet_effect'],
+    [c=>{const r=c.events.find(e=>e.stage==='after');r.settlements.push({...r.settlements[0]});},'duplicate_settlement'],
+    [c=>{c.events.find(e=>e.stage==='after').settlements[0].returnedCents++;},'payout_mismatch']]) {
+    const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
+  }
+});
+test('F11 requires settlement for every debited actor and exact audited round, including losing hands',()=>{
+  for(const mutate of [r=>{r.settlements=r.settlements.filter(s=>s.returnedCents>0);},
+    r=>{r.settlements.find(s=>s.returnedCents===0).roundId='different-round';},
+    r=>{r.ledger.find(e=>e.actorId==='f11-bob').roundId='different-round';}]) {
+    const c=f11Capture();mutate(c.events.find(e=>e.stage==='after'));
+    assert.throws(()=>f11Review(c),/consumption_without_settlement/);
+  }
+  const c=f11Capture();delete c.events.find(e=>e.stage==='after').ledger[0].roundId;
+  assert.throws(()=>f11Review(c),/ledger_invalid/);
+});
+
+test('F11 requires complete shared snapshots and consistent ownership but permits player-specific projections',()=>{
+  for(const key of ['contract','configVersion','windowId','turnSeq','round','shoe','plan','deadline','actionDeadline','owners','seatGen','bets']) {
+    const c=f11Capture();for(const e of c.events.filter(e=>e.type==='frame'))delete e.frame.snapshot[key];
+    assert.throws(()=>f11Review(c),/frame_invalid|snapshot_contract_incomplete/,key);
+  }
+  for(const key of ['owners','seatGen']) {
+    const c=f11Capture(),s=c.events.find(e=>e.type==='frame'&&e.connectionId==='new').frame.snapshot;
+    s[key][0]=key==='owners'?'f11-bob':2;
+    assert.throws(()=>f11Review(c),/state_conflict/,key);
+  }
+  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='frame')) {
+    e.frame.snapshot.me.available=e.connectionId==='new'?5:10;
+    e.frame.snapshot.serverNow=e.at;e.frame.snapshot.players=[{id:'f11-alice',online:e.connectionId==='new'}];
+  }
+  assert.equal(f11Review(c).acceptance,false);
+});
+
+test('F11 reconnect cannot conceal a regressed presentation behind a newer room version',()=>{
+  const c=f11Capture(),e=c.events.find(e=>e.type==='frame'&&e.connectionId==='again');
+  e.frame.snapshot.version=8;e.frame.snapshot.presentationVer=1;e.frame.presentation.ver=1;
+  // Keep subsequent global room revisions distinct so the cross-connection reconnect gate must catch this.
+  for(const row of c.events.filter(row=>row.type==='frame'&&row.at>e.at))row.frame.snapshot.version++;
+  assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
+});
+
+test('F11 observer cannot recover after rejected evidence or mutate an already consumed monetary sample',()=>{
+  const c=f11Capture(),o=createF11Observer(c.manifest);
+  assert.throws(()=>o.observe({type:'token-secret',at:0}),/event_type_invalid/);
+  assert.throws(()=>o.observe(c.events[0]),/observer_poisoned/);
+  const good=createF11Observer(c.manifest);
+  for(const row of c.events) {good.observe(row);if(row.stage==='after')row.balances[0].balanceCents=1;}
+  assert.equal(good.finish().acceptance,false);
+});
+test('F11 reports and errors omit credentials, cookie/header fields, dealer text and filesystem details',async()=>{
+  const c=f11Capture(),secret='secret-never-in-receipt';
+  c.manifest.cookie=secret;
+  for(const e of c.events) {e.authorization=secret;if(e.type==='frame') {e.frame.headers={cookie:secret};e.frame.presentation.events.push({type:'speak',line:secret});}}
+  const serialized=JSON.stringify(f11Review(c));assert.equal(serialized.includes(secret),false);assert.equal(serialized.includes('cookie'),false);
+  const output=[];
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{output:x=>output.push(x),size:async()=>{throw Error(secret);}}),1);
+  assert.deepEqual(output.map(x=>JSON.parse(x)),[{status:'unverifiable',acceptance:false,code:'f11_evidence_unavailable'}]);
+});
+test('F11 help, absent --run and malformed arguments never read files or invoke external work',async()=>{
+  for(const args of [[],['--help'],['--manifest','m','--events','e'],['--run','--help']]) {
+    let reads=0;await runF11EvidenceCli(args,{read:()=>{reads++;throw Error('read');},size:()=>{reads++;throw Error('stat');},output:()=>{}});
+    assert.equal(reads,0);
+  }
+});
+test('F11 explicit offline CLI validates bounded evidence and keeps missing instance metadata unverifiable',async()=>{
+  const c=f11Capture(),files={m:JSON.stringify(c.manifest),e:c.events.map(e=>JSON.stringify(e)).join('\n')},output=[];
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{
+    size:async path=>({size:files[path].length}),read:async path=>files[path],output:x=>output.push(x)}),0);
+  assert.equal(JSON.parse(output[0]).acceptance,false);
+  delete c.events.find(e=>e.type==='open').instanceProof;files.e=c.events.map(e=>JSON.stringify(e)).join('\n');
+  assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{
+    size:async path=>({size:files[path].length}),read:async path=>files[path],output:x=>output.push(x)}),1);
+  assert.deepEqual(JSON.parse(output.at(-1)),{status:'unverifiable',acceptance:false,code:'f11_instance_evidence_required'});
+});
 
 let sequence = 0;
 const fresh = () => import(`../services/game/shared-room-qa-context.mjs?case=${++sequence}`);

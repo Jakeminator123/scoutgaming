@@ -9,7 +9,7 @@ uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTI
 - `compositor/` — kompositor (`compositor.js`) och geometri (`geometry.js`). Den fristående redigeraren, spelaren, bryggan och lagerpaketen (`/layer-packs`) är borttagna.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
-- `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, legacy-klipp och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
+- `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, äldre videoreferenser och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
 - `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `apps/studio/lib/presentation-selection.mjs` och `services/game/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
 - `public-modules.mjs` — explicit lista över browserfiler och deras kanoniska/äldre URL:er. HTTP-server, Vercelroutning, statiska byggkopior och isolerade källfixturer delar listan. Serverfabriker, projektseed och privata appar ingår aldrig.
 - `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
@@ -41,12 +41,10 @@ och [överlämningen](../../docs/NEXT-AGENT.md). En referensexport innebär
 ingen publicering eller verifierad läppsynk.
 
 `server/studio-project-bindings.mjs` validerar projektets befintliga bindningar
-med explicita register- och legacyläsare. `server/legacy-clip-inventory.mjs`
-äger en enda inventeringsimplementation; apparna tillför roots, filpolicy,
-mediesökvägsresolver och kontaktvalidatorer. `reviewSafetyVerified`,
-`neverAgain` och den snäva möjligheten att sakna pensionerade index bevaras.
-De appägda kompositionerna finns i `apps/studio/lib/legacy-clip-inventory.mjs` och
-`services/game/storage/legacy-clip-inventory.mjs`; inga nya browseradresser exponeras.
+mot det uttryckliga videoregistret. Legacy-klippinventeringen och `/api/clip-controls`
+är avvecklade. Projekt och dealersnapshots får behålla ett tomt `legacyClipPolicy`
+för läskompatibilitet; icke-tomma bindningar nekas utan reservklipp. Separata
+redan sparade videoreferenser och registrerade filmprofiler följer sina egna kontrakt.
 
 Publiceringens codec, snapshotfångst, paket-/ruminspektion och frysta dealer-/
 mediakontexter ägs av `server/`. Rena layer-/material-/playbackkontrakt ligger

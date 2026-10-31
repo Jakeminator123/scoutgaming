@@ -2,6 +2,8 @@
 
 Läsbar referens till [`environment-variables.json`](environment-variables.json), som är den maskinkontrollerade listan. Här står namn, krav, var värdet sätts och vad det gör, aldrig värden.
 
+`sources` för Render-spelmotorn och Studio följer den registrerade medieruntimen efter avvecklingen av legacy-klippinventeringen.
+
 - Varje tillägg, borttagning eller betydelseändring uppdaterar både denna fil och JSON-registret i samma leverans ([AGENTS.md](../AGENTS.md#verifiering-och-säkerhet)).
 - `node tools/check-environment-variables.mjs` körs i CI och i den fokuserade hooken för varje ändrad fil utanför dokumentationen (och för registret och verktyget). Den kontrollerar att varje namn som de registrerade källfilerna läser finns i registret, att ingen spårad kodfil nämner ett [fast värde](#fasta-värden) och att en staged env-ändring följs av båda filerna. Värden och leverantörspaneler kontrolleras inte.
 - `node tools/check-environment-variables.mjs --compare <tjänst> <env-fil>` jämför bara nyckelnamnen i en lokal fil med registret och skriver aldrig ut värden.

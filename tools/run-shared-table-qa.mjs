@@ -131,6 +131,10 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
+  if (args[0] === '--f11') {
+    const { runF11EvidenceCli } = await import('./shared-room-f11-observer.mjs');
+    process.exitCode = await runF11EvidenceCli(args.slice(1));
+  } else {
   const schemaUpgrade = args[0] === '--schema-upgrade';
   const lissabonRetirement = args[0] === '--lissabon-retirement';
   if (schemaUpgrade || lissabonRetirement) args.shift();
@@ -141,5 +145,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (schemaUpgrade) options.runChecks = (await import('../test/shared-schema-upgrade.mjs')).runSharedSchemaUpgradeChecks;
     if (lissabonRetirement) options.runChecks = (await import('../test/lissabon-retirement.mjs')).runLissabonRetirementChecks;
     runSharedTableQa(options).catch(error => { console.error(error.stack); process.exitCode = 1; });
+  }
   }
 }

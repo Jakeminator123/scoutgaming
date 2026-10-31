@@ -2,7 +2,6 @@ import { validateDealerSpeechReference } from '../contracts/dealer-speech-profil
 import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
 import { validateProject } from '../contracts/studio-model.mjs';
 import { validateVideoBindings } from './default-video-bindings.mjs';
-import { resolveLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
 import { validateDealerSetBindings } from '../contracts/dealer-sets.mjs';
 import {validateVideoMetadata} from '../contracts/video-intake.mjs';
 import {validateFrozenRouletteIdle} from '../contracts/roulette-idle-contract.mjs';
@@ -17,7 +16,7 @@ function checkedVideo(videos,id,dealerId,eventId) {
   if (video.familyId && video.eventId !== eventId) fail('studio_media_binding_invalid');
   return video;
 }
-export function createStudioProjectBindings({videoRegistry,legacyControls} = {}) {
+export function createStudioProjectBindings({videoRegistry} = {}) {
   if (typeof videoRegistry !== 'function') fail('studio_media_verifier_required',503);
   return async function validateProjectBindings(input) {
     let project;
@@ -78,12 +77,6 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
           if (video.familyId !== family.id || video.role !== role || !ids.includes(video.id)) fail('studio_idle_binding_invalid');
         }
       }
-    }
-    if (project.legacyClipPolicy?.length) {
-      if (typeof legacyControls !== 'function') fail('studio_legacy_media_verifier_required',503);
-      const inventory = await legacyControls(project);
-      if (!inventory || !Array.isArray(inventory.clips) || inventory.reviewSafetyVerified !== true) fail('studio_legacy_review_safety_unavailable',503);
-      if (resolveLegacyClipPolicy(project,inventory).conflicts.length) fail('studio_legacy_binding_invalid');
     }
   };
 }

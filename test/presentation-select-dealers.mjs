@@ -13,7 +13,7 @@ import { nativeReceipts } from './fixtures/native-receipts.mjs';
 import { writeSyntheticPresentationBank } from './fixtures/presentation-bank.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
-test('another dealer legacy rules cannot change the selected dealer presentation', async t => {
+test('a retired clip policy is refused before it can change the selected dealer presentation', async t => {
   const archiveDir = await mkdtemp(join(tmpdir(), 'croupier-select-bank-'));
   t.after(() => rm(archiveDir, { recursive: true, force: true }));
   await writeSyntheticPresentationBank(archiveDir);
@@ -23,13 +23,14 @@ test('another dealer legacy rules cannot change the selected dealer presentation
   }, { videoRegistry: registry, random: () => 0 });
   const before = await choose(createSeedProject());
   assert.equal(before.decision.media.fileName, 'deal_pos4.mp4', 'the bank supplies the exact box');
-  const migrated = normalizeProject({ ...structuredClone(createSeedProject()), legacyClipPolicy: [
+  const migrated = { ...structuredClone(createSeedProject()), legacyClipPolicy: [
     { dealerId: 'vera', part: 'box3', clipId: 'vera:legacy/box3' },
     { dealerId: 'vera', part: 'idle', clipId: 'vera:legacy/idle' },
-  ] });
-  assert.deepEqual(await choose(migrated), before);
+  ] };
+  assert.throws(() => normalizeProject(migrated), /legacyClipPolicy/);
+  await assert.rejects(choose(migrated), /legacyClipPolicy/);
   await assert.rejects(selectPresentation({
-    requestId: 'vera-box3', project: migrated, dealerId: 'vera', eventId: 'deal.player.centre', sourceEvent: source, mode: 'off',
+    requestId: 'vera-box3', project: createSeedProject(), dealerId: 'vera', eventId: 'deal.player.centre', sourceEvent: source, mode: 'off',
   }, { videoRegistry: registry, random: () => 0 }), /okänd croupier/);
 });
 

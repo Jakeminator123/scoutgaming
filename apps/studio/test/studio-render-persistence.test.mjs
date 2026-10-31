@@ -12,7 +12,7 @@ const scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
 const env = {CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
 async function fixture() {
   const pool = createStudioMemoryPool(),repository = createStudioRepository({pool,scope});
-  await repository.initializeDocument('project',{value:createSeedProject(),actor:'migration'});
+  await repository.initializeDocument('project',{value:{...createSeedProject(),legacyClipPolicy:[]},actor:'migration'});
   await repository.initializeDocument('social-policy',{value:createSocialPolicy(),actor:'migration'});
   const calls = [], source = 'explicit product SQL';let closed = 0;
   const connectionPool = {end:async () => closed++};
@@ -24,7 +24,7 @@ async function fixture() {
       await storage.db.assertInstalled();await schemaCheck({pool:storage.pool});
       return {scope,repository,policy:{projectStore:() => createNeonProjectStore({repository,scope})}};
     },
-    mediaFactory:() => ({videoRegistry:async () => ({videos:[],source:'neon'}),legacyControls:async project => ({revision:project.revision})}),
+    mediaFactory:() => ({videoRegistry:async () => ({videos:[],source:'neon'})}),
   };
   return {options,calls,pool,repository,closed:() => closed};
 }
@@ -33,6 +33,7 @@ test('protected Render reads same committed project/social revisions, with no wr
   const project = await reader.projectStore.load(),social = await reader.socialStore.load(),before = pool.snapshot();
   assert.equal(reader.configurationSource,'neon/croupier_studio');
   assert.equal(project.revision,(await repository.readDocument('project')).revision);
+  assert.deepEqual(project.legacyClipPolicy,[]);
   assert.equal(social.revision,(await repository.readDocument('social-policy')).revision);
   assert.equal((await reader.videoRegistry()).source,'neon');
   for (const store of [reader.projectStore,reader.socialStore]) await assert.rejects(store.save({},'forged'),error => error.statusCode === 410);
