@@ -1,17 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, scryptSync } from 'node:crypto';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
-import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET } from '../tools/shared-room-f11-observer.mjs';
+import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET, F11_MONEY_SQL } from '../tools/shared-room-f11-observer.mjs';
 import { prepareF11Fixture, runF11Preview, runF11PreviewCli, validateF11Plan, f11FixtureIdentity,
   nextF11Command, correlateF11Log } from '../tools/run-f11-preview.mjs';
 import { createF11LivePorts, validateF11DatabaseUrl, f11ProviderReceipt, readF11Fixture } from '../tools/f11-preview-ports.mjs';
 
 const receiptHash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const actors = ['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
+function gatewayProof(instanceId, listeningAt, drainingAt=null) {
+  const entry=(phase,at)=>({source:'render-app-log',logId:`${instanceId}-${phase}`,instanceId,
+    fullInstanceId:`${instanceId}-full-pod`,serviceId:F11_TARGET.serviceId,sha:'a'.repeat(40),runtimeId:actors[instanceId.includes('old')?0:1],
+    listenerId:2,phase,at,...(phase==='listening'?{binding:{address:'0.0.0.0',port:10000}}:{})});
+  return {listening:entry('listening',listeningAt),draining:drainingAt===null?null:entry('draining',drainingAt)};
+}
+function logReceipt(payload, instanceId, logId, plan=livePlan()) {
+  return {source:'render-api-capture',serviceId:plan.serviceId,deployment:{id:'dep-test',serviceId:plan.serviceId,commit:{id:plan.sha}},
+    log:{id:logId,timestamp:new Date(payload.at).toISOString(),message:JSON.stringify(payload),
+      labels:[{name:'resource',value:plan.serviceId},{name:'instance',value:instanceId},{name:'type',value:'app'}]}};
+}
+function provenanceBundle(connection, old=connection.processId===actors[0]) {
+  const instanceId=`${F11_TARGET.serviceId}-${old?'old':'new'}`,gateway=gatewayProof(instanceId,old?0:49000,old?90000:null);
+  return {socket:logReceipt({event:'shared_room_socket_identity',processId:connection.processId,socketNonce:connection.nonce,at:connection.at},instanceId,`log-${connection.nonce}`),
+    gateway:Object.values(gateway).filter(Boolean).map(e=>logReceipt({event:'cloud_gateway_lifecycle',at:new Date(e.at).toISOString(),
+      instanceId:e.fullInstanceId,runtimeId:e.runtimeId,commitSha:e.sha,phase:e.phase,listenerId:e.listenerId,...(e.binding?{binding:e.binding}:{})},instanceId,e.logId))};
+}
 function f11Manifest() {
   const m = {...F11_TARGET,schemaVersion:1,sha:'a'.repeat(40),syntheticOnly:true,
     roomId:'room-33333333-3333-4333-8333-333333333333',runId:'f11-run',actors:[...actors],startedAt:0,endedAt:120000};
@@ -22,20 +39,36 @@ function f11Manifest() {
       openingId:`open-${i}`,openingCents:100000,currency:'USD',openingAt:new Date(0).toISOString()}))};
   m.ownership={...ownership,digest:receiptHash(ownership)};return m;
 }
-function f11Capture() {
+function withSqlCadence(c) {
+  // Synthetic SQL observations for this test fixture only. No live capture is
+  // loaded or repaired. Query intervals and socket arrivals are independent.
+  const start=c.events.find(e=>e.type==='open'&&e.connectionId==='new').at;
+  const end=c.events.find(e=>e.type==='open'&&e.connectionId==='old').instanceProof.gateway.draining.at;
+  for(let at=start+100;at<end;at+=2000) {
+    const basis=c.events.filter(e=>e.type==='money'&&e.at<=at).sort((a,b)=>a.at-b.at).at(-1);
+    const s=c.events.filter(e=>e.type==='frame'&&e.at<=at).sort((a,b)=>a.at-b.at).at(-1).frame.snapshot;
+    c.events.push({...structuredClone(basis),stage:'during',at,readStartedAt:at,
+      members:actors.map(actorId=>({actorId,active:true,memberGen:1})),
+      roomHead:{version:s.version,presentationVer:s.presentationVer,owners:[...s.owners]}});
+  }
+  c.events.sort((a,b)=>a.at-b.at);return c;
+}
+function f11Capture({sampled=true}={}) {
   const m = f11Manifest(), events = [];
   const add = (type,at,data) => events.push({type,at,...data});
   const target = at => add('target',at,{...m,source:'provider-api',engineSha:m.sha,vercelSha:m.sha,healthStatus:200,ready:true,suspended:false});
   const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,roundId:'round-2',fingerprint:'b'.repeat(64),
     sourceKey:JSON.stringify(['tick',m.roomId,'system',`tick-${id}`,actorId,type])});
-  const wallet = (at,stage,{holds=false,hands=0,settled=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
+  const wallet = (at,stage,{holds=false,hands=0,settled=false,left=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,readStartedAt:at,
+    members:stage==='before'?[]:actors.map(actorId=>({actorId,active:!left,memberGen:left?2:1})),
     balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?99500:100500):100000})),
     reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
     ledger:[...m.ownership.accounts.map(a=>({id:a.openingId,actorId:a.actorId,amountCents:a.openingCents,currency:a.currency,at:a.openingAt,type:'open',roundId:null,sourceKey:null,fingerprint:null})),...(settled?[ledger('1',m.actors[0],-500,'consume:stake'),ledger('2',m.actors[1],-500,'consume:stake'),ledger('3',m.actors[0],1000,'payout')]:[])],
     settlements:settled?[{roundId:'round-2',actorId:m.actors[0],ledgerId:'3',returnedCents:1000},
       {roundId:'round-2',actorId:m.actors[1],ledgerId:null,returnedCents:0}]:[]});
   const open = (at,connectionId,actorId,instanceId) => add('open',at,{connectionId,actorId,roomId:m.roomId,connectionNonce:`nonce-${connectionId}`,
-    instanceProof:{source:'render-app-log',logId:`log-${connectionId}`,connectionNonce:`nonce-${connectionId}`,instanceId,serviceId:m.serviceId,sha:m.sha,at}});
+    instanceProof:{source:'render-app-log',logId:`log-${connectionId}`,connectionNonce:`nonce-${connectionId}`,instanceId,serviceId:m.serviceId,sha:m.sha,at,
+      gateway:gatewayProof(instanceId,instanceId==='instance-old'?0:49000,instanceId==='instance-old'?90000:null)}});
   const frame = (at,connectionId,actorId,version,phase='round') => add('frame',at,{connectionId,frame:{type:'shared-room-state',roomId:m.roomId,
     snapshot:{contract:'blackjack-table/1',configVersion:'config-1',roomId:m.roomId,me:{id:actorId},version,
       presentationVer:version,roundId:version<5?'round-1':'round-2',phase,turnSeq:version,windowId:`window-${version<5?1:2}`,
@@ -53,10 +86,16 @@ function f11Capture() {
   }
   add('close',90000,{connectionId:'old',code:1012});open(91000,'again','11111111-1111-4111-8111-111111111111','instance-new');
   frame(92000,'again','11111111-1111-4111-8111-111111111111',7);frame(105000,'new','22222222-2222-4222-8222-222222222222',8);frame(118000,'again','11111111-1111-4111-8111-111111111111',9,'settled');
+  frame(118040,'again',actors[0],10,'bets');events.at(-1).frame.snapshot.owners=Array(7).fill(null);
+  wallet(118050,'during',{settled:true,left:true});
   add('negative',118100,{source:'socket-capture',probe:'wrong-room',connectionId:'negative-room',actorId:m.actors[0],roomId:'f11-other',stateFrames:0,status:403});
   add('negative',118200,{source:'socket-capture',probe:'revoked-session',connectionId:'negative-session',actorId:m.actors[1],roomId:m.roomId,stateFrames:0,status:1008});
-  wallet(119000,'after',{settled:true});target(120000);
-  return {manifest:m,events:events.sort((a,b)=>a.at-b.at)};
+  wallet(119000,'after',{settled:true,left:true});target(120000);
+  for(const row of events.filter(e=>e.type==='money')) {
+    const snapshot=events.filter(e=>e.type==='frame'&&e.at<=row.at).sort((a,b)=>a.at-b.at).at(-1)?.frame.snapshot;
+    row.roomHead=snapshot?{version:snapshot.version,presentationVer:snapshot.presentationVer,owners:[...snapshot.owners]}:null;
+  }
+  const capture={manifest:m,events:events.sort((a,b)=>a.at-b.at)};return sampled?withSqlCadence(capture):capture;
 }
 function f11Review(capture=f11Capture()) {
   const observer=createF11Observer(capture.manifest);
@@ -68,6 +107,98 @@ test('F11 accepts advancing revisions, simultaneous observed instances and recon
   assert.equal(result.status,'evidence-complete-review-required');assert.equal(result.acceptance,false);
   assert.equal(result.overlap.durationMs,40000);assert.equal(result.walletEffects,3);
   assert.equal(new Set(result.overlap.instances).size,2);
+});
+function longPlanCapture() {
+  const c=f11Capture({sampled:false});c.manifest.endedAt=200000;
+  const times=new Map([[40000,25000],[51000,70000],[51100,70100],[52000,72000],[60000,80000],[60100,80100],
+    [61000,81000],[75000,120000],[75100,120100],[89500,160000],[89600,160100],[90000,179576],[91000,180000],
+    [92000,180100],[105000,174353],[118000,198000],[118040,198040],[118050,198050],[118100,198100],
+    [118200,198200],[119000,199000],[120000,200000]]);
+  for(const e of c.events) {
+    e.at=times.get(e.at)??e.at;
+    if(e.type==='money')e.readStartedAt=e.at;
+    if(e.type==='open') {e.instanceProof.at=e.at;if(e.connectionId==='old')e.instanceProof.gateway.draining.at=170000;}
+    if(e.type==='frame') {
+      const s=e.frame.snapshot;
+      if(s.version===3)s.plan={turnAt:69800,endAt:69800};
+      if(s.version===5)s.plan={turnAt:119394,endAt:119394};
+      if(s.version===7)s.plan={turnAt:173682,endAt:173682};
+    }
+  }
+  const initial=structuredClone(c.events.find(e=>e.type==='frame'&&e.frame.snapshot.version===3));
+  initial.at=50010;initial.connectionId='new';initial.frame.snapshot.me.id=actors[1];c.events.push(initial);
+  const fresh=c.events.find(e=>e.type==='frame'&&e.frame.snapshot.version===8);
+  const again=c.events.find(e=>e.type==='frame'&&e.connectionId==='again');again.frame=structuredClone(fresh.frame);again.frame.snapshot.me.id=actors[0];
+  for(const [at,version] of [[95000,5],[130000,6],[169000,7],[175000,8]]) {
+    const sample=structuredClone(c.events.find(e=>e.stage==='during'&&e.hands));sample.at=at;sample.readStartedAt=at;
+    sample.roomHead.version=version;sample.roomHead.presentationVer=version;c.events.push(sample);
+  }
+  c.events.sort((a,b)=>a.at-b.at);return withSqlCadence(c);
+}
+test('F11 accepts change-only long plans and a post-drain revision before delayed client 1012',()=>{
+  const result=f11Review(longPlanCapture());
+  assert.equal(result.overlap.startedAt,50000);assert.equal(result.overlap.endedAt,170000);
+  assert.equal(result.overlap.oldClientClosedAt,179576);assert.equal(result.overlap.durationMs,120000);
+  assert.equal(result.overlap.endedBy,'verified-public-gateway-drain');assert.equal(result.acceptance,false);
+});
+test('F11 rejects zero, stale, future, conflicting or regressing SQL heads',()=>{
+  for(const [mutate,code] of [
+    [c=>{for(const e of c.events.filter(e=>e.roomHead))e.roomHead.version=e.roomHead.presentationVer=0;},'room_head_regressed|continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=0;},'continuous_overlap_not_proven'],
+    [c=>{c.events.find(e=>e.type==='money'&&e.at===130000).roomHead.version=4;},'room_head_regressed'],
+    [c=>{c.events.find(e=>e.type==='money'&&e.at===130000).roomHead.presentationVer=4;},'room_head_regressed'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at>=120000&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=5;},'continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at>=120000&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=7;},'continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead))e.roomHead.owners=Array(7).fill(null);},'continuous_overlap_not_proven'],
+  ]) {const c=longPlanCapture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));}
+});
+test('F11 rejects missing SQL coverage including two sockets frozen after earlier valid progress',()=>{
+  for(const mutate of [
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>81000&&e.at<170000)
+      && !(e.type==='frame'&&e.at>120100&&e.at<170000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>150000&&e.at<170000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>=50000&&e.at<57000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>=100000&&e.at<=106000));},
+    c=>{for(const e of c.events.filter(e=>e.type==='money'&&e.at>=100000&&e.at<=106000))e.roomHead=null;},
+  ]) {const c=longPlanCapture();mutate(c);assert.throws(()=>f11Review(c),/continuous_overlap_not_proven|room_head_regressed/);}
+});
+test('F11 SQL timing brackets real reads without confusing an in-flight commit with a stale query',()=>{
+  const c=longPlanCapture(),row=c.events.find(e=>e.type==='money'&&e.at===80100);
+  row.readStartedAt=79950;row.roomHead.version=row.roomHead.presentationVer=4;
+  // v5 arrives at 80000 while this read is in flight; the preceding snapshot v4
+  // is possible. Its next poll observes v5. Requiring v5 here would be fabricated.
+  const reordered=c.events.find(e=>e.type==='money'&&e.at===81000).roomHead;
+  c.events.find(e=>e.type==='money'&&e.at===81000).roomHead={owners:reordered.owners,presentationVer:reordered.presentationVer,version:reordered.version};
+  assert.equal(f11Review(c).acceptance,false);
+  for(const mutate of [r=>{r.readStartedAt=r.at+1;},r=>{r.readStartedAt=r.at-2001;},r=>{delete r.readStartedAt;}]) {
+    const bad=longPlanCapture();mutate(bad.events.find(e=>e.type==='money'&&e.at===80100));
+    assert.throws(()=>f11Review(bad),/sql_read_window_invalid/);
+  }
+});
+test('F11 rejects stale or frozen peers even after a valid activity window and with long plans',()=>{
+  for(const mutate of [
+    c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='old'&&e.frame.snapshot.version===6));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.frame.snapshot.version===6));}, // both freeze; independent SQL catches it
+    c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='old'&&e.frame.snapshot.version===7));},
+    c=>{c.events.find(e=>e.type==='open'&&e.connectionId==='old').instanceProof.gateway.draining.at=179576;},
+    c=>{c.events.find(e=>e.type==='frame'&&e.frame.snapshot.version===8&&e.connectionId==='new').at=169500;c.events.sort((a,b)=>a.at-b.at);},
+    c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='old'&&e.frame.snapshot.version===3));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='frame'&&e.connectionId==='new'&&e.at>130000));
+      c.events.push({type:'close',at:130000,connectionId:'new',code:1000});c.events.sort((a,b)=>a.at-b.at);},
+  ]) {const c=longPlanCapture();mutate(c);assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);}
+  const quiet=f11Capture();for(const e of quiet.events.filter(e=>e.type==='frame'&&e.at>=51000&&e.at<90000)) {
+    const first=quiet.events.find(row=>row.type==='frame'&&row.at===51000).frame;
+    const actor=e.frame.snapshot.me.id;e.frame=structuredClone(first);e.frame.snapshot.me.id=actor;
+  }
+  assert.throws(()=>f11Review(quiet),/continuous_overlap_not_proven/);
+});
+test('F11 requires inactive memberships and released seats before logout and at final accounting',()=>{
+  for(const mutate of [
+    c=>{c.events=c.events.filter(e=>!(e.stage==='during'&&e.members.every(m=>!m.active)));},
+    c=>{c.events.find(e=>e.stage==='after').members[1].active=true;},
+    c=>{const h=c.events.find(e=>e.stage==='after').roomHead;h.owners[0]=actors[0];h.version++;},
+    c=>{for(const e of c.events.filter(e=>e.stage==='during'))e.members.forEach(m=>{m.active=true;});}
+  ]) {const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),/leave_before_logout_not_proven/);}
 });
 test('F11 rejects wrong host, full SHA, resource or synthetic scope before observing',()=>{
   for(const [key,value] of [['origin','https://www.scoutgaming.tech'],['engineOrigin','https://evil.invalid'],['sha','abcdef'],
@@ -81,7 +212,9 @@ test('F11 refuses missing or request-only instance evidence and two sockets on t
     e=>{e.instanceProof.connectionNonce='unrelated';}]) {
     const c=f11Capture();mutate(c.events.find(e=>e.type==='open'));assert.throws(()=>f11Review(c),/instance_evidence_required/);
   }
-  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='open'))e.instanceProof.instanceId='instance-one';
+  const c=f11Capture();for(const e of c.events.filter(e=>e.type==='open')) {
+    e.instanceProof.instanceId='instance-one';for(const p of Object.values(e.instanceProof.gateway).filter(Boolean))p.instanceId='instance-one';
+  }
   assert.throws(()=>f11Review(c),/continuous_overlap_not_proven/);
 });
 test('F11 refuses a frozen old socket that only catches up after reconnect and one-sided dealer events',()=>{
@@ -103,7 +236,7 @@ test('F11 requires both negative probes without leaked state and actual reservat
   for(const [mutate,code] of [
     [c=>{c.events=c.events.filter(e=>e.type!=='negative');},'negative_probes_required'],
     [c=>{c.events.find(e=>e.type==='negative').stateFrames=1;},'negative_probe_invalid'],
-    [c=>{c.events=c.events.filter(e=>e.stage!=='during');},'active_money_not_observed'],
+    [c=>{c.events=c.events.filter(e=>e.stage!=='during');},'continuous_overlap_not_proven'],
     [c=>{c.events.find(e=>e.stage==='after').balances[0].balanceCents++;},'balance_mismatch'],
     [c=>{c.events.find(e=>e.stage==='after').hands=1;},'unsettled_money'],
     [c=>{const r=c.events.find(e=>e.stage==='after');r.ledger.push({...r.ledger.find(e=>e.type==='consume:stake'),id:'99'});},'duplicate_wallet_effect'],
@@ -353,6 +486,29 @@ test('F11 opening transactions are retained, exact and mandatory in every moneta
   const mismatch=f11Capture();mismatch.events.find(row=>row.type==='money'&&row.stage==='during').balances[0].balanceCents++;
   assert.throws(()=>f11Review(mismatch),/balance_mismatch/);
 });
+test('F11 read-only SQL returns actual room revisions, owners and scoped membership generations',async t=>{
+  const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');const pool=await createPglitePool();t.after(()=>pool.end());
+  const roomId=f11Manifest().roomId,owners=[...actors,null,null,null,null,null];
+  const read=async()=>{const client=await pool.connect();try {
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');return (await client.query(F11_MONEY_SQL,[roomId,actors])).rows[0];
+  } finally {await client.query('ROLLBACK');await client.release();}};
+  const empty=await read();assert.equal(empty.roomHead,null);assert.deepEqual(empty.members,[]);
+  for(const actor of actors) {
+    await pool.query('INSERT INTO croupier_game.players(id,name,created_at) VALUES($1,$1,$2)',[actor,new Date(0).toISOString()]);
+    await pool.query('INSERT INTO croupier_game.shared_table_members(room_id,player_id,active,body) VALUES($1,$2,true,$3)',
+      [roomId,actor,JSON.stringify({roomId,actorId:actor,active:true,memberGen:1})]);
+  }
+  await pool.query('INSERT INTO croupier_game.shared_table_rooms(room_id,body) VALUES($1,$2)',
+    [roomId,JSON.stringify({roomId,version:27,presentationVer:13,owners})]);
+  const active=await read();assert.deepEqual(active.roomHead,{version:27,presentationVer:13,owners});
+  assert.deepEqual(active.members,actors.map(actorId=>({actorId,active:true,memberGen:1})));
+  await pool.query("UPDATE croupier_game.shared_table_members SET active=false,body=jsonb_set(body::jsonb,'{memberGen}','2')::text WHERE room_id=$1",[roomId]);
+  await pool.query('UPDATE croupier_game.shared_table_rooms SET body=$2 WHERE room_id=$1',
+    [roomId,JSON.stringify({roomId,version:29,presentationVer:13,owners:Array(7).fill(null)})]);
+  const left=await read();assert.deepEqual(left.members,actors.map(actorId=>({actorId,active:false,memberGen:2})));
+  assert.equal(left.roomHead.version,29);assert.ok(left.roomHead.owners.every(owner=>owner===null));
+  assert.equal(left.hands,0);assert.deepEqual(left.reservations,[]);
+});
 test('F11 DB and provider inputs pin the exact endpoint, database and frozen deployment without cloud credentials',()=>{
   const valid=`postgresql://fixture:synthetic@${F11_TARGET.databaseHost}/${F11_TARGET.database}?sslmode=require`;
   assert.equal(new URL(validateF11DatabaseUrl(valid)).hostname,F11_TARGET.databaseHost);
@@ -365,20 +521,46 @@ test('F11 DB and provider inputs pin the exact endpoint, database and frozen dep
   for(const r of [{...receipt,at:-60000},{...receipt,service:{...receipt.service,id:'production'}},
     {...receipt,deployment:{...receipt.deployment,commit:{id:'b'.repeat(40)}}}])assert.throws(()=>f11ProviderReceipt(r,p,1),/provider_receipt_invalid/);
 });
-test('F11 socket provenance requires the actual log payload, resource and instance labels',()=>{
-  const p=livePlan(),c={at:1,processId:actors[0],nonce:actors[1]},receipt={source:'render-api-capture',serviceId:p.serviceId,
-    deployment:{id:'dep-test',serviceId:p.serviceId,commit:{id:p.sha}},log:{id:'log-test',timestamp:new Date(1).toISOString(),
-      message:JSON.stringify({event:'shared_room_socket_identity',processId:c.processId,socketNonce:c.nonce,at:1}),
-      labels:[{name:'resource',value:p.serviceId},{name:'instance',value:`${p.serviceId}-old`},{name:'type',value:'app'}]}};
+test('F11 provenance binds the real socket to public listening and drain on the same gateway tuple',()=>{
+  const p=livePlan(),c={at:1,processId:actors[0],nonce:actors[1],closeCode:1012,closedAt:99576},receipt=provenanceBundle(c);
   assert.equal(correlateF11Log(receipt,c,p).instanceId,`${p.serviceId}-old`);
-  for(const mutate of [r=>{r.log.labels[0].value='other';},r=>{r.log.message='{}';},r=>{r.log.labels[1].value='old';},
-    r=>{r.deployment.commit.id='b'.repeat(40);}]) {const r=structuredClone(receipt);mutate(r);assert.throws(()=>correlateF11Log(r,c,p),/f11_/);}
+  const modify=(r,index,change)=>{const payload=JSON.parse(r.gateway[index].log.message);change(payload);r.gateway[index].log.message=JSON.stringify(payload);};
+  for(const mutate of [r=>{r.socket.log.labels[0].value='other';},r=>{r.socket.log.message='{}';},r=>{r.socket.log.labels[1].value='old';},
+    r=>{r.socket.deployment.commit.id='b'.repeat(40);},r=>{r.gateway=[];},r=>{r.gateway.pop();},
+    r=>modify(r,0,p=>{p.binding.address='127.0.0.1';}),r=>modify(r,0,p=>{p.binding.port=31000;}),
+    r=>modify(r,1,p=>{p.listenerId=1;}),r=>modify(r,1,p=>{p.runtimeId=actors[1];}),
+    r=>modify(r,1,p=>{p.instanceId='different-full-pod';}),r=>modify(r,1,p=>{p.commitSha='b'.repeat(40);}),
+    r=>{r.gateway[1].log.labels[1].value=`${p.serviceId}-different`;},
+    r=>{modify(r,1,p=>{p.at=new Date(0).toISOString();});r.gateway[1].log.timestamp=new Date(0).toISOString();},
+    r=>{modify(r,0,p=>{p.at=new Date(2).toISOString();});r.gateway[0].log.timestamp=new Date(2).toISOString();}]) {
+    const r=structuredClone(receipt);mutate(r);assert.throws(()=>correlateF11Log(r,c,p),/f11_/);
+  }
+  const withStartup=structuredClone(receipt),startup=structuredClone(receipt.gateway);
+  for(const row of startup) {const payload=JSON.parse(row.log.message);payload.listenerId=1;payload.at=new Date(0).toISOString();
+    if(payload.binding)payload.binding.address='127.0.0.1';row.log.message=JSON.stringify(payload);row.log.id+='-startup';row.log.timestamp=payload.at;}
+  withStartup.gateway.unshift(...startup);
+  assert.equal(correlateF11Log(withStartup,c,p).gateway.draining.at,90000);
+});
+test('F11 live provenance port reads complete original socket and lifecycle rows without network access',async t=>{
+  const plan=livePlan(),connection={at:1,processId:actors[0],nonce:actors[1],closeCode:1012,closedAt:99576};
+  const bundle=provenanceBundle(connection),temp=await mkdtemp(join(tmpdir(),'f11-provenance-'));
+  t.after(()=>rm(temp,{recursive:true,force:true}));const provenanceFile=join(temp,'provider.ndjson');
+  await writeFile(provenanceFile,[bundle.socket,...bundle.gateway].map(row=>JSON.stringify(row)).join('\n')+'\n{"incomplete":');
+  const ports=await createF11LivePorts({run:true,plan,credentials:{admin:{user:'fixture',pass:'synthetic'},
+    databaseUrl:`postgresql://fixture:synthetic@${plan.databaseHost}/${plan.database}?sslmode=require`},
+    outputDirectory:join(temp,'output'),provenanceFile,fetchImpl:async()=>assert.fail('network access')});
+  t.after(()=>ports.close());const actual=await ports.provenance(connection);
+  assert.deepEqual(actual,bundle);assert.equal(correlateF11Log(actual,connection,plan).gateway.draining.at,90000);
 });
 test('F11 commands retain actual generations, turn sequence and deadlines and stop new bets while draining',()=>{
   const s={...f11Capture().events.find(row=>row.type==='frame').frame.snapshot,serverNow:100,me:{id:actors[0],active:true,memberGen:4},
     players:[{id:actors[0],ready:false}],settings:{chips:[5],limits:{min:5,max:100}},deadline:20000};
   assert.deepEqual(nextF11Command(s,{seat:0,chip:5}),{op:'bet',windowId:s.windowId,seat:0,field:'main',chip:5});
   assert.deepEqual(nextF11Command(s,{seat:0,chip:5,draining:true}),{op:'leave',memberGen:4});
+  for(const phase of ['bets','settled'])for(const ready of [false,true]) {
+    const waiting={...s,phase,players:[{id:actors[0],ready}],bets:s.bets.map((bet,i)=>i?bet:{...bet,main:5})};
+    assert.deepEqual(nextF11Command(waiting,{seat:0,chip:5,draining:true}),{op:'leave',memberGen:4});
+  }
   const hand={...s,phase:'round',roundId:'round-own',turnSeq:8,plan:{turnAt:200},actionDeadline:500,
     round:{active:0,hands:[{box:0}],legalActions:['stand']}};
   assert.equal(nextF11Command(hand,{seat:0,chip:5}),null);
@@ -390,12 +572,14 @@ test('F11 commands retain actual generations, turn sequence and deadlines and st
 // ports. No server, credentials, dependency installation or external I/O.
 function runningPorts({restart=true}={}) {
   const f=creationPorts(),source=f11Capture(),sockets=[],commands=[],progress=[],processes=[actors[0],actors[1]];
-  let clock=0,nonce=0,lastVersion=null,failedOnce=false;
-  const frameAt=()=>source.events.filter(row=>row.type==='frame'&&row.at<=clock).at(-1)?.frame??source.events.find(row=>row.type==='frame').frame;
-  const send=c=>{const frame=structuredClone(frameAt());frame.roomId=f.identity.roomId;frame.snapshot.roomId=f.identity.roomId;
-    frame.presentation.roomId=f.identity.roomId;frame.snapshot.me={id:actors[c.index],active:true,memberGen:1};
+  let clock=0,nonce=0,lastVersion=null,failedOnce=false;const left=[false,false];
+  const frameAt=()=>source.events.filter(row=>row.type==='frame'&&row.frame.snapshot.version<=9&&row.at<=clock).at(-1)?.frame??source.events.find(row=>row.type==='frame').frame;
+  const state=index=>{const frame=structuredClone(frameAt());frame.roomId=f.identity.roomId;frame.snapshot.roomId=f.identity.roomId;
+    frame.snapshot.version+=left.filter(Boolean).length;frame.snapshot.owners=frame.snapshot.owners.map(owner=>left[actors.indexOf(owner)]?null:owner);
+    frame.presentation.roomId=f.identity.roomId;frame.snapshot.me={id:actors[index],active:!left[index],memberGen:left[index]?2:1,seats:left[index]?[]:[index]};
     frame.snapshot.serverNow=clock;frame.snapshot.settings={configVersion:'config-1',language:'en',betMs:20000,actionMs:15000,refill:1000,chips:[5],limits:{min:5,max:100,sideMax:5}};
-    frame.snapshot.players=actors.map(id=>({id,ready:false,leaving:false,online:true,seats:[]}));c.callbacks.frame(frame);};
+    frame.snapshot.players=actors.map(id=>({id,ready:false,leaving:false,online:true,seats:[]}));return frame;};
+  const send=c=>c.callbacks.frame(state(c.index));
   f.ports.now=()=>clock;f.ports.progress=value=>progress.push(value);
   f.ports.sleep=async ms=>{
     clock+=ms;f.setClock(clock);
@@ -409,17 +593,22 @@ function runningPorts({restart=true}={}) {
     return {close:async()=>{if(!c.closed){c.closed=true;callbacks.close(1000);}}};
   };
   f.ports.command=async(index,roomId,body)=>{assert.equal(roomId,f.identity.roomId);commands.push({index,...structuredClone(body)});
-    if(!failedOnce){failedOnce=true;throw Error('unknown outcome');}return {status:409,body:{}};};
+    if(!failedOnce){failedOnce=true;throw Error('unknown outcome');}
+    if(body.op==='leave') {left[index]=true;f.calls.push(`leave:${index}`);for(const c of sockets)if(!c.closed)send(c);
+      return {status:200,body:{snapshot:state(index).snapshot}};}
+    return {status:409,body:{}};};
   f.ports.money=async()=>{
     const base=structuredClone(source.events.find(row=>row.type==='money'&&row.stage===(clock>=120000?'after':'before')));
     for(const row of base.ledger)if(row.sourceKey){const key=JSON.parse(row.sourceKey);key[1]=f.identity.roomId;row.sourceKey=JSON.stringify(key);}
-    return {...base,hands:clock>=20000&&clock<100000?2:0,
+    const snapshot=state(0).snapshot;if(left.every(Boolean))f.calls.push('sql:cleared');
+    return {...base,members:sockets.length?actors.map((actorId,i)=>({actorId,active:!left[i],memberGen:left[i]?2:1})):[],
+      roomHead:sockets.length?{version:snapshot.version,presentationVer:snapshot.presentationVer,owners:snapshot.owners}:null,
+      hands:clock>=20000&&clock<100000?2:0,
       reservations:clock>=50000&&clock<60000?[{id:'own-hold',actorId:actors[0],amountCents:500}]:[]};
   };
-  f.ports.negative=async()=>({connectionId:`negative-${++nonce}`,status:403,stateFrames:0});f.ports.revoke=async()=>{};
-  f.ports.provenance=async c=>({source:'render-api-capture',serviceId:f.plan.serviceId,deployment:{id:'dep-test',serviceId:f.plan.serviceId,commit:{id:f.plan.sha}},
-    log:{id:`log-${c.nonce}`,timestamp:new Date(c.at).toISOString(),message:JSON.stringify({event:'shared_room_socket_identity',processId:c.processId,socketNonce:c.nonce,at:c.at}),
-      labels:[{name:'resource',value:f.plan.serviceId},{name:'instance',value:`${f.plan.serviceId}-${c.processId}`},{name:'type',value:'app'}]}});
+  f.ports.negative=async()=>{clock++;return {connectionId:`negative-${++nonce}`,status:403,stateFrames:0};};
+  f.ports.revoke=async()=>{assert.ok(left.every(Boolean));assert.ok(f.calls.includes('sql:cleared'));f.calls.push('logout');};
+  f.ports.provenance=async c=>provenanceBundle(c);
   return {...f,sockets,commands,progress,getClock:()=>clock};
 }
 test('F11 driver captures two sockets, preserves ambiguous command IDs and closes only its ports',async()=>{
@@ -428,12 +617,22 @@ test('F11 driver captures two sockets, preserves ambiguous command IDs and close
   const retries=f.commands.filter(row=>row.index===0);assert.equal(retries[0].commandId,retries[1].commandId);
   assert.ok(f.progress.some(row=>row.status==='awaiting-external-restart'));assert.ok(f.sockets.every(c=>c.closed));assert.equal(f.calls.at(-1),'closed');
   assert.ok(f.files.has('capture.ndjson'));assert.ok(f.files.has('manifest.json'));
+  assert.ok(f.calls.indexOf('leave:0')<f.calls.indexOf('sql:cleared'));
+  assert.ok(f.calls.indexOf('leave:1')<f.calls.indexOf('sql:cleared'));
+  assert.ok(f.calls.indexOf('sql:cleared')<f.calls.indexOf('logout'));
 });
 test('F11 timeout without external restart is unverifiable and releases its own resources',async()=>{
   const f=runningPorts({restart:false}),result=await runF11Preview(f.plan,f.ports,{run:true});
   assert.equal(result.acceptance,false);assert.equal(result.code,'f11_restart_not_observed');
   assert.ok(f.getClock()<=165000);assert.ok(f.sockets.every(c=>c.closed));assert.equal(f.calls.at(-1),'closed');
   assert.ok(f.files.has('creation.json'));assert.ok(f.files.has('review.json'));
+});
+test('F11 refuses logout when money is clear but SQL membership remains active',async()=>{
+  const f=runningPorts(),money=f.ports.money;f.ports.money=async()=>{const row=await money();
+    if(row.members.length)row.members[1].active=true;return row;};
+  const result=await runF11Preview(f.plan,f.ports,{run:true});
+  assert.equal(result.code,'f11_own_fixture_needs_settlement');assert.equal(result.acceptance,false);
+  assert.ok(!f.calls.includes('logout'));assert.ok(f.sockets.every(c=>c.closed));
 });
 test('F11 a mid-run read failure stops betting, drains only its fixture and sanitizes the error',async()=>{
   const f=runningPorts(),money=f.ports.money;let reads=0,closed=0;

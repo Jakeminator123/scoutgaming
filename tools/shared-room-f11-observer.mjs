@@ -23,6 +23,11 @@ const hash = value => createHash('sha256').update(JSON.stringify(value)).digest(
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const eventTypes = new Set(['speak', 'idle', 'deal', 'reveal', 'settle', 'turn']);
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
+export const F11_SQL_INTERVAL_MS = 2000;
+const propagationMs = 2000;
+// A query or other client work may consume the existing observation budget.
+// SQL coverage stays bounded independently of silence on the change-only sockets.
+const sqlCoverageMs = F11_SQL_INTERVAL_MS + propagationMs;
 
 // This receipt is evidence for independent review, not authenticated authority.
 // The live driver must establish absence BEFORE its API writes and read back the
@@ -79,6 +84,12 @@ export const F11_MONEY_SQL = `SELECT current_database() AS database,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('id',reservation_id,'actorId',player_id,'amountCents',(amount*100)::bigint) ORDER BY reservation_id)
     FROM croupier_game.shared_wallet_reservations WHERE room_id=$1 AND player_id=ANY($2::text[])), '[]'::jsonb) AS reservations,
   (SELECT count(*)::int FROM croupier_game.shared_wallet_hands WHERE room_id=$1 AND player_id=ANY($2::text[])) AS hands,
+  COALESCE((SELECT jsonb_agg(jsonb_build_object('actorId',player_id,'active',active,
+      'memberGen',(body::jsonb->>'memberGen')::bigint) ORDER BY player_id)
+    FROM croupier_game.shared_table_members WHERE room_id=$1 AND player_id=ANY($2::text[])), '[]'::jsonb) AS members,
+  (SELECT jsonb_build_object('version',(body::jsonb->>'version')::bigint,
+      'presentationVer',COALESCE((body::jsonb->>'presentationVer')::bigint,0),'owners',body::jsonb->'owners')
+    FROM croupier_game.shared_table_rooms WHERE room_id=$1) AS "roomHead",
   COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id::text,'actorId',player_id,'amountCents',(amount*100)::bigint,
       'sourceKey',source_key,'fingerprint',source_fingerprint,'type',type,'currency',currency,'at',at,
       'roundId',(SELECT min(a.body::jsonb->>'round_id') FROM croupier_game.shared_table_audit a
@@ -95,8 +106,31 @@ export const F11_MONEY_SQL = `SELECT current_database() AS database,
 function scope(row, manifest) {
   need(row.roomId === manifest.roomId && equal(row.actors, manifest.actors), 'scope_mismatch');
 }
+export function f11FixtureDrained(row, actors) {
+  return row.hands === 0 && row.reservations?.length === 0 && row.members?.length === actors.length
+    && actors.every(actor => row.members.some(member => member.actorId === actor && member.active === false
+      && integer(member.memberGen) && member.memberGen > 0))
+    && Array.isArray(row.roomHead?.owners) && row.roomHead.owners.length === 7
+    && row.roomHead.owners.every(owner => owner === null);
+}
+
+// The provider label is shorter than RENDER_INSTANCE_ID. Bind the socket and
+// gateway by that label, then bind listening/draining by the full gateway tuple.
+export function validateF11GatewayProof(proof, socketAt, manifest) {
+  const gateway=proof.gateway, listen=gateway?.listening, drain=gateway?.draining;
+  const valid=(entry,phase)=>object(entry) && entry.source==='render-app-log' && id(entry.logId)
+    && entry.logId!==proof.logId && entry.instanceId===proof.instanceId && entry.serviceId===manifest.serviceId
+    && entry.sha===manifest.sha && id(entry.fullInstanceId) && uuid(entry.runtimeId)
+    && integer(entry.listenerId) && entry.listenerId>0 && integer(entry.at) && entry.phase===phase;
+  need(valid(listen,'listening') && listen.binding?.address==='0.0.0.0' && listen.binding.port===10000
+    && listen.at<=socketAt, 'public_listener_evidence_required');
+  need(drain===null || valid(drain,'draining') && drain.logId!==listen.logId && drain.at>=socketAt
+    && ['fullInstanceId','runtimeId','listenerId'].every(key=>drain[key]===listen[key]), 'drain_evidence_invalid');
+  return structuredClone(gateway);
+}
 function money(row, manifest) {
   scope(row, manifest);
+  need(integer(row.readStartedAt) && row.readStartedAt<=row.at && row.at-row.readStartedAt<=propagationMs, 'sql_read_window_invalid');
   need(row.source === 'preview-sql' && row.database === target.database && row.neonProjectId === target.neonProjectId
     && row.branchId === target.branchId, 'money_source_invalid');
   need(['before', 'during', 'after'].includes(row.stage) && integer(row.hands) && Array.isArray(row.balances)
@@ -105,6 +139,11 @@ function money(row, manifest) {
   need(Array.isArray(row.reservations) && row.reservations.length <= 20 && row.reservations.every(x => id(x.id)
     && manifest.actors.includes(x.actorId) && integer(x.amountCents) && x.amountCents > 0)
     && new Set(row.reservations.map(x => x.id)).size === row.reservations.length, 'reservations_invalid');
+  need(Array.isArray(row.members) && row.members.length<=2 && new Set(row.members.map(x=>x.actorId)).size===row.members.length
+    && row.members.every(x=>manifest.actors.includes(x.actorId) && typeof x.active==='boolean' && integer(x.memberGen)), 'membership_invalid');
+  need(row.roomHead===null || object(row.roomHead) && integer(row.roomHead.version) && integer(row.roomHead.presentationVer)
+    && Array.isArray(row.roomHead.owners) && row.roomHead.owners.length===7
+    && row.roomHead.owners.every(x=>x===null || manifest.actors.includes(x)), 'room_head_invalid');
   need(Array.isArray(row.ledger) && row.ledger.length <= 10000, 'ledger_invalid');
   const keys = new Set(), ids = new Set();
   for (const entry of row.ledger) {
@@ -143,7 +182,8 @@ function money(row, manifest) {
       && e.roundId === entry.roundId && e.type === 'payout' && e.amountCents === entry.returnedCents), 'payout_mismatch');
   }
   need(row.ledger.filter(e => e.type === 'payout').every(e => row.settlements.filter(s => s.ledgerId === e.id).length === 1), 'payout_without_settlement');
-  return { stage: row.stage, at: row.at, hands: row.hands, reservations: row.reservations.map(x => ({ id: x.id, amountCents: x.amountCents })),
+  return { stage: row.stage, at: row.at, readStartedAt:row.readStartedAt, hands: row.hands, reservations: row.reservations.map(x => ({ id: x.id, amountCents: x.amountCents })),
+    members: row.members.map(x=>({actorId:x.actorId,active:x.active,memberGen:x.memberGen})), roomHead: structuredClone(row.roomHead),
     settlements: row.settlements.map(x => ({ roundId: x.roundId, actorId: x.actorId, ledgerId: x.ledgerId, returnedCents: x.returnedCents })),
     balances: row.balances.map(x => ({ actorId: x.actorId, balanceCents: x.balanceCents })),
     ledger: row.ledger.map(x => ({ id: x.id, roundId: x.roundId, actorId: x.actorId, amountCents: x.amountCents,
@@ -156,7 +196,7 @@ function money(row, manifest) {
  * Evidence is supplied by the operator; a complete report still requires human
  * provenance review and does NOT constitute F11 production acceptance. */
 export function createF11Observer(input) {
-  const manifest = validateF11Manifest(input), connections = new Map(), targets = [], samples = [], negatives = new Set(), versions = new Map();
+  const manifest = validateF11Manifest(input), connections = new Map(), targets = [], samples = [], negatives = new Map(), versions = new Map();
   let lastAt = manifest.startedAt, count = 0, poisoned = false;
   function observe(row) {
     need(object(row) && integer(row.at) && row.at >= lastAt && row.at <= manifest.endedAt && ++count <= 100000, 'event_order_invalid');
@@ -178,8 +218,9 @@ export function createF11Observer(input) {
         && proof.serviceId === target.serviceId && proof.sha === manifest.sha
         && integer(proof.at) && Math.abs(proof.at - row.at) <= 2000, 'instance_evidence_required');
       need(![...connections.values()].some(c => c.nonce === proof.connectionNonce || c.logId === proof.logId), 'instance_evidence_reused');
+      const gateway=validateF11GatewayProof(proof,proof.at,manifest);
       connections.set(row.connectionId, { actor: row.actorId, instance: proof.instanceId, nonce: proof.connectionNonce,
-        logId: proof.logId, openedAt: row.at, frames: [], closedAt: null, closeCode: null }); return;
+        logId: proof.logId, gateway, openedAt: row.at, frames: [], closedAt: null, closeCode: null }); return;
     }
     if (row.type === 'frame') {
       const c = connections.get(row.connectionId), f = row.frame, s = f?.snapshot, p = f?.presentation;
@@ -209,7 +250,7 @@ export function createF11Observer(input) {
       const stateHash = hash(state);
       need(!versions.has(s.version) || versions.get(s.version) === stateHash, 'state_conflict'); versions.set(s.version,stateHash);
       c.frames.push({ at: row.at, version: s.version, presentationVer: s.presentationVer, phase: s.phase,
-        roundId: s.roundId, turnSeq: s.turnSeq, stateHash,
+        roundId: s.roundId, turnSeq: s.turnSeq, stateHash, ownersHash:hash(s.owners),
         presentationHash: hash(p), eventTypes: p?.events.map(e => e.type) ?? [] }); return;
     }
     if (row.type === 'close') {
@@ -222,9 +263,17 @@ export function createF11Observer(input) {
         && manifest.actors.includes(row.actorId) && row.stateFrames === 0 && [401,403,1008].includes(row.status)
         && id(row.connectionId) && !connections.has(row.connectionId)
         && (row.probe === 'wrong-room' ? synthetic(row.roomId) && row.roomId !== manifest.roomId : row.roomId === manifest.roomId), 'negative_probe_invalid');
-      negatives.add(row.probe); return;
+      need(!negatives.has(row.probe),'negative_probe_invalid');negatives.set(row.probe,row.at); return;
     }
-    if (row.type === 'money') { samples.push(money(row, manifest)); return; }
+    if (row.type === 'money') {
+      const sample=money(row, manifest),previous=samples.at(-1);
+      need(!previous || sample.readStartedAt>=previous.at,'sql_read_window_invalid');
+      if(previous?.roomHead) need(sample.roomHead && sample.roomHead.version>=previous.roomHead.version
+        && sample.roomHead.presentationVer>=previous.roomHead.presentationVer
+        && (sample.roomHead.version!==previous.roomHead.version || sample.roomHead.presentationVer===previous.roomHead.presentationVer
+          && equal(sample.roomHead.owners,previous.roomHead.owners)), 'room_head_regressed');
+      samples.push(sample); return;
+    }
     fail('event_type_invalid');
   }
   function finish() {
@@ -232,18 +281,21 @@ export function createF11Observer(input) {
     need(!poisoned, 'observer_poisoned');
     const all = [...connections.values()], timeline = all.flatMap(c => c.frames).sort((a,b) => a.at-b.at);
     need(timeline.length && timeline[0].at <= manifest.startedAt + 5000 && timeline.at(-1).at >= manifest.endedAt - 5000
-      && timeline.every((f,i) => i === 0 || f.at - timeline[i-1].at <= 20000)
       && new Set(timeline.filter(f => f.phase === 'round').map(f => f.roundId)).size >= 2, 'continuous_hands_not_proven');
     let overlap;
     for (const old of all) for (const fresh of all) {
       if (old.instance === fresh.instance || old.actor === fresh.actor || old.openedAt >= fresh.openedAt || old.closeCode !== 1012) continue;
-      const start = fresh.openedAt, end = Math.min(old.closedAt, fresh.closedAt ?? manifest.endedAt);
+      const drain=old.gateway.draining;
+      if (!drain || drain.at>old.closedAt || drain.at>(fresh.closedAt ?? manifest.endedAt)
+        || drain.at>(fresh.gateway.draining?.at ?? manifest.endedAt)) continue;
+      const start = fresh.openedAt, end = drain.at;
       if (end - start < 30000) continue;
       const a = old.frames.filter(f => f.at >= start && f.at < end), b = fresh.frames.filter(f => f.at >= start && f.at < end);
       if (a.length < 3 || b.length < 3) continue;
-      // Both sockets must keep moving during overlap, not merely recover on reconnect.
-      const progressing = frames => frames[0].at <= start + 2000 && frames.at(-1).at >= end - 2000
-        && frames.at(-1).version > frames[0].version && frames.every((f,i) => i === 0 || f.at-frames[i-1].at <= 20000)
+      // This channel emits changes, not periodic frames. Quiet plans are legal;
+      // waiting alone is not progress. BOTH sockets need >=30s of actual activity.
+      const progressing = frames => frames.at(-1).at-frames[0].at>=30000
+        && new Set(frames.map(f=>f.version)).size>=3
         && ['bets','round'].every(phase => frames.some(f => f.phase === phase));
       if (!progressing(a) || !progressing(b)) continue;
       let consistent = true;
@@ -252,15 +304,31 @@ export function createF11Observer(input) {
       // This seed is only correlation evidence: advancing overlap still requires
       // the actual in-window frames above, on BOTH connections.
       const seeded = (connection, frames) => {
-        const seed=connection.frames.filter(frame=>frame.at<start&&frame.at>=start-20000).at(-1);
+        const seed=connection.frames.filter(frame=>frame.at<start).at(-1);
         return seed?[seed,...frames]:frames;
       };
       for (const [left, right] of [[a,seeded(fresh,b)],[b,seeded(old,a)]]) for (const frame of left) {
-        if (frame.at > end - 2000) continue;
-        const peer = right.find(other => other.at <= frame.at + 2000 && other.version >= frame.version);
+        const peer = right.find(other => other.at <= frame.at + 2000 && other.at<end && other.version >= frame.version);
         if (!peer || peer.version === frame.version && peer.stateHash !== frame.stateHash) consistent = false;
-        if (frame.eventTypes.length && !right.some(other => other.at <= frame.at + 2000
+        if (frame.eventTypes.length && !right.some(other => other.at <= frame.at + 2000 && other.at<end
           && other.presentationVer === frame.presentationVer && other.presentationHash === frame.presentationHash)) consistent = false;
+      }
+      // SQL snapshots occur between readStartedAt and at. Require bounded
+      // coverage THROUGH drain, not merely a few samples during early progress.
+      // A head must include every already-received commit before the read began,
+      // and BOTH sockets must reach that head within the propagation budget.
+      const heads=samples.filter(s=>s.at>=start && s.at<end), peers=[seeded(old,a),seeded(fresh,b)];
+      if (!heads.length || heads.some(s=>!s.roomHead) || heads[0].at-start>sqlCoverageMs
+        || end-heads.at(-1).readStartedAt>sqlCoverageMs
+        || heads.some((s,i)=>i>0 && s.at-heads[i-1].readStartedAt>sqlCoverageMs)
+        || !(heads.at(-1)?.roomHead?.version>heads[0]?.roomHead?.version)) consistent=false;
+      for(const s of heads) {
+        const h=s.roomHead;if(!h)continue;
+        const known=timeline.filter(f=>f.at<s.readStartedAt),ownersHash=hash(h.owners);
+        if(known.some(f=>f.version>h.version || f.presentationVer>h.presentationVer)
+          || timeline.some(f=>f.version===h.version && (f.presentationVer!==h.presentationVer || f.ownersHash!==ownersHash))
+          || peers.some(frames=>!frames.some(f=>f.at<=s.at+propagationMs && f.at<end
+            && f.version>=h.version && f.presentationVer>=h.presentationVer))) consistent=false;
       }
       if (!consistent || !a.some(f => f.eventTypes.includes('deal')) || !b.some(f => f.eventTypes.includes('deal'))) continue;
       const last = old.frames.at(-1), again = all.find(c => c !== old && c.actor === old.actor && c.instance === fresh.instance
@@ -269,7 +337,8 @@ export function createF11Observer(input) {
         || again.frames[0].presentationVer < last.presentationVer || again.frames[0].turnSeq < last.turnSeq
         || again.frames[0].presentationVer === last.presentationVer && again.frames[0].presentationHash !== last.presentationHash) continue;
       overlap = { startedAt: start, endedAt: end, durationMs: end - start, frames: a.length + b.length,
-        instances: [hash(old.instance),hash(fresh.instance)], reconnect: true }; break;
+        instances: [hash(old.instance),hash(fresh.instance)], reconnect: true, oldClientClosedAt:old.closedAt,
+        endedBy:'verified-public-gateway-drain' }; break;
     }
     need(overlap, 'continuous_overlap_not_proven');
     need(negatives.size === 2, 'negative_probes_required');
@@ -280,6 +349,8 @@ export function createF11Observer(input) {
     need(!first.reservations.length && !first.hands && !last.reservations.length && !last.hands, 'unsettled_money');
     need(samples.some(s => s.stage === 'during' && s.at >= overlap.startedAt && s.at < overlap.endedAt && s.reservations.length)
       && samples.some(s => s.stage === 'during' && s.at >= overlap.startedAt && s.at < overlap.endedAt && s.hands > 0), 'active_money_not_observed');
+    need(f11FixtureDrained(last,manifest.actors) && samples.some(s=>s.stage==='during'
+      && s.at<Math.min(...negatives.values()) && f11FixtureDrained(s,manifest.actors)), 'leave_before_logout_not_proven');
     const baseline = new Map(first.ledger.map(e => [e.id,e]));
     need(first.ledger.every(e => last.ledger.some(x => equal(x,e))), 'ledger_history_changed');
     need(first.settlements.every(e => last.settlements.some(x => equal(x,e))), 'settlement_history_changed');
@@ -315,19 +386,27 @@ Input: chronological event objects with type + at. target at both bookends conta
   the manifest target/scope, source=provider-api, engineSha/vercelSha, healthStatus=200,
   ready=true, suspended=false, syntheticOnly=true. Obtain from fresh provider metadata.
 open: connectionId, connectionNonce, actorId, roomId, instanceProof={source:render-app-log,
-  logId,instanceId,connectionNonce,serviceId,sha,at}; correlate the SAME socket to its app log.
+  logId,instanceId,connectionNonce,serviceId,sha,at,gateway:{listening,draining}}; correlate the SAME socket to its app log.
+  Gateway entries bind provider instance label, fullInstanceId, runtimeId and listenerId,
+  with source=render-app-log, logId, serviceId, sha, phase and epoch at. Listening requires
+  binding={address:0.0.0.0,port:10000} before the socket; old-instance draining is mandatory.
+  Server overlap ends at verified drain. Client 1012 and reconnect remain separate evidence.
   Rndr-Id, request logs, old/new labels and separate version HTTP calls are NOT instance evidence.
 frame: connectionId, frame=<actual shared-room-state>; close: connectionId, code.
 negative: source=socket-capture, probe=wrong-room|revoked-session, connectionId, actorId,
   roomId, status=401|403|1008, stateFrames=0. Use a separate rejected socket for each probe.
 money: source=preview-sql, stage=before|during|after, roomId, actors, neonProjectId,
-  branchId, database, balances, reservations, hands, ledger, settlements (F11_MONEY_SQL export).
+  branchId, database, balances, reservations, hands, ledger, settlements, members, roomHead (F11_MONEY_SQL export).
+  readStartedAt/at bracket the real read (<=2s). SQL is polled every 2s; overlapping
+  samples must cover start through drain with <=4s between possible observations.
+  Revisions never regress and must lie between already observed and promptly delivered socket revisions.
 Preparation after human approval: bind saved synthetic publication/accounts to scope;
   capture one old socket and one new-instance socket concurrently for >=30 seconds;
   run continuous synthetic hands with normal 20s/15s windows throughout deployment;
   retain all snapshots/presentation events, correlate dealer events on BOTH sockets;
   observe reservations, consumption and a payout; retain 1012 + same-hand reconnect;
-  run wrong-room/revoked-session probes; finish all hands and take final SQL snapshot.
+  finish hands, leave both memberships and verify inactive/seatless/funds-clear BEFORE logout;
+  run wrong-room/revoked-session probes and take final SQL snapshot.
   Revisions may advance. Never pause clocks or change rules to manufacture overlap.
 Live collection: node tools/run-f11-preview.mjs --help (explicit --run only).
   Requires reviewed socket identity headers and correlated Render app logs at the frozen SHA.
