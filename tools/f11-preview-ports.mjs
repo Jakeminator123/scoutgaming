@@ -5,6 +5,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { F11_TARGET, F11_MONEY_SQL } from './shared-room-f11-observer.mjs';
+import { correlateF11Log } from './run-f11-preview.mjs';
 import { readAdministrationRooms } from '../packages/presentation/server/administration-room-projection.mjs';
 import { checkPackageRooms } from '../packages/presentation/contracts/package-rooms.mjs';
 import { roomGame } from '../packages/presentation/contracts/presentation-room.mjs';
@@ -225,11 +226,18 @@ export async function createF11LivePorts({run=false,plan,credentials,outputDirec
     async provenance(connection) {
       const until=Date.now()+30000;
       do {
-        const row=(await records()).find(row=>{
+        const rows=await records(),socket=rows.find(row=>{
           if(row.source!=='render-api-capture')return false;
-          try {const message=JSON.parse(row.log?.message);return message.processId===connection.processId&&message.socketNonce===connection.nonce;}catch{return false;}
+          try {const message=JSON.parse(row.log?.message);return message.event==='shared_room_socket_identity'
+            && message.processId===connection.processId&&message.socketNonce===connection.nonce;}catch{return false;}
         });
-        if(row)return row;
+        if(socket) {
+          const instance=row=>Array.isArray(row.log?.labels)?row.log.labels.find(x=>x.name==='instance')?.value:row.log?.labels?.instance;
+          const gateway=rows.filter(row=>row.source==='render-api-capture' && instance(row)===instance(socket)
+            && (()=>{try{return JSON.parse(row.log?.message).event==='cloud_gateway_lifecycle';}catch{return false;}})());
+          const bundle={socket,gateway};
+          try {correlateF11Log(bundle,connection,plan);return bundle;}catch{} // the operator may still be appending lifecycle rows
+        }
         await sleep(500);
       }while(Date.now()<until);
       need(false,'socket_provenance_missing');

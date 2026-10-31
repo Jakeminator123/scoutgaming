@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { F11_TARGET, createF11Observer, validateF11Ownership } from './shared-room-f11-observer.mjs';
+import { F11_TARGET, createF11Observer, validateF11Ownership, validateF11GatewayProof, f11FixtureDrained } from './shared-room-f11-observer.mjs';
 import { parseSharedRoomCommand } from '../services/game/shared-room-command-contract.mjs';
 import { projectSharedRoomSnapshot } from '../services/game/shared-room-channel.mjs';
 
@@ -126,11 +126,10 @@ export function nextF11Command(snapshot, {seat, chip, draining=false, bothSeated
       return {op:'act',roundId:s.roundId,turnSeq:s.turnSeq,box:hand.box,handIndex:s.round.active,action:'stand'};
     return null;
   }
+  // Normal leave releases seats/stakes in bets or settled, including a ready
+  // player. Resolve a live hand above first; never start another hand to drain.
+  if (draining) return me.active ? {op:'leave',memberGen:me.memberGen} : null;
   if (s.phase==='settled') return {op:'next',roundId:s.roundId};
-  if (draining) {
-    if (mine && s.bets[seat].main > 0 && !player?.ready) return {op:'clear',windowId:s.windowId};
-    return me.active && mine ? {op:'leave',memberGen:me.memberGen} : null;
-  }
   if (me.pausedUntil > serverNow || player?.leaving || player?.ready || s.deadline && serverNow >= s.deadline) return null;
   if (!mine) return s.owners?.[seat] === null ? {op:'join',memberGen:me.memberGen,seats:[seat],seatGens:{[seat]:s.seatGen[seat]}} : null;
   if (!bothSeated) return null;
@@ -139,21 +138,43 @@ export function nextF11Command(snapshot, {seat, chip, draining=false, bothSeated
   return {op:'ready',windowId:s.windowId};
 }
 
-export function correlateF11Log(receipt, connection, plan) {
+function renderLog(receipt, plan) {
   f11Need(receipt?.source === 'render-api-capture' && receipt.serviceId === plan.serviceId
     && receipt.deployment?.serviceId === plan.serviceId && receipt.deployment?.commit?.id === plan.sha
     && typeof receipt.deployment.id === 'string' && receipt.deployment.id.startsWith('dep-'), 'provenance_required');
   const log=receipt.log;
   let payload;try { payload=JSON.parse(log?.message); } catch { f11Need(false,'provenance_required'); }
   const labels=Array.isArray(log.labels) ? Object.fromEntries(log.labels.map(x=>[x.name,x.value])) : log.labels;
-  f11Need(payload?.event==='shared_room_socket_identity' && payload.processId===connection.processId
-    && payload.socketNonce===connection.nonce && integer(payload.at) && Math.abs(payload.at-connection.at)<=2000
-    && typeof log.id==='string' && /^[a-zA-Z0-9_.:-]{1,128}$/.test(log.id)
+  const at=payload?.event==='cloud_gateway_lifecycle' && typeof payload.at==='string'?Date.parse(payload.at):payload?.at;
+  f11Need(integer(at) && typeof log.id==='string' && /^[a-zA-Z0-9_.:-]{1,128}$/.test(log.id)
     && typeof labels?.instance==='string' && labels.instance.startsWith(`${plan.serviceId}-`)
     && labels.resource===plan.serviceId && labels.type==='app'
-    && Math.abs(Date.parse(log.timestamp)-payload.at)<=2000, 'socket_log_mismatch');
-  return {source:'render-app-log',logId:log.id,instanceId:labels.instance,connectionNonce:connection.nonce,
-    serviceId:plan.serviceId,sha:plan.sha,at:payload.at};
+    && Math.abs(Date.parse(log.timestamp)-at)<=2000, 'socket_log_mismatch');
+  return {payload,proof:{source:'render-app-log',logId:log.id,instanceId:labels.instance,serviceId:plan.serviceId,sha:plan.sha,at}};
+}
+
+export function correlateF11Log(bundle, connection, plan) {
+  const {payload,proof}=renderLog(bundle?.socket,plan);
+  f11Need(payload?.event==='shared_room_socket_identity' && payload.processId===connection.processId
+    && payload.socketNonce===connection.nonce && integer(payload.at) && Math.abs(payload.at-connection.at)<=2000, 'socket_log_mismatch');
+  f11Need(Array.isArray(bundle.gateway) && bundle.gateway.length<=1000,'public_listener_evidence_required');
+  const lifecycle=bundle.gateway.map(row=>renderLog(row,plan)).map(({payload:p,proof:e})=>{
+    f11Need(p.event==='cloud_gateway_lifecycle' && typeof p.at==='string' && new Date(e.at).toISOString()===p.at && p.commitSha===plan.sha
+      && e.instanceId===proof.instanceId,'gateway_log_mismatch');
+    return {...e,fullInstanceId:p.instanceId,runtimeId:p.runtimeId,listenerId:p.listenerId,phase:p.phase,
+      ...(p.phase==='listening'?{binding:p.binding}:{})};
+  });
+  // Startup loopback listeners are deliberately ineligible. The latest public
+  // listener before THIS socket must remain live until this socket was opened.
+  const listening=lifecycle.filter(e=>e.phase==='listening' && e.binding?.address==='0.0.0.0'
+    && e.binding.port===10000 && e.at<=payload.at).sort((a,b)=>b.at-a.at)[0];
+  const draining=lifecycle.filter(e=>e.phase==='draining' && listening
+    && ['fullInstanceId','runtimeId','listenerId'].every(key=>e[key]===listening[key]))
+    .sort((a,b)=>a.at-b.at)[0]??null;
+  proof.connectionNonce=connection.nonce;proof.gateway={listening,draining};
+  validateF11GatewayProof(proof,payload.at,plan);
+  f11Need(connection.closeCode!==1012 || draining && draining.at<=connection.closedAt+2000,'drain_evidence_required');
+  return proof;
 }
 
 export async function runF11Preview(input, ports, {run=false}={}) {
@@ -203,7 +224,8 @@ export async function runF11Preview(input, ports, {run=false}={}) {
     while(ports.now()<until) {
       for(let i=0;i<2;i++) {if(current[i]?.closed)await connect(i);await command(i,true);}
       const row=await sample('during');
-      if(row.hands===0 && row.reservations.length===0)return true;
+      if(f11FixtureDrained(row,fixture.actors) && latest.every((s,i)=>s?.me?.id===fixture.actors[i]
+        && s.me.active===false && s.me.seats?.length===0 && s.owners.every(owner=>owner===null) && !pending[i]))return true;
       await ports.sleep(500);
     }
     return false;
@@ -288,10 +310,14 @@ The private provenance NDJSON file is appended by the operator; every line must 
   {source:provider-api-capture,at:<epoch ms>,service:{id,branch:preview,suspended:not_suspended,serviceDetails:{url}},
    deployment:{id,serviceId,status:live,commit:{id:SHA}},vercel:{id,projectId,readyState:READY,meta:{githubCommitSha:SHA}}}.
   The second receipt must name a different live Render deployment at the SAME SHA.
-  Append socket log receipts: source=render-api-capture, serviceId,
+  Append actual socket identity AND cloud_gateway_lifecycle log receipts: source=render-api-capture, serviceId,
   deployment={id,serviceId,commit:{id:SHA}}, log={id,timestamp,message,
     labels:[{name:resource,value:<serviceId>},{name:instance,value:<serviceId>-...},{name:type,value:app}]}.
-message must be the real shared_room_socket_identity app log matching the SAME socket header.
+  Lifecycle message is the original JSON: {event:cloud_gateway_lifecycle,at:<ISO>,instanceId:<full pod>,runtimeId:<UUID>,
+    commitSha:SHA,phase:listening|draining,listenerId:<number>,binding:{address:0.0.0.0,port:10000}} (binding on listening only).
+  Collect public listening before each instance's sockets and old-instance draining for the SAME runtime/listener.
+  The provider instance label binds socket/lifecycle; it need not equal the full pod. Startup loopback drain is insufficient.
+Each socket identity message must match the SAME socket header; lifecycle messages retain their actual payloads.
 Retain Render API captures for independent review. Manual IDs alone are not provenance.
 Outputs contain synthetic captures/ownership and acceptance:false; keep the directory private.
 connections.json exposes only correlation IDs/close codes, including partial failed runs.
