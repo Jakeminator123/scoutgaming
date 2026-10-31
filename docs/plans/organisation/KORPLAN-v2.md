@@ -1,6 +1,6 @@
 # Körplan: återstående arbete
 
-Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor, bort med förbrukad legacy och dokumentation, och färre onödiga ändringsspärrar. **Talet väntar.** Den här filen är enda aktiva körordning för organisationsarbetet. Migreringens avslutade 20/20 aktiviteter ligger kvar i `migrering/status.json`.
+Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor, bort med förbrukad legacy och dokumentation, och färre onödiga ändringsspärrar. **Talet väntar.** Den här filen är enda aktiva körordning för organisationsarbetet. Migreringen avslutades 28 oktober (20/20, PR #527); historiken finns i Git och [HISTORIK](../../HISTORIK.md).
 
 ## Utgångsläge och mandat
 

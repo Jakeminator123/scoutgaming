@@ -1,8 +1,10 @@
 # Nästa agent
 
-Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor. `migrering/status.json` är fortsatt migrationsplanens enda statuskälla.
+Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
 ## Organisationsarbete
+
+**Avslutad migrationsadministration, 31 oktober:** `migrering/` och dess rapportgenerator, statuskontroller och specialfall i CI/hookar är avvecklade på Jakobs begäran. [HISTORIK](HISTORIK.md) anger Git-versionerna. 78 riktade Node-prov och 18 Atlasprov passerar; Atlas genereras utan fel eller varningar. Aktiva SQL-/readinesskontrakt och molndata är oförändrade. Ingen ny driftacceptans ingår.
 
 **Atlas, 31 oktober:** [PR #761](https://github.com/Jakeminator123/scoutgaming/pull/761) förenar ansvarskartan och sambandskartan med sökbart kodnät, konsumenter, kodankare och provreferenser. `python tools/system-map.py` skapar den fristående `.cache/system-map/index.html`; se [kartguiden](../tools/system-map/README.md). 18 Pythonprov och lokal browserkontroll av layout, sökning och klickbara samband är genomförda. CI kontrollerar referenser och handgranskade ankare; förbrukade samband tas bort med koden. Statisk koppling är inte runtimeanvändning eller testtäckning, och ansvar betyder modulansvar, inte en härledd personägare.
 

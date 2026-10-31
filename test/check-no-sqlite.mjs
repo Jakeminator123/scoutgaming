@@ -10,8 +10,7 @@ import { SQLITE_PATTERN, sqliteMentions, sqliteViolations } from '../tools/check
 const moduleName = ['node', 'sqlite'].join(':'), className = 'Database' + 'Sync';
 
 test('the ban exempts only reviewed documentation; code and runtime Markdown stay banned', () => {
-  const documentation = ['docs/history/jakob-main-migrering/STORSTADNING-UNDERLAG-2026-10-22.md',
-    'migrering/kevin-ks-migrering/AKTIVITETER.md', 'docs/NEXT-AGENT.md', 'START-HERE.md'];
+  const documentation = ['docs/guide.md', 'apps/studio/docs/README.md', 'docs/NEXT-AGENT.md', 'START-HERE.md'];
   assert.deepEqual(sqliteViolations(documentation), []);
   const runtime = ['services/game/store.mjs', 'packages/director/node/companion-store.mjs', 'tools/import.mjs',
     'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'docs/history/run.mjs', 'docs/config.json'];

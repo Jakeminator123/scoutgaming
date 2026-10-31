@@ -47,7 +47,6 @@ run_node_tests admin workspace-tools apps/studio/client/admin/lib/workspace-tool
 run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-directory.test.mjs apps/studio/client/admin/lib/dealer-chat-import.test.mjs apps/studio/client/admin/lib/lifecycle-actions.test.mjs apps/studio/client/admin/lib/confirm-dialog.test.mjs
 run_node_tests admin room-release apps/studio/client/admin/lib/room-release.test.mjs apps/studio/client/admin/lib/room-settings-warning.test.mjs apps/studio/client/admin/lib/media-timing.test.mjs apps/studio/client/admin/lib/room-quick-create.test.mjs apps/studio/client/admin/lib/blocker-view.test.mjs
 run_node_tests admin environment apps/studio/client/admin/lib/scene-cover.test.mjs apps/studio/client/admin/lib/scene-export.test.mjs apps/studio/client/admin/lib/scenes-page.test.mjs
-run_check contracts migration-status 30 node migrering/status.mjs --check
 run_check contracts documentation-links 60 node tools/check-documentation.mjs
 run_node_tests contracts documentation-link-tests test/check-documentation.mjs
 run_check contracts system-map-tests 90 python -m unittest discover -s test/system-map -v
