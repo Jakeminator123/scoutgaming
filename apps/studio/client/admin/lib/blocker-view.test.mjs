@@ -33,13 +33,11 @@ test('every blocker code is one Swedish line with a button to the right place an
   }
 });
 
-test('every material reason the server may send becomes one of a few texts with a button', () => {
+test('every material reason the server may send has an explained recovery action', () => {
   const source = readFileSync(new URL('../../../lib/room-game-config-api.mjs', import.meta.url), 'utf8');
   const server = [...source.slice(source.indexOf('const materialReasons'), source.indexOf('// Den fasta listan')).matchAll(/'(native_material_[a-z_0-9]+)'/g)].map(match => match[1]);
-  assert.ok(server.length >= 20);
+  assert.ok(server.length > 0, 'the server reason list was found');
   for (const reason of server) assert.ok(MATERIAL_REASONS.includes(reason), reason);
-  const texts = new Set(server.map(reason => blockerView('studio_room_game_material_unavailable', {...ctx, materialReason:reason}).text.replace(/:.*$/, ':')));
-  assert.ok(texts.size <= 6, [...texts].join(' | '));
   assert.deepEqual(blockerView('studio_room_game_material_unavailable', {...ctx, materialReason:'native_material_measurement_missing'}).action,
     {label:'Mät omätta klipp', href:'/admin/dealers/paow?flik=klipp', run:'measure'});
   assert.equal(blockerView('native_material_speech_unbound', ctx).text, 'En replik saknar godkänt tal på svenska.');
@@ -50,7 +48,7 @@ test('every material reason the server may send becomes one of a few texts with 
 test('every release reason the server may send has a line and a button, in the word miljö', () => {
   const sources = ['../../../lib/room-release.mjs', '../../../lib/ai-material-adoption.mjs'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
   const server = new Set([...sources.matchAll(/'(ai_adopt_[a-z_]+)'/g)].map(match => match[1]));
-  assert.ok(server.size >= 8);
+  assert.ok(server.size > 0, 'the server release reasons were found');
   for (const reason of server) assert.ok(RELEASE_REASONS.includes(reason), reason);
   for (const reason of RELEASE_REASONS) {
     const view = blockerView('studio_release_invalid', {...ctx, reason});

@@ -38,7 +38,7 @@ function loadTs(fileUrl, overrides = {}) {
 }
 
 const editor = loadTs(new URL('../components/lane-editor.tsx', import.meta.url));
-const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata, LANE_ID_HELP } = editor;
+const { newCompositionId, addLane, addDefaultLane, removeLane, replaceLane, CompositionMetadata } = editor;
 
 function modelEdit(project, edit) {
   try { return { project: edit(project), error: '' }; }
@@ -116,27 +116,19 @@ test('removing a lane leaves the project valid and the original list untouched',
   assert.deepEqual(project.lanes, before);
 });
 
-test('the empty editor requires a named composition and an explicit dealer', () => {
-  const source = readFileSync(new URL('../components/lane-editor.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(source, /window\.confirm/);
-  assert.equal(LANE_ID_HELP, 'Unikt id: små bokstäver, siffror och bindestreck.');
-  const empty = createSeedProject();
-  empty.lanes = [];
-  const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
-  assert.doesNotMatch(editorHtml, /Skapa standardsammansättning/);
-  assert.match(editorHtml, /Dealer för ny miljö/);
-  assert.match(editorHtml, /tekniskt ID skapas automatiskt/);
-  assert.equal(validateProject(addDefaultLane(empty, 'astrid')).lanes[0].id, 'mobile-phone');
-});
-
-test('new compositions ask for a name and dealer while technical IDs remain automatic', () => {
-  const empty = createSeedProject();
-  empty.lanes = [];
-  const editorHtml = renderToStaticMarkup(React.createElement(CompositionMetadata, { project: empty, selectedId: "", onSelect() {}, onEdit() {} }));
-  assert.match(editorHtml, /<option value="" selected="">Välj dealer<\/option>/);
-  assert.doesNotMatch(editorHtml, /<dt>Id|new-lane-id-help|Tekniskt ID<input/);
-  assert.equal((editorHtml.match(/<input/g) ?? []).length, 1);
-  assert.match(editorHtml, /Namn på ny miljö/);
+test('new compositions require both a name and an explicitly chosen registered dealer', () => {
+  for (const [label, dealer] of [['', ''], ['Named composition', ''], ['', 'astrid'], ['Named composition', 'missing']]) {
+    const project = createSeedProject(); project.lanes = [];
+    const h = compositionControls(project);
+    let tree = h.metadata();
+    h.find(tree, node => node.type === 'input' && node.props.required).props.onChange({ target: { value: label } });
+    tree = h.metadata();
+    h.find(tree, node => node.type === 'select' && node.props.required).props.onChange({ target: { value: dealer } });
+    tree = h.metadata();
+    h.find(tree, node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+    assert.deepEqual(h.project, project, JSON.stringify({ label, dealer }));
+    assert.equal(h.selectedId, '');
+  }
 });
 
 test('replaceLane stores the new fields and rejects an invalid table color', () => {

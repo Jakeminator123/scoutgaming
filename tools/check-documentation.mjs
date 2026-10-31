@@ -2,8 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
 import { posix, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDocumentationPath } from './documentation-paths.mjs';
 
-export const isDocumentationSource = path => /^(?:docs\/.+\.md|(?:START-HERE|README|AGENTS)\.md|apps\/studio\/(?:docs\/.+\.md|README\.md|client\/README\.md|components\/partner\/README\.md))$/.test(path);
+export const isDocumentationSource = isDocumentationPath;
 const unsafe = path => path.split('/').some(part => /^(?:\.env(?:\..*)?|\.git|\.aws|\.ssh|\.codex|\.claude|node_modules|arkiv|random-stuff-jakob)$/i.test(part));
 const blank = text => text.replace(/[^\n]/g, ' ');
 

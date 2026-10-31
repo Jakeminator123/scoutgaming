@@ -10,8 +10,8 @@
 //    granskas i PR:en.
 // 2. Ingen ny binär under media/ (bilder, video, ljud och annat Git klassar som binärt).
 //    Befintliga filer får ligga kvar, flyttas eller krympa men inte växa.
-// 3. Levande dokument: docs/NEXT-AGENT.md högst 150 rader, och ingen fil under docs/
-//    över 100 kB (102 400 byte). Det finns ingen historikmapp; äldre text läses ur Git.
+// 3. Ingen fil under docs/ över 100 kB (102 400 byte). Handoffens omfång granskas
+//    efter innehåll, inte radbrytning. Det finns ingen historikmapp; äldre text läses ur Git.
 //
 // Lägen (alla läser Git-objekt, inte filsystemet):
 //   node tools/check-repo-limits.mjs                     hela HEAD-trädet (git ls-tree -r -l)
@@ -30,19 +30,12 @@ import { fileURLToPath } from 'node:url';
 export const ALLOWLIST = 'tools/repo-limits-allowlist.json';
 export const MAX_FILE_BYTES = 1024 * 1024;
 export const MAX_DOC_BYTES = 100 * 1024;
-export const NEXT_AGENT = 'docs/NEXT-AGENT.md';
-export const MAX_NEXT_AGENT_LINES = 150;
 export const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif', '.bmp', '.tif', '.tiff', '.ico', '.heic',
   '.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.wav', '.mp3', '.m4a', '.ogg', '.oga', '.opus', '.flac', '.aac']);
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const mb = bytes => `${(bytes / MAX_FILE_BYTES).toFixed(2)} MB`;
 const kb = bytes => `${Math.ceil(bytes / 1024)} kB`;
-
-export function lineCount(text) {
-  if (!text) return 0;
-  return text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
-}
 
 export function isMediaBinary({ path, binary }) {
   return path.startsWith('media/') && (binary || MEDIA_EXTENSIONS.has(posix.extname(path).toLowerCase()));
@@ -70,7 +63,7 @@ export function allowlistErrors(allowlist) {
   return errors;
 }
 
-// files: [{ path, bytes, baseBytes?, added?, moved?, binary?, lines? }] for the inspected set.
+// files: [{ path, bytes, baseBytes?, added?, moved?, binary? }] for the inspected set.
 // bytes null means the path is absent from the checked tree. complete: files is the whole tree.
 export function checkRepoLimits({ files, allowlist, complete = false }) {
   const errors = allowlistErrors(allowlist);
@@ -101,9 +94,6 @@ export function checkRepoLimits({ files, allowlist, complete = false }) {
     }
     if (file.path.startsWith('docs/') && file.bytes > MAX_DOC_BYTES) {
       errors.push(`${file.path}: ${kb(file.bytes)}, över taket 100 kB för levande dokument. Radera äldre avsnitt; Git har dem (docs/HISTORIK.md).`);
-    }
-    if (file.path === NEXT_AGENT && Number.isInteger(file.lines) && file.lines > MAX_NEXT_AGENT_LINES) {
-      errors.push(`${NEXT_AGENT}: ${file.lines} rader, över taket ${MAX_NEXT_AGENT_LINES}. Radera avklarat; Git har det (docs/HISTORIK.md).`);
     }
   }
   if (complete) for (const path of entries.keys()) if (!seen.has(path)) errors.push(`${path}: finns inte i trädet; ta bort posten ur ${ALLOWLIST}`);
@@ -165,13 +155,11 @@ function parseNumstat(output) {
   return binary;
 }
 
-const lines = (git, oid) => lineCount(git(['cat-file', 'blob', oid]));
-
 // Whole tree: one ls-tree process for every size; every allowlist entry is validated.
 export function inspectTree({ cwd = repository, tree = 'HEAD' } = {}) {
   const git = runner(cwd);
   const blobs = parseLsTree(git(['ls-tree', '-r', '-l', '-z', tree])).filter(entry => entry.type === 'blob');
-  const files = blobs.map(({ path, bytes, oid }) => ({ path, bytes, ...(path === NEXT_AGENT ? { lines: lines(git, oid) } : {}) }));
+  const files = blobs.map(({ path, bytes }) => ({ path, bytes }));
   return { files, allowlist: readJson(git, `${tree}:${ALLOWLIST}`, []), complete: true };
 }
 
@@ -226,12 +214,11 @@ export function inspectChanges({ cwd = repository, tree = null, base = 'HEAD' } 
     added: record.status === 'A',
     moved: record.status === 'A' && removed.has(record.oid),
     binary: binary.has(record.path),
-    ...(record.path === NEXT_AGENT ? { lines: lines(git, record.oid) } : {}),
   });
   const found = new Map(extraBlobs.map(blob => [blob.path, blob]));
   for (const path of extra) {
     const blob = found.get(path);
-    files.push(blob ? { path, bytes: sizes.get(blob.oid), ...(path === NEXT_AGENT ? { lines: lines(git, blob.oid) } : {}) } : { path, bytes: null });
+    files.push(blob ? { path, bytes: sizes.get(blob.oid) } : { path, bytes: null });
   }
   return { files, allowlist, complete: false };
 }

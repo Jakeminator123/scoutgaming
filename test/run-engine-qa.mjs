@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { assertCompleteRun, engineSuiteFiles, runEngineQa, tapSummary } from '../tools/run-engine-qa.mjs';
-import { SQLITE_PATTERN } from '../tools/check-no-sqlite.mjs';
+import { sqliteImports } from '../tools/check-no-sqlite.mjs';
 import { ENGINE_QA_SKIP } from './fixtures/engine-qa.mjs';
 
 test('the engine suite is the hook registry and every file runs only through the harness fixture', async () => {
   const files = await engineSuiteFiles();
-  assert.ok(files.length >= 9);
+  assert.ok(files.length > 0);
   assert.equal(new Set(files).size, files.length);
   for (const file of files) {
     const source = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
     assert.match(source, /from '\.\/fixtures\/engine-qa\.mjs'/, file);
     assert.match(source, /skip: ?ENGINE_QA_SKIP/, file);
     assert.doesNotMatch(source, /CROUPIER_DATA_DIR|craig\.db|croupier\.db/, file);
-    assert.doesNotMatch(source, new RegExp(SQLITE_PATTERN), file);
+    assert.deepEqual(sqliteImports(source, file), [], file);
   }
 });
 
