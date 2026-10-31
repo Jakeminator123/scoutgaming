@@ -205,7 +205,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
             dueAt=Math.min(dueAt,presentation.startAt+shiftMs+(placed.playbackEndMs??placed.endMs));
           } else inRun=false;
           for(const layerEvent of ['backgroundEvent','tableEvent'])composition?.[layerEvent]?.(event.type==='speak'?'speak.'+event.line:event.type,`${presentation.talkId}:${presentation.ver}:${event.shoeDraw??event.line}`);
-          let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1,lastReceived=0;
+          let token,completed=false,timer,lastFrame=-1,selectedId,accepting=true,progressClip=0,progressPhase,lastProgressFrame=-1,lastReceived=0,soundUnavailable=false;
           // shown: the current film part has presented a frame. due: the step's time is over.
           let shown=false,due=false,left=false,dueTimer,resolveLeft;
           const clip=new AbortController();
@@ -240,6 +240,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
           try {
             const outcome=await Promise.race([stalled,leftStep,Promise.resolve().then(()=>{clip.signal.throwIfAborted();return media.present(event,{signal:clip.signal,onProgress:progress,...timing,
               onUnavailable:()=>{if(!clip.signal.aborted&&!closed&&accepting)unavailable=true;},
+              onSoundUnavailable:()=>{if(event.type==='speak'&&!clip.signal.aborted&&!closed&&accepting)soundUnavailable=true;},
               // K04 F9: a stalled take whose card this cursor already shows ends its step without error text.
               shown:()=>token!==undefined&&!committed.has(index)&&cards.shown?.(token)===true,
               onSelected:(video,source)=>{clip.signal.throwIfAborted();if(closed||!accepting)return;
@@ -252,7 +253,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
                 if(token!==undefined&&!committed.has(index))cards.frame(token,time);}});})]);
             if(!left){
               clip.signal.throwIfAborted();completed=outcome;
-              if(completed===false)onError('shared_room_media_unavailable');
+              if(completed===false&&!soundUnavailable)onError('shared_room_media_unavailable');
             }
           } finally {
             accepting=false;clearTimeout(timer);clearTimeout(dueTimer);signal?.removeEventListener('abort',relay);
@@ -330,7 +331,7 @@ export function createSharedRoomPresentationPorts({ media, cards, composition = 
   });
 }
 
-export async function mountSharedRoomPresentation({ document, window, selection, onReady, onError, signal, transport = null,
+export async function mountSharedRoomPresentation({ document, window, selection, onReady, onError, onRecovered = () => {}, signal, transport = null,
   createComposition=createLayerComposition, loadAdapters=()=>Promise.all([import('./performance-player.mjs'),import('./local-presentation.mjs'),import('./local-card-overlay.mjs')]),
   loadSpeechPlayer=()=>import('../../../packages/presentation/runtime/generated-speech-player.mjs') }) {
   if(selection.presentation!=='local')throw new Error('shared_room_presentation_adapter_unavailable');
@@ -377,7 +378,7 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     media=await createLocalPresentation({player,host,dealerId:dealer.id,entry:selection,version:()=>version,idlePhase:()=>sharedIdlePhase(latest),idleConfigRead:false,
       muted:()=>muted,composition,transport:{request},receipt:()=>{},onIdle:dealerFrame,onBusy:()=>{},
       // A dealer that cannot be shown releases a background film deferred for its first frame.
-      onError:()=>{if(!dealerShown){placeholder.textContent=DEALER_UNAVAILABLE;composition?.dealerUnavailable?.();}onError('shared_room_media_unavailable');}});
+      onError:error=>{if(!dealerShown){placeholder.textContent=DEALER_UNAVAILABLE;composition?.dealerUnavailable?.();}onError(error);},onRecovered});
     signal?.throwIfAborted();
     // The dealer's landings come with the room's locked configuration (its frozen material or package row), so a
     // new dealer with its own (copied) landings lays out cards and the phone's three boxes like PAOW, not the row.

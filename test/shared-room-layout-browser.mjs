@@ -20,6 +20,57 @@ const settled = (own, version) => tableSnapshot({ version, own, phase: 'settled'
   lastSettlement: { roundId: 'round-a', returned: 50, currency: 'USD', hands: own.map(box => ({ box })) },
   round: { id: 'round-a', phase: 'settled', active: 0, holeDraw: 20, hands: cards(own), dealer: [{ r: '9', s: 'D', shoeDraw: 1 }, { r: '8', s: 'C', shoeDraw: 20 }], legalActions: [] } });
 
+test('Chrome card projection: player and dealer stay at their screen anchors throughout table-local and legacy plane changes', { skip, timeout: 30000 }, async t => {
+  const fixture = await openLayoutFixture(browserModule, { channel });
+  t.after(() => fixture.close());
+  const { page } = await fixture.open({ width: 1498, height: 1092 });
+  const result = await page.evaluate(async () => {
+    const { createLocalCardOverlay } = await import('/local-card-overlay.mjs');
+    const { calibration } = await import('/packages/presentation/contracts/calibration.mjs');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;inset:0;width:1498px;height:1092px;pointer-events:none';
+    document.body.append(host);
+    const overlay = createLocalCardOverlay(host);
+    host.firstElementChild.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    const legacy = { x: 478.833, y: 65.704, scale: .5003086, adjusted: false };
+    const table = { ...legacy, scale: .6194297, adjusted: true,
+      positions: Object.fromEntries(Object.entries(calibration.positions).map(([seat, p]) =>
+        [seat, { cx: p.cx * legacy.scale / .6194297, cy: p.cy * legacy.scale / .6194297 }])) };
+    const measure = () => [...host.querySelectorAll('.playing-card')].map(card => {
+      const rect = card.querySelector('.card-face > rect').getBoundingClientRect();
+      return { draw: card.dataset.draw, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    });
+    try {
+      overlay.setProjection(table, 1498, 1092);
+      overlay.restore({ phase: 'decisions', active: 0, holeDraw: null,
+        dealer: [{ r: '9', s: '♦', shoeDraw: 1 }],
+        hands: [{ box: 3, cards: [{ r: 'K', s: '♠', shoeDraw: 2 }] }] });
+      const initial = measure(), samples = [];
+      // Both directions, every painted frame and past the former 220 ms
+      // animation: no delayed transform may restore the old local position.
+      for (const projection of [legacy, table]) {
+        overlay.setProjection(projection, 1498, 1092);
+        samples.push(measure());
+        const start = performance.now();
+        do {
+          await new Promise(requestAnimationFrame);
+          samples.push(measure());
+        } while (performance.now() - start < 300);
+      }
+      return { initial, samples };
+    } finally { overlay.close(); host.remove(); }
+  });
+  assert.equal(result.initial.length, 2);
+  assert.ok(result.samples.length > 4, 'sample both plane changes across animation frames');
+  for (const sample of result.samples) for (const expected of result.initial) {
+    const actual = sample.find(card => card.draw === expected.draw);
+    assert.ok(actual, `draw ${expected.draw} remains visible`);
+    assert.ok(Math.abs(actual.x - expected.x) < .01 && Math.abs(actual.y - expected.y) < .01,
+      `draw ${expected.draw} moved from (${expected.x}, ${expected.y}) to (${actual.x}, ${actual.y})`);
+  }
+  assert.deepEqual(fixture.unexpected, []); assert.deepEqual(fixture.pageErrors, []);
+});
+
 test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 and 320 px with one, two and seven own seats', { skip, timeout: 300000 }, async t => {
   const fixture = await openLayoutFixture(browserModule, { channel });
   t.after(() => fixture.close());
