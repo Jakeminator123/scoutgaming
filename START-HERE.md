@@ -15,7 +15,7 @@ Reglerna står i [AGENTS.md](AGENTS.md). [Ordlistan](apps/studio/docs/TERMINOLOG
 | Del | Kod | Drift |
 | --- | --- | --- |
 | Admin, lobby, partner | `apps/studio` (basePath `/studio`; publika vägar `/admin`, `/lobby`, `/partner`) | Vercel, team `scoutgaming`, projekt `scoutgaming` → www.scoutgaming.tech |
-| Startsida och spelskal `/game`, `/play/{game}` | `apps/web` | Vercel, samma projekt (`vercel.json` styr tjänsterna) |
+| Startsida och spelstart `/game?game=…` | `apps/web`; äldre `/play/blackjack` omdirigeras hit | Vercel, samma projekt (`vercel.json` styr tjänsterna) |
 | Tal | `apps/speech` | Vercel |
 | Spelbackend: regelkärna, saldo, sessioner och spel-API:er | `services/game` | Render `croupier-v3` |
 | Talkedjan i drift | `packages/director` (Director-biblioteket) och `services/openclaw/lab` (Director-tjänsten; Gateway-image och deploy i `deploy/`) | Render `croupier-lab-director`, `croupier-lab-openclaw` |
@@ -26,6 +26,29 @@ Reglerna står i [AGENTS.md](AGENTS.md). [Ordlistan](apps/studio/docs/TERMINOLOG
 Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, och `main` är den enda produktvägen. Ingen SQLite, inga lokala produktregister, inga parallella QA-ytor. `/control` och `/lab` svarar bara med redirect till `/admin`; `/bo` är borta. PGlite är ett dev-beroende för tester, inte en produktväg. Kvarvarande rester är avvecklingsobjekt, inte bevarandekrav.
 
 `services/game` innehåller mer än spelregler. Bara regelkärnan avgör kort och utfall; klient, presentation, tal och driftsadaptrar är ändringsbar kod runt den. Se [kodgränsen](services/game/README.md#vad-som-får-ändras).
+
+## Systemkarta: vem äger vilket beslut?
+
+```text
+Admin / partner → behörighet + revision → Neon: utkast och publicerade paket
+                                              ↓
+Lobby → /game?game=… → spelarsession + publicerat rum → Render: spelmotor
+                                              ↓               ↓
+                                     Blob: mediebytes    Neon: spel och saldo
+```
+
+Ansvar nedan betyder kodens beslut, inte en fryst mapp eller en permanent agentägare. Vid varje ändring får berörda filer en ensam skrivare; huvudagenten äger integration och release. Aktuella uppdrag står i [körplanen](docs/plans/organisation/KORPLAN-v2.md).
+
+| Produktväg / ansvar | Kod att börja i | Data och drift | Verifiering av gränsen |
+| --- | --- | --- | --- |
+| Admin: redigera valt bolag, team och material. HTTP-lagret äger session, origin och tillåtet scope. | [Admin-route](apps/studio/app/admin/[[...path]]/route.ts), [klienten](apps/studio/client/admin), [runtime](apps/studio/lib/studio-native-runtime.mjs) och [behörighet](packages/studio-access/README.md) | Vercel Studio → Neon; runtime tillför pooler och obligatorisk schemakontroll. | Behörighet, främmande bolag, revisionskonflikt, sista administratören och sparade utkast. |
+| Bolag och publicering: medlemskap, paket, historik och atomisk audit. Ett rums inställning hålls skild från den delade mallen. | [Bolagsregler](packages/operators/README.md), [publicerade rum](packages/operators/server/public-rooms.mjs), [branding och roomOverrides](packages/operators/contracts/branding.mjs) | Neon: bolag, medlemskap och versionsbundna paket; apparna äger anrop och pooler. | [Bolagsprov](test/operator-store.mjs), [rummets paketauktoritet](test/package-room-authority.mjs), scope/CAS och livscykelprov. |
+| Register och media: exakt identitet, snapshot och läsbara bytes. Ett sparat projekt är inte automatiskt publicerat. | [Registerkontrakt](packages/studio-registry/README.md), [publicerad scen](packages/presentation/runtime/published-scene.mjs) | Neon bär register/revisioner; privat Blob bär bytes. Studio och spelmotor tillför sina provideradaptrar. | Hash/Range/origin, frysta snapshots och negativa referens-/behörighetsprov; AV-acceptans är separat. |
+| Lobby och spelstart: välj publicerat rum och kontrollera spelarsession. | [Lobbykatalog](apps/studio/client/lobby/lib/catalog.mjs), [gemensamma adresser](packages/navigation/game-entry.mjs), [webbens start](apps/web/lib/server-ui.mjs) | Vercel → Render. `/game` väljer spel; motorns `/play/roulette` är ett internt dokumentsteg. `/play/blackjack` är en äldre redirect. | [Bolagsbunden start](test/game-entry-operator.mjs), [routing](test/platform-room-routing.mjs), okänt bolag/spel och saknad session. |
+| Spel och pengar: servern avgör kort, sko, utfall och atomiska saldoförändringar. Klienten visar serverns tillstånd. | [Spelbackendens ansvar](services/game/README.md), `games/blackjack/round.mjs`, `core.mjs` och `games/blackjack/table/` under `services/game` | Render → Neon. [Transaktionskärnan](packages/storage/README.md) får appens pool; den skapar ingen egen produktdatabas. | Regel-/walletprov, verklig PostgreSQL för samtidighet, [rumsåtkomst](test/shared-room-access.mjs) och browserprov för klienten. |
+| Tal: generering, distribution och mediebunden uppspelning runt spelkärnan. | `apps/speech`, `packages/presentation`, `packages/director`, `services/openclaw/lab` och spelmotorns taladaptrar | Vercel-ingress, Render Director/Gateway och medielagring. | **Arbetet är pausat.** Kod-/startprov är inte godkänd rumsdistribution eller läppsynk; se [aktuellt läge](docs/NEXT-AGENT.md). |
+
+Admins isolerade Provspel använder fortfarande en annan klient-/lagringsadapter än det delade bordet. Det är en levande konsument att ersätta, inte en oanvänd fil att radera; se [spelbackendens guide](services/game/README.md). Tekniska ord som `operator`, `lane`, `studio` och `croupier` översätts i [ordlistan](apps/studio/docs/TERMINOLOGI.md). Namnet ensamt avgör inte om koden används.
 
 ## Identiteter
 
@@ -44,6 +67,8 @@ Beslut (Jakob 2026-10-27): Vercel + Render + Neon + Blob är den enda vägen, oc
 | Raderat | Render | `croupier-v2` och `croupier-vercel-preview-qa` raderades 2026-10-27 (Jakobs beslut). Äldre dokument som nämner dem beskriver historik. |
 
 Andra tjänster i samma Render-workspace och Neon-orgen `org-lucky-cake-48388035` hör till andra projekt; rör dem inte. Kevin har läsrollen `kevin_migration_readonly` i produktionens Neon och sin GitHub-åtkomst (Jakobs beslut 2026-10-27). Hans brancher (`kevin*`, `codex/kevin-*`) rörs aldrig; bra beteenden skrivs om i mains moduler.
+
+Git-gren, Vercel-projekt, Render-tjänst och Neon-projekt/branch är olika identiteter. Git `preview` använder det separata Neon-projektet `scoutgaming-preview`; en Neon-gren som heter `main` i det projektet betyder inte produktion. Följ projekt- och branch-ID:n i tabellen vid driftkontroll.
 
 ## Publiceringsordning
 
