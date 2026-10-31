@@ -1229,8 +1229,8 @@ if (!speechStartupDisabled && process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1'
     const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
     const startup=await startMovingSpeech({env:process.env,
       onRecovery:status=>console.warn(JSON.stringify({event:'moving_speech_recovery',...status})),
-      loadBank:record=>loadMovingBankArtifacts(record,bankOptions),
-      verifyFile:record=>withVerifiedPrivateMediaFile(record,async()=>true,bankOptions),
+      loadBank:(record,{signal})=>loadMovingBankArtifacts(record,{...bankOptions,signal}),
+      verifyFile:(record,{signal})=>withVerifiedPrivateMediaFile(record,async()=>true,{...bankOptions,signal}),
       createLane:({dealerId,bank,profile,configuration})=>{
         const provider=createMovingSpeechRunPod({endpointId:profile.endpointId,
           apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});

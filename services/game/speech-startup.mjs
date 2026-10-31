@@ -2,7 +2,27 @@ import {StudioError} from '../../packages/shared/studio-error.mjs';
 import {exactPlatformOrigin} from '../../packages/navigation/server/platform-routing.mjs';
 import {movingDriftConfiguration, movingDriftDealerProfile, MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/contracts/moving-drift.mjs';
 
-class SpeechUnavailable extends Error {}
+// One budget for the complete optional bank set, leaving 25 s of the existing
+// 30 s child readiness window for mandatory game startup. Never extend that window.
+export const BANK_PREFLIGHT_MS = 5000;
+class SpeechUnavailable extends Error {
+  constructor(reason='configuration_or_bank_invalid') { super(reason); this.reason=reason; }
+}
+async function bankPreflight(work, timeoutMs) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs<1 || timeoutMs>BANK_PREFLIGHT_MS) throw new RangeError('invalid_bank_preflight_budget');
+  const controller=new AbortController();
+  let timer;
+  const deadline=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      const error=new SpeechUnavailable('bank_preflight_timeout');
+      controller.abort(error); reject(error);
+    },timeoutMs);
+  });
+  // Only bank validation runs in this race. Its late completion cannot create
+  // a lane, reconcile a job, or install a listener after the deadline wins.
+  try { return await Promise.race([Promise.resolve().then(()=>work(controller.signal)),deadline]); }
+  finally { clearTimeout(timer); }
+}
 const unavailable = () => { throw new SpeechUnavailable(); };
 const bankCodes = new Set(['moving_bank_artifacts_invalid','moving_bank_invalid_sources',
   'moving_bank_invalid_source','moving_bank_invalid_rest','moving_bank_sources_changed']);
@@ -21,7 +41,7 @@ async function artifact(work) {
 /** Validate every immutable bank before creating any lane. Lane factories may
  * check SQL readiness: those errors must remain fatal. Acquired resources are
  * registered before reconciliation, and closed on every subsequent failure. */
-export async function startMovingSpeech({env, loadBank, verifyFile, createLane, createService, onRecovery = () => {}}) {
+export async function startMovingSpeech({env, loadBank, verifyFile, createLane, createService, onRecovery = () => {}, bankTimeoutMs = BANK_PREFLIGHT_MS}) {
   // Public game identity is mandatory, not an optional speech failure.
   exactPlatformOrigin(env.PUBLIC_URL, 'PUBLIC_URL');
   let configuration, records, workerOrigin;
@@ -35,16 +55,23 @@ export async function startMovingSpeech({env, loadBank, verifyFile, createLane, 
         || Object.keys(records).some(id=>!MOVING_DRIFT_DEALER_ID.test(id))) unavailable();
       if (configuration.profiles.length!==Object.keys(records).length) unavailable();
     } catch { unavailable(); }
-    const verified=[];
-    for (const [dealerId,record] of Object.entries(records)) {
-      const bank=await artifact(()=>loadBank(record));
-      const profile=movingDriftDealerProfile(configuration,dealerId);
-      if (bank.sourceSet.dealerId!==dealerId || !profile || profile.bankHash!==bank.archive.sha256
-        || profile.releaseDigest!==env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256) unavailable();
-      await artifact(()=>verifyFile(bank.archive));
-      await artifact(()=>verifyFile(bank.receipt));
-      verified.push({dealerId,bank,profile});
-    }
+    const verified=await bankPreflight(async signal=>{
+      const banks=[];
+      for (const [dealerId,record] of Object.entries(records)) {
+        signal.throwIfAborted();
+        const bank=await artifact(()=>loadBank(record,{signal}));
+        signal.throwIfAborted();
+        const profile=movingDriftDealerProfile(configuration,dealerId);
+        if (bank.sourceSet.dealerId!==dealerId || !profile || profile.bankHash!==bank.archive.sha256
+          || profile.releaseDigest!==env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256) unavailable();
+        await artifact(()=>verifyFile(bank.archive,{signal}));
+        signal.throwIfAborted();
+        await artifact(()=>verifyFile(bank.receipt,{signal}));
+        signal.throwIfAborted();
+        banks.push({dealerId,bank,profile});
+      }
+      return banks;
+    },bankTimeoutMs);
     const lanes=[];
     let service;
     const close=async()=>{
@@ -72,6 +99,6 @@ export async function startMovingSpeech({env, loadBank, verifyFile, createLane, 
     }
   } catch (error) {
     if (!(error instanceof SpeechUnavailable)) throw error;
-    return {service:null,lanes:[],status:'unavailable',reason:'configuration_or_bank_invalid'};
+    return {service:null,lanes:[],status:'unavailable',reason:error.reason};
   }
 }

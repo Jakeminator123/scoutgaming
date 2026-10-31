@@ -28,6 +28,8 @@ const nullableId = pattern => candidate => candidate === null || typeof candidat
 const receipt = value => pick(value, { code, phase, streamId: nullableId(HEX32), requestId: nullableId(UUID) });
 
 export const CHILD_DIAGNOSTIC_EVENTS = Object.freeze({
+  speech_startup_unavailable: value => pick(value, {state:oneOf(new Set(['unavailable'])),
+    reason:oneOf(new Set(['configuration_invalid','configuration_or_bank_invalid','bank_preflight_timeout']))}),
   moving_drift_guard_rejected: value => { const { event: _event, ...rest } = value; return sanitizeDriftGuardDiagnostic(rest); },
   moving_drift_readback_timing: value => pick(value, { phase: oneOf(READBACK_PHASES), result: oneOf(new Set(['success', 'failure'])),
     durationClass: oneOf(new Set(['fast', 'slow', 'overdue', 'invalid'])) }),

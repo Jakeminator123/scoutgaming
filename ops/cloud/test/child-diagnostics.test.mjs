@@ -90,3 +90,19 @@ test('moving speech recovery is forwarded per dealer with a bounded dealer ID an
     { dealerId: 'https://evil.invalid', unresolved: 1 }, { dealerId: 'paow', unresolved: -1 }, { dealerId: 'paow', unresolved: 100001 }, { dealerId: 'paow' }])
     assert.equal(safeChildDiagnosticLine(JSON.stringify({ event: 'moving_speech_recovery', ...bad })), null, JSON.stringify(bad));
 });
+
+
+test('optional speech startup diagnostic forwards only fixed unavailable status and reasons',()=>{
+  const emitted=[];
+  const {web}=withChildDiagnostics({web:{}},{emit:line=>emitted.push(JSON.parse(line))});
+  for(const reason of ['configuration_invalid','configuration_or_bank_invalid','bank_preflight_timeout']) {
+    web.onStderrLine(JSON.stringify({event:'speech_startup_unavailable',state:'unavailable',reason,
+      error:'private-provider-failure',url:'https://private.invalid',token:'private-token'}));
+    assert.deepEqual(emitted.at(-1),{event:'speech_startup_unavailable',source:'game',state:'unavailable',reason});
+  }
+  for(const invalid of [{state:'ready',reason:'configuration_invalid'},
+    {state:'unavailable',reason:'private-provider-failure'}, {reason:'configuration_invalid'}]) {
+    assert.equal(safeChildDiagnosticLine(JSON.stringify({event:'speech_startup_unavailable',...invalid})),null);
+  }
+  assert.equal(emitted.length,3);assert.equal(JSON.stringify(emitted).includes('private'),false);
+});
