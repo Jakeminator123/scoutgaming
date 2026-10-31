@@ -19,6 +19,9 @@ test('compiled CSS can be renamed, combined, reformatted and placed in layers', 
   built.html = built.html.replace('<link rel="stylesheet" href="controls.css"><link rel="stylesheet" href="palette.css">', '<link rel="stylesheet" href="merged.css">');
   built.assets = new Map([['saved-mode.js', themeModeBootstrap], ['merged.css', `@layer base {${tokens}} .button{display:flex}`]]);
   checkAdminArtifacts(built);
+  built.html = built.html.replace('<head>', '<head><script src="earlier.js"></script>').replace('src="saved-mode.js"', 'src="saved-mode.js" type="text/javascript"');
+  built.assets.set('earlier.js', '/* independent earlier script */');
+  checkAdminArtifacts(built);
 });
 
 test('missing, empty, malformed or uncompiled linked CSS fails build validation', () => {

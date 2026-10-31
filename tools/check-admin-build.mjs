@@ -26,26 +26,30 @@ function documentAssets(html) {
   const attr = (tag, name) => tag.text.match(new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, 'i'))?.[1];
   const styles = tags.filter(tag => tag.tag === 'link' && attr(tag, 'rel')?.split(/\s+/).includes('stylesheet'));
   assert.ok(styles.length, 'compiled CSS is linked');
-  const script = tags.find(tag => tag.tag === 'script' && attr(tag, 'src'));
-  assert.ok(script && styles.every(style => script.index < style.index), 'theme bootstrap runs before every stylesheet');
-  assert.equal(tags.filter(tag => tag.tag === 'script' && attr(tag, 'src') === attr(script, 'src')).length, 1, 'theme bootstrap is delivered once');
-  assert.doesNotMatch(script.text, /\s(?:defer|async)\b|\btype\s*=/i, 'theme bootstrap runs synchronously');
   const root = tags.find(tag => tag.tag === 'html');
   assert.ok(root && attr(root, 'class')?.split(/\s+/).includes('dark'), 'dark mode works without JavaScript');
-  return { styles: styles.map(tag => attr(tag, 'href')), bootstrap: attr(script, 'src') };
+  return {
+    styles: styles.map(tag => ({ href: attr(tag, 'href'), index: tag.index })),
+    scripts: tags.filter(tag => tag.tag === 'script' && attr(tag, 'src')).map(tag => ({ ...tag, src: attr(tag, 'src'), type: attr(tag, 'type') })),
+  };
 }
 
 // Validate the files the document actually delivers, independent of CSS names,
 // splitting or utility syntax. Keyboard focus is measured in the browser suite.
 export function checkAdminArtifacts({ html, assets, tokens }) {
-  const { styles, bootstrap } = documentAssets(html);
+  const { styles, scripts } = documentAssets(html);
   const read = url => {
     const value = assets.get(url);
     assert.ok(value?.trim(), `${url ?? 'stylesheet href'} is missing or empty`);
     return value;
   };
-  assert.equal(read(bootstrap).trim(), themeModeBootstrap, 'the built bootstrap sets the saved theme');
-  const sheets = styles.map(url => parse(read(url)));
+  const bootstraps = scripts.filter(script => assets.get(script.src)?.trim() === themeModeBootstrap);
+  assert.equal(bootstraps.length, 1, 'one current bootstrap sets the saved theme');
+  const bootstrap = bootstraps[0];
+  assert.ok(styles.every(style => bootstrap.index < style.index), 'theme bootstrap runs before every stylesheet');
+  assert.doesNotMatch(bootstrap.text, /\s(?:defer|async)(?:\s|=|>)/i, 'theme bootstrap runs synchronously');
+  assert.ok(!bootstrap.type || /^(?:text|application)\/(?:java|ecma)script$/i.test(bootstrap.type), 'theme bootstrap runs synchronously');
+  const sheets = styles.map(style => parse(read(style.href)));
   for (const sheet of sheets) sheet.walkAtRules(rule => {
     assert.ok(!['import', 'tailwind', 'apply', 'theme', 'source', 'custom-variant', 'utility', 'variant', 'reference'].includes(rule.name), `uncompiled @${rule.name}`);
     assert.doesNotMatch(rule.params, /prefers-color-scheme/, 'theme follows the saved choice');
@@ -58,17 +62,22 @@ export function checkAdminArtifacts({ html, assets, tokens }) {
 
 export function checkAdminBuild(directory = resolve(repo, 'apps/studio/design-preview-build/admin')) {
   const html = readFileSync(resolve(directory, 'index.html'), 'utf8');
-  const { styles, bootstrap } = documentAssets(html);
+  const { styles, scripts } = documentAssets(html);
   const base = new URL('https://admin-build.invalid/admin/_assets/admin/');
-  const assets = new Map([...styles, bootstrap].map(href => {
+  const assets = new Map();
+  const readAsset = (href, required) => {
     assert.ok(href, 'stylesheet href is missing');
     const url = new URL(href, base), pathname = decodeURIComponent(url.pathname);
-    assert.ok(url.origin === base.origin && pathname.startsWith(base.pathname), `asset is outside the build: ${href}`);
+    const local = url.origin === base.origin && pathname.startsWith(base.pathname);
+    if (!required && !local) return;
+    assert.ok(local, `asset is outside the build: ${href}`);
     const file = resolve(directory, pathname.slice(base.pathname.length));
     const path = relative(directory, file);
     assert.ok(path && !isAbsolute(path) && path !== '..' && !path.startsWith(`..${sep}`), `asset is outside the build: ${href}`);
-    return [href, readFileSync(file, 'utf8')];
-  }));
+    assets.set(href, readFileSync(file, 'utf8'));
+  };
+  for (const style of styles) readAsset(style.href, true);
+  for (const script of scripts) readAsset(script.src, false);
   checkAdminArtifacts({ html, assets,
     tokens: readFileSync(resolve(repo, 'packages/ui/tokens.css'), 'utf8') });
 }
