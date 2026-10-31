@@ -48,6 +48,14 @@ test('a native N1 login starts no player handoff on the actual isolated engine a
     assert.equal(response.headers.getSetCookie().some(value=>value.startsWith('player_session=')),false,`${path} mints no player session`);
   }
   assert.equal(await sessions(),before,'retired handoff routes create no session');
+  for(const cookie of ['',boCookie]) {
+    const read=await request('/api/bo/speech-qa',{cookie});assert.equal(read.status,404);
+    const write=await request('/api/bo/speech-qa',{method:'POST',cookie,body:{action:'prepare'}});
+    assert.equal(write.status,410);assert.deepEqual(await write.json(),{error:'legacy_administration_retired'});
+    assert.equal(write.headers.has('set-cookie'),false,'retired QA cannot create a session');
+  }
+  for(const path of ['/bo/speech-qa.html','/bo/speech-qa.mjs'])assert.equal((await request(path,{cookie:boCookie})).status,404);
+  assert.equal(await sessions(),before,'retired QA requests do not mint a player');
   const logout=await request('/api/auth/logout',{method:'POST',cookie:boCookie,body:{}});assert.equal(logout.status,200);
   const cleared=logout.headers.getSetCookie();
   assert.ok(cleared.some(value=>value.startsWith('bo_jwt=;')),'shared-origin logout clears the administrator cookie');

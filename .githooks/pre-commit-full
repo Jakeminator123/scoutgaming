@@ -65,7 +65,7 @@ run_node_tests contracts operator-appearance-api test/operator-appearance-api.mj
 run_node_tests database moving-drift test/moving-drift-controller.mjs test/postgres-moving-drift.mjs test/moving-drift-executor.mjs test/moving-drift-observer.mjs test/moving-drift-diagnostics.mjs
 run_node_tests database studio-repository test/studio-repository.mjs test/package-room-authority.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/check-migration-readiness.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs test/partner-team-postgres.mjs test/studio-isolated-partner-qa.mjs
 run_node_tests database studio-game-policy test/studio-game-policy.mjs test/studio-media-runtime.mjs test/studio-game-authority.mjs test/studio-game-commands.mjs test/studio-admin-accounts.mjs test/studio-native-auth-actions.mjs test/studio-cutover-integration.mjs
-run_node_tests database speech-journal-runtime test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs test/speech-ledger-import.mjs test/postgres-operator-speech-qa.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
+run_node_tests database speech-journal-runtime test/speech-journal-runtime.mjs test/speech-ledger-snapshot.mjs test/speech-ledger-import.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
 run_node_tests database pglite-pool test/pglite-pool.mjs test/db-snapshot.mjs test/api-key-operator-migration.mjs test/player-operator-migration.mjs test/operator-materials-postgres.mjs test/republish-rooms.mjs
 run_node_tests database migration-ledgers test/migration-ledgers.mjs
 run_node_tests presentation registered-cloud-idle test/registered-cloud-idle.mjs test/registered-cloud-playback.mjs
@@ -99,7 +99,7 @@ run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
 run_node_tests speech openclaw-chat-contract test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
 run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs test/microphone-openclaw-integration.mjs
 run_node_tests speech generated-speech-providers test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
-run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
+run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs
 run_node_tests gameplay factory-filmed-profile test/factory-filmed-profile.mjs
 run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/actor-edge-blend.mjs test/table-audio.mjs

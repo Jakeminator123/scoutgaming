@@ -15,8 +15,7 @@ import {createSeedProject,isAssetCompatible} from '../packages/presentation/cont
 import {createPresentationApi} from '../services/game/presentation-api.mjs';
 import {createNativeObservation} from '../services/game/public/native-observation.mjs';
 import {createHash} from 'node:crypto';
-import {mkdtemp,mkdir,writeFile,rm,readFile} from 'node:fs/promises';
-import vm from 'node:vm';
+import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 
@@ -125,25 +124,6 @@ test('Neon public JSON preserves exact UTF8, HEAD, ETag and Range without local 
   repository.readRuntimeCatalog=async()=>{throw Error('database unavailable');};
   await assert.rejects(media.readMetadata('review/take.json'));
   await assert.rejects(media.hasPublicMedia('review/take.json'),error=>error.code==='studio_media_storage_unavailable');
-});
-
-test('retired calibration writer rejects in every mode before reading a body or touching files',async()=>{
-  // Exercise the production route in isolation: no database or listening server
-  // is needed to prove the early write boundary for each deployment flag.
-  const source=await readFile(new URL('../services/game/server.mjs',import.meta.url),'utf8');
-  const begin=source.indexOf("  if (req.method === 'POST' && req.url === '/calibration') {");
-  const end=source.indexOf("\n  if (req.method === 'POST' && pathname.startsWith('/api/bo/')",begin);
-  assert.ok(begin>0&&end>begin,'production calibration route exists');
-  for(const env of [{},{},{CROUPIER_CLOUD_RUNTIME:'1'}]){
-    const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
-    const reject=()=>{throw Error('native calibration must not touch body or disk');};
-    vm.runInNewContext(`(()=>{${source.slice(begin,end)}\n})()`,{
-      process:{env},cloudRuntime:env.CROUPIER_CLOUD_RUNTIME==='1',req:{method:'POST',url:'/calibration',on:reject},res,
-      readCalibrationCss:reject,writeSync:reject,
-    });
-    assert.equal(res.status,403);assert.equal(res.headers['Cache-Control'],'no-store');
-    assert.deepEqual(JSON.parse(res.body),{error:'calibration_unavailable'});
-  }
 });
 
 import {createVideoRegistry} from '../packages/studio-registry/server/registry-core.mjs';

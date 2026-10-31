@@ -8,7 +8,6 @@ import { createSpeechJournal, speechRequestKey } from '../services/game/postgres
 import { planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { mediaBlobPath } from '../apps/studio/lib/cloud-media-store.mjs';
-import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operator-speech-qa.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
@@ -267,7 +266,6 @@ export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
   assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,true);
   const importedQa=(await pool.query('SELECT attempt,actor,source_sha256 FROM croupier_studio.operator_qa_attempts WHERE environment_id=$1 ORDER BY attempt',[scope.environment])).rows;
   assert.deepEqual(importedQa,retained.filter(row=>row.name.includes('.attempt-')).map((row,i)=>({attempt:i+1,actor:null,source_sha256:row.sha256})));
-  assert.deepEqual(await createPostgresOperatorSpeechQa({pool,scope}).state(),{gate:null,attempts:0});
   assert.equal((await pool.query('SELECT count(*)::int n FROM croupier_studio.operator_qa_gate WHERE environment_id=$1',[scope.environment])).rows[0].n,0);
   if(restart){pool=await restart();input={...input,pool};assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,true);}
   const journal=await createSpeechJournal({pool,environmentId:scope.environment});
@@ -284,18 +282,14 @@ export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
   const activeScope={...scope,environment:`${scope.environment}_active`},activeSource=prepared(activeScope,qaPackets({gate:true}));
   const activeInput={...args(pool,activeSource),schemaCheck:planStudioMigrations,expectedTarget:plan.target};
   await applyLegacySpeechLedgerSnapshot(activeInput);
-  // A fixed synthetic campaign clock exercises the actual adapter/SQL without
-  // relying on wall-clock movement or creating a live operator campaign.
-  const operator=createPostgresOperatorSpeechQa({pool,scope:activeScope,now:()=>stamp}),state=await operator.state();
-  assert.equal(state.attempts,2);assert.equal(state.gate.id,campaignId);
-  await assert.rejects(operator.reserve({gate:state.gate,turn:1,authorize:async()=>null}),{code:'operator_speech_qa_auth_required'});
-  assert.equal((await operator.state()).attempts,2);
-  const reserved=await operator.reserve({gate:state.gate,turn:2,authorize:async()=>({actor:'actual-synthetic-admin'})});
-  assert.equal(reserved.attempt,3);assert.equal(await reserved.check(),true);await reserved.release();
-  assert.equal((await operator.state()).attempts,3);
-  await assert.rejects(operator.reserve({gate:state.gate,turn:1,authorize:async()=>({actor:'actual-synthetic-admin'})}),{code:'operator_speech_qa_attempt_limit'});
-  const newAttempt=(await pool.query('SELECT actor,source_sha256 FROM croupier_studio.operator_qa_attempts WHERE environment_id=$1 AND attempt=3',[activeScope.environment])).rows[0];
-  assert.deepEqual(newAttempt,{actor:'actual-synthetic-admin',source_sha256:null});
+  // QA runtime is retired. The importer still preserves historical records and
+  // rejects a later change instead of overwriting it or resetting spent attempts.
+  const historicalGate=(await pool.query('SELECT campaign_id,created_at_ms,expires_at_ms FROM croupier_studio.operator_qa_gate WHERE environment_id=$1',[activeScope.environment])).rows[0];
+  assert.equal(historicalGate.campaign_id,campaignId);
+  assert.equal(Number(historicalGate.created_at_ms),stamp-600000);assert.equal(Number(historicalGate.expires_at_ms),stamp+600000);
+  assert.equal((await applyLegacySpeechLedgerSnapshot(activeInput)).replayed,true);
+  await pool.query('INSERT INTO croupier_studio.operator_qa_attempts(environment_id,workspace_id,campaign_id,attempt,turn,reserved_at_ms,actor) VALUES($1,$2,$3,3,2,$4,$5)',
+    [activeScope.environment,activeScope.workspaceId,campaignId,stamp,'synthetic-historical-writer']);
   await assert.rejects(applyLegacySpeechLedgerSnapshot(activeInput),{code:'studio_speech_import_target_conflict'});
 
   const rollbackScope={...scope,environment:`${scope.environment}_rollback`},rollbackSource=prepared(rollbackScope,qaPackets({gate:true}));
@@ -311,8 +305,8 @@ export async function runSpeechLedgerImportSqlChecks({pool,restart}={}) {
   assert.equal((await applyLegacySpeechLedgerSnapshot(rollbackInput)).replayed,true);
   return {pool,checks:['explicit frozen SQL import preserves budget/two-day charges/opaque request replay fences/completed private refs',
     'concurrent import and exact restart replay append no duplicate cost/audit',
-    'retained operator QA timestamps/raw hashes survive restart; missing active gate stays disabled',
-    'actual operator adapter appends only remaining third attempt with current actor and never resets campaign',
+    'retained operator QA timestamps/raw hashes survive restart without inventing a gate',
+    'historical QA records replay exactly; later history changes reject import instead of resetting attempts',
     'final SQL receipt failure atomically rolls back cost and all operator rows; explicit later apply/replay succeeds',
     'post-import lease/consumption rejects import merge/reset']};
 }
