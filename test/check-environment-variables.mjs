@@ -43,12 +43,18 @@ test('rejects duplicate registry names', () => {
   assert.match(validateRegistry(registry).join(' '), /duplicate A/);
 });
 
-test('detects staged environment edits, not patch metadata', () => {
-  assert.equal(hasEnvChange('+++ b/file.mjs\n@@ -1 +1 @@\n-env.OLD\n+env.NEW'), true);
-  assert.equal(hasEnvChange('+++ b/file.mjs\n@@ -1 +1 @@\n-const x = 1\n+const x = 2'), false);
-  assert.equal(hasEnvChange('@@ -1 +1 @@\n-# LAB_REMOTE_URL=old\n+# LAB_REMOTE_URL=new', true), true);
-  assert.equal(hasEnvChange('@@ -1 +1 @@\n-      - key: OLD\n+      - key: NEW', true), true);
-  assert.equal(hasEnvChange('@@ -1 +1 @@\n-        value: old\n+        value: new', true), true);
+test('detects semantic environment edits, including defaults, but ignores comments and descriptions', () => {
+  assert.equal(hasEnvChange('env.OLD;', 'env.NEW;'), true);
+  assert.equal(hasEnvChange('env.PORT;', 'env.PORT; env.PORT;'), true);
+  assert.equal(hasEnvChange('const x = 1;', 'const x = 2;'), false);
+  assert.equal(hasEnvChange('const x = env.PORT ?? "1";', 'const x = env.PORT ?? "2";'), true);
+  assert.equal(hasEnvChange('const x = env.PORT;', '// process.env.FIXED_FLAG\nconst x = env.PORT; const text = "env.FIXED_FLAG";'), false);
+  assert.equal(hasEnvChange('const x = env.PORT;', 'const x = env.PORT /* explanation */;'), false);
+  assert.equal(hasEnvChange('if (env.PORT) {}', 'if (env.PORT) { const text = "process.env.FIXED_FLAG"; }'), false);
+  assert.equal(hasEnvChange('export default env.PORT;', 'export default env.PORT; const text = "env.FIXED_FLAG";'), false);
+  assert.equal(hasEnvChange('# LAB_REMOTE_URL=old', '# LAB_REMOTE_URL=new', true), true);
+  assert.equal(hasEnvChange('      - key: OLD', '      - key: NEW', true), true);
+  assert.equal(hasEnvChange('        value: old', '        value: new', true), true);
 });
 
 test('separates Blueprint service environment keys', () => {
@@ -136,6 +142,55 @@ test('the CLI rejects an env read and passes when it becomes a comment and descr
   const unlisted = cli();
   assert.equal(unlisted.status, 1);
   assert.match(unlisted.stderr, /ACTIVE_PORT is read .* but missing from registry/);
+});
+
+test('a real staged comment passes without inventory edits; env reads, defaults and template changes require both inventories', t => {
+  const repository = mkdtempSync(join(tmpdir(), 'croupier-env-staged-'));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  const runtime = 'packages/example/runtime.mjs';
+  const baseline = 'export const port = process.env.ACTIVE_PORT ?? "1";\n';
+  const registry = { schema: 1, hardcodedNames: { names: ['FIXED_FLAG'] }, services: {
+    sample: { sources: [runtime], templates: ['.env.example'], required: [], firstBoot: [],
+      conditional: ['ACTIVE_PORT', 'OTHER_PORT'], managed: [], blocked: [] },
+  } };
+  const files = {
+    '.gitignore': 'node_modules/\n',
+    '.env.example': 'ACTIVE_PORT=1\n',
+    'tools/check-environment-variables.mjs': readFileSync(new URL('../tools/check-environment-variables.mjs', import.meta.url), 'utf8'),
+    'docs/environment-variables.json': JSON.stringify(registry),
+    'docs/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
+    [runtime]: baseline,
+  };
+  for (const [path, source] of Object.entries(files)) {
+    mkdirSync(join(repository, dirname(path)), { recursive: true });
+    writeFileSync(join(repository, path), source);
+  }
+  mkdirSync(join(repository, 'apps/studio'), { recursive: true });
+  symlinkSync(fileURLToPath(new URL('../apps/studio/node_modules', import.meta.url)), join(repository, 'apps/studio/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  const git = (...args) => execFileSync('git', ['-c', 'core.autocrlf=false', ...args], { cwd: repository, stdio: ['ignore', 'pipe', 'pipe'] });
+  git('init', '-q'); git('add', '.');
+  git('-c', 'user.name=Environment guard fixture', '-c', 'user.email=env-guard@example.test', 'commit', '-qm', 'synthetic baseline');
+  const cli = () => spawnSync(process.execPath, ['tools/check-environment-variables.mjs'], { cwd: repository, encoding: 'utf8' });
+  writeFileSync(join(repository, runtime), baseline + '// process.env.FIXED_FLAG was retired\nconst text = "process.env.FIXED_FLAG";\n');
+  git('add', runtime);
+  const comment = cli();
+  assert.equal(comment.status, 0, comment.stderr);
+  for (const source of [baseline.replace('"1"', '"2"'), baseline + 'export const other = process.env.OTHER_PORT;\n']) {
+    writeFileSync(join(repository, runtime), source); git('add', runtime);
+    const result = cli();
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /stage both environment inventory files in the same commit/);
+  }
+  writeFileSync(join(repository, runtime), baseline); git('add', runtime);
+  writeFileSync(join(repository, '.env.example'), 'ACTIVE_PORT=2\n'); git('add', '.env.example');
+  assert.match(cli().stderr, /stage both environment inventory files in the same commit/);
+  writeFileSync(join(repository, 'docs/ENVIRONMENT-VARIABLES.md'), 'Updated synthetic inventory.\n');
+  git('add', 'docs/ENVIRONMENT-VARIABLES.md');
+  assert.equal(cli().status, 1, 'one inventory alone is insufficient');
+  writeFileSync(join(repository, 'docs/environment-variables.json'), JSON.stringify(registry, null, 2));
+  git('add', 'docs/environment-variables.json');
+  const passed = cli();
+  assert.equal(passed.status, 0, passed.stderr);
 });
 
 test('fixed env syntax includes optional reads, destructuring, env objects and scoped const aliases', () => {

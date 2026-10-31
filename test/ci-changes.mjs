@@ -364,18 +364,34 @@ test('documentation and contract checks run Atlas tests and anchors once and pro
   const wrapper = ['set -eu', 'python() {', '  printf "%s\\n" "$*"',
     '  if [ "$*" = "$MAP_TEST_FAIL" ]; then return 7; fi', '}',
     'node() { if [ "$1" = tools/regression-group.mjs ]; then shift 3; if [ "$1" = python ]; then shift; python "$@"; fi; fi; }',
+    'npm() { echo "Package installation is forbidden in the contracts fixture" >&2; return 99; }',
+    'npx() { npm "$@"; }',
     'git() { :; }', ''].join('\n');
   const bash = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
-  for (const script of [body, 'set -- contracts\n. .githooks/pre-commit-full']) {
-    for (const fail of ['', ...commands]) {
-      const result = spawnSync(bash, ['-c', wrapper + script], {
-        cwd: new URL('../', import.meta.url), encoding: 'utf8', timeout: 10000,
-        env: { ...process.env, MAP_TEST_FAIL: fail },
-      });
-      assert.ifError(result.error);
-      assert.equal(result.status, fail ? 7 : 0, result.stderr);
-      assert.deepEqual(result.stdout.trim().split(/\r?\n/), fail === commands[0] ? commands.slice(0, 1) : commands);
+  // Never run extracted workflow commands inside a checkout with dependency junctions.
+  const fixture = mkdtempSync(join(tmpdir(), 'ci-contracts-'));
+  try {
+    mkdirSync(join(fixture, '.githooks'));
+    writeFileSync(join(fixture, '.githooks/pre-commit-full'), readFileSync(new URL('../.githooks/pre-commit-full', import.meta.url)));
+    for (const install of ['npm ci', 'npx --yes example']) {
+      const blocked = spawnSync(bash, ['-c', wrapper + install], { cwd: fixture, encoding: 'utf8', timeout: 10000 });
+      assert.ifError(blocked.error);
+      assert.equal(blocked.status, 99);
+      assert.match(blocked.stderr, /Package installation is forbidden/);
     }
+    for (const script of [body, 'set -- contracts\n. .githooks/pre-commit-full']) {
+      for (const fail of ['', ...commands]) {
+        const result = spawnSync(bash, ['-c', wrapper + script], {
+          cwd: fixture, encoding: 'utf8', timeout: 10000,
+          env: { ...process.env, MAP_TEST_FAIL: fail },
+        });
+        assert.ifError(result.error);
+        assert.equal(result.status, fail ? 7 : 0, result.stderr);
+        assert.deepEqual(result.stdout.trim().split(/\r?\n/), fail === commands[0] ? commands.slice(0, 1) : commands);
+      }
+    }
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
   }
 });
 
