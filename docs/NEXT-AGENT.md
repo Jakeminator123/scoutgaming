@@ -10,6 +10,12 @@ ARKITEKTEN, REPOAGENTEN och DRIFTAGENTEN arbetar i avgränsade worktrees; orkest
 
 **Avslutad genomförandevåg 31 oktober:** etapp 1 är 4/4, etapp 2 är 3/3 och vald fortsättning är 2/2 (talstart + F11). [Driftkvittot](plans/organisation/F11-DRIFTKVITTO.md) binder verkliga loggar, SQL och återanslutning till fryst runtime e8d0b935. Produktens övriga acceptans/backlog är inte 100 %. Nästa delmål väljs ur körplanens kvarvarande områden i en ny session; börja med denna överlämning och körplanen, inte gamla chattexporter. Ingen branch-/worktree-städning eller ändring av RunPod/kollegors arbete ingår.
 
+## Spelkontroller och filmtempo, 31 oktober
+
+PR #740 samlar #738 (exakt talfri native-v2-filmlängd), #739 (förbrukad satsnings-/insamlingsreplik släpper nästa serverpresentation) och en stabil insats-/beslutspanel med plats, belopp och serverstyrd nedräkning. Det granskade Jakob-2-materialets Hit går från 22 119 till 4 155 ms planerad filmtid; Stand mellan händer utan media har ingen konstgjord väntetid. Filmhastighet, bildrutor, regler och serverägda pengar ändras inte. Oberoende diffgranskningar saknar kvarstående blockerare; integrationens lokala hookar passerade 630/630 prov. Exakt-head CI, deploy och faktisk provspelning ska hållas isär från dessa kodbevis.
+
+Det isolerade previewrummet `room-3fdcf4e9-bcba-ab49-779a-2293853001ef` har dessutom publicerats via Admin som version 2 med korrigerad bordplacering. Djupjämförelse bekräftade oförändrade mediebytes och filmkontrakt; andra publicerade rum ändrades inte. Slutliga runtimebevis och skärmbilder samlas privat i `.cache/ui-review-1031/REPORT.md`. Detta är en avgränsad spelrättning, inte acceptans av all teknisk skuld eller hela talprodukten.
+
 ## Leveransen som avslutas
 
 - **L3 steg 5–6:** Studio 023 är installerad i båda miljöerna. Nya paketrevisioner bär produktionens fyra och previews sex befintliga rum (nio respektive fyra bolagspaket). Den gamla dokumentlistan avvecklas med vanlig CAS-sparning efter kodens driftsättning, utan att skriva om material eller låsta spelkonfigurationer. Paketens `rooms` är enda aktiva rumsregistret; Admins `administration.rooms` är en härledd svarsvy. `gameLanes` är kvarvarande uppspelningskonfiguration, inte en andra rumslista; dess avveckling var L3 steg 7, inte någon av de två beställda delarna.

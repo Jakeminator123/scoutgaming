@@ -198,39 +198,21 @@ html[data-presentation-standard="three-layer"] .seat-inner { transform:scale(var
   .bet-target-tp {left:25px;width:24px;}
   .bet-target:focus-visible {outline:2px solid #d6ff3a;border-radius:8px;}
 }
-/* shared room: Admin geometry or the dealer's filmed landing places each seat root (0 x 0) on its box; controls
-   never shrink below touch size. The seat's circle stays centred on the box. Its bets and Lämna form a grid below,
-   moved sideways at a screen edge (--seat-shift-x) and lifted clear of the bottom controls (--seat-lift),
-   both measured in shared-room-view.mjs. Only the buttons take clicks, never the seat's empty box. */
-.seat-shared .seat-shared-inner { left: 0; top: -22px; width: max-content; height: auto; translate: -50% var(--seat-lift, 0px); pointer-events: none;
-  display: grid; grid-template-columns: auto auto auto; grid-template-areas: "join join join" "pp main tp" "leave leave leave";
-  justify-items: center; align-items: center; column-gap: 4px; row-gap: 6px; }
+/* Shared seats are fixed-size markers below their hand. All stake controls use one
+   labelled dock, so owning neighbouring seats never creates extra rows on the felt. */
+.seat-shared .seat-shared-inner { left: 0; top: -22px; width: max-content; height: auto;
+  translate: -50% var(--seat-clearance, 0px); pointer-events: none; }
 html[data-presentation-standard="three-layer"] .seat-shared .seat-shared-inner { transform: none; }
 .seat-shared .seat-shared-join, .seat-shared-bet, .seat-shared-leave { pointer-events: auto; }
-.seat-shared .seat-shared-join { grid-area: join; position: static; width: auto; min-width: 44px; min-height: 44px; margin-bottom: 4px; padding: 0 12px; border-radius: 999px; font: 700 12px 'Space Grotesk', sans-serif; white-space: nowrap; }
-/* The own seat's circle is filled and reads "Du"; it is a marker, not the place to bet. With several own
-   seats it chooses the one whose side bets and Lämna show; the others read lighter. */
+.seat-shared .seat-shared-join { position: static; width: 44px; min-width: 44px; height: 44px; padding: 0 3px;
+  flex-direction: column; gap: 1px; border-radius: 50%; font: 700 10px 'Space Grotesk', sans-serif; white-space: nowrap; }
+.seat-shared-amount { display: block; font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .seat-shared.active .seat-shared-join { background: rgba(214,255,58,.9); border-color: rgba(214,255,58,.9); color: #101618; cursor: default; }
 .seat-shared.active:not(.primary) .seat-shared-join:not(:disabled) { background: rgba(214,255,58,.42); cursor: pointer; }
 .seat-shared .seat-shared-join:disabled { cursor: default; }
 .seat-shared-bets { display: contents; }
 .seat-shared-bets[hidden] { display: none; }
-.seat-shared-bet-main { grid-area: main; }
-.seat-shared-bet-pp { grid-area: pp; }
-.seat-shared-bet-tp { grid-area: tp; }
-.seat-shared-leave { grid-area: leave; }
-.seat-shared .seat-shared-bet, .seat-shared .seat-shared-leave { translate: var(--seat-shift-x, 0px) 0; }
-/* Wide screens: neighbouring seats sit up to ~21 px lower on the arc, so the own bet row starts below their circles. */
-@media (min-width: 861px) { .seat-shared .seat-shared-join { margin-bottom: 18px; } }
-/* K04 F14: own seats closer than one bet row keep their main bet within the gap (--seat-bet-w); the chosen one
-   adds Par, 21+3 and Lämna on the line below, where no other seat has a control. */
-.seat-shared.crowded .seat-shared-inner { grid-template-areas: "join join join" "main main main" "pp tp leave"; }
-.seat-shared.crowded .seat-shared-bet, .seat-shared.crowded .seat-shared-leave { translate: var(--seat-shift-x, 0px) var(--seat-row-y, 0px); }
-.seat-shared.crowded .seat-shared-bet-main { min-width: 0; width: var(--seat-bet-w, 84px); min-height: 44px; padding: 0 4px; font-size: 11px; }
-.seat-shared.crowded:not(.primary) .seat-shared-inner { grid-template-columns: auto; grid-template-areas: "join" "main"; }
-.seat-shared.crowded:not(.primary) .seat-shared-bet-side, .seat-shared.crowded:not(.primary) .seat-shared-leave { display: none; }
-/* A phone shows its three boxes' circles; the chosen own seat's bets dock above the action zone (#shared-room-dock). */
-#seats.seats-docked .seat-shared-bets, #seats.seats-docked .seat-shared-leave { display: none; }
+#seats .seat-shared-bets, #seats .seat-shared-leave { display: none; }
 .seat-shared-bet { min-width: 44px; min-height: 44px; padding: 0 8px; border-radius: 8px; font: 700 11px 'Space Grotesk', sans-serif; white-space: nowrap; cursor: pointer; }
 /* The main bet looks like the table's betting spot (.spot): the larger, marked target with its amount. */
 .seat-shared-bet-main { min-width: 84px; min-height: 52px; padding: 0 12px; border-radius: 50%; border: 2px solid rgba(214,255,58,.85);
@@ -1230,4 +1212,27 @@ html[data-shared-room="1"] .shared-room-controls #pitboss { display: inline-flex
   .room-chat-docked .room-chat-body { right: 8px; width: calc(100vw - 16px); }
   .room-chat-log { max-height: 26vh; }
   .room-chat-input { font-size: 16px; } /* no iOS zoom on focus */
+}
+
+@media (min-width: 861px) {
+  html[data-shared-room="1"] #hud-bottom { grid-template-columns: auto auto; justify-content: center;
+    grid-template-areas: "dock status" "chips chips" "right right" "wallet wallet"; gap: 10px 16px; }
+  html[data-shared-room="1"] #wallet, html[data-shared-room="1"] #bottom-right { justify-self: center; }
+  .shared-room-dock { padding: 6px 12px; border-radius: 16px; background: rgba(10,11,13,.85); }
+}
+
+.shared-room-dock .seat-shared-bet-main { white-space: pre-line; line-height: 1.25; }
+
+.shared-room-timer { font: 700 13px 'Space Grotesk', sans-serif; color: #f2f1ed; font-variant-numeric: tabular-nums; }
+.shared-room-timer[hidden] { display: none; }
+
+#shared-room-actions > #banner[hidden] { display: none; }
+
+/* A short landscape window uses its width for the wallet and decisions instead
+   of stacking another row across the cards. */
+@media (max-height: 560px) and (orientation: landscape) and (max-width: 860px) {
+  html[data-shared-room="1"] #scene:not([data-shared-phase="bets"]) #hud-bottom {
+    grid-template-columns: auto minmax(0,1fr); grid-template-areas: "status wallet"; align-items: end; }
+  html[data-shared-room="1"] #scene:not([data-shared-phase="bets"]) #wallet { justify-self: end; flex-wrap: wrap; }
+  html[data-shared-room="1"] #scene:not([data-shared-phase="bets"]) .shared-room-actions { max-width: 248px; }
 }

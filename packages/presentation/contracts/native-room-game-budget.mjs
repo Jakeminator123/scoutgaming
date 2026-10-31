@@ -1,6 +1,7 @@
 import { validateRoomGameMaterial } from './room-game-config.mjs';
 import { nativeRoomFilmedPlanning, isNativeRoomMaterial } from './native-room-filmed-planning.mjs';
 import { planFilmedDealSequence, orderFilmedPresentationEvents } from '../runtime/filmed-deal-sequence.mjs';
+import { planFilmedTimeline } from '../runtime/filmed-deal-timeline.mjs';
 export { isNativeRoomMaterial } from './native-room-filmed-planning.mjs';
 
 export const NATIVE_ROOM_MATERIAL_PREFIX = 'native-film-v1-';
@@ -8,6 +9,21 @@ export const NATIVE_ROOM_PRESENTATION_CONTRACT = 'blackjack-presentation/1';
 export const NATIVE_ROOM_SPEECH_SLOTS = Object.freeze(['blackjack','dealerblackjack','dealerbust','double','goodluck','insurance','lose','placebets','push','win']);
 const outcomes = new Set(['blackjack','dealerblackjack','dealerbust','lose','push','win']);
 const fail = () => { throw Object.assign(Error('native_room_sequence_unsupported'), {code:'native_room_sequence_unsupported',statusCode:422}); };
+
+// After the sequence guard, a speech-free v2 plan can use the same exact chain
+// as the browser. Keep every frame, selected shoe transition, opening lead and
+// gap at natural speed. The frozen worst-case budget remains the fallback for
+// speech (whose selected duration is not in this material) and older material.
+export function nativeRoomSequenceDurationMs(material, steps) {
+  if (!isNativeRoomMaterial(material) || steps.some(event => event.type === 'speak')) return null;
+  const planning = nativeRoomFilmedPlanning(material);
+  if (!planning) return null;
+  const timeline = planFilmedTimeline({ ...planning, events: steps });
+  if (!timeline.complete) fail();
+  // A turn-only Stand has no media to await. The committed snapshot already
+  // names the next active hand; the full action window starts immediately.
+  return timeline.steps.length ? Math.ceil(timeline.realEndMs) : 0;
+}
 
 // Invoke on the actual complete public instruction list before committing a
 // native plan. Existing non-native configurations retain their own contract.

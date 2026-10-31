@@ -446,7 +446,7 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.match(nodes.get('balance').textContent,/17,5 USD demo/);assert.equal(nodes.get('seats').children.length,7);
   // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
   const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
-  assert.equal(join.tagName,'BUTTON');assert.equal(join.textContent,'Du');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
+  assert.equal(join.tagName,'BUTTON');assert.equal(join.getAttribute('aria-label'),'Plats 1, din plats');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
   assert.equal(leaveSeat.textContent,'Lämna');assert.equal(leaveSeat.hidden,false);leaveSeat.click();assert.deepEqual(calls[0],['join',{seat:0}]);
   assert.equal(nodes.get('seats').children[1].children[0].children[2].hidden,true,'a free seat has no leave control');
   nodes.get('chips').children[1].disabled=false;nodes.get('chips').children[1].click();assert.deepEqual(calls[1],['chip',1]);
@@ -506,7 +506,7 @@ test('the view closes side bets without a main bet on their box and shows why on
   main.click();assert.deepEqual(calls,[['bet',{seat:0,field:'main'}]]);
   view.render({snapshot:seated(2,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]}),chip:.5,can:{...can,ready:true,repeat:true},
     hints:{ready:'',repeat:'',side:hints.side},notice:'',retry:false,busy:false,connected:true});
-  assert.equal(main.textContent,'Insats 5');assert.equal(main.classes.has('staked'),true);
+  assert.equal(main.getAttribute('aria-label'),'Plats 1, huvudinsats, 5 USD');assert.equal(main.classes.has('staked'),true);
   for(const side of [pp,tp]){assert.equal(side.disabled,false);assert.equal(side.title,'');}
   assert.equal(nodes.get('deal-now').disabled,false);assert.equal(nodes.get('deal-now').title,'');
   view.close();
@@ -788,6 +788,53 @@ function timedPresentation(t,mediaPresent){
   t.after(()=>{client.stop();ports.close();});client.start();
   return{client,ports,sockets,errors,seen,restores};
 }
+
+// A server-confirmed decision must not queue behind an invitation or collection line.
+for(const kind of ['window','collect'])test(`a newer server plan retires ${kind} speech before the full decision window opens`,async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+  const sockets=[],errors=[],restores=[],renders=[],states=[],shown=[],late=deferred();let oldMedia;
+  const cards={restore(){},sync(){},clear(){},reveal(){},close(){},show:draw=>shown.push(draw)};
+  const media={state:value=>states.push(value),prepareSequence(){},close(){},present(event,options){
+    options.onFrame(0);
+    if(event.type==='speak'){oldMedia=options;return late.promise;}
+    return true;
+  }};
+  const ports=createSharedRoomPresentationPorts({media,cards,clock:Date.now,onError:code=>errors.push(code)});
+  const controller=createSharedRoomController({roomId,now:Date.now,
+    commands:{state:'idle',stop(){}},view:{bind(){},render:value=>renders.push(value),close(){}},presentation:ports});
+  class Socket extends EventTarget{readyState=1;constructor(){super();sockets.push(this);}close(){this.readyState=3;}
+    message(value){this.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({type:'shared-room-state',roomId,...value})}));}}
+  const client=createSharedRoomClient({roomId,browserOrigin:'https://game.invalid',WebSocket:Socket,now:Date.now,
+    restoreSnapshot:(value,meta)=>{restores.push(value.version);return controller.restoreSnapshot(value,meta);},
+    present:controller.present,onError:error=>errors.push(error)});
+  t.after(()=>{client.stop();controller.stop();});client.start();
+  const connection=sockets[0];connection.message({snapshot:seated(0),presentation:null});await flushRender();
+  const invitation={roomId,ver:1,talkId:'old-speech',auditSeq:1,status:'ready',kind,windowId:'window-1',configVersion:'cfg-1',language:'sv',
+    startAt:1000,endAt:1000,events:[{type:'speak',line:kind==='window'?'placebets':'win'}],lines:[]};
+  connection.message({snapshot:seated(1,{presentationVer:1}),presentation:invitation});await flushRender();
+  connection.message({snapshot:seated(2,{presentationVer:1}),presentation:invitation});await flushRender();
+  assert.equal(oldMedia.signal.aborted,false,'a state of the same presentation keeps its current speech');
+  await assert.rejects(ports.present({...invitation,roomId:'another-room'}),/shared_room_presentation_mismatch/);
+  assert.equal(oldMedia.signal.aborted,false,'a mismatched presentation never supersedes the current owner');
+  t.mock.timers.tick(1000);
+  const plan={...invitation,ver:2,talkId:'new-decision',auditSeq:2,kind:'plan',startAt:2000,endAt:3000,
+    events:[{type:'deal',to:'box',box:0,shoeDraw:1,faceDown:false},{type:'turn',box:0,handIndex:0}]};
+  const round={phase:'decisions',active:0,hands:[{box:0,cards:[]}],dealer:[],legalActions:['hit','stand']};
+  connection.message({snapshot:seated(3,{presentationVer:2,phase:'round',roundId:'round-1',serverNow:2000,round,
+    plan:{id:'new-decision',startAt:2000,endAt:3000,turnAt:3000},actionDeadline:18000}),presentation:plan});
+  await flushRender();await flushRender();
+  assert.deepEqual(restores,[0,1,2,3],'the decision is restored while the old speech promise is still pending');
+  assert.equal(oldMedia.signal.reason?.late,true);assert.deepEqual(shown,[1]);
+  assert.deepEqual(renders.at(-1).can.act,[],'the server turn time still gates controls');
+  t.mock.timers.tick(1001);await flushRender();assert.deepEqual(renders.at(-1).can.act,['hit','stand']);
+  const statesBeforeLate=states.length;
+  oldMedia.onFrame(100);oldMedia.onProgress({clip:1,phase:'prepare'});oldMedia.onUnavailable();
+  assert.throws(()=>oldMedia.onSelected({id:'late'},{}),{name:'AbortError'});
+  late.resolve(false);await flushRender();assert.equal(states.length,statesBeforeLate,'late old media cannot reclaim idle or speech');
+  assert.deepEqual(shown,[1]);assert.deepEqual(errors,[]);
+  t.mock.timers.tick(14998);await flushRender();assert.deepEqual(renders.at(-1).can.act,['hit','stand'],'the full fifteen seconds remain available');
+  t.mock.timers.tick(2);await flushRender();assert.deepEqual(renders.at(-1).can.act,[],'the server deadline is never extended');
+});
 
 test('seven-seat committed K04 plan renders every serial three-second clip beyond thirty seconds',async t=>{
   const plan=await sevenSeatPlan();t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
@@ -1417,7 +1464,7 @@ test('a hit during a take that plays past turnAt starts its own plan now; its ca
   assert.equal(h.shown.filter(row=>row.draw===5).length,1);assert.deepEqual(h.errors,[]);assert.deepEqual(h.mediaErrors,[]);
 });
 
-test('a superseded plan is left only once its time is over on the table clock; other presentations play to their end',async t=>{
+test('a superseded plan is left only once its time is over; superseded window speech never starts',async t=>{
   t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
   const shown=[],seen=[];
   const cards={restore(){},sync(){},clear(){},close(){},show:draw=>shown.push([draw,Date.now()]),reveal(){},begin(){},frame(){},finish(){}};
@@ -1435,8 +1482,7 @@ test('a superseded plan is left only once its time is over on the table clock; o
   const window={roomId,ver:2,talkId:'w',kind:'window',startAt:Date.now(),endAt:Date.now(),events:[{type:'speak',line:'placebets'}],lines:[]};
   const ended=new AbortController();ended.abort();done=false;
   const speaking=ports.present(window,{signal,superseded:ended.signal}).then(()=>{done=true;});
-  await until(Date.now()+9000);assert.equal(seen[1].aborted,false,'a window speech is never cut');assert.equal(done,false);
-  await until(Date.now()+1500);await speaking;assert.equal(done,true);
+  await speaking;assert.equal(done,true);assert.equal(seen.length,1,'already superseded speech never acquires the dealer');
 });
 
 // K04 fynd 3 (external review 28 Oct 2026): a network error, a timeout or a 503 from the binding read failed the

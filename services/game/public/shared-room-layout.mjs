@@ -29,19 +29,6 @@ export function primarySeat(snapshot, focusSeat, visible = null) {
   return own.find(box => !visible || visible.includes(box)) ?? own[0] ?? null;
 }
 
-// Own seats closer than one full bet row (Par, Insats, 21+3) to another own seat share the row space:
-// each keeps its main bet within the gap, and only the primary seat adds its side bets on a line below.
-export const FULL_ROW_PX = 184, MIN_TARGET_PX = 44, MAIN_BET_PX = 84;
-export function crowding(points) {
-  const result = new Map();
-  for (const [box, x] of points) {
-    let gap = Infinity;
-    for (const [other, ox] of points) if (other !== box) gap = Math.min(gap, Math.abs(ox - x));
-    result.set(box, { crowded: gap < FULL_ROW_PX, betWidth: Math.round(clamp(gap - 6, MIN_TARGET_PX, MAIN_BET_PX)) });
-  }
-  return result;
-}
-
 // Without Admin table geometry the seats stand on the landings of the room dealer's filmed profile:
 // the place where the dealer's film lays each card. A dealer without a profile keeps the calibrated row.
 // The seat's circle sits just below its landed card and hand total, as under-cards bets do on a table
