@@ -33,7 +33,7 @@ export function f11ProviderReceipt(row,plan,now) {
     ready:true,suspended:false,healthStatus:200,deployId:d.id};
 }
 
-export async function createF11LivePorts({run=false,plan,credentials,outputDirectory,provenanceFile,progress=()=>{}}={}) {
+export async function createF11LivePorts({run=false,plan,credentials,outputDirectory,provenanceFile,progress=()=>{},fetchImpl=fetch}={}) {
   need(run===true,'explicit_run_required');
   need(plan&&Object.entries(F11_TARGET).every(([key,value])=>plan[key]===value),'target_mismatch');
   need(object(credentials) && Object.keys(credentials).every(key=>['admin','databaseUrl'].includes(key))
@@ -69,7 +69,7 @@ export async function createF11LivePorts({run=false,plan,credentials,outputDirec
     } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
   }
   async function response(url,options={}) {
-    const res=await fetch(url,{...options,redirect:'error',signal:AbortSignal.timeout(10000)});
+    const res=await fetchImpl(url,{...options,redirect:'error',signal:AbortSignal.timeout(10000)});
     const chunks=[];let size=0;
     for await(const part of res.body??[]) {size+=part.length;need(size<=1024*1024,'response_too_large');chunks.push(part);}
     let body;try{body=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{body=null;}
@@ -78,7 +78,7 @@ export async function createF11LivePorts({run=false,plan,credentials,outputDirec
   async function request(actor,method,path,body,keepCookie=true) {
     const url=new URL(path,plan.origin);
     need(url.origin===plan.origin && !url.hash && ['GET','POST'].includes(method),'request_target_invalid');
-    const res=await response(url,{method,headers:{Origin:plan.origin,Accept:'application/json',
+    const res=await response(url,{method,headers:{Origin:plan.origin,Accept:'application/json','Sec-Fetch-Site':'same-origin',
       ...(body?{'Content-Type':'application/json'}:{}),...(cookies.get(actor)?{Cookie:cookies.get(actor)}:{})},
       ...(body?{body:JSON.stringify(body)}:{})});
     if(keepCookie) {

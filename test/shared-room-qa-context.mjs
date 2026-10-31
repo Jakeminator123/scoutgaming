@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, scryptSync } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET } from '../tools/shared-room-f11-observer.mjs';
 import { prepareF11Fixture, runF11Preview, runF11PreviewCli, validateF11Plan, f11FixtureIdentity,
   nextF11Command, correlateF11Log } from '../tools/run-f11-preview.mjs';
@@ -210,6 +214,33 @@ test('live F11 import/help/read and missing run flag never construct credentials
   await assert.rejects(prepareF11Fixture(livePlan(),new Proxy({},{get:()=>assert.fail('port access')})),/explicit_run_required/);
   await assert.rejects(runF11Preview(livePlan(),null),/explicit_run_required/);
   await assert.rejects(createF11LivePorts({credentials:{}}),/explicit_run_required/);
+});
+test('F11 common HTTP transport satisfies the actual Studio login CSRF gate; missing Sec-Fetch-Site stops before SQL',async t=>{
+  const plan=livePlan(),password='f11-fixture-password',salt='f11-fixture-salt';
+  const account={id:'7',username:'f11-admin',role:'admin',salt,hash:scryptSync(password,salt,64).toString('hex')};
+  let dbCalls=0;const requests=[];
+  const boDb={transaction:work=>work(),prepare(sql){dbCalls++;return {
+    all:async()=>{assert.ok(sql.includes('FROM users WHERE lower(username)'));return [account];},
+    get:async()=>{if(sql==="SELECT v FROM meta WHERE k='jwt_secret'")return {v:'a'.repeat(64)};
+      assert.equal(sql,'SELECT epoch FROM bo_auth_epochs WHERE user_id=?');return {epoch:0};}};}};
+  const gameDb={prepare(sql){dbCalls++;assert.ok(sql.includes('FROM player_accounts'));return {all:async()=>[]};}};
+  const actions=createStudioNativeAuthActions({boDb,gameDb,scope:{environment:plan.environment,workspaceId:plan.workspaceId},
+    authorize:async()=>assert.fail('login must not authorize an existing session'),publicOrigin:plan.origin,
+    rateLimit:async()=>true,clientAddress:()=> 'fixture-client'});
+  const temp=await mkdtemp(join(tmpdir(),'f11-auth-contract-'));t.after(()=>rm(temp,{recursive:true,force:true}));
+  const ports=await createF11LivePorts({run:true,plan,credentials:{admin:{user:account.username,pass:password},
+    databaseUrl:`postgresql://fixture:synthetic@${plan.databaseHost}/${plan.database}?sslmode=require`},
+    outputDirectory:join(temp,'output'),provenanceFile:join(temp,'provider.ndjson'),
+    fetchImpl:async(url,init)=>{const request=new Request(url,init);requests.push(request.clone());
+      if(new URL(url).pathname==='/studio/api/auth/login')return actions.handle(request);
+      assert.equal(request.headers.get('sec-fetch-site'),'same-origin');return Response.json({ok:true});}});
+  t.after(()=>ports.close());
+  await ports.adminLogin();assert.ok(dbCalls>0);
+  const login=requests[0],headers=new Headers(login.headers);headers.delete('sec-fetch-site');const before=dbCalls;
+  const denied=await actions.handle(new Request(login.url,{method:'POST',headers,body:await login.text()}));
+  assert.equal(denied.status,403);assert.equal(dbCalls,before);
+  await ports.http('admin','POST','/studio/api/admin/operator-create',{slug:plan.runId,name:plan.runId});
+  assert.equal(requests.length,2);assert.match(requests[1].headers.get('cookie'),/^bo_jwt=/);
 });
 test('live F11 binds API UUIDs to absence checks, exact SQL readback and a durable creation receipt',async()=>{
   const f=creationPorts(),result=await prepareF11Fixture(f.plan,f.ports,{run:true});
