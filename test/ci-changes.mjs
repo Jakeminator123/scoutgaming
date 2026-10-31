@@ -248,7 +248,7 @@ test('local, documentation CI and full regression execute migration validation o
       '    shift 3; if [ "$1" != node ]; then return 0; fi; shift', '  fi',
       '  if [ "$1" = migrering/status.mjs ]; then',
       '    printf "check\\n" >> "$MIGRATION_TEST_LOG"',
-      '    "$MIGRATION_TEST_NODE" "$@"', '  fi', '}', 'git() { :; }', ''].join('\n');
+      '    "$MIGRATION_TEST_NODE" "$@"', '  fi', '}', 'git() { :; }', 'python() { :; }', ''].join('\n');
     const log = join(root, 'checks.log');
     const shell = script => {
       writeFileSync(log, '');
@@ -431,10 +431,33 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   assert.match(timings, /name: dealer-regression-timing-\$\{\{ matrix\.leg \}\}-/, 'each leg keeps its own timing receipt');
   assert.match(browserSteps.find(step => /^Save regression group timings/.test(step)), /name: dealer-regression-timing-browser-/);
   assert.match(yaml, /if: always\(\)[\s\S]*dealer-regression-timing\.jsonl/);
-  assert.doesNotMatch(yaml, /system-map/);
-  assert.doesNotMatch(fullHook, /system-map/);
   const push = readFileSync(new URL('../tools/check-push-target.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(push, /system-map/);
+});
+
+test('documentation and contract checks run Atlas tests and anchors once and propagate failure', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const job = yaml.split('\n  documentation:\n')[1]?.split('\n  dealer-regression:')[0];
+  const body = job?.match(/\n        run: \|\n((?:          .*(?:\n|$))+)/)?.[1]
+    .split('\n').map(line => line.slice(10)).join('\n');
+  assert.ok(body);
+  const commands = ['-m unittest discover -s test/system-map -v', 'tools/system-map.py'];
+  const wrapper = ['set -eu', 'python() {', '  printf "%s\\n" "$*"',
+    '  if [ "$*" = "$MAP_TEST_FAIL" ]; then return 7; fi', '}',
+    'node() { if [ "$1" = tools/regression-group.mjs ]; then shift 3; if [ "$1" = python ]; then shift; python "$@"; fi; fi; }',
+    'git() { :; }', ''].join('\n');
+  const bash = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+  for (const script of [body, 'set -- contracts\n. .githooks/pre-commit-full']) {
+    for (const fail of ['', ...commands]) {
+      const result = spawnSync(bash, ['-c', wrapper + script], {
+        cwd: new URL('../', import.meta.url), encoding: 'utf8', timeout: 10000,
+        env: { ...process.env, MAP_TEST_FAIL: fail },
+      });
+      assert.ifError(result.error);
+      assert.equal(result.status, fail ? 7 : 0, result.stderr);
+      assert.deepEqual(result.stdout.trim().split(/\r?\n/), fail === commands[0] ? commands.slice(0, 1) : commands);
+    }
+  }
 });
 
 test('the shared package-tree cache is keyed on every installed lockfile and manifest and saves only a clean install', () => {

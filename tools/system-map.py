@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Render START-HERE's Systemkarta table. Only local Git metadata is inspected.
+"""Build a local system atlas from START-HERE, tracked JS/TS and reviewed relations.
 
 Run: python tools/system-map.py [--output .cache/system-map/index.html]
 Requires Python 3.10+ and Git. Input keeps the four existing table columns;
 only relative Markdown links without query/fragment are file-verified.
 Exit 0: rendered, 1: rendered with broken references, 2: invalid input/no output.
-Relations and verification descriptions come from the document, not code analysis.
+Semantic relations are re-anchored; static references do not prove runtime use or test coverage.
 """
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
 from html import escape
+import importlib.util
+import json
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
@@ -63,7 +65,7 @@ def local_reference(root: Path, target: str) -> tuple[str, Path]:
     path = unquote(url.path)
     parts = PurePosixPath(path).parts
     if (url.scheme or url.netloc or url.query or url.fragment or not parts or path.startswith("/")
-            or "\\" in path or ":" in path or any(part in ("..", ".git") or part.startswith(".env") for part in parts)
+            or "\\" in path or ":" in path or any(part in ("..", ".git", ".claude", ".codex", "arkiv", "random-stuff-jakob") or part.startswith(".env") for part in parts)
             or any(ord(char) < 32 for char in path)):
         raise ValueError("kräver en relativ reposökväg utan protokoll, query, ankare eller privata konfigurationsfiler")
     relative = PurePosixPath(path).as_posix().rstrip("/")
@@ -149,117 +151,31 @@ def render(root: Path) -> tuple[str, list[str], list[str]]:
     issue_box = f'<details class="issues" {"open" if errors else ""}><summary>{len(errors)} fel · {len(warnings)} varningar i underlaget</summary><ul>{issues}</ul></details>' if issues else ""
     verified = sum(href is not None for _, href in references.values())
     source_state = "Arbetskopian av källan är ändrad efter denna revision." if dirty else "Källan motsvarar Git-revisionen."
-    values = {"STYLE": STYLE, "SCRIPT": SCRIPT, "SOURCE": escape(f"{SOURCE} · Systemkarta · rader {rows[0][0]}–{rows[-1][0]}"),
+    support = Path(__file__).resolve().parent / "system-map"
+    spec = importlib.util.spec_from_file_location("system_map_graph", support / "graph.py")
+    graph_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(graph_module)
+    data = graph_module.build_graph(root, revision, root / "tools/system-map/relations.json")
+    for issue in data["issues"]:
+        errors.append(f"Handgranskat kodankare behöver översyn: {issue['graph']}/{issue['edge']} — {issue['path']} ({issue['reason']}).")
+    data["contracts"] = [{"id": f"contract-{i}", "name": cells[0].partition(":")[0], "responsibility": cells[0],
+                          "line": line, "code": inline(cells[1], references), "data": inline(cells[2], references),
+                          "checks": inline(cells[3], references),
+                          "files": [unquote(m[2]) for m in TOKENS.finditer(cells[1]) if m[2] and references[m[2]][1]],
+                          "tests": [unquote(m[2]) for m in TOKENS.finditer(cells[3]) if m[2] and references[m[2]][1] and graph_module.is_test(unquote(m[2]))]}
+                         for i, (line, cells) in enumerate(rows)]
+    data["generated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    data["sourceDirty"] = dirty
+    data["referenceErrors"] = errors
+    data["referenceWarnings"] = warnings
+    encoded = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    values = {"STYLE": (support / "style.css").read_text(encoding="utf-8"),
+              "SCRIPT": (support / "app.js").read_text(encoding="utf-8"), "DATA": encoded, "SOURCE": escape(f"{SOURCE} · Systemkarta · rader {rows[0][0]}–{rows[-1][0]}"),
               "REVISION": escape(revision), "SHORT": escape(revision[:12]), "SOURCE_STATE": source_state,
               "DIRTY": " · ändrad arbetskopia" if dirty else "", "TIME": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
               "COUNTS": f"{len(rows)} ansvarsområden · {verified}/{len(references)} filreferenser verifierade",
               "ISSUES": issue_box, "CARDS": "".join(cards)}
-    return re.sub(r"@@([A-Z_]+)@@", lambda token: values[token[1]], TEMPLATE), errors, warnings
-
-
-STYLE = """
-:root{color-scheme:light;--ink:#172b3d;--muted:#566a7a;--line:#cad8e0;--paper:#f3f6f8;--blue:#22577a;--green:#236b4d;--scale:1;font:15px/1.55 system-ui,sans-serif}
-*{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);height:100dvh;display:flex;flex-direction:column}
-header,.toolbar,.issues,.notice{flex-shrink:0}
-header{padding:24px 32px 16px;background:#fff;border-bottom:1px solid var(--line)}
-.eyebrow{font-size:12px;letter-spacing:.14em;font-weight:750;color:var(--blue)}
-h1{font-size:30px;line-height:1.2;margin:6px 0 8px}
-header p{margin:5px 0;color:var(--muted)}
-.meta{font-size:12px;overflow-wrap:anywhere}
-.meta code{background:none;padding:0}
-.source{margin-top:12px}
-.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 32px;background:#fff;border-bottom:1px solid var(--line)}
-button{font:inherit;cursor:pointer;border:1px solid #b4c6d2;border-radius:7px;background:white;color:var(--ink);padding:6px 12px;min-height:36px}
-button:hover{background:#eaf2f7}
-button:disabled{opacity:.45;cursor:default}
-button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #1478b6;outline-offset:3px}
-.zoom{display:flex;align-items:center;gap:8px;margin-left:auto}
-output{min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
-.legend{font-size:12px;color:var(--muted)}
-.legend b{color:var(--green)}
-.viewport{overflow:auto;padding:24px;flex:1;min-height:220px}
-.stage{position:relative;margin:auto}
-.canvas{width:1224px;padding:8px 12px 28px;transform:scale(var(--scale));transform-origin:top left}
-.root{width:max-content;max-width:90%;margin:0 auto 36px;padding:14px 30px;text-align:center;background:var(--ink);border-radius:12px;color:white;position:relative;box-shadow:0 6px 20px #172b3d15}
-.root strong{display:block;font-size:19px}
-.root small{color:#c5d7e4}
-.root:after{content:"";position:absolute;bottom:-24px;left:50%;height:24px;border-left:2px dashed #7c9caf}
-.branches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px 22px;align-items:start;border-top:2px dashed #9eb4c2;padding-top:24px}
-.branch{min-width:0;border:1px solid var(--line);border-radius:12px;background:white;position:relative;box-shadow:0 3px 10px #172b3d06}
-.branch:before{content:"";position:absolute;top:-26px;left:50%;height:24px;border-left:2px dashed #9eb4c2}
-.branch summary{display:flex;align-items:center;gap:10px;list-style:none;padding:17px 16px;cursor:pointer;font-size:17px;font-weight:700;border-radius:12px}
-.branch summary::-webkit-details-marker{display:none}
-.number{font-size:11px;color:var(--blue);padding:3px 6px;border:1px solid #bfd5e3;border-radius:5px}
-.fold{margin-left:auto}
-.branch:not([open]) .fold{transform:rotate(-90deg)}
-.branch-body{padding:0 16px 14px}
-.responsibility{margin:0 0 18px;color:#455f70;font-size:13px}
-.branch section{position:relative;margin:14px 0 0 6px;padding:0 0 0 14px;border-left:3px solid #81a6c0}
-.branch h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin:0 0 5px}
-.branch p{font-size:13px;margin-top:0;margin-bottom:0;overflow-wrap:anywhere}
-.branch .data{border-color:#d6b66c}
-.data h3{color:#825e16}
-.branch .checks{border-color:#b8a0d1}
-.checks h3{color:#705086}
-a{color:#1e567b;text-decoration-thickness:1px;text-underline-offset:3px}
-.ref span{color:var(--green);font-size:11px}
-.broken{background:#fff0ec;color:#8e2917}
-.broken strong{display:block;font-size:11px}
-code{font:12px/1.5 ui-monospace,Consolas,monospace;background:#edf2f5;padding:1px 3px;border-radius:3px;overflow-wrap:anywhere}
-.branch footer{margin-top:18px;padding-top:10px;border-top:1px solid #e4ebef;font-size:11px;color:var(--muted)}
-.branch .unverified{margin-top:12px;color:#825e16;font-size:11px}
-.issues{margin:12px 32px;padding:10px 15px;border:1px solid #d5b66d;border-radius:8px;background:#fff9e9;font-size:13px}
-.issues summary{cursor:pointer;font-weight:650}
-.issues ul{padding-left:20px}
-.notice{padding:0 32px 16px;font-size:12px;color:var(--muted)}
-@media(max-width:1100px){.canvas{width:820px}.branches{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){header{padding:20px 18px 14px}
-h1{font-size:26px}
-.toolbar{padding:10px 18px;gap:6px}
-.zoom{margin-left:0}
-.legend{width:100%}
-.viewport{padding:12px;min-height:240px}.canvas{width:calc(100vw - 48px)}.branches{grid-template-columns:1fr}
-.issues{margin:10px 18px}
-.notice{padding:0 18px 16px}
-}
-@media print{body{display:block;height:auto}.toolbar{display:none}
-.viewport{height:auto;overflow:visible;padding:0}
-.canvas{transform:none;width:100%}
-.stage{width:auto!important;height:auto!important}
-.branches{grid-template-columns:repeat(2,minmax(0,1fr))}
-.branch{break-inside:avoid}
-.notice{padding-top:12px}
-}
-
-"""
-
-SCRIPT = """
-const viewport=document.querySelector('.viewport'),stage=document.querySelector('.stage'),canvas=document.querySelector('.canvas'),out=document.querySelector('output');
-let scale=1;
-function layout(){stage.style.width=(canvas.offsetWidth*scale)+'px';stage.style.height=(canvas.offsetHeight*scale)+'px';}
-function zoom(next){scale=Math.min(1.6,Math.max(.25,next));canvas.style.setProperty('--scale',scale);out.value=Math.round(scale*100)+'%';document.querySelector('#minus').disabled=scale<=.25;document.querySelector('#plus').disabled=scale>=1.6;layout();}
-document.querySelector('#minus').onclick=()=>zoom(scale-.1);document.querySelector('#plus').onclick=()=>zoom(scale+.1);
-document.querySelector('#fit').onclick=()=>{zoom(Math.min(1,(viewport.clientWidth-48)/canvas.offsetWidth));viewport.scrollTo(0,0);};
-for(const [id,open] of [['expand',true],['collapse',false]])document.getElementById(id).onclick=()=>{document.querySelectorAll('.branch').forEach(node=>node.open=open);layout();};
-document.querySelectorAll('.branch').forEach(node=>node.addEventListener('toggle',layout));
-new ResizeObserver(layout).observe(canvas);window.addEventListener('resize',layout);document.querySelector('#fit').click();
-"""
-
-TEMPLATE = """<!doctype html>
-<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<title>Scoutgaming · systemkarta</title><style>@@STYLE@@</style></head><body>
-<header><div class="eyebrow">SCOUTGAMING / SYSTEMKARTA</div><h1>Från produktväg till kod och drift</h1>
-<p>Dokumenterade ansvarsgränser – öppna ett område och följ dess kodreferenser.</p>
-<details class="source"><summary class="meta">@@SOURCE@@ · revision <code>@@SHORT@@</code>@@DIRTY@@ · @@TIME@@</summary><p class="meta">Källrevision: <code>@@REVISION@@</code><br>@@SOURCE_STATE@@</p></details></header>
-<nav class="toolbar" aria-label="Kartverktyg"><button id="expand">Expandera alla</button><button id="collapse">Fäll ihop alla</button>
-<span class="legend"><b>✓</b> Git-spårad sökväg finns lokalt · streckade linjer = dokumenterade samband</span>
-<div class="zoom"><button id="minus" aria-label="Zooma ut">−</button><output aria-live="polite" aria-label="Zoom">100%</output><button id="plus" aria-label="Zooma in">+</button><button id="fit">Anpassa bredd</button></div></nav>
-@@ISSUES@@
-<main class="viewport" aria-label="Systemkarta" tabindex="0"><div class="stage"><div class="canvas"><div class="root"><strong>Produktens ansvarsområden</strong><small>@@COUNTS@@</small></div><div class="branches">@@CARDS@@</div></div></div></main>
-<p class="notice">Kontrollen gäller sökvägar, inte körbarhet, beroenden eller godkända tester. Kolumnen ”Verifiering av gränsen” beskriver dokumenterade provkrav. Filinnehåll och drift har inte granskats av generatorn. Länkar öppnar den lokala arbetskopian.</p>
-<script>@@SCRIPT@@</script></body></html>"""
+    return re.sub(r"@@([A-Z_]+)@@", lambda token: values[token[1]], (support / "template.html").read_text(encoding="utf-8")), errors, warnings
 
 
 def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
