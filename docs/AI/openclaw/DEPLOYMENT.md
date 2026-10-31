@@ -86,6 +86,13 @@ Det aktiverar ingen kamera. Slack-bilder kräver dessutom Slacks medieåtkomst.
 OpenAI stöder inte `adaptive` som Sol 6.1-effort; högre nivå väljs uttryckligt
 eller via Directors begränsade eskalering.
 
+För JSON mode skickar Director en fast applikationsägd JSON-instruktion även
+bland indata. Gateway 2026.9.5 flyttar annars systemtexten till Responses
+`instructions`, som inte uppfyller API:ts kontroll av ordet JSON i indata.
+Detta reproducerades mot den pinnade Gatewayen: instruktion enbart i system-
+meddelandet gav HTTP 400; instruktion i indata gav HTTP 200. `fixed` kan
+användas som återställningsläge under en sådan transporträttning.
+
 Källor: [OpenClaw 2026.9.5 thinking](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/tools/thinking.md),
 [HTTP-schema](https://github.com/openclaw/openclaw/blob/v2026.9.5/src/gateway/openai-http.ts),
 [OpenAI Sol 6.1](https://developers.openai.com/api/docs/models/gpt-6.1-sol),

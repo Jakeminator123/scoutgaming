@@ -52,6 +52,24 @@ test('ordinary answer uses one Luna call; fixed routing never enables escalation
   }
 });
 
+test('both adaptive passes satisfy provider JSON mode when Gateway separates system instructions', async () => {
+  const input = envelope(); input.status.dealerId = 'jakob-2';
+  input.request.message = 'Hej, vem är du?';
+  const calls = [];
+  const service = createProductSpeechService({ settingsProvider: () => settings({ speechDeepModel: 'gpt-6.1-sol' }),
+    completeImpl: async (_settings, body) => {
+      calls.push(body);
+      const providerInput = body.messages.filter(message => message.role !== 'system')
+        .map(message => typeof message.content === 'string' ? message.content : JSON.stringify(message.content)).join('\n');
+      assert.match(providerInput, /\bjson\b/i, 'Responses rejects JSON mode without JSON in input items');
+      return JSON.stringify(calls.length === 1 ? escalation(input) : choice(input));
+    } });
+  assert.deepEqual(await service.handle(input), choice(input));
+  assert.equal(calls.length, 2);
+  assert.deepEqual(JSON.parse(calls[0].messages.at(-1).content), input);
+  assert.deepEqual(calls[1].messages.slice(1), calls[0].messages.slice(1));
+});
+
 test('one valid escalation preserves explicit pins, original context and separate attempt sessions', async () => {
   for (const model of [undefined, 'gpt-6-luna', 'gpt-5.6-terra']) {
     const input = envelope(model ? { model } : {});
