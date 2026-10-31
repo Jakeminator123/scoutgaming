@@ -109,3 +109,42 @@ GitGuardian var efter den tidigare kontrollen på 0 öppna och 25 ignorerade inc
 - Återstår endast om en faktisk GitHub-flytt eller historikomskrivning beställs: vald övergång, integrationer/ägarsamordning och verifierad publicering. Ingen påminnelse eller återkommande automatisk radering har skapats.
 
 Metodbegränsning: `git-filter-repo` användes inte och ingen omskrivning av befintlig historik provkördes. Analysen och de fristående jämförelserna genomfördes med Git och egna avgränsade skript.
+
+## Avslut och Neon-kontroll — 31 oktober, cirka 02:25–02:32 svensk tid
+
+**Avslutsbedömning:** den stora lokala Git-städningen och dokumentleveransen är klara. Ingen akut Neon-radering motiveras av den uppmätta storleken. GitHubs äldre historik och dess `too_large`-skanning finns fortfarande kvar; en ny produktrepo är ett separat, förberett beslut, inte en genomförd storleksminskning på GitHub. AGENT TVÅ håller ihop OpenClaw-leveransen. Denna kontroll ändrade inga databaser, grenar, roller, TTL-värden eller produktionsinställningar.
+
+Neon lästes via pluginens projekt-/grenmetadata, `inspect_database` och aggregerade SQL-frågor. Inga konton, chatttexter, transaktioner eller hemlighetsvärden exporterades. Kodgranskningen av rutinerna gäller main `eb41edc03378789a371be8f22965e7ca06f3ddcd`; den är inte ett prov av vilken rutin som körts i produktionen. Säkra mätunderlag finns lokalt i `.cache/neon-closeout-1031/` och är inte en databasbackup.
+
+| Mätning | Produktion | Preview |
+| --- | ---: | ---: |
+| Aktiv appdatabas | `croupier_game`: 24 723 456 byte (23,58 MiB) | `croupier_staging`: 21 708 800 byte (20,70 MiB) |
+| Dokumenthistorik | 356 revisioner; tabell inklusive TOAST 6 040 KiB | 116 revisioner; tabell inklusive TOAST 920 KiB |
+| Nya dokumentrevisioner 30 oktober, UTC-dygn | 3 | 7 |
+| Publicerade paketrevisioner | 75 | 62 |
+| Spelaudit / outbox / receipts / ticks, antal rader | 346 / 86 / 109 / 60 | 3 205 / 828 / 1 158 / 356 |
+| Neon-grenar inklusive main | 7 | 3 |
+| Avgränsad autovacuum-kontroll | 74 tabeller, inga över diagnostikens tröskel | 75 tabeller, inga över diagnostikens tröskel |
+
+Detta är storleks- och räkningsögonblicksbilder, inte en lång mätserie eller en full bloat-/belastningsanalys. Neon-grenars logiska storlekar ska inte summeras som oberoende fysiska kopior: grenarna delar data tills de divergerar.
+
+### Vad begränsas redan, och vad kan växa?
+
+| Rutin | Verifierat beteende och slutsats |
+| --- | --- |
+| Chattminne | `services/game/storage/async-player-chat-memory.mjs`: högst 30 historikposter/8 000 tecken per profil; requests gallras efter ett dygn och inaktiva profiler efter 30 dagar. Prune anropas vid uppstart och användning, inte av en separat schemalagd städare. Inga requests äldre än ett dygn eller profiler inaktiva över 30 dagar fanns vid kontrollen. |
+| Probe-data | `async-player-probe-store.mjs`: fakta följer expiry, källor/rundor 30 dagar, försök 31 dagar och sessionsnärvaro ett dygn. Anropad gallring; inga probe-sessioner över ett dygn vid läsningen. |
+| Spelarinloggning | `async-player-auth.mjs`: utgångna sessioner tas bort vid ny inloggning; logout tar den egna sessionen. Tre utgångna poster i produktion och 94 i preview låg kvar. Expiry hindrar användning, men ålder ensam startar ingen fysisk radering. Den lilla mängden motiverar ingen separat cron nu. |
+| Dokumentrevisioner och Studio-audit | `packages/studio-registry/server/repository.mjs` sparar föregående dokument och en auditrad vid sparning. Ingen generell automatisk SQL-gallring hittades. Historiken är idag liten men kan växa med sparningstakten. |
+| Publicerade paket | Gamla revisioner kan bära låsta rums konfiguration och mediereferenser. Vanlig papperskorg är inte historikgallring. Avveckling kräver konsumentkontroll, inte en åldersgräns ensam. |
+| Spelaudit, outbox, ticks och receipts | `postgres-store.mjs` lägger till poster; outbox kvitteras med status, den raderas inte där. Receipts/ticks skyddar mot dubbel hantering och audit läses av spelresultat och revisionskedjan. Ingen generell gallring hittades i granskade kod-/SQL-rutiner; radera inte dessa med en blind TTL. |
+| Lokal retention-policy | `tools/retention-policy.json` och `retention-archive.mjs` gäller lokala history-/observationsfiler. **De begränsar inte Neons tabeller.** Autovacuum återanvänder utrymme efter ändrade/raderade rader; det bestämmer inte vilka historiska affärsrader som ska sparas. |
+
+Ingen `pg_cron`-extension eller matchande gallringsfunktion för dokument-/spelhistoriken hittades i de två aktiva databaserna. Externa schemaläggare har inte fullständigt inventerats. Innan väsentligt större trafik behövs ett avgränsat bevarandekontrakt för revisioner/loggar med återspelning, idempotens och aktiva referenser bevarade. Det är en senare skalningsfråga, inte ett konstaterat akut lagringsfel.
+
+### Backup-/restore-rester och avslut
+
+- Sex produktionsgrenar och två previewgrenar utöver main finns kvar. De två `backup-l3-rooms-20261030` har `expires_at=2026-11-06T23:59:00Z` (7 november 00:59 svensk tid). Sex andra backup-/restoregrenar saknar automatiskt utgångsdatum. De är bara 1–4 dygn gamla; återställningsguidens minst en vecka före gallring gäller fortsatt. Vi ändrade inga utgångsdatum.
+- Preview har `croupier_staging_restore` (11 214 848 byte), `croupier_staging_restore_o02` (17 514 496 byte) och `neondb` (7 716 864 byte). De två restore-databaserna är tillsammans 27,40 MiB; med standarddatabasen 34,76 MiB. Inga klientanslutningar till dessa syntes i ögonblicksbilden, vilket inte bevisar att de kan raderas. Bindningar och återställningsbehov måste kontrolleras vid ett senare gallringsbeslut.
+- Neons projektmetadata redovisade cirka 45,77 GB respektive 159,75 GB datatrafik med konsumtionsperiod 21 oktober–1 november. Det är **trafik, inte lagrad databasstorlek**, och är inte en uppmätt aktuell tillväxttakt. Orsak och eventuell kostnadsoptimering är inte fastställda i denna lagringskontroll.
+- Inga återkommande raderingsjobb eller påminnelser har skapats. För avslutet behövs ingen ytterligare omedelbar städning i Neon. Behåll säkerhetskopiorna och de två lokala testerna; använd denna rapport och [övergångsplanen](2026-10-31-clean-repository-plan.md) om repo-bytet tas upp igen.
