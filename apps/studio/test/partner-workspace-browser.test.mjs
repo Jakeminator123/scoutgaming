@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {dirname} from 'node:path';
+import {readFile} from 'node:fs/promises';
 import {build} from 'esbuild';
 import {studioHistoryBootstrap} from '../lib/studio-history.mjs';
 import {PARTNER_PERMISSIONS} from '../../../packages/studio-access/server/partner-access-policy.mjs';
@@ -12,6 +13,24 @@ import {defaultCompositionSettings} from '../../../packages/presentation/contrac
 // granskningsdialogen, åtgärdsmenyn och ⌘K-paletten med tangentbordet. Allt nätverk
 // går till en isolerad fixtur; spara → granska → publicera ska vara samma tre anrop.
 const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
+
+test('partner styles leave surrounding content unchanged and load no external resource',{skip:!browserModule},()=>withBrowser(async browser=>{
+  const page=await browser.newPage(),requests=[];
+  await page.route('**/*',route=>{requests.push(route.request().url());return route.abort();});
+  try{
+    await page.setContent('<!doctype html><main><h1>Other workspace</h1><nav><a href="#">Navigation</a></nav><section class="card"><h2>Content</h2><p class="sub">Description</p><button class="btn">Action</button><label>Input<input></label><table><tbody><tr><td>Value</td></tr></tbody></table></section></main>');
+    await page.addStyleTag({content:':root{--sg-bg:#123456;--sg-text:#fedcba;--sg-surface:#345678;--sg-font-body:monospace}'});
+    const styles=()=>page.locator('body,body *').evaluateAll(elements=>elements.map(element=>{
+      const css=getComputedStyle(element);
+      return Object.fromEntries(['display','position','color','backgroundColor','font','margin','padding','border','borderRadius','minHeight','width','height'].map(key=>[key,css[key]]));
+    }));
+    const before=await styles();
+    await page.addStyleTag({content:await readFile(new URL('../components/partner/partner-portal.css',import.meta.url),'utf8')});
+    assert.deepEqual(await styles(),before,'portal CSS cannot change another workspace');
+    await page.waitForTimeout(50);
+    assert.deepEqual(requests,[]);
+  }finally{await page.close();}
+}));
 const origin='https://partner-workspace.fixture.invalid',studio=dirname(dirname(fileURLToPath(import.meta.url)));
 let source;
 async function fixtureSource(){return source??=build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';

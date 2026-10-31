@@ -10,6 +10,7 @@ import {lifecycleMessage} from './studio-lifecycle.mjs';
 import * as lifecycleActions from './lifecycle-actions.mjs';
 import {dealerArchivePlan,dealerRestorePlan,dealerDeletePlan} from './lifecycle-actions.mjs';
 import * as dealerCoverage from './dealer-coverage.mjs';
+import * as navigation from '../../../../../packages/navigation/admin-navigation.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 // The kit's dialogs and buttons are function components; expand them so their texts and buttons are inspectable.
 const expand=node=>{while(node&&typeof node==='object'&&typeof node.type==='function')node=node.type(node.props);return node;};
@@ -292,7 +293,27 @@ test('a pending permanent deletion disables restore and only offers to finish th
 });
 
 test('dealer hub binds Taldrift to the shown dealer',()=>{
-  const source=readFileSync(new URL('../components/studio/dealer-hub.tsx',import.meta.url),'utf8');
-  assert.match(source,/<TaldriftPanel dealerId=\{dealer\.id\}\/>/);
-  assert.equal(source.match(/<TaldriftPanel\b/g)?.length,1,'one Taldrift panel, always with the dealer');
+  const module={exports:{}};
+  runInNewContext(tsx('dealer-hub'),{module,exports:module.exports,URLSearchParams,require:name=>{
+    if(name==='react')return {...React,useState:initial=>[initial,()=>{}],useEffect:()=>{}};
+    if(name.includes('runtime/navigation'))return {__esModule:true,default:'a',useSearchParams:()=>new URLSearchParams()};
+    if(name.endsWith('lib/admin-navigation'))return navigation;
+    if(name.endsWith('lib/dealer-coverage.mjs'))return dealerCoverage;
+    if(name==='../ui/hub')return {...hub,Note:({children})=>React.createElement('aside',null,children)};
+    if(name==='../ui/kit')return {cn:(...parts)=>parts.join(' '),buttonVariants:()=>''};
+    if(name==='./taldrift-panel')return {TaldriftPanel:'taldrift-fixture'};
+    if(name==='./workspace-tools')return {WorkspaceTool:()=>null};
+    if(name.startsWith('./'))return new Proxy({},{get:()=>()=>null});
+    return require(name);
+  }});
+  const project=addDealer(addDealer(createEmptyProject(),'north','North'),'south','South');
+  const workspace={project,inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[]}}};
+  const panels=dealerId=>nodes(module.exports.DealerHub({part:'tail',tab:'tal',dealerId,workspace,saved:project}),node=>node.type==='taldrift-fixture');
+  for(const dealerId of ['north','south']){
+    const shown=panels(dealerId);assert.ok(shown.length,'the selected dealer has speech controls');
+    for(const panel of shown)assert.equal(panel.props.dealerId,dealerId,'no other dealer identity reaches the controls');
+  }
+  assert.deepEqual(panels('missing'),[],'an unknown dealer never borrows another dealer’s controls');
+  project.dealerTrash=[{dealer:{id:'archived',label:'Archived'}}];
+  assert.deepEqual(panels('archived'),[],'an archived dealer cannot operate speech');
 });
