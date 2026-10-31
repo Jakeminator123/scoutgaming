@@ -132,7 +132,7 @@ Den historiska anvisningen var `python -I fixa-callback-origin.py --kör` i `Des
 2. **Röstunderlag:** Jakob-/ABYDM-underlag finns privat enligt [NEXT-AGENT](../NEXT-AGENT.md#talprov-och-röst-idn-2026-10-30). Rösterna på målkontot och Jakobs ljudbedömning måste verifieras före aktivt byte.
 3. **Preview-taluppsättning (T2):** ja eller nej, med kostnad (egna nycklar, egen budget, GPU), och om riktig dealermedia och bank får ligga i preview-Blob.
 4. **T1 i produktionen:** får Paows profil sparas i produktionens Admin för Dialogtest innan preview har tal?
-5. **Verifiera RunPod-konto, mall, endpoint och callback** före eventuell korrigering; den historiska fixern är inte verifierad för dagens bindning (se Före T3).
+5. **Verifiera RunPod-konto, mall, endpoint och callback** före eventuell korrigering; den historiska fixern är inte verifierad för dagens bindning (se Före T3). Befintlig kvittens från 30 oktober 16:46 UTC anger att mall `5dkkc3wolw` rättades och återlästes mot `croupier-v3`, se [miljöguidens callbackkvittens](../ENVIRONMENT-VARIABLES.md). Previews separata mall återstår att verifiera enligt T2.
 6. **När rörligt tal får slås på i produktionen** (`CROUPIER_MOVING_SPEECH_ENABLED=1`), och om en varm worker (min 1, kostar per timme) ska gälla under öppettid för stillbild respektive rörligt.
 7. **DDL** om T3 eller T8 kräver migrering.
 
