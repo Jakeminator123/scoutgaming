@@ -2,6 +2,10 @@
 
 Aktuell samordning 31 oktober 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor. `migrering/status.json` är fortsatt migrationsplanens enda statuskälla.
 
+## Organisationsinventering
+
+Jakobs nya [organisationsplan](plans/organisation/MASTERPLAN.md) sammanställer 16 externa underlag och riktad repo-/molnverifiering på main `e20fe6f143e447f805c63b75b328f39f48521ca3`. Den har tre faser, åtta områden, ett gemensamt spår och 31 aktiviteter; deras egna filer bär status. [Nuläget](plans/organisation/NULAGE.md) skiljer färska bevis från äldre rapportfel (bland annat `master`, previewskydd och redan levererade rättningar). MERGEAGENTEN samordnar; de nya områdeschattarna har granskat läsande. Inventeringen ändrar inte produkt, moln, schema eller historik. Välj en avgränsad genomförandevåg efter planen; återuppta inte gamla avslutade underagenter.
+
 ## Leveransen som avslutas
 
 - **L3 steg 5–6:** Studio 023 är installerad i båda miljöerna. Nya paketrevisioner bär produktionens fyra och previews sex befintliga rum (nio respektive fyra bolagspaket). Den gamla dokumentlistan avvecklas med vanlig CAS-sparning efter kodens driftsättning, utan att skriva om material eller låsta spelkonfigurationer. Paketens `rooms` är enda aktiva rumsregistret; Admins `administration.rooms` är en härledd svarsvy. `gameLanes` är kvarvarande uppspelningskonfiguration, inte en andra rumslista; dess avveckling var L3 steg 7, inte någon av de två beställda delarna.
