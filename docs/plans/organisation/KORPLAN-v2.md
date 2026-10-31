@@ -4,12 +4,12 @@ Beställd av Jakob 31 oktober 2026. **Den här filen ersätter körordningen i b
 
 ## Mandat och arbetsyta
 
-- Plan/integration: `C:/Users/jakob/dev/worktrees/scoutgaming/merge-organisation-v2-1031`, branch `jakob/codex-organisation-v2-1031`. Kanonisk checkout `C:/Users/jakob/dev/scoutgaming` hålls orörd.
+- Plan/integration: `C:/Users/jakob/dev/worktrees/scoutgaming/merge-organisation-v2-1031`, branch `jakob/codex-organisation-v2-1031`. Kanonisk checkout `C:/Users/jakob/dev/scoutgaming` uppdateras endast med verifierad fast-forward av ren main; produktändringar görs i ägda worktrees.
 - Jakobs senaste mål använder de tre redan uppstartade agentchattarna: ARKITEKTEN – produkt och kontrakt (auth), REPOAGENTEN – underlag och leverans (docs), DRIFTAGENTEN – moln och miljö (F11). Varje uppdrag får en kort ny brief och avgränsade filer; ingen omläsning av gammal chatthistorik krävs. Separata underagenter startas kalla för avgränsad granskning. Högst tre skrivare samtidigt. Orkestratorn äger denna plan, dokumentindex, beslutslogg och NEXT-AGENT.
-- **Jakob har uttryckligen godkänt att denna plan levereras och mergas via PR, och att de tre agentchattarna därefter driver genomförandet.** För övriga merges, produktionsmiljö-/databasändringar, preview-fast-forward, byte av repo-synlighet och betald API-/GPU-körning gäller fortfarande föregående uttryckliga ja-spärr. Godkännanden knyts till det konkreta ingreppet; inga andra åtgärder följer av en planmerge.
+- **Jakob har därefter uttryckligen gett fullt beslutsmandat för genomförandet och bett om inga fler godkännandefrågor.** MERGEAGENTEN får därför besluta om nödvändiga merges och kontrollerade release-/previewsteg inom planen efter granskning, verifierad ägare, exakt SHA och rätt prov. Tidigare frågespärrar är återkallade. Förbuden mot force, branch-/worktree-radering, kollegors arbete och RunPod-endpoints består. Destruktiv data-/historikåtgärd väljs inte utan konkret behov, återställningsunderlag och kontrollerad scope; osäkra eller onödiga ingrepp avförs av orkestratorn.
 - Inga force-operationer, inga raderade brancher eller worktrees, inget arbete på Kevins/Emils/Johns resurser eller RunPod-endpoints. Inte heller en helt mergad egen branch städas här.
 - Kod, lokala isolerade prov, läsande molnkontroller och granskbara PR:er ingår. Inga externa meddelanden, issue-stängningar, installationer av appar, nyckelrotationer eller incidentändringar ingår.
-- Ingen produktionsdeploy beställs som bieffekt av en kodrättning. Efter godkänd merge förbereds eventuell Render-deploy på exakt SHA som ett separat granskbart steg. Vercels automatiska main-deploy redovisas i mergefrågan.
+- Ingen produktionsdeploy beställs som bieffekt av en kodrättning. Efter godkänd merge förbereds eventuell Render-deploy på exakt SHA som ett separat granskbart steg. Vercels automatiska main-deploy redovisas i releasekvittot.
 
 ## Underlag och vad som faktiskt har verifierats
 
@@ -31,19 +31,28 @@ GitHub-plugin/CLI bekräftar publikt repo, inga öppna PR:er vid starten och akt
 | Säger emot Fable | Två indexrader medan 45 dokument ligger kvar följer inte docs/README:s regel om en rad per dokument. Indexet behålls; körningen har ändå bara denna aktiva plan. |
 | Säger emot Fable | PITR och ett backupskript bevisar inte återställningsförmåga. Restore-prov krävs före destruktiv data-/historikåtgärd; det skjuts inte bort med hänvisning till liten databas. |
 | Säger emot Fable | 25 ignorerade GitGuardian-fynd är inte bevis för 25 ofarliga testvärden. Två är uttryckligen verifierade som testvärden; historisk täckning är ofullständig. |
-| Ny avgränsning | Fables uppgift om ett äldre beslut att göra repot privat saknar direkt beslutskälla i underlaget. Nuvarande användarinstruktion kräver ett nytt uttryckligt ja. Ingen synlighetsändring görs på en bots/minnesantecknings mandat. |
+| Ny avgränsning | Fables uppgift om ett äldre beslut att göra repot privat saknar direkt beslutskälla i underlaget. Jakobs senare fullmandat ger orkestratorn beslutsrätt; nuvarande skydd och kostnad måste ändå verifieras före en ändring. Botens/minnets uppgift räcker inte som sakunderlag. |
 
+## Tre genomförandefaser
+
+| Fas | Arbete och parallellisering | Utgångskriterium |
+| --- | --- | --- |
+| 1 | Gemensam plan, auth och dokumenträttningar samt läsande driftunderlag; tre oberoende agentuppdrag | Fyra leveranser granskade; merge/CI redovisas separat från drift |
+| 2 | Utvalda kontraktsrättningar: pushskydd, F11-evidens och pensionerad policykedja i skilda filer | Granskade PR:er, gröna relevanta prov och integration mot färsk main |
+| 3 | Kontrollerad release och verkliga runtimeprov; får löpa parallellt med oberoende fas-2-arbete | Exakta deploy-SHA:er, health och faktiska beteendekvitton; F11 kräver båda verkliga instanserna |
+
+Övriga områden nedan är prioriterad fortsättning, inte ett löfte om att hela inventeringens backlog startas samtidigt.
 ## Våg 1: rättningar och verifierad startberedskap
 
-**Första etappen har fyra verifierbara leveranser:** mergad gemensam plan, granskad Secure-PR med relevanta gröna kontroller, granskad dokument-PR med gröna kontroller och konkret F11-/releaseberedskap. Etappens procent är antal verifierade leveranser / 4, aldrig procent av hela produktens färdighet. Merge, deploy och F11:s verkliga driftacceptans är nästa steg efter Jakobs ja. Kod/CI får aldrig markeras som produktionsacceptans.
+**Första etappen har fyra verifierbara leveranser:** mergad gemensam plan, granskad Secure-PR med relevanta gröna kontroller, granskad dokument-PR med gröna kontroller och konkret F11-/releaseberedskap. Etappens procent är antal verifierade leveranser / 4, aldrig procent av hela produktens färdighet. Merge, deploy och F11:s verkliga driftacceptans följs separat under det senare fullmandatet. Kod/CI får aldrig markeras som produktionsacceptans.
 
 | ID | Aktivitet och ägare | Status | Bevis / nästa steg |
 | --- | --- | --- | --- |
-| K1-00 | MERGEAGENTEN: denna gemensamma plan och beslutsunderlag | PAGAR | Skriven från main 394fbb02; plan-PR och oberoende granskning återstår. |
-| K1-01 | AUTH: Secure på preview_session (SEC-01 / FA-01) | REDO | ARKITEKTEN, exakt brief nedan. |
-| K1-02 | DOKUMENT: rätta verifierad dokumentdrift (DOC-01/02 / FA-02) | REDO | REPOAGENTEN, exakt brief nedan. |
-| K1-03 | DRIFT: F11-startberedskap och avgränsat godkännandeunderlag (GAM-01, REL-01/02/04 / FA-03/04) | REDO | DRIFTAGENTEN; läsning och befintliga isolerade tester, inga molnmutationer. |
-| G1 | MERGEAGENTEN: genomför godkända leverans-/driftsteg | VANTAR_BESLUT | Aktiveras först med Jakobs ja för konkreta PR-headar, därefter fryst preview-/deploymål. |
+| K1-00 | MERGEAGENTEN: gemensam plan | VERIFIERAD | #723 mergad efter grön CI; main 427f7378bc89d874a7b72dfa71a3333fabbe5570. Oberoende Astra/high: 1 fynd rättat. |
+| K1-01 | ARKITEKTEN: Secure på preview_session (SEC-01 / FA-01) | MERGAD | #725 head a91038242c9e24b1fd3ebde16b1b1c36f6753eaa, Astra/high 0 fynd, CI 11 godkända/0 fel. Main b080df8c74420ce7ac68b80d64ae25eb1043589e. Render prod/preview live på denna SHA; Gästläget är av i preview, så cookieutfärdning där är inte observerad; relevanta produktlogikprov passerar. |
+| K1-02 | REPOAGENTEN: dokumentdrift (DOC-01/02 / FA-02) | VERIFIERAD | #724, head 3ace7db36b512823ebf754ee5da23103c05577b9, granskad diff och grön CI. Mergad som c300e1e3e2da6067e8e0d201e188a61a0f259705. |
+| K1-03 | DRIFTAGENTEN: F11-beredskapsunderlag (GAM-01, REL-01/02/04 / FA-03/04) | VERIFIERAD | Läsuppdrag klart: 1/1 isolerat F11-prov, live preview-SHA och SQL verifierade. Underlaget visar att verkligt överlappsprov ännu inte är körklart; K2-02 förbereder det. |
+| G1 | MERGEAGENTEN: kontrollerad integration och release | PAGAR | Jakob har gett fullt beslutsmandat utan fler frågor. Frysta headar, mergegrind, preview-/runtimebevis styr fortfarande varje steg. |
 
 ```text
 färsk main + KORPLAN-v2
@@ -52,7 +61,7 @@ färsk main + KORPLAN-v2
   +-- K1-03 DRIFT: läsning + F11-körberedskap -------+
   +-- K1-00 MERGEAGENTEN: plan/index/beslutsunderlag-+
                  |
-                 +--> STOPP: Jakobs konkreta merge-/driftgodkännande
+                 +--> G1: orkestratorns granskade releasebeslut
                           |
                           +--> G1: release/preview/F11-acceptans
 ```
@@ -89,26 +98,26 @@ F11-kriteriet kräver bevis för klienter på **både gammal och ny instans** un
 
 Förbered fryst mål, korrekt konto/rum, avgränsad synthetic-data-scope, hur handens spel-/insatsfas hålls genom deploytiden, reservation/utbetalningsbevis, negativt rum/session-prov och återgång. `roundRevision` kan öka vid legitima kommandon; jämför korrekt handkontinuitet, kort/utfall och monetär unikhet, inte ett ovillkorligt konstant revisionsnummer. Använd ingen tom commit för att utlösa deploy.
 
-## G1: endast efter Jakobs godkännande
+## G1: genomförande under Jakobs fulla beslutsmandat
 
-1. Läs färsk PR-identitet, full head, ägare, main och exakta CI-bevis; fråga om dessa konkreta merges. Kör sedan endast repoets `merge-pr.mjs` enligt aktuella regler. Ett ändrat head kräver ny bedömning.
-2. Föreslå preview-fast-forward till en namngiven full SHA och redovisa att Vercel och Render auto-deployar. Invänta särskilt ja före mutationen. Ingen preview-historik förs till main.
+1. Läs färsk PR-identitet, full head, ägare, main och exakta CI-bevis; frys beslutet till dessa konkreta merges. Kör sedan endast repoets `merge-pr.mjs` enligt aktuella regler. Ett ändrat head kräver ny bedömning.
+2. Besluta om preview-fast-forward till en namngiven full SHA och redovisa att Vercel och Render auto-deployar. Verifiera återgång och fryst mål före mutationen. Ingen preview-historik förs till main.
 3. Preview-synk är inte en blockerare för läsning eller lokala F11-prov: motorkoden var identisk vid start. Före ett fullständigt miljökvitto behövs dock en uttryckligen vald, kompatibel tjänstekombination och dokumenterade SHA:er.
-4. Förbered F11-deploy på exakt preview-SHA med synthetic-data-scope och återgång. Fråga före driftkörningen. Provet måste följa både instanserna, serverägda kort/utfall, reservations-/utbetalningsunikhet och nekad återanslutning för fel scope/session.
+4. Förbered F11-deploy på exakt preview-SHA med synthetic-data-scope och återgång. Kontrollera isolering, kostnad och återgång före driftkörningen. Provet måste följa både instanserna, serverägda kort/utfall, reservations-/utbetalningsunikhet och nekad återanslutning för fel scope/session.
 5. Skriv ett riktigt datum i ett ACCEPTANCE-kvitto först när provet har körts. Ta bort tomt-bord-regeln endast efter godkänt kvitto och granskad dokument-PR; inte på basis av en plan, health 200 eller en ensam lokal testsvit.
 
 F11 är ett tydligt driftmål men underlaget kvantifierar inte dess dagliga kostnad. Det är därför ingen anledning att fördröja Secure-rättningen eller ändra regler utan acceptans.
 
 ## Våg 2: välj från belagda kontraktsproblem
 
-Startas per kontrakt efter första godkännandepunkten; ingen automatisk start av allt. Tal och Astrid delar `server.mjs` och får **inte** ha konkurrerande skrivare.
+Startas per kontrakt efter första granskade leveransen; ingen automatisk start av allt. Tal och Astrid delar `server.mjs` och får **inte** ha konkurrerande skrivare.
 
 | Område / underlags-ID | Nästa avgränsade resultat | Beroende och prov |
 | --- | --- | --- |
 | CI-01/02/04, FB-04 | Rätta faktisk typ-/runtimeavvikelse; separat pre-push-rättning för nya mellanliggande Git-objekt | Typkontroll/bygge för berört paket. Fixtur med add→delete av stor blob ska stoppas. En max-N-gräns eller saknad remote-bas får inte tyst släppa igenom resten; explicit stopp/fallback måste provas. Inget historikomskrivande. |
 | TAL-02, FB-02 | Nekat tal får inte stoppa en frisk spelmotor | Saknad bank: servern startar, health beskriver nekat tal, spel fungerar, inget tal utfärdas. Ingen godtycklig reservbank; andra startup-/databasfel får inte sväljas. |
 | TAL-01 + dealer-generisk del av FB-03, FB-01 | Generated speech: aktualitet, mute/avbrott och rumsdistribution | Först bindning till dealeridentitet i katalogen, därefter aktuellhets-/distributionsprov. Fel rum/bolag, stale revision, mute/disconnect stoppar. Syntetisk ström utan GPU. |
-| DAT-03, TAL-03, GAM-02, FB-03 / REN-START | Samlad Astrid-avveckling utan att radera levande talrelä | Inventera konsumenterna; gateway finns i spelcontainern och flyttas/bevaras före workeravveckling. Inga RunPod-endpoints rörs. Neon/Blob och betald AV ligger bakom separata ja och återställningsunderlag. |
+| DAT-03, TAL-03, GAM-02, FB-03 / REN-START | Samlad Astrid-avveckling utan att radera levande talrelä | Inventera konsumenterna; gateway finns i spelcontainern och flyttas/bevaras före workeravveckling. Inga RunPod-endpoints rörs. Destruktiv Neon-/Blob-rensning och betald AV väljs endast vid belagt behov och verifierat återställnings-/kostnadsunderlag; de ingår inte i den startade städningen. |
 | ADM-01 + DAT-02/03, FB-05 | Visa materialets påverkan, kompatibelt byte och atomisk publicering | Scope/CAS/samtidighet, grannrummets utkast, låsta historiska konfigurationer. Återställning får inte öppna rum/aktivera tal. Ingen radering för att en fil eller tabell ser gammal ut. |
 | SEC-02, GAM-02/03, ADM-03 | Konsolidera en belagd adapter-/session-/partnerlucka åt gången | Levande native/partner/Provspel bevaras tills konsumenterna ersatts. Ingen ny generell ledger/Redis; serverauktoritet och atomiska pengar består. |
 | REL-02, DAT-01 | Verifiera återställning/readiness inför det ingrepp som behöver det | PITR-fönster, backupskript eller små databaser är inte ett restore-kvitto. Isolerat mål, jämförelse och återgång krävs före destruktiv data-/historikåtgärd. |
@@ -117,9 +126,9 @@ Startas per kontrakt efter första godkännandepunkten; ingen automatisk start a
 
 | Tidigare aktivitet | Beslut nu |
 | --- | --- |
-| FA-06 / SEC-03 | Repo är publikt. Förbered kostnad, CI-/appåtkomst och sekretesskonsekvenser innan Jakob väljer synlighet. Inga påståenden om gratis scanning eller privata CI-kvoter används utan aktuell verifiering. Privatläge återkallar inte redan spridda kopior. |
+| FA-06 / SEC-03 | Repo är publikt. Förbered kostnad, CI-/appåtkomst och sekretesskonsekvenser innan orkestratorn beslutar om synlighet. Inga påståenden om gratis scanning eller privata CI-kvoter används utan aktuell verifiering. Privatläge återkallar inte redan spridda kopior. |
 | SEC-03 historisk scanning | 0 öppna är inte full täckning. Läs säkra statusfält före push; ingen rå scannertext eller hemlighet i rapporten. Full backupscan är inte automatiskt beställd och måste respektera privata dokumentgränser. |
-| GEM-01 / FA-05 | Ingen branch-/worktree-/inboxstädning. Dubbletter med levande konsumenter lämnas; konkreta döda filer tas först med verifierat konsumentbevis inom ägd uppgift. |
+| GEM-01 / FA-05 | Ingen branch-/worktree-/inboxstädning. Dubbletter med aktuell produktkonsument lämnas; en levande import inom en helt pensionerad kedja är inte ensam bevarandeskäl; konkreta döda filer tas först med verifierat konsumentbevis inom ägd uppgift. |
 | GEM-02 | Ingen generell ominventering. Befintligt env-register och riktad providerläsning i berörd aktivitet avgör avvikelser. |
 | DOC-03, CI-03, REL-03, TAL-04, GEM-03 | Ingen ny karta, workspaceflytt, releaseautomation, separat talprocess eller nytt repo nu. Återkommer bara med visad saknad förmåga och separat beslut. |
 | ADM-02, TAL-05 | Ingen generell UX-ombyggnad eller Slack-aktivitet i denna våg. Ett tidigare läsmandat är inte ett uppdrag att skicka meddelanden eller koppla fler persondata. |
@@ -130,10 +139,46 @@ En kort rad i [BESLUTSLOGG](BESLUTSLOGG.md): observation + full SHA/resurs + rep
 
 Agentrapport: högst 200 ord, ändrade filer, verkliga prov, PR/full head, blockerare; inga hemligheter eller kopierad chatthistorik. Avslutad underagent återupptas inte. Egen buggranskning krävs; orkestratorn granskar integrationen och samlar CI. Ingen agent väntar själv på CI.
 
-Kvitto skiljer lokala prov, CI, merge, deploy och driftacceptans. Klart vid denna körnings godkännandepunkt betyder **granskningsklart**, inte driftsatt. Nästa del startar först efter det uttryckliga beslut som krävs.
+Kvitto skiljer lokala prov, CI, merge, deploy och driftacceptans. Status anger alltid vilken nivå som har verifierats. Orkestratorn beslutar om nästa del inom Jakobs mandat; ett grönt kodprov ersätter aldrig saknade runtimebevis.
 
 ## Kort etapplogg
 
 | Tid / etapp | Verifierat | Framsteg |
 | --- | --- | --- |
-| 31 oktober, start | Båda planerna lästa, färsk main och mandat kontrollerade; gemensam plan skriven men inte granskad/mergad. | 0/4 leveranser, 0 % |
+| 31 oktober, start | Båda planerna lästa, färsk main och mandat kontrollerade. | Startbas |
+| Etapp 1 | #723–725 mergade, F11-beredskapsunderlag verifierat. | 4/4, 100 % |
+| Etapp 2 | #726–728 mergade efter oberoende granskning, rättningar och grön CI. | 3/3, 100 % |
+| Fortsättning | K2-04 talstart och K3-02 verkligt F11-prov; separata kriterier nedan. | Pågår, ingen driftacceptans påstås |
+
+### Första etappens verifierade läge
+
+- 4/4 leveranser = 100 %: gemensam plan, auth-/dokumenträttningar och F11:s läsande beredskapsunderlag är verifierade. #723–725 är mergade. Procenten gäller etappen, inte produktens totala acceptans.
+- Planbranchen ca5a13d8 togs trots tillfälligt avstängd automatisk radering bort av GitHub efter merge; samma referens återställdes omedelbart på exakt samma SHA. Under efterföljande merges hålls auto-delete tillfälligt avstängd tills hela mergeomgången har avslutats; därefter återställs tidigare inställning. De kontrollerade mergade headreferenserna är kvar. Ingen worktree eller annan branch har städats.
+- Daterat K1-03-kvitto före releasen: Render/Vercel-preview låg på 6a3f976e4428627b135664ba7d13ae24593567c4, live/READY. Director /healthz ger 200 medan /health ger 401; autentiserad applikationshälsa är inte separat bevisad. Lokalt F11-prov passerar med --test-isolation=none efter miljöns spawn EPERM; propagation 268/275 ms. Det bevisar fixturen, inte riktigt Render-överlapp.
+- Preview-SQL verifierar faktiska medlems-/närvaro-/reservations-/handtabeller; alla relevanta aktiva räknare var noll vid läsningen. Riktigt prov behöver instansmärkning, dealerlogg, ekonomisk avstämning och negativa återanslutningsprov. 20/15-sekundersfönster kräver kontinuerliga händer genom deploy, inte ändrade spelregler.
+
+### Valda oberoende fortsättningar
+
+Omplanering 31 oktober: de två färdiga agentchattarna får nedanstående separata förberedelser medan K1-01 granskas. Inga filer/paket som authagenten skriver delas. Merges och runtimekörning är separata verifieringssteg som orkestratorn nu beslutar om. Övriga våg-2-rader startas inte automatiskt.
+
+| ID | Ägare / branch | Status | Avgränsning och godkänt resultat |
+| --- | --- | --- | --- |
+| K2-01 | REPOAGENTEN / jakob/codex-org-v2-push-1031 | MERGAD | #727 head 5e56b2ad910c16428829671aabe6068838fb892b: OID-luckan rättad och verifierad, CI 11 godkända/0 fel, mergegrinden godkänd. |
+| K2-01 scope | REPOAGENTEN | AVGRANSNING | .githooks/pre-push, check-repo-limits och avgränsad helper samt befintligt test/check-repo-limits.mjs. Nya mellanliggande stora objekt nekas, inga tysta luckor vid första push/shallow-bas eller flera refs. Ingen bred historikscan. Granskad PR + relevanta gröna prov/CI. |
+| K2-02 | DRIFTAGENTEN / jakob/codex-org-v2-f11-qa-1031 | MERGAD | #726 head d510ba62f11cefa2ee6d9cd9afe9d9a8e0b1c070: oberoende fynd och auditens SQL-format rättade, CI 10 godkända/0 fel. Main d5006a58902e5cf6f27d81a20da6d0441615b4a0. Offlinevalidering är inte driftacceptans; ID-kontraktet anpassas i K3-02. |
+| K2-02 scope | DRIFTAGENTEN | AVGRANSNING | Befintlig QA-runner, liten F11-observer och redan registrerade QA-/överlappstester. Endast lokala syntetiska fixtures. Preview/instans/scope/revisions-/betalningsbevis måste vara uttryckliga; inga deployer eller spelhandlingar som bieffekt. Granskad PR och konkret kvarvarande runtimegodkännande. |
+
+### Legacy och synlighetsbeslut: nytt underlag
+
+K2-03 är mergad i #728, head 1bce036b6f042f59f5c88f8ae727156d2602618a, main 9352a6116cb341bcb803203a2917db9e024a2494. Astra/max fann inga blockerande buggar; fyra routing-/kommentarrester rättades. 603 lokala prov godkända/12 miljöhopp/0 fel, 36 integrationsprov, 7 manifestprov, 69 routingprov och 9 hookprov godkända. Sista CI: 10 godkända/0 fel. Uppdraget utfördes av ARKITEKTEN i `jakob/codex-org-v2-legacy-1031` efter levererad auth-PR. Uppgiften följer hela legacy-clip-policy/inventory-kedjan och får bara ta bort den belagt pensionerade delen. Serverns auth, QA-verktyg och pushgrind ägs av andra. Sparade tomma fält ska fortsätta kunna läsas och icke-tomma pensionerade bindningar nekas säkert. Nya/raderade dokument integreras av MERGEAGENTEN; inga media- eller databasändringar ingår. Den direkta Neon-räkningen i F-20261031-05 är underlag, inte generellt Astrid-raderingsmandat.
+
+För FA-06 visar aktuell GitHub-dokumentation att privata repositories kan få andra säkerhets-/rulesetvillkor beroende på plan och ägarskap. Konto-API:t lämnade inget abonnemangsnamn. Vi kan därför inte lova att nuvarande skydd består efter ett byte. GitHubs aktuella Actions-förmån beskrivs som ett compute-belopp per månad, så Fables äldre generella minutkvoter används inte som budgetbevis. Faktisk kostnad och appåtkomst är fortfarande inte verifierade. Källor: [synlighetskonsekvenser](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility), [rulesetvillkor](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/managing-rulesets-for-a-repository), [Actions-förmån](https://docs.github.com/en/billing/reference/product-usage-included), [secret-scanning-villkor](https://docs.github.com/en/code-security/how-tos/secure-your-secrets/detect-secret-leaks/enable-secret-scanning). Ingen synlighet, licens eller budget ändras.
+### Fas 3 och nästa avgränsade kontrakt
+
+| ID | Ägare | Status / kriterium |
+| --- | --- | --- |
+| K3-01 | MERGEAGENTEN | Release b080df8c74420ce7ac68b80d64ae25eb1043589e verifierad: Render prod dep-dbimutoae00c73c4uuog och preview dep-dbimutjncjis73cq6ib0 live; version och health200. Vercel prod dpl_CvvLLhSi6z2iTmMnu7jDaceHKTbE och preview dpl_59zwwg9m7uqDkbc2fqSkTuFgFEfm READY på samma SHA och rätt domäner. |
+| K3-02 | DRIFTAGENTEN + ARKITEKTEN | Instansproveniens och körbar liveinsamling för F11. DRIFT äger shared-room-upgrade/server-transport, ARKITEKTEN bygger separat insamlingsdriver med verkliga API-ID:n, ägarkvitto och öppningstransaktioner. Orkestratorn äger previewdeploy och slutlig evidensgranskning. F11 är inte accepterad; tomt-bord-regeln kvarstår. |
+| K2-04 / TAL-02 | REPOAGENTEN, Astra/high | org-v2-speech-start-1031: isolera specifika fel i valfritt tal från frisk spelstart; ingen fallbackbank, inga sväljda DB-/readinessfel, inga providerjobb. Serverns talinit och separat prov ägs här; F11-/legacyfiler ägs av andra. |
+
+Vercel-pluginens previewläsning gav 403/404. Befintlig lokal CLI med uttrycklig global config och scope verifierade därefter projectId, deploymentId, branch, SHA och domänalias. Ingen ny app, åtkomst eller projektinställning lades till. Gästläget i preview är av; ingen env ändrades för att få fram en cookie i testet.

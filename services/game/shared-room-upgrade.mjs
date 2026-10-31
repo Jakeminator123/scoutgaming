@@ -1,10 +1,18 @@
 import { createRequire } from 'node:module';
+import { randomUUID } from 'node:crypto';
 import { PARTNER_ROOM_REFUSALS } from './partner-operator.mjs';
 import { ROOM_CONFIG_MISSING } from './shared-room-access.mjs';
 
 // Refusals the browser sees by name in a 1008 close: a partner key's company, and a room without
 // published game settings. Every other refusal keeps its plain HTTP status.
 const NAMED_REFUSALS=new Set([...PARTNER_ROOM_REFUSALS,ROOM_CONFIG_MISSING]);
+
+// Opaque runtime identity, never a player/session ID, hostname or environment value.
+// Render's app-log instance label + deploy metadata establish provider provenance;
+// this UUID alone does not prove a Render instance or deployed SHA.
+const processId=randomUUID();
+const identityHeader='x-croupier-room-instance';
+const logSocketIdentity=value=>console.info(JSON.stringify(value));
 
 const requireGateway=createRequire(new URL('../astrid-gpu-worker/gateway/package.json',import.meta.url));
 const unavailable=()=>Object.assign(Error('shared_room_upgrade_unavailable'),{statusCode:503});
@@ -38,15 +46,21 @@ function asRequest(request,engineOrigin,signal) {
  * ids, application registry or authentication fallback are introduced here.
  */
 export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketServer,
-  handshakeMs=2000,maxPayload=1024,maxPending=128,closeGraceMs=1000}={}) {
+  handshakeMs=2000,maxPayload=1024,maxPending=128,closeGraceMs=1000,onSocketIdentity=logSocketIdentity}={}) {
   const engine=exactOrigin(engineOrigin);exactOrigin(origin);
   if(typeof channel?.prepare!=='function'||typeof channel?.close!=='function'
     ||!Number.isSafeInteger(handshakeMs)||handshakeMs<1||handshakeMs>30000
     ||!Number.isSafeInteger(maxPayload)||maxPayload<1||maxPayload>16384
     ||!Number.isSafeInteger(maxPending)||maxPending<1||maxPending>1024
-    ||!Number.isSafeInteger(closeGraceMs)||closeGraceMs<0||closeGraceMs>10000)throw unavailable();
+    ||!Number.isSafeInteger(closeGraceMs)||closeGraceMs<0||closeGraceMs>10000
+    ||typeof onSocketIdentity!=='function')throw unavailable();
   const Server=WebSocketServer??requireGateway('ws').WebSocketServer;
   const wss=new Server({noServer:true,perMessageDeflate:false,maxPayload,handleProtocols:()=>false});
+  const identities=new WeakMap();
+  wss.on?.('headers',(headers,request)=>{
+    const identity=identities.get(request);
+    if(identity)headers.push(`${identityHeader}: v1.${identity.processId}.${identity.socketNonce}`);
+  });
   const pending=new Set(),clients=new Set(),seen=new WeakSet(),rejecting=new Set();
   let stopped=false,closing;
   function reject(socket,status) {
@@ -96,13 +110,23 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
     return Promise.race([prepared,cancelled]).then(admission=>{
       if(!active||controller.signal.aborted||stopped||socket.destroyed||socket.readableEnded||!socket.readable||!socket.writable||request.aborted)return true;
       if(typeof admission?.attach!=='function')throw unavailable();
+      // Assigned only AFTER channel authorization, never from incoming/proxy headers.
+      // Named refusals with a 101/1008 handshake take a separate path with no identity.
+      const identity=Object.freeze({event:'shared_room_socket_identity',processId,socketNonce:randomUUID()});
+      identities.set(request,identity);
       let upgraded=false;
       wss.handleUpgrade(request,socket,bufferedHead,ws=>{
         upgraded=true;
         if(!active||stopped||controller.signal.aborted||socket.destroyed){ws.terminate();return;}
         const broken=()=>ws.terminate();
         clients.add(ws);ws.on('error',broken);ws.once('close',()=>{clients.delete(ws);ws.off('error',broken);});
-        try {admission.attach(ws);socket.resume();}
+        try {
+          admission.attach(ws);
+          // Only successfully attached sockets get a correlation log. Failed logging
+          // leaves provenance unavailable; it must not break an authorized game socket.
+          try {onSocketIdentity(Object.freeze({...identity,at:Date.now()}));}catch {}
+          socket.resume();
+        }
         catch {ws.terminate();}
       });
       // ws owns malformed handshake rejection; never write a second response.
@@ -112,7 +136,7 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
       if(!active||controller.signal.aborted||socket.destroyed)return true;
       if(error?.statusCode===403&&NAMED_REFUSALS.has(error.code)&&!stopped&&socket.writable&&!request.aborted){refuse(request,socket,bufferedHead,error.code);return true;}
       reject(socket,[401,403,409,429].includes(error?.statusCode)?error.statusCode:503);return true;})
-      .finally(()=>{active=false;clearTimeout(timer);pending.delete(record);
+      .finally(()=>{identities.delete(request);active=false;clearTimeout(timer);pending.delete(record);
         socket.off('close',abort);socket.off('end',abort);socket.off('error',abort);request.off('aborted',abort);});
   }
   function close() {
