@@ -484,6 +484,13 @@ jobs:
           const fail = message => { console.error(`CI failed: ${message}`); process.exit(1); };
           if (jobs.changes?.result !== 'success' || !['true', 'false'].includes(draft) || !Array.isArray(legs)
             || !legs.every(leg => typeof leg === 'string' && leg)) fail('the change classification is missing or malformed.');
+          // A narrow Admin CSS diff still requires the real build, UI/contracts
+          // and browser acceptance. Never accept an incomplete narrow selection.
+          if (scope === 'admin-styles' && (legs.length !== 2
+            || !['studio-admin-contracts', 'access-presentation'].every(leg => legs.includes(leg))
+            || browser !== (draft === 'true' ? 'none' : 'required'))) {
+            fail('Admin styles require both UI/build legs and browser acceptance.');
+          }
           // Prose-only PRs and pushes to main (integration) run the documentation job, no regression leg.
           const legless = scope === 'documentation' || scope === 'integration';
           if (!['required', 'advisory', 'none'].includes(browser) || (browser !== 'none' && (legless || draft === 'true'))) {

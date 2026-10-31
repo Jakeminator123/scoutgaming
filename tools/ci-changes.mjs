@@ -23,8 +23,8 @@ export const LIPSYNC_LEG = 'speech-gameplay';
 
 // Real-browser acceptance (Chrome) shares one step list across mutually exclusive
 // required/advisory jobs outside the leg matrix. Only the required job is in CI.needs:
-//   required  complete runs (nightly schedule, manual, push preview) and ready full-scope
-//             PRs that change browser client code (browserAcceptanceRequired)
+//   required  complete runs (nightly schedule, manual, push preview), Admin stylesheet
+//             PRs and ready full-scope PRs that change browser client code (browserAcceptanceRequired)
 //   advisory  other ready full-scope PRs: it runs and reports, but CI does not wait on its result
 //   none      drafts, documentation, openclaw-deploy and push main: it does not run
 export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
@@ -33,6 +33,7 @@ export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
 // shared paths (packages/*, test/fixtures/*, .githooks, tools, ops) are 'full'.
 //   documentation    reviewed prose only                      no legs; documentation job
 //   openclaw-deploy  only services/openclaw/lab/deploy/**     studio-admin-contracts, access-presentation (+ gateway container)
+//   admin-styles     edits to the three existing Admin CSS files: the same two legs + required browser
 //   full             everything else                          every leg (+ browser)
 //   integration      push to main (after a PR's own full CI)  no legs; documentation job, readiness,
 //                                                             gateway container when its inputs changed
@@ -45,6 +46,7 @@ export const SCOPE_LEGS = Object.freeze({
   documentation: Object.freeze([]),
   integration: Object.freeze([]),
   'openclaw-deploy': Object.freeze(['studio-admin-contracts', 'access-presentation']),
+  'admin-styles': Object.freeze(['studio-admin-contracts', 'access-presentation']),
   full: Object.freeze(REGRESSION_LEGS.map(({ leg }) => leg)),
 });
 
@@ -76,8 +78,21 @@ export function openClawDeployOnly(changes) {
   return changes.length > 0 && changes.every(change => ordinaryChange(change) && change.path.startsWith('services/openclaw/lab/deploy/'));
 }
 
+// These inputs compile into Admin's theme.css through client/build.mjs. Keep the
+// Studio/Admin/contracts suites, the real build + artifact validation, access
+// and presentation suites, and required Chrome (including the compiled dealer
+// layout). They are not inputs to the database/engine or speech/gameplay suites.
+// Only edits to existing regular files qualify: additions, removals, renames,
+// new stylesheets, shared tokens, scripts and mixed diffs retain full coverage.
+const ADMIN_STYLES = new Set(['base.css', 'globals.css', 'studio.css'].map(name => `apps/studio/client/admin/app/${name}`));
+export function adminStylesOnly(changes) {
+  return changes.length > 0 && changes.every(({ path, before, after, status }) =>
+    status === 'M' && before === '100644' && after === '100644' && ADMIN_STYLES.has(path));
+}
+
 export function scopeOf(changes) {
-  return documentationOnly(changes) ? 'documentation' : openClawDeployOnly(changes) ? 'openclaw-deploy' : 'full';
+  return documentationOnly(changes) ? 'documentation' : openClawDeployOnly(changes) ? 'openclaw-deploy'
+    : adminStylesOnly(changes) ? 'admin-styles' : 'full';
 }
 
 export function regressionLegs(scope) {
@@ -122,8 +137,8 @@ export function movingWorkerRequired(changes) {
 }
 
 // Browser client code: the game's static client, Studio/Admin SPA and shared Studio components.
-// A ready full-scope PR that changes any of these requires Chrome acceptance; any other
-// ready full-scope PR keeps it advisory. Deletions count (--no-renames), and
+// A ready full-scope or Admin stylesheet PR that changes any of these requires Chrome;
+// any other ready full-scope PR keeps it advisory. Deletions count (--no-renames), and
 // uncertain input stays strict.
 export const BROWSER_CLIENT_PREFIXES = Object.freeze(['services/game/public/', 'apps/studio/client/', 'apps/studio/components/']);
 
@@ -205,7 +220,7 @@ export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   const scope = scopeOf(changes), draft = draftPullRequest({ env });
   return {scope, migration: migrationReadinessRequired(changes), moving: movingWorkerRequired(changes),
     gateway: gatewayContainerRequired(changes), draft,
-    browser: draft || scope !== 'full' ? 'none' : browserAcceptanceRequired(changes) ? 'required' : 'advisory'};
+    browser: draft || !['full', 'admin-styles'].includes(scope) ? 'none' : browserAcceptanceRequired(changes) ? 'required' : 'advisory'};
 }
 
 export function ciScope(options) {
