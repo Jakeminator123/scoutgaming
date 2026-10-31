@@ -35,7 +35,7 @@ test('Chrome shared-table shortcuts: H/S/D/P act through the decision panel only
     [['double', 'D', 'Kortkommando D'], ['hit', 'H', 'Kortkommando H'], ['stand', 'S', 'Kortkommando S'], ['split', 'P', 'Kortkommando P']]);
   // Without focus in the panel a letter is the page's: nothing is sent, also with focus on other visible table controls.
   await page.keyboard.press('h');
-  await page.getByRole('button', { name: 'Lämna platser', exact: true }).focus(); assert.deepEqual(await focused(), [false, 'BUTTON']); await page.keyboard.press('s');
+  await page.getByRole('button', { name: 'Sluta spela', exact: true }).focus(); assert.deepEqual(await focused(), [false, 'BUTTON']); await page.keyboard.press('s');
   await page.getByRole('button', { name: 'Ta paus i 24 timmar', exact: true }).focus(); assert.deepEqual(await focused(), [false, 'BUTTON']); await page.keyboard.press('d');
   assert.equal(await sent(), 0, 'a letter outside the decision panel decides nothing');
   // Modifiers, a held key, an input method's composition or key code, and a key someone else handled leave the key alone.
