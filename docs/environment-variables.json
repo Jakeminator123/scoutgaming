@@ -273,6 +273,7 @@
       "blocked": []
     },
     "render-openclaw-director": {
+      "speechRoutingNotes": "fixed restores a single pass; adaptive requires an application-owned JSON instruction in provider input items as well as system instructions",
       "sources": [
         "services/openclaw/lab/deploy/start-director.mjs",
         "services/openclaw/lab/src/gateway-rpc.mjs",

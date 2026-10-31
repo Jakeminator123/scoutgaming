@@ -18,11 +18,16 @@ OpenClaw-trimning (AGENT TVÅ, 31 oktober): featurebranch
 Sol 6.1 som djupmodell och bildmodell samt svensk Jakob-2-persona. Sparade
 rollmodeller ändras separat via Admin; kod och Blueprint ersätter dem inte.
 Luna kan eskalera högst en gång för alla dealerprofiler inom samma deadline.
-PR #717 hade grön full CI på `6edfe27bc68d8c1f875bbf7fa9051fc256005cb6`;
-231 lokala OpenClaw-prov, 58 riktade slutprov och pre-commit 164/164 passerade.
-Efter AGENT ETT:s #718 synkas main in och CI krävs på den nya headen.
-AGENT TVÅ äger #717 och dess senare deploy; AGENT ETT gör ingen parallell
-merge/deploy. Produktionspåverkan väntar på Jakobs uttryckliga klartecken.
+PR #717 är mergad som `eb41edc03378789a371be8f22965e7ca06f3ddcd` efter
+grön full CI på `7ce113597e383e8aec9254c8502c64cea6390a97`. Vercel, Gateway,
+Director och spelbackend har den SHA:n; rollmodellerna är sparade och tillämpade.
+Det verkliga textprovet hittade därefter ett JSON-transportfel (HTTP 400):
+Gatewayen flyttar systemtext till `instructions`, medan API:t kräver ordet
+JSON även i indata. Rättningsbranchen `jakob/codex-openclaw-json-transport-1031`
+lägger till en fast applikationsägd indata-instruktion och ett regressionsprov.
+56 riktade prov passerar. Återställning till `fixed` väntar på separat
+produktionsgodkännande; värdet är fortfarande `adaptive`.
+AGENT TVÅ håller ihop leveransen; AGENT ETT gör ingen parallell merge/deploy.
 Slack `files:read` och ominstallation är godkända av Jakob men inte utförda;
 datorverktygets URL-kontroll stoppade browserarbetet. Ingen tal-/GPU-aktivering ingår.
 
