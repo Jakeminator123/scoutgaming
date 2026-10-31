@@ -40,3 +40,4 @@ export function studioAdminSectionPath(section: unknown): string | null;
 export function studioAdminEndpoint(method: unknown, pathname: unknown): StudioAdminEndpoint | null;
 /** Exact method/path descriptor lookup; never reads or changes a session. */
 export function studioAuthEndpoint(method: unknown, pathname: unknown): StudioAuthEndpoint | null;
+export function isCompanyTeamReadQuery(method: string, url: URL): boolean;

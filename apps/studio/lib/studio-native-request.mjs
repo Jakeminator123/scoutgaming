@@ -1,4 +1,4 @@
-import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
+import { isCompanyTeamReadQuery, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { isDesignPreviewPage } from './design-preview-paths.mjs';
@@ -68,7 +68,7 @@ export function normalizeNativeStudioRequest(request, config) {
   const unifiedUi = config.unifiedUi === true;
   if (config.allowedOrigins.length !== (unifiedUi ? 1 : 2) || !config.allowedOrigins.includes(url.origin)
     || !config.publicHosts.includes(url.host) || url.username || url.password
-    || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) || url.hash) reject();
+    || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) && !isCompanyTeamReadQuery(request.method, url) || url.hash) reject();
   const publicHost = new URL(publicOrigin).host;
   const forwarded = request.headers.get('x-forwarded-host');
   const host = request.headers.get('host');
