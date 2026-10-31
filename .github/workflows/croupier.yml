@@ -153,7 +153,7 @@ jobs:
           node tools/precommit-checks.mjs --pr-diff --plan
           node tools/precommit-checks.mjs --pr-diff
 
-  # Same registry as local --full (.githooks/pre-commit-full), split into four parallel
+  # Same registry as local --full (.githooks/pre-commit-full), split into parallel
   # legs. The matrix comes from the classifier (REGRESSION_LEGS filtered by scope). Every
   # leg installs the same verified toolchain once (ffmpeg, then the package trees from one
   # shared cache); a leg runs its suites to the end and fails if any suite fails. Engine
@@ -203,7 +203,7 @@ jobs:
         if: ${{ matrix.policy }}
         run: |
           node tools/check-orphan-tests.mjs || {
-            echo "::error title=Orphan tests::Every test file must be registered. Add each listed file to a run_node_tests line of .githooks/pre-commit-full (the suite that owns its area: studio, admin, contracts, database, presentation, access, speech, gameplay, engine or container), or classify a helper/opt-in module in tools/orphan-tests-exceptions.json. Locally: node tools/check-orphan-tests.mjs (the pre-commit hook runs it when a test file is added)."
+            echo "::error title=Orphan tests::Register each listed test in an executable command or glob in .githooks/pre-commit-full, a CI workflow or its invoked package test script. Classify only actual helpers/opt-in modules in tools/orphan-tests-exceptions.json. Locally: node tools/check-orphan-tests.mjs."
             exit 1
           }
       - name: Regression suites

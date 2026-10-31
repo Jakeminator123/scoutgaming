@@ -11,8 +11,8 @@ import { isDocumentationPath } from './documentation-paths.mjs';
 // matrix from the classifier output, so the leg table lives here, next to the
 // scope table that selects legs; test/ci-changes.mjs proves the legs partition
 // the suites of .githooks/pre-commit-full (engine and container run separately).
-// Four legs, each installing the toolchain once: the shared setup (ffmpeg, npm,
-// pnpm) costs about as much as a small suite, so short suites share a leg.
+// Each leg installs the toolchain once: shared setup (ffmpeg, npm, pnpm) costs
+// about as much as a small suite. Group by measured cost without freezing the count.
 export const REGRESSION_LEGS = Object.freeze([
   { leg: 'studio-admin-contracts', suites: 'studio admin contracts', policy: true },
   { leg: 'database-engine', suites: 'database', postgres: true },

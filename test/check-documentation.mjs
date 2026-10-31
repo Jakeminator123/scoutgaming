@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { checkDocumentation, anchors } from '../tools/check-documentation.mjs';
+import { checkDocumentation, anchors, isDocumentationSource } from '../tools/check-documentation.mjs';
+import { isDocumentationPath } from '../tools/documentation-paths.mjs';
 import { isolatedGitEnvironment } from '../tools/precommit-checks.mjs';
 
 function check(source, targets = {}) {
@@ -17,6 +18,14 @@ function check(source, targets = {}) {
   } });
   return { errors, reads };
 }
+
+test('the prose CI path and link audit use one source list, including agent entry points', () => {
+  assert.equal(isDocumentationSource, isDocumentationPath);
+  const files = ['GEMINI.md', '.github/copilot-instructions.md', '.windsurf/rules/scoutgaming.md', 'apps/studio/components/partner/README.md'];
+  const errors = checkDocumentation({ files, read: () => '[missing](missing.md)' });
+  assert.deepEqual(errors.map(error => error.file), files);
+  assert.equal(isDocumentationSource('services/openclaw/lab/deploy/runtime-bundle/README.md'), false, 'runtime bundles remain strict');
+});
 
 test('missing tracked targets and renamed headings report exact source line', () => {
   const { errors } = check('Intro\n[missing](lost.md)\n[renamed](other.md#old)', { 'docs/other.md': '# New' });

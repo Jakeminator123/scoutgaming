@@ -136,11 +136,11 @@ test('SIGTERM records cancellation and returns failure', { skip: process.platfor
   assert.equal(f.receipts().at(-1).status, 'cancelled');
 });
 
-function invokeHook(suite, failure = '') {
+function invokeHook(suite, failure = '', commands = false) {
   // Execute the real shell selector and fail-fast behavior with a command recorder.
-  const driver = `node() { printf '%s\\n' "$2"; if [ "$2" = "$FAIL_GROUP" ]; then return 7; fi; }; set -- "$SUITE"; . .githooks/pre-commit-full`;
+  const driver = `node() { group=$2; if [ "$RECORD_COMMANDS" = 1 ]; then shift 3; printf '%s\\n' "$*"; else printf '%s\\n' "$group"; fi; if [ "$group" = "$FAIL_GROUP" ]; then return 7; fi; }; set -- "$SUITE"; . .githooks/pre-commit-full`;
   return spawnSync(bash, ['-c', driver], { cwd: root, encoding: 'utf8', timeout: 10000,
-    env: { ...process.env, SUITE: suite, FAIL_GROUP: failure } });
+    env: { ...process.env, SUITE: suite, FAIL_GROUP: failure, RECORD_COMMANDS: commands ? '1' : '0' } });
 }
 
 test('CI suite selection partitions the actual full hook without omission or duplication', () => {
@@ -157,10 +157,21 @@ test('CI suite selection partitions the actual full hook without omission or dup
     return names;
   });
   assert.deepEqual(partitioned, groups);
-  const failed = invokeHook('admin', 'admin/dealer-import');
+  const failure = groups.find(group => group.startsWith('admin/'));
+  assert.ok(failure);
+  const failed = invokeHook('admin', failure);
   assert.equal(failed.status, 7);
-  assert.equal(failed.stdout.trim().split(/\r?\n/).at(-1), 'admin/dealer-import');
+  assert.equal(failed.stdout.trim().split(/\r?\n/).at(-1), failure);
   const unknown = invokeHook('unknown'); assert.equal(unknown.status, 2); assert.equal(unknown.stdout, '');
+});
+
+test('the full regression executes the SQLite and Git object guards once, independent of group names', () => {
+  const result = invokeHook('all', '', true);
+  assert.equal(result.status, 0, result.stderr);
+  const commands = result.stdout.trim().split(/\r?\n/);
+  for (const guard of ['tools/check-no-sqlite.mjs', 'tools/check-repo-limits.mjs']) {
+    assert.equal(commands.filter(command => command === `node ${guard}`).length, 1, guard);
+  }
 });
 
 test('rejects invalid names and limits before starting a child', async () => {
