@@ -54,13 +54,15 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   const createCompany=page==='companies'&&adminTabId('companies',query.get('tab'))==='bolag'&&query.get('view')==='create';
   useEffect(()=>{
     if(!active||teamTab||createCompany)return;
-    const controller=new AbortController();setError('');
+    const controller=new AbortController();
     void (async()=>{try{
       const response=await fetch('/admin/_data/catalog',{credentials:'same-origin',cache:'no-store',redirect:'error',headers:{accept:'application/json'},signal:controller.signal});
       if(!response.ok)throw Error([401,403].includes(response.status)?'Din inloggning saknas eller har gått ut.':'Katalogen kunde inte läsas.');
-      const value=await response.json();
-      if(value.source!=='registered'||!Array.isArray(value.administration?.operators))throw Error('Katalogens form kunde inte verifieras.');
-      if(!controller.signal.aborted){setCatalog(value);shareWorkspace({catalog:value});}
+      const text=await response.text();
+      if(text.length>2*1024*1024)throw Error('Katalogen är för stor.');
+      const value=JSON.parse(text);
+      if(value.schemaVersion!==1||value.source!=='registered'||!['operators','rooms','dealers','compositions'].every(key=>Array.isArray(value.administration?.[key])))throw Error('Katalogens form kunde inte verifieras.');
+      if(!controller.signal.aborted){setCatalog(value);setError('');shareWorkspace({catalog:value});}
     }catch(cause){if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:'Katalogen kunde inte läsas.');}})();
     return()=>controller.abort();
   },[active,refresh,page,id,teamTab,createCompany]);
@@ -160,7 +162,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         <CompanyTeam operatorId={id} active={active&&teamTab} disabled={disabled} onIdentity={(requestedId,value)=>setTeamIdentity({requestedId,operator:value})}/>
       </div>
       {operator&&<>
-        {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><RegisteredStudio mode="package" operatorId={operator.id} assignment={operator.assignment} assignmentRevision={operator.packageRevision} disabled={disabled} onChanged={changed}/></>}
+        {tab==='tilldelning'&&catalog&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><RegisteredStudio mode="package" operatorId={operator.id} catalog={catalog} onCatalogRefresh={()=>setRefresh(value=>value+1)} assignment={operator.assignment} assignmentRevision={operator.packageRevision} disabled={disabled||Boolean(error)} onChanged={onChanged}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
           <CreateRoomDialog open={create} operators={[operator]} initialOperator={operator.id} fixedOperator disabled={disabled} onChanged={changed} onClose={()=>navigate(companyHref(operator,'spelbord'))}/>
           {own.length?<DataTable label="Bolagets spelbord" rows={own} rowKey={row=>row.id} columns={roomColumns(false)}/>:<Empty chip={null} title="Inga spelbord" text="Nytt spelbord väljer dealer, miljö och språk åt dig och publicerar allt i ett steg."/>}

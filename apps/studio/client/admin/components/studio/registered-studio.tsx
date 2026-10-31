@@ -12,24 +12,17 @@ import {labBasePath} from '../../../../lib/lab-url.mjs';
 import {compositionLabel} from '../../../../../../packages/navigation/control-flow.mjs';
 import {useSearchParams} from '../../../runtime/navigation';
 import {studioHistory} from '../../../../lib/studio-history.mjs';
-import {navigationKeepsStudioTab} from '../../lib/connected-studio.mjs';
+import {navigationKeepsStudioTab,type Catalog} from '../../lib/connected-studio.mjs';
 import {DealerFaces} from './dealer-identity-portrait';
 import {RoomRelease} from './room-release';
 import {aiPackageMisfit, aiTableMisfitMessage} from '../../lib/ai-background.mjs';
 import {assignmentDirty, assignmentDraft, assignmentProblem, publishCompanyAssignment} from '../../../../lib/operator-assignment-client.mjs';
 import {AssignmentField, type AssignmentDraft, type AssignmentView} from './assignment-field';
 
-type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
-type Dealer = { id: string; name: string; archived: boolean };
 type Room = { id: string; name: string; operatorId: string; game: string; state: string; compositionId: string;materialWarning?:string;
   laneId: string; published: boolean; playable: boolean; dealerIds: string[]; dealers: { id: string; name: string }[]; dealerSource: 'published' | 'saved'; playUrl: string | null;
   environment?: { kind: string; fixed: boolean; label: string; image?: string } | null };
-type Composition = { id: string; name: string; dealerIds: string[]; defaultDealerId: string };
-type Registry = { schemaVersion: 1; source: 'registered'; readAt: string; administration: {
-  operators: Operator[]; dealers: Dealer[]; rooms: Room[];
-  compositions: Composition[];
-  revisions: { project: string; administration: string };
-} };
+type Registry = Catalog;
 type State = { status: 'loading' } | { status: 'error'; authentication: boolean } | { status: 'ready'; value: Registry };
 const linkClass = 'inline-flex items-center gap-1 text-[13px] font-semibold text-sg-accent-text no-underline hover:underline';
 const panelClass = 'rounded-xl border border-sg-border bg-sg-surface shadow-sg';
@@ -51,9 +44,13 @@ const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ b
  *  section per tab). The company and room come from the nav's path, never from a dealer-library query. */
 export type RegisteredStudioProps = { operatorId: string; roomId?: string; mode: 'package'|'room'; section?: 'appearance'|'game'|'state'|'details'; navigation?:ReactNode; children?:ReactNode; disabled?: boolean; onChanged?: () => void; onRoomStatus?: (status: AppearanceRoomStatus|null) => void;
   /** Package mode: what the company may change, with the catalog's package revision it was read at. */
-  assignment?: AssignmentView | null; assignmentRevision?: number | null };
-export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', navigation, children, disabled = false, onChanged, onRoomStatus, assignment, assignmentRevision = null }: RegisteredStudioProps) {
-  const [state, setState] = useState<State>({ status: 'loading' });
+  assignment?: AssignmentView | null; assignmentRevision?: number | null;
+  /** The company page owns this live catalog and its reads. Room/standalone editors read their own. */
+  catalog?: Catalog; onCatalogRefresh?: () => void };
+export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'appearance', navigation, children, disabled = false, onChanged, onRoomStatus, assignment, assignmentRevision = null, catalog, onCatalogRefresh }: RegisteredStudioProps) {
+  const [ownState, setState] = useState<State>({ status: 'loading' });
+  const state:State=catalog?{status:'ready',value:catalog}:ownState;
+  const sharedCatalog=Boolean(catalog),pendingCatalogChange=useRef(false),catalogReadWithLifecycle=useRef(false);
   const [refresh, setRefresh] = useState(0);
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
   const search = useSearchParams().toString();
@@ -83,7 +80,10 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const [releaseTick,setReleaseTick] = useState(0), editorsWereIdle = useRef(true);
   useEffect(() => { if (editorsIdle && !editorsWereIdle.current) setReleaseTick(value => value + 1); editorsWereIdle.current = editorsIdle; }, [editorsIdle]);
   function mayLeave() { return !anyBusy && (!anyDraft || confirm('Lämna spelbordets osparade val? Sparade utkast och publicerad version behålls.')); }
-  function reload() { setRefresh(value => value + 1); setLifecycleRefresh(value => value + 1); }
+  function refreshCatalog() { if(sharedCatalog)onCatalogRefresh?.();else setRefresh(value=>value+1); }
+  function reload() { catalogReadWithLifecycle.current=sharedCatalog;refreshCatalog();setLifecycleRefresh(value=>value+1); }
+  // The lifecycle readback follows a package write. Notify once after it, including failed readback.
+  function packageChanged() { if(sharedCatalog)pendingCatalogChange.current=true;else onChanged?.(); setLifecycleRefresh(value=>value+1); }
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const unload = (event:BeforeUnloadEvent) => { if(anyDraft || anyBusy){event.preventDefault();event.returnValue='';} };
@@ -99,6 +99,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     return () => {window.removeEventListener('beforeunload',unload);window.removeEventListener('scout:navigate',leave);document.removeEventListener('click',click,true);};
   },[anyDraft,anyBusy]);
   useEffect(() => {
+    if(sharedCatalog)return;
     const controller = new AbortController();
     // A re-read keeps the shown register until the new one arrives.
     setState(current => current.status === 'ready' ? current : { status: 'loading' });
@@ -109,14 +110,14 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
         if (!response.ok) { if (!controller.signal.aborted) setState({ status: 'error', authentication: [401, 403].includes(response.status) }); return; }
         const text = await response.text();
         if (text.length > 2 * 1024 * 1024) throw Error('catalog_size');
-        const value = JSON.parse(text) as Registry;
+        const value = JSON.parse(text);
         if (value.schemaVersion !== 1 || value.source !== 'registered' || !value.administration
           || !['operators', 'rooms', 'dealers', 'compositions'].every(key => Array.isArray(value.administration[key as 'operators']))) throw Error('catalog_shape');
         if (!controller.signal.aborted) setState({ status: 'ready', value });
       } catch { if (!controller.signal.aborted) setState({ status: 'error', authentication: false }); }
     })();
     return () => controller.abort();
-  }, [refresh]);
+  }, [refresh,sharedCatalog]);
   const complete=state.status==='ready'?state.value.administration:null;
   const groups=operatorLifecycleGroups(complete?.operators??[]);
   const data=complete?{...complete,operators:groups.active,
@@ -139,9 +140,14 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
       if(history.canNavigate(href))history.push(href,true);
     }
     setPackages(current => rebasePackageEditors(current, snapshot.operators));
-    if (previous && previous !== key) { setRefresh(value => value + 1); onChanged?.(); }
+    if (pendingCatalogChange.current || previous && previous !== key) { pendingCatalogChange.current=false;if(!catalogReadWithLifecycle.current)refreshCatalog();onChanged?.(); }
+    catalogReadWithLifecycle.current=false;
   }
-  function lifecycleUncertain() { setLifecycleSnapshot(null); setPackages(markPackagesStale); }
+  function lifecycleUncertain() {
+    setLifecycleSnapshot(null); setPackages(markPackagesStale);
+    catalogReadWithLifecycle.current=false;
+    if(pendingCatalogChange.current){pendingCatalogChange.current=false;refreshCatalog();onChanged?.();}
+  }
   function lifecycleOperation(key: string, value: boolean) {
     if (value) lifecycleOps.current.add(key); else lifecycleOps.current.delete(key);
     setLifecycleBusy(lifecycleOps.current.size > 0);
@@ -196,13 +202,12 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
       const published = result.done.includes('lanes') ? { chosen: lanes, baseline: lanes } : {};
       if (!result.ok) {
         updatePackage(id, current => ({ ...current, ...published, revision: result.revision, needsRefresh: result.needsRefresh || current.needsRefresh, error: result.error }));
-        if (result.done.length) { setLifecycleRefresh(value => value + 1); onChanged?.(); }
+        if (result.done.length) packageChanged();
         return;
       }
       updatePackage(id, current => ({ ...current, ...published, revision: result.revision, needsRefresh: false, error: '', message: result.message }));
       if (draft) setSentAssignment(assignmentKey + JSON.stringify(draft));
-      setLifecycleRefresh(value => value + 1);
-      onChanged?.();
+      packageChanged();
     } finally { publishLock.current = false; setPublishBusy(false); }
   }
   // Advanced: publishes PAOW's saved idle sequence into the frozen package (CAS on its revision). It works when the
@@ -228,7 +233,7 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
     compositionHref: (_owner: {id:string}, room: {id:string;presentationLaneId:string}) => '/admin/scenes?' + new URLSearchParams({ tab:'miljoer', composition: room.presentationLaneId, table: room.id }),
     rehearsalLabel: 'Öppna spelbordet',
   };
-  const reloadButton=<button type="button" disabled={state.status === 'loading'||anyBusy||anyDraft} onClick={()=>{reload();if(assignmentStale)onChanged?.();}} className={buttonVariants({size:'sm'})}><RefreshCw aria-hidden="true"/> Uppdatera</button>;
+  const reloadButton=<button type="button" disabled={state.status === 'loading'||anyBusy||anyDraft} onClick={()=>{reload();if(assignmentStale&&!sharedCatalog)onChanged?.();}} className={buttonVariants({size:'sm'})}><RefreshCw aria-hidden="true"/> Uppdatera</button>;
   // The published package revision (the publish precondition) and the room archive are read through the rooms
   // lifecycle, as on the retired /admin/rooms page. One reader per mount; compact, it stays silent until it has
   // a notice or a pending request. Tillgänglighet shows it in its own slot; every other mode mounts it last.
