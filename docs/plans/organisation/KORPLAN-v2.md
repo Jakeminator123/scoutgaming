@@ -4,7 +4,7 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 
 ## Utgångsläge och mandat
 
-- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. S1–S3 utgår från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Ändringar görs i egna worktrees under `.claude/worktrees`; orkestratorns branch är `jakob/codex-cleanup-integration-1031`.
+- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Historiska S1–S3 utgick från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Förenklingsvåg 2 utgår från `53b57cb31f037433375c35b6053a21615f5c389b`; integrationen sker på `jakob/codex-wave2-integration-1031` med isolerade worktrees under `.claude/worktrees`.
 - Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, ingrepp i kollegors resurser eller RunPod-endpoints ingår. GitHubs normala auto-delete behålls vid godkända PR-merges; äldre brancher/worktrees har inte gallrats i denna leverans.
 - **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
 - Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
@@ -108,6 +108,14 @@ Dokumentindexet förklarar vilka underlag som är guider, pausade planer, datera
 beslutsunderlag och provmallar. Kontroll av länkar och rubriker kompletterar
 granskning av sakuppgifter; den bevisar inte att ett moln- eller produktpåstående
 fortfarande stämmer.
+
+## Förenklingsvåg 2 och dess gräns
+
+#769–773 omfattar pensionerade `bo:`-spelarsessioner, operator-speech-QA, villkorad montering av kamerakontroller, Studio-routingens namn samt ersatta kosmetiska test- och verktygslås. Behörighet, bolags-/rumsisolering, verklig PostgreSQL-samtidighet och aktiva publicerade mediereferenser består. Dagens Admin-cookie och partnersessioner är inte den borttagna spelarsessionsvägen.
+
+Den beställda inventeringen omfattar också avvisade rapportfynd: Three-kärnan importeras, Provspel/gästpreview har skilda aktiva konsumenter, och register/importkällor samt stora tillgångar används. `lab_sessions` har en aktiv producent. Dessa fynd är klassificerade och avslutade som raderingsförslag; de skapar ingen ny obegränsad migrationsvåg. Materialersättning, data-/historikgallring och eventuell Blob-flytt kräver ett konkret eget produkt-/databeslut. Ingen env-, DDL-, provider- eller talaktivering gjordes i kodstädningen.
+
+Det uttryckligen beställda leveranskvittot `.cache/wave2-final-result.md` samlar exakt borttagna regler/testlås, PR-headar, CI, slutlig release och egen resursstädning. Nio tillfälligt upplåsta ignore-filer återställdes byte för byte; synlighetsinstruktionen skiljer spårad inventering från terminalens vanliga dotfilefilter. Miljörapporten är läsande underlag, inte utförda nyckelbyten eller ett produktionsrensningsbeslut.
 
 Skriv en kort rad i [BESLUTSLOGG](BESLUTSLOGG.md): reproduktion + full SHA/resurs + berörd aktivitet + beslut. Skilj produktval från fel och osäkerhet. Ändra berörd rad här; skapa ingen konkurrerande tracker eller rapporthierarki.
 
