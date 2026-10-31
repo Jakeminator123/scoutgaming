@@ -1,11 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir,mkdtemp,rm,writeFile } from 'node:fs/promises';
-import { basename,dirname,join,resolve } from 'node:path';
-import { tmpdir } from 'node:os';
 import { createStudioProjectBindings } from '../../../packages/presentation/server/studio-project-bindings.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 
 const actionId = '00000000-0000-4000-8000-000000000010';
 function fixture() {
@@ -21,6 +17,22 @@ function fixture() {
 test('exact available media/idle family references are validated without mutating caller drafts',async () => {
   const {project,registry,verify} = fixture(), before = structuredClone(project), originalRegistry = structuredClone(registry);
   await verify(project); assert.deepEqual(project,before); assert.deepEqual(registry,originalRegistry);
+});
+
+test('empty retired policies remain valid while non-empty bindings fail before any media read',async () => {
+  const f = fixture();
+  f.project.legacyClipPolicy = [];
+  await f.verify(f.project);
+  for (const dealerId of ['astrid','vera','paow']) {
+    const project = structuredClone(f.project);
+    project.legacyClipPolicy = [{dealerId,part:'idle',clipId:`${dealerId}:idle-1/idle/idle`}];
+    const before = structuredClone(project);
+    let reads = 0;
+    const verify = createStudioProjectBindings({videoRegistry:async () => { reads++; return f.registry; }});
+    await assert.rejects(verify(project),{code:'studio_invalid_document',statusCode:422});
+    assert.equal(reads,0);
+    assert.deepEqual(project,before);
+  }
 });
 
 function rouletteFixture() {
@@ -72,33 +84,4 @@ test('idle base/variants cannot swap roles, use an action clip or borrow another
     const {project,registry,verify} = fixture(); change(project,registry);
     await assert.rejects(verify(project),error => error.statusCode === 422);
   }
-});
-test('legacy bindings require explicit review receipt and exact same-dealer/part registered source',async () => {
-  const {project,registry} = fixture(); project.legacyClipPolicy=[{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}];
-  await assert.rejects(createStudioProjectBindings({videoRegistry:async () => registry})(project),error => error.statusCode === 503);
-  const clip = {id:project.legacyClipPolicy[0].clipId,dealerId:'astrid',exactParts:['idle'],available:true,kind:'engine',engineKey:'idle-1/idle/idle'};
-  await assert.rejects(createStudioProjectBindings({videoRegistry:async () => registry,legacyControls:async () => ({clips:[clip]})})(project),error => error.code === 'studio_legacy_review_safety_unavailable');
-  await createStudioProjectBindings({videoRegistry:async () => registry,legacyControls:async () => ({clips:[clip],reviewSafetyVerified:true})})(project);
-  for (const changed of [{...clip,dealerId:'mei'},{...clip,exactParts:['deal']},{...clip,available:false}]) {
-    await assert.rejects(createStudioProjectBindings({videoRegistry:async () => registry,legacyControls:async () => ({clips:[changed],reviewSafetyVerified:true})})(project),error => error.code === 'studio_legacy_binding_invalid');
-  }
-});
-test('native legacy inventory reads injected Neon review safety and Blob availability, never bo.json or local media availability',async t => {
-  const root = await mkdtemp(join(tmpdir(),'croupier-native-legacy-'));
-  t.after(() => {assert.equal(dirname(resolve(root)),resolve(tmpdir()));assert.match(basename(root),/^croupier-native-legacy-/);return rm(root,{recursive:true,force:true});});
-  const write = async (file,value) => {const path=join(root,file);await mkdir(dirname(path),{recursive:true});await writeFile(path,typeof value==='string'?value:JSON.stringify(value));};
-  for (const base of ['dealer','dealers/astrid','dealers/amira','dealers/mei']) {
-    await write(`web/public/${base}/streams/index.json`,{clips:{'idle-1/idle/idle':{file:'idle.h264'},'idle-1/idle/idle-breathe-head-tilt':{file:'idle.h264'}}});
-    await write(`web/public/${base}/audio/en/bank.json`,{});
-  }
-  await write('private/bo.json','invalid old bo disk must not be read');
-  const project=createSeedProject();project.legacyClipPolicy=[{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}];
-  let sourceReads=0;
-  const options={repository:root,dataDirectory:join(root,'private'),mediaAvailable:async file => file?.endsWith('/streams/idle.h264') === true,
-    administration:async () => {sourceReads++;return {legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{'astrid:idle-1/idle/idle':{reason:'review rejected'}}}};}};
-  const controls=await legacyClipControls(project,options);assert.equal(sourceReads,1);assert.equal(controls.reviewSafetyVerified,true);
-  assert.equal(controls.clips.find(clip => clip.id==='astrid:idle-1/idle/idle').available,false);assert.equal(controls.runtime.conflicts.length,1);
-  assert.equal(controls.clips.find(clip => clip.id==='astrid:idle-1/idle/idle-breathe-head-tilt').available,true);
-  for (const dealer of ['vera','mei','amira','johanna']) assert.equal(controls.clips.some(clip => clip.dealerId===dealer),false,'retired dealer files cannot reappear in the available legacy inventory');
-  await assert.rejects(legacyClipControls(project,{...options,administration:{}}),error => error.code==='studio_legacy_review_safety_unavailable');
 });

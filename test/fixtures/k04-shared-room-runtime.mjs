@@ -13,10 +13,8 @@ import { createNeonVideoRegistry } from '../../packages/studio-registry/server/r
 import { createMediaBlobIndex } from '../../packages/studio-registry/server/media-blob-index.mjs';
 import { createMediaLayout } from '../../packages/studio-registry/server/media-layout.mjs';
 import { createMediaRuntimeServices } from '../../packages/studio-registry/server/media-runtime.mjs';
-import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../../packages/presentation/server/saved-game-policy.mjs';
+import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
-import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
-import { legacyClipControls } from '../../services/game/storage/legacy-clip-inventory.mjs';
 
 const MANIFEST = 'k04-qa-media.json';
 const MANIFEST_LIMIT = 4 * 1024 * 1024;
@@ -225,9 +223,8 @@ export async function createQaFixture({ pool, scope, origin, mediaRoot } = {}) {
   const registryFactory = options => createNeonVideoRegistry({ ...options, reader,
     getPrivateMedia: local.capturedReader, isMediaConfigured: local.isMediaConfigured });
   const { createStudioMediaRuntime } = createMediaRuntimeServices({ repositoryRoot: local.root,
-    createNeonVideoRegistry: registryFactory, legacyClipControls, verifiedMediaBlobStorage,
+    createNeonVideoRegistry: registryFactory, verifiedMediaBlobStorage,
     getPublicMediaBlobResponse: blobs.getPublicMediaBlobResponse, resolvePublicMedia: layout.resolvePublicMedia,
-    createRuntimeMetadataReader, configurationSource: STUDIO_GAME_CONFIGURATION_SOURCE,
     isMediaConfigured: local.isMediaConfigured });
   const media = createStudioMediaRuntime({ repository, scope, env, repositoryRoot: local.root });
   const guard = callback => async (...args) => {

@@ -40,9 +40,8 @@ function metadataResponse(row, bytes, request, options) {
 const defaultMediaConfigured = env => Boolean(env.BLOB_READ_WRITE_TOKEN);
 
 // Apps bind their own registry, Blob and local metadata adapters.
-export function createMediaRuntimeServices({ repositoryRoot: defaultRoot, createNeonVideoRegistry, legacyClipControls,
-  verifiedMediaBlobStorage, getPublicMediaBlobResponse, resolvePublicMedia, createRuntimeMetadataReader,
-  configurationSource: STUDIO_GAME_CONFIGURATION_SOURCE, isMediaConfigured = defaultMediaConfigured }) {
+export function createMediaRuntimeServices({ repositoryRoot: defaultRoot, createNeonVideoRegistry,
+  verifiedMediaBlobStorage, getPublicMediaBlobResponse, resolvePublicMedia, isMediaConfigured = defaultMediaConfigured }) {
   if(typeof isMediaConfigured!=='function')throw new TypeError('Explicit synchronous media configuration predicate required.');
 // Availability means the exact approved public asset has a verified private
 // object pointer. Metadata on a deployed disk never substitutes for its bytes.
@@ -66,20 +65,6 @@ function createStudioMediaRuntime({ repository, scope, env = process.env, reposi
   const options = { env: Object.freeze({ ...env }), repositoryRoot: repositoryRoot ?? defaultRoot,
     trustedProxyOrigin:env.CROUPIER_VERCEL_FRONTEND_ORIGIN };
   const videos = createNeonVideoRegistry({ repository, scope, env, options: { repositoryRoot } });
-  const controls = async project => {
-    const runtimeCatalog = await readRuntimeCatalog(repository);
-    const mediaAvailable = createStudioPublicMediaAvailability({ ...options, runtimeCatalog });
-    const result = await legacyClipControls(project, { repository: options.repositoryRoot, mediaAvailable, readMetadata: createRuntimeMetadataReader(options.repositoryRoot, { runtimeCatalog }),
-      administration: async () => {
-        const saved = await repository.readDocument('administration');
-        if (!saved) throw new StudioStorageError('studio_document_missing');
-        return saved.value;
-      } });
-    // This factory obtains project and administration from the scoped Neon
-    // repository. Preserve the saved revision while attributing that source.
-    // The ordinary legacy resolver continues to describe its disk project.
-    return { ...result, runtime: { ...result.runtime, source: STUDIO_GAME_CONFIGURATION_SOURCE } };
-  };
   const publicMediaResponse = async (pathname, request) => {
     // Immutable media aliases occupy these namespaces. Ordinary code, pages and
     // unrelated 404s must not fetch/validate the entire Neon media catalog.
@@ -105,8 +90,8 @@ function createStudioMediaRuntime({ repository, scope, env = process.env, reposi
     try { return JSON.parse(bytes.toString('utf8')); } catch { throw new StudioStorageError('studio_media_registry_unavailable'); }
   };
   return Object.freeze({ videoRegistry: videos.load, videoRegistryCaptured: videos.loadCaptured, verifyCapturedMedia: videos.verifyCapturedMedia,
-    videoResponse: videos.response, videoResponseCaptured: videos.responseCaptured, publicMediaResponse, hasPublicMedia, readMetadata, legacyControls: controls,
-    validateProjectBindings: createStudioProjectBindings({ videoRegistry: videos.load, legacyControls: controls }) });
+    videoResponse: videos.response, videoResponseCaptured: videos.responseCaptured, publicMediaResponse, hasPublicMedia, readMetadata,
+    validateProjectBindings: createStudioProjectBindings({ videoRegistry: videos.load }) });
 }
 
   return { createStudioMediaRuntime, createStudioPublicMediaAvailability };

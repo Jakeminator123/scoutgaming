@@ -26,10 +26,8 @@ export async function copyOpenClawRuntime(root) {
     'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
     'packages/presentation/contracts/probe-fixtures.mjs', 'services/game/presentation-selection.mjs',
     'services/game/shared-room-presentation-context.mjs', 'services/game/shared-room-presentation-http.mjs',
-    'packages/presentation/server/legacy-clip-inventory.mjs',
     'services/game/storage/studio-media-runtime.mjs',
     'services/game/storage/video-registry.mjs',
-    'services/game/storage/legacy-clip-inventory.mjs',
 
     'packages/director/admin-error.mjs',
     'packages/director/astrid-observation.mjs',
@@ -73,7 +71,6 @@ export async function copyOpenClawRuntime(root) {
     'packages/presentation/contracts/schemas/video.schema.json',
     'packages/presentation/contracts/studio-model.mjs',
     'packages/presentation/contracts/video-intake.mjs',
-    'packages/presentation/runtime/legacy-clip-policy.mjs',
     'packages/presentation/runtime/media-families.mjs',
     'packages/presentation/runtime/media-family-policy.mjs',
     'packages/presentation/runtime/media-family-resolver.mjs',
