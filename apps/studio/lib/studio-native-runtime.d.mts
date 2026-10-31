@@ -5,7 +5,6 @@ export interface NativeStudioConfiguration {
   connectionString: string; allowedOrigins: string[]; publicHosts: string[];
   apiBase: '/studio/api/admin' | '/api/admin'; authBase: '/studio/api/auth' | '/api/auth';
 }
-export function nativeStudioAdminEnabled(): true;
 export function nativeStudioAdminConfiguration(env?: Record<string,string | undefined>): NativeStudioConfiguration | null;
 export function assertNativeStudioRequest(request: Request, config: NativeStudioConfiguration | null): void;
 export function withMovingSpeechDealers<T extends object>(readCatalog: () => Promise<T>, env: Record<string,string | undefined>): () => Promise<T & {movingSpeech:{dealerIds:string[]}}>;
@@ -32,7 +31,7 @@ export interface NativeStudioRuntime {
   inspectMediaTiming(record: any, options?: {signal?: AbortSignal}): Promise<MediaTiming>;
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
   listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null }>>;
-  listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;
+  listOperatorDirectory?: (operatorId: string) => Promise<OperatorDirectoryEntry[]>;
 }
 export interface OperatorDirectoryRole { id: string; label: string; permissions: string[]; delegable: boolean }
 export interface OperatorDirectoryMember { userId: string; username: string | null; roleId: string; status: string; revision: number }

@@ -464,7 +464,7 @@ test('archive readiness preserves current authorization, metadata CAS and active
 });
 
 
-function nextTimingRoute(api, native = true) {
+function nextTimingRoute(api) {
   const file = new URL('../app/api/videos/measure-timing/route.ts', import.meta.url);
   const require = createRequire(import.meta.url);
   const {transformSync} = require('next/dist/build/swc');
@@ -475,7 +475,7 @@ function nextTimingRoute(api, native = true) {
   const module = {exports: {}};
   runInNewContext(code, {module, exports: module.exports, Response,
     require: name => {
-      if (name === '@/lib/studio-native-runtime.mjs') return {nativeStudioAdminEnabled: () => native};
+
       if (name === '@/lib/studio-media-api.mjs') return {handleNativeStudioMedia: request => api.handle(request)};
       throw new Error('Unexpected route dependency: ' + name);
     },
@@ -502,8 +502,11 @@ test('Next timing route reaches native measurement, preserves guards and persist
   assert.equal(denied.stats.inspections, 0);
 });
 
-test('Next timing route refuses a non-native runtime without a fallback writer', async () => {
-  const route = nextTimingRoute({handle: () => assert.fail('no fallback writer')}, false);
+test('Next timing route preserves a native readiness failure without invoking another writer', async () => {
+  let calls=0;
+  const route = nextTimingRoute({handle: () => {calls++;return Response.json({error:'studio_media_unavailable'},{status:503});}});
   assert.equal((await route.POST(request('/studio/api/videos/measure-timing', 'POST', {}))).status, 503);
+  assert.equal(calls,1);
   assert.equal((await route.GET(request('/studio/api/videos/measure-timing'))).status, 405);
+  assert.equal(calls,1);
 });

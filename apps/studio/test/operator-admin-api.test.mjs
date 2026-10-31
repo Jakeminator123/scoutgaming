@@ -93,8 +93,28 @@ test('operator-create stores the operator with the three standard roles and jour
   ]);
   assert.equal(entries[0].at, new Date(clock()).toISOString());
   assert.deepEqual(entries[0].target, { slug: 'north-casino' });
-  const directory = await context.operatorApi.listOperatorDirectory();
+  const directory = await context.operatorApi.listOperatorDirectory('north-casino');
   assert.deepEqual(directory.map(item => [item.slug, item.missingRoles.length]), [['north-casino', 0]]);
+});
+
+test('team read loads only the selected company in the server workspace and accepts its slug alias',async()=>{
+  const context=setup();await withAdmin(context);
+  await context.post('operator-create',{slug:'south-casino',name:'South'});
+  await context.post('operator-membership',{operatorId:'south-casino',userId:'43',roleId:'partner-admin',status:'active'});
+  const queries=[],original=context.pool.query;
+  context.pool.query=async(text,values)=>{queries.push({text,values});return original(text,values);};
+  const [north]=await context.operatorApi.listOperatorDirectory('north-casino');
+  assert.equal(north.id,'north-casino');assert.deepEqual(north.members.map(member=>member.userId),['42']);
+  for(const query of queries.filter(query=>/list-roles|list-memberships/.test(query.text)))assert.deepEqual(query.values,[scope.environment,scope.workspaceId,'north-casino']);
+  assert.equal(queries.some(query=>/list-operators/.test(query.text)),false);
+  const foreign=createOperatorAdminApi({pool:context.pool,boDb:context.boDb,scope:{...scope,workspaceId:'other'},now:clock});
+  assert.deepEqual(await foreign.listOperatorDirectory('north-casino'),[]);
+  context.pool.tables.operators.find(row=>row.operator_id==='north-casino').slug='north-alias';
+  assert.equal((await context.operatorApi.listOperatorDirectory('north-alias'))[0].id,'north-casino');
+  for(const missing of ['missing','missing.id','NORTH','id:missing','x'.repeat(100)]) {
+    assert.deepEqual(await context.operatorApi.listOperatorDirectory(missing),[],missing);
+  }
+  for(const value of [undefined,'','../north-casino'])await assert.rejects(context.operatorApi.listOperatorDirectory(value),error=>error.statusCode===400);
 });
 
 test('a duplicate slug is 409 and a reserved or malformed slug is 422 without a write', async () => {
@@ -187,7 +207,7 @@ test('a missing standard role can be added later through operator-role', async (
   const context = setup();
   assert.equal((await context.post('operator-create', { slug: 'north-casino', name: 'North Casino' })).status, 200);
   context.pool.tables.operator_roles.splice(context.pool.tables.operator_roles.findIndex(row => row.role_id === 'partner-editor'), 1);
-  assert.deepEqual((await context.operatorApi.listOperatorDirectory())[0].missingRoles, ['partner-editor']);
+  assert.deepEqual((await context.operatorApi.listOperatorDirectory('north-casino'))[0].missingRoles, ['partner-editor']);
   const editor = STANDARD_OPERATOR_ROLES.find(item => item.id === 'partner-editor');
   const added = await context.post('operator-role', { operatorId: 'north-casino', roleId: 'partner-editor', permissions: [...editor.permissions] });
   assert.equal(added.status, 200);
@@ -210,17 +230,17 @@ test('writes keep the admin Origin gate and refuse a query-only pool', async () 
   assert.equal((await queryOnly.post('operator-create', { slug: 'north-casino', name: 'North' })).status, 503);
   assert.equal((await queryOnly.post('operator-membership', { operatorId: 'north-casino', userId: '42', roleId: 'partner-admin', status: 'active' })).status, 503);
   assert.equal((await queryOnly.post('operator-role', { operatorId: 'north-casino', roleId: 'partner-viewer', permissions: ['overview.read'] })).status, 503);
-  await assert.rejects(queryOnly.operatorApi.listOperatorDirectory(), error => error.statusCode === 503);
+  await assert.rejects(queryOnly.operatorApi.listOperatorDirectory('north-casino'), error => error.statusCode === 503);
 });
 
 test('the directory shows usernames when the users table answers and ids when it does not', async () => {
   const context = setup();
   await withAdmin(context, { members: [['42', 'partner-admin'], ['44', 'partner-viewer']] });
-  const [north] = await context.operatorApi.listOperatorDirectory();
+  const [north] = await context.operatorApi.listOperatorDirectory('north-casino');
   assert.deepEqual(north.members.map(member => [member.userId, member.username, member.roleId]),
     [['42', 'north-admin', 'partner-admin'], ['44', 'north-viewer', 'partner-viewer']]);
   const failing = createOperatorAdminApi({ pool: context.pool, boDb: { prepare() { return { all: async () => { throw new Error('down'); } }; } }, scope, now: clock });
-  const [blind] = await failing.listOperatorDirectory();
+  const [blind] = await failing.listOperatorDirectory('north-casino');
   assert.deepEqual(blind.members.map(member => [member.userId, member.username]), [['42', null], ['44', null]]);
 });
 

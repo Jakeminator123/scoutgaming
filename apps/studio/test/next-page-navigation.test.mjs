@@ -63,7 +63,6 @@ function load(file, overrides, env = {}) {
 
 function nativeOverrides(status) {
   return {
-    nativeStudioAdminEnabled: () => true,
     nativeStudioAdminConfiguration: () => ({ allowedOrigins: ['https://qa.example.invalid'] }),
     assertNativeStudioRequest: () => {},
     studioNativeRuntime: async () => ({
@@ -101,7 +100,7 @@ test('actual native page guard returns every current view after public, standalo
       'next/navigation': navigation,
       './http-guard.mjs': { assertLocalPageRequest: () => assert.fail('native failure cannot become local access') },
       './studio-server.mjs': { studioInitialData: () => assert.fail('no legacy data fallback') },
-      './studio-native-runtime.mjs': { nativeStudioAdminEnabled: () => true, nativeStudioAdminConfiguration: () => config,
+      './studio-native-runtime.mjs': { nativeStudioAdminConfiguration: () => config,
         assertNativeStudioRequest: () => {}, studioNativeRuntime: async () => ({ authorize: async request => {
           authorized.push(request.url); throw Object.assign(new Error('fixture authorization'), {statusCode: 401});
         } }) },
@@ -229,7 +228,7 @@ test('actual login and password SSR routes redirect standalone before any auth f
         'next/headers': { headers: async () => new Headers({host, ...extra}) },
         'next/navigation': navigation,
         '@/components/studio-login': { StudioLogin() { assert.fail('SSR returns an element, never auth work'); } },
-        '@/lib/studio-native-runtime.mjs': {nativeStudioAdminEnabled: () => true, nativeStudioAdminConfiguration: () => config},
+        '@/lib/studio-native-runtime.mjs': {nativeStudioAdminConfiguration: () => config},
         '@/lib/next-page-navigation.mjs': { nextStudioAuthEntryRedirect },
         '@/lib/studio-login-client.mjs': { studioLoginReturnTo: value => value, studioPasswordToken: value => value },
       });
@@ -315,7 +314,7 @@ test('Editor and Administration bookmarks reach Admin and retain allowlisted con
       'next/navigation': navigation,
       './http-guard.mjs': {assertLocalPageRequest:()=>assert.fail('no local fallback')},
       './studio-server.mjs': {studioInitialData:()=>assert.fail('no legacy fallback')},
-      './studio-native-runtime.mjs': {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>({authorize:async()=>{throw Object.assign(new Error('fixture authorization'),{statusCode:401});}})},
+      './studio-native-runtime.mjs': {nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest:()=>{},studioNativeRuntime:async()=>({authorize:async()=>{throw Object.assign(new Error('fixture authorization'),{statusCode:401});}})},
       './studio-native-request.mjs': {normalizeNativeStudioPageRequest},
       './next-page-navigation.mjs': {nextStudioLoginRedirect},
     });
@@ -359,7 +358,7 @@ test('actual Admin middleware preserves document access with Node transport befo
   const middleware = load('../proxy.ts', {
     '../../packages/navigation/server/platform-routing.mjs': {...routing, platformConfiguration:()=>platform},
   }, {}).proxy;
-  const runtime = {...nativeRuntime, nativeStudioAdminEnabled:()=>true, nativeStudioAdminConfiguration:()=>f.config,
+  const runtime = {...nativeRuntime, nativeStudioAdminConfiguration:()=>f.config,
     studioNativeRuntime:async()=>({authorize:createStudioNativeAuth({boDb:f.auth.boDb,scope:f.config.scope,now:f.config.now})})};
   const guard = load('../lib/ui-server.ts', {'./studio-native-runtime.mjs':runtime});
   const root = await mkdtemp(join(tmpdir(),'croupier-admin-document-'));

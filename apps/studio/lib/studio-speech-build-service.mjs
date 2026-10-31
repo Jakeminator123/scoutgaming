@@ -2,7 +2,7 @@ import {createHash,createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
 import {STUDIO_ASTRID_VOICE,STUDIO_SPEECH_TEMPLATE_REVISION,studioSpeechLines,studioSpeechBuildCompatibility} from '../../../packages/presentation/contracts/studio-speech.mjs';
 import {canonicalStudioJson,validateActor,validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {normalizeSpeechPackage} from '../../../packages/presentation/contracts/speech-package.mjs';
-import {assertNativeStudioRequest,nativeStudioAdminEnabled,studioNativeRuntime} from './studio-native-runtime.mjs';
+import {assertNativeStudioRequest,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
 import {readStudioDocumentJson} from './studio-document-api.mjs';
 
@@ -88,4 +88,4 @@ export function createStudioSpeechBuildApi(runtime,{serviceLookup=()=>runtime?.s
   }});
 }
 let apiPromise;
-export async function studioSpeechBuildEndpoint(request){if(!nativeStudioAdminEnabled())return json({error:'studio_speech_native_required'},503);try{apiPromise??=studioNativeRuntime().then(runtime=>createStudioSpeechBuildApi(runtime)).catch(error=>{apiPromise=null;throw error;});return await(await apiPromise).handle(request);}catch{return json({error:'studio_speech_unavailable'},503);}}
+export async function studioSpeechBuildEndpoint(request){try{apiPromise??=studioNativeRuntime().then(runtime=>createStudioSpeechBuildApi(runtime)).catch(error=>{apiPromise=null;throw error;});return await(await apiPromise).handle(request);}catch{return json({error:'studio_speech_unavailable'},503);}}

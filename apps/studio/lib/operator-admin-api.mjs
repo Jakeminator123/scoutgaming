@@ -8,6 +8,7 @@ import { createOperatorJournal } from './operator-journal.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { openWritableOperatorStore } from './operator-package-api.mjs';
 import { workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 // team.roles.assign makes an operator administrator, so only partner-admin
 // carries it. partner-admin is not delegable: operator staff cannot appoint,
@@ -228,11 +229,15 @@ export function createOperatorAdminApi({
 
   return Object.freeze({
     handlers,
-    listOperatorDirectory: async () => {
+    listOperatorDirectory: async operatorId => {
+      if(typeof operatorId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(operatorId))fail(400);
       const operators = await store();
-      const loaded = await Promise.all((await operators.listOperators()).map(operator => load(operators, operator)));
-      const names = await usernames(loaded.flatMap(item => item.members.map(member => member.userId)));
-      return loaded.map(item => entry(item, names));
+      // Both lookups use the server's workspace scope. Never enumerate other companies' teams.
+      const operator = await operators.getOperatorById(operatorId)
+        ?? (isOperatorSlug(operatorId) ? await operators.getOperatorBySlug(operatorId) : null);
+      if(!operator)return [];
+      const loaded = await load(operators, operator);
+      return [entry(loaded, await usernames(loaded.members.map(member => member.userId)))];
     },
   });
 }

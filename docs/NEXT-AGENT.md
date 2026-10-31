@@ -12,7 +12,7 @@ Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd sam
 
 **R1–R5 levererade genom #747:** två separata satsningsrutor och Ångra verifierade i den verkliga previewn; lokal mobil-/tangentbordsverifiering, riktig PostgreSQL, exakt CI och båda molnmiljöerna godkända på `bebe483c7f6c846c10d69545f6c67186839e808e`. 44 ersatta organisationsdokument och sex frysta exekverbara testkopior är borttagna; direkta app-typer och den centrala Git-objektkontrollen rättade. En liten efterrättning av tomma rutors etiketter vid rundstart följer samma releasegrind. Inga spelregler, env, schema eller talaktivering ändras.
 
-**Nästa huvudagent:** MERGEAGENTEN 2 – städning och systemkarta tar över S1–S3 i körplanen efter slutkontrollen. ARKITEKTEN, REPOAGENTEN och DRIFTAGENTEN får nya separata uppdrag från den agenten. Huvudagenten äger kod-/systemkartan, granskning, integration och release; föregående huvudagent skriver inte parallellt i nästa våg. Privat kort överlämning och faktiskt slutkvitto: `.cache/restlista-1031/TAKEOVER.md` och `.cache/restlista-1031/REPORT.md`.
+**Aktiv huvudagent:** MERGEAGENTEN 2 – städning och systemkarta äger nu S1–S3, granskning, integration och release. #748 avslutades på `7589d2ba453346ce6fca33b3d53c541f72185138`; föregående huvudagent har lämnat allt skrivansvar. REPOAGENTEN, ARKITEKTEN och DRIFTAGENTEN arbetar i tre separata worktrees från denna bas med filgränser enligt körplanen. Integration sker i `jakob/codex-cleanup-integration-1031`. [Systemkartan](../START-HERE.md#systemkarta-vem-äger-vilket-beslut) visar produktväg, kod, data, drift och ansvar. Privat slutkvitto för föregående leverans: `.cache/restlista-1031/REPORT.md`.
 
 ## Spelkontroller och filmtempo, 31 oktober
 

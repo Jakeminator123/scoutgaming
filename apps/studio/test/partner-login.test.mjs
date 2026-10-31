@@ -45,8 +45,7 @@ function loadLoginPage(authBase) {
   const module={exports:{}}, overrides={
     '@/components/partner-login':{PartnerLogin},
     '@/lib/partner-login-return.mjs':{partnerLoginReturnTo},
-    '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,
-      nativeStudioAdminConfiguration:()=>({apiBase:authBase.replace('/partner','/admin')})},
+    '@/lib/studio-native-runtime.mjs':{nativeStudioAdminConfiguration:()=>({apiBase:authBase.replace('/partner','/admin')})},
   };
   vm.runInNewContext(code,{module,exports:module.exports,require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)});
   return module.exports.default;

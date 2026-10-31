@@ -156,14 +156,14 @@ test('ordinary classification can keep or clear a review but never mint or reatt
   assert.deepEqual(saved.mediaTiming,f.record.mediaTiming);
 });
 
-function nextReviewRoute(api,native=true) {
+function nextReviewRoute(api) {
   const file=new URL('../app/api/videos/speech-review/route.ts',import.meta.url),require=createRequire(import.meta.url);
   const {transformSync}=require('next/dist/build/swc');
   const {autoImplementMethods}=require('next/dist/server/route-modules/app-route/helpers/auto-implement-methods.js');
   const {code}=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript'}},module:{type:'commonjs'}});
   const module={exports:{}};
   runInNewContext(code,{module,exports:module.exports,Response,require:name=>{
-    if(name==='@/lib/studio-native-runtime.mjs')return {nativeStudioAdminEnabled:()=>native};
+
     if(name==='@/lib/studio-media-api.mjs')return {handleNativeStudioMedia:request=>api.handle(request)};
     throw new Error('Unexpected route dependency: '+name);
   }},{filename:file.pathname});
@@ -175,7 +175,9 @@ test('Next speech-review route reaches the native writer and has no fallback wri
   assert.equal((await route.POST(request(f.body('approved'),{'sec-fetch-site':'cross-site'}))).status,403);
   assert.equal((await route.POST(request(f.body('approved')))).status,200);
   assert.equal((await f.repository.getMedia(id)).classification.recordedSpeech.review.by,'Jakob');
-  const fallback=nextReviewRoute({handle:()=>assert.fail('no fallback writer')},false);
-  assert.equal((await fallback.POST(request({}))).status,503);
-  assert.equal((await fallback.GET(new Request(origin+path))).status,405);
+  let calls=0;
+  const unavailable=nextReviewRoute({handle:()=>{calls++;return Response.json({error:'studio_media_unavailable'},{status:503});}});
+  assert.equal((await unavailable.POST(request({}))).status,503);
+  assert.equal((await unavailable.GET(new Request(origin+path))).status,405);
+  assert.equal(calls,1);
 });

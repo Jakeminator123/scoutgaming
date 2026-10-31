@@ -131,14 +131,13 @@ test('retired calibration writer rejects in every mode before reading a body or 
   // Exercise the production route in isolation: no database or listening server
   // is needed to prove the early write boundary for each deployment flag.
   const source=await readFile(new URL('../services/game/server.mjs',import.meta.url),'utf8');
-  const policy=source.match(/^const localMediaEnabled = .+;$/m)?.[0];
   const begin=source.indexOf("  if (req.method === 'POST' && req.url === '/calibration') {");
   const end=source.indexOf("\n  if (req.method === 'POST' && pathname.startsWith('/api/bo/')",begin);
-  assert.ok(policy&&begin>0&&end>begin,'production calibration route exists');
+  assert.ok(begin>0&&end>begin,'production calibration route exists');
   for(const env of [{},{},{CROUPIER_CLOUD_RUNTIME:'1'}]){
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};
     const reject=()=>{throw Error('native calibration must not touch body or disk');};
-    vm.runInNewContext(`(()=>{${policy}\n${source.slice(begin,end)}\n})()`,{
+    vm.runInNewContext(`(()=>{${source.slice(begin,end)}\n})()`,{
       process:{env},cloudRuntime:env.CROUPIER_CLOUD_RUNTIME==='1',req:{method:'POST',url:'/calibration',on:reject},res,
       readCalibrationCss:reject,writeSync:reject,
     });

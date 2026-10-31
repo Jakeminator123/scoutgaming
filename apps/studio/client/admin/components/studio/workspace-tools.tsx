@@ -1,6 +1,4 @@
 import {useEffect,useState} from 'react';
-import {AdminPublicationPage,type PublicationOperatorChoice} from '../../../../components/admin-publication-page';
-import type {OperatorDirectory} from '../../../../components/control-operator-directory';
 import {ControlRepliesPage} from '../../../../components/control-replies-page';
 import {ControlOpenClawChat} from '../../../../components/control-openclaw-chat';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
@@ -9,12 +7,9 @@ import type { VideoInventory } from '../../../../../../packages/presentation/con
 import {studioNavigationContextFromQuery} from '../../../../lib/studio-navigation.mjs';
 import {labUrl} from '../../../../lib/lab-url.mjs';
 
-type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
-  operators:PublicationOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
-// Studio tools mounted inside a nav: Team (companies) under Bolag, Svarsbibliotek (replies) and Dialogtest
-// (dealer-agent) under Dealers › Röst och tal. `overrides` supplies the dealer or company the nav owns.
-export function WorkspaceTool({section,overrides={}}:{section:'companies'|'replies'|'dealer-agent';overrides?:Record<string,string>}){
-  const [,refreshContext]=useState(0);
+type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean};
+// Dealer tools mounted under Röst och tal. `overrides` supplies the dealer the nav owns.
+export function WorkspaceTool({section,overrides={}}:{section:'replies'|'dealer-agent';overrides?:Record<string,string>}){
   const [data,setData]=useState<Workspace|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
     const controller=new AbortController();setData(null);setError('');
@@ -36,7 +31,6 @@ export function WorkspaceTool({section,overrides={}}:{section:'companies'|'repli
     initialEventId:get('event'),initialVariantId:get('variant'),initialSituation:get('situation'),connectedLane:data.connectedLane};
   let content;
   switch(section){
-    case 'companies':content=<AdminPublicationPage {...common} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
   }

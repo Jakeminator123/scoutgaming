@@ -311,7 +311,7 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   assert.ok(hookSuites?.includes('engine') && hookSuites.includes('container'));
   const dealer = yaml.split('\n  dealer-regression:\n')[1]?.split('\n  browser-regression:\n')[0];
   assert.ok(dealer, 'the regression job must exist');
-  const browser = yaml.split('\n  browser-regression:\n')[1]?.split('\n  gateway-container:\n')[0];
+  const browser = yaml.split('\n  browser-regression:\n')[1]?.split('\n  browser-advisory:\n')[0];
   assert.ok(browser, 'the Chrome acceptance job must exist');
   assert.match(dealer, /strategy:\n      fail-fast: false\n      matrix: \$\{\{ fromJSON\(needs\.changes\.outputs\.matrix\) \}\}\n/, 'one failing leg must not cancel the others; the classifier selects the legs');
   assert.match(dealer, /\n    if: needs\.changes\.outputs\.draft != 'true' && needs\.changes\.outputs\.legs != '\[\]'\n/, 'drafts and leg-less scopes run no regression leg');
@@ -351,14 +351,26 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   assert.match(steps.find(step => step.startsWith('Real engine over HTTP')), /node tools\/regression-group\.mjs engine\/http-postgres \d+ node tools\/run-engine-qa\.mjs/);
   // One job runs every browser test; its own if is the classifier's browser mode, and its steps never skip.
   assert.doesNotMatch(dealer, /CROUPIER_BROWSER_FIXTURE_MODULE=/, 'the regression legs leave the browser fixture unset');
-  assert.match(browser, /^    name: Regression \(browser\)\n    needs: changes\n    if: needs\.changes\.outputs\.draft != 'true' && needs\.changes\.outputs\.browser != 'none'\n/);
+  assert.match(browser, /^    name: Regression \(browser\)\n    needs: changes\n    if: needs\.changes\.outputs\.draft != 'true' && needs\.changes\.outputs\.browser == 'required'\n/);
   const browserSteps = browser.split('      - name: ');
   const chrome = browserSteps.find(step => step.startsWith('Real browser acceptance'));
   assert.match(chrome, /git grep -l -F -e process\.env\.CROUPIER_BROWSER_FIXTURE_MODULE /, 'discovery matches files that read the variable, not files that mention it');
   assert.match(chrome, /CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome/);
   assert.match(chrome, /node tools\/regression-group\.mjs browser\/chrome \d+ node --test /);
-  assert.doesNotMatch(browser.split('\n    steps:\n')[1], /^\s+if: (?!always\(\))/m, 'browser steps run whenever the job runs');
+  assert.doesNotMatch(browser.split('\n    steps: &browser-regression-steps\n')[1], /^\s+if: (?!always\(\))/m, 'browser steps run whenever the job runs');
   assert.equal(legs.filter(leg => leg.flags.includes('build')).length, 1, 'the real Studio build runs once');
+  assert.match(steps.find(step => step.startsWith('Build the real studio')), /npm --prefix apps\/studio run build\n\s+node tools\/check-admin-build\.mjs/, 'validate real artifacts immediately after the existing build');
+  assert.match(fullHook, /^run_node_tests studio admin-theme test\/admin-tailwind\.mjs test\/ui-tokens\.mjs$/m);
+  const advisory = yaml.split('\n  browser-advisory:\n')[1]?.split('\n  gateway-container:\n')[0];
+  assert.match(advisory, /steps: \*browser-regression-steps/, 'advisory runs identical browser coverage');
+  for (const mode of ['required', 'advisory', 'none']) for (const draft of ['true', 'false']) {
+    for (const [job, expected] of [[browser, 'required'], [advisory, 'advisory']]) {
+      const condition = job.match(/\n    if: (.+)\n/)?.[1];
+      assert.ok(condition);
+      assert.equal(runInNewContext(condition, { needs: { changes: { outputs: { browser: mode, draft } } } }), draft === 'false' && mode === expected);
+    }
+  }
+
   // Every job that runs suites installs the toolchain once: ffmpeg and the package trees from the shared cache.
   for (const [name, job] of [['dealer-regression', dealer], ['browser-regression', browser],
     ['targeted', yaml.split('\n  targeted:\n')[1]?.split('\n  dealer-regression:\n')[0]]]) {
@@ -552,7 +564,7 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   // A ready full-scope PR: every leg, Chrome advisory.
   const full = { changes:{result:'success',outputs:{scope:'full',migration:'true',moving:'false',gateway:'true',draft:'false',browser:'advisory',legs:allLegs}},
     documentation:{result:'skipped'}, targeted:{result:'skipped'},
-    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'browser-regression':{result:'success'}, 'gateway-container':{result:'success'},
+    'dealer-regression':{result:'success',outputs:{lipsync_verified:'true'}}, 'browser-regression':{result:'skipped'}, 'gateway-container':{result:'success'},
     'migration-readiness':{result:'success'}, 'moving-worker':{result:'skipped'} };
   assert.equal(run(full),0);
   const docs = structuredClone(full); docs.changes.outputs.scope='documentation'; docs.changes.outputs.migration='false'; docs.changes.outputs.gateway='false'; docs.changes.outputs.legs='[]'; docs.documentation.result='success';
@@ -560,9 +572,12 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
   docs['dealer-regression'].result='skipped'; delete docs['dealer-regression'].outputs;
   docs['gateway-container'].result='skipped'; docs['migration-readiness'].result='skipped';
   assert.equal(run(docs),0);
-  // Chrome on a ready PR is advisory: any result passes the gate; malformed or contradictory selection does not.
-  for (const result of ['failure','cancelled','skipped',undefined]) {
-    const advisory=structuredClone(full); advisory['browser-regression'].result=result; assert.equal(run(advisory),0,'advisory Chrome does not block: '+result);
+  // Advisory is not in CI.needs: its absence or unfinished result cannot delay the gate.
+  for (const result of ['in_progress','failure','cancelled','skipped',undefined]) {
+    const advisory=structuredClone(full); advisory['browser-advisory']={result}; assert.equal(run(advisory),0,'advisory Chrome does not block: '+result);
+  }
+  for (const result of ['success','failure','cancelled',undefined]) {
+    const broken=structuredClone(full); broken['browser-regression'].result=result; assert.notEqual(run(broken),0,'required job must skip in advisory mode: '+result);
   }
   for (const value of ['',undefined,'unknown',true,'false']) {
     const broken=structuredClone(full); broken.changes.outputs.browser=value; assert.notEqual(run(broken),0,'unreported browser selection is rejected: '+value);
@@ -572,7 +587,7 @@ test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped
     assert.notEqual(run(contradictory),0,'documentation runs no Chrome acceptance: '+mode);
   }
   // Nightly, manual and preview runs require Chrome.
-  const nightly = structuredClone(full); nightly.changes.outputs.browser='required'; nightly.changes.outputs.moving='true'; nightly['moving-worker'].result='success';
+  const nightly = structuredClone(full); nightly.changes.outputs.browser='required'; nightly.changes.outputs.moving='true'; nightly['moving-worker'].result='success'; nightly['browser-regression'].result='success';
   assert.equal(run(nightly),0);
   for (const result of ['failure','cancelled','skipped',undefined]) {
     const broken=structuredClone(nightly); broken['browser-regression'].result=result; assert.notEqual(run(broken),0,'required Chrome: '+result);

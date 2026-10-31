@@ -292,7 +292,6 @@ test('partner set-password page renders the shared form against the partner auth
       require: name => {
         if (name === '@/components/studio-login') return loginModule.exports;
         if (name === '@/lib/studio-native-runtime.mjs') return {
-          nativeStudioAdminEnabled: () => true,
           nativeStudioAdminConfiguration: () => config,
         };
         if (name === '@/lib/studio-login-client.mjs') return loginClient;

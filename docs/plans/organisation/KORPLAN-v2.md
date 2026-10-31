@@ -4,7 +4,7 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 
 ## Utgångsläge och mandat
 
-- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Etappens bas är `465c03fcd14ba2f96884816b1d2094e2d8cf7617`, levererad till main och preview. Ändringar görs i egna worktrees under `.claude/worktrees`; orkestratorns branch är `jakob/codex-rest-integration-1031`.
+- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. S1–S3 utgår från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Ändringar görs i egna worktrees under `.claude/worktrees`; orkestratorns branch är `jakob/codex-cleanup-integration-1031`.
 - Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, raderade brancher/worktrees, kollegors resurser eller RunPod-endpoints ingår.
 - **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
 - Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
@@ -47,7 +47,7 @@ Det finns inget uppmätt totalprocenttal för hela produkten. Den externa uppfö
 
 ## Nästa våg: städning och systemansvar
 
-Jakobs uppföljning 31 oktober flyttar tyngdpunkten från visuell putsning till levande konsumenter, färre överlappande vägar, namngivning och en begriplig systemkarta. Den nya huvudagenten tar över efter R1–R5:s release; föregående huvudagent skriver inte samtidigt i nästa våg. Extern granskning är underlag att kontrollera, inte en orderlista.
+Jakobs uppföljning 31 oktober flyttar tyngdpunkten från visuell putsning till levande konsumenter, färre överlappande vägar, namngivning och en begriplig systemkarta. MERGEAGENTEN 2 har tagit över efter #748; föregående huvudagent är klar. Extern granskning är underlag att kontrollera, inte en orderlista.
 
 | Spår | Första avgränsning | Ansvar och klartkriterium |
 | --- | --- | --- |
@@ -56,6 +56,10 @@ Jakobs uppföljning 31 oktober flyttar tyngdpunkten från visuell putsning till 
 | S3 Tester och leverans | Granskaren rapporterar tre överhoppade byggprov, kosmetiska lås, bred CI-selektion och rådgivande browserjobb i väntkedjan. Dessa behöver återverifieras mot den levererade workflowversionen. | DRIFTAGENTEN granskar körningar/beroenden och flyttar behållna byggprov till befintligt byggjobb. Separat avgränsad PR för motiverat testurval; inga nya fullbyggen eller lättade ägar-/SHA-/säkerhetskrav. |
 
 De tre spåren kan förberedas parallellt. Gemensamma API-/sessionskontrakt, workflowfiler och systemkartan får en utsedd skrivare innan ändring. Huvudagenten tilldelar filägarskap, samlar korta rapporter, granskar, mergar och verifierar drift. Aktiva teamchattar får nya avgränsade uppdrag; avslutade underagenter återupptas inte.
+
+**Pågående avgränsning:** REPOAGENTEN äger nativeflaggans routes/sidor, `ui-server` och spelserverns konstanta Neon-/lokalmedia-val. ARKITEKTEN äger bolagskomponenter och smala team-/livscykelkontrakt. DRIFTAGENTEN äger workflow, testregistrering, `admin-tailwind` och `ui-tokens`; bredare CI-selektion ingår inte i denna första rättning. Varje spår har en egen `jakob/codex-s1-transition-1031`, `s2-companies-1031` respektive `s3-ci-1031`-branch. Huvudagenten ensamäger ingångsdokumentation, körplan, överlämning och integration. Inga schema-, env- eller talaktiveringar ingår.
+
+**Kod integrerad, slutlig CI och release återstår:** [S1 #749](https://github.com/Jakeminator123/scoutgaming/pull/749), [S2 #751](https://github.com/Jakeminator123/scoutgaming/pull/751) och [S3 #750](https://github.com/Jakeminator123/scoutgaming/pull/750) är förenade. Native-/Neon-/lokalmedia-valen, generation-media och den oåtkomliga klippmappningen med förbrukat enhetstest är borttagna. Team är routebundet och kan kallstarta utan projekt/video; obligatorisk DB/schema/signer är kvar. Byggkontroller körs efter befintligt bygge och advisory-browser ligger utanför obligatorisk väntan. En granskningsrättning tillåter likvärdig nästlad/platt fokus-CSS. Integrationen har 77/77 riktade prov, Studio/Admin/Lobby-typer och verkligt klientbygge med artefaktkontroll godkända. Dessa lokala bevis ersätter inte slutlig CI eller publicerad UI-kontroll.
 
 Efter första städvågen väljs en levande legacykedja åt gången: Admins isolerade provspel, sessionsutfärdande eller det äldre referens-/mappingflödet. Atomisk bolagspublicering och materialersättning är separata funktionsändringar. Namnbyten i molnet och stora workspaceomläggningar prioriteras inte framför belagda dubbletter. Talet väntar fortfarande.
 

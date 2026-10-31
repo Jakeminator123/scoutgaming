@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
+import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {designPreviewPages,isDesignPreviewPage} from '../lib/design-preview-paths.mjs';
 import {studioLoginReturnTo} from '../lib/studio-login-client.mjs';
 import {CONTROL_PREVIEW_VIEWS,workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
@@ -23,9 +23,7 @@ test('every existing Control tool and registered N1 view has a served Admin dest
     if(roomNav(url)){assert.equal(url.pathname,'/admin/rooms/room-1',to);for(const key of ['table','composition','game','dealer'])assert.equal(url.searchParams.has(key),false,key+' leaves the room address: '+to);assert.equal(url.searchParams.get('operator'),'nord',to);}
     else {assert.equal(url.searchParams.get('table'),'room-1',to);assert.equal(url.searchParams.get('composition'),'portrait',to);}
   }
-  // The embedded tools (Team, Svarsbibliotek, Dialogtest) are workspace sections, not pages: their old addresses open the navs.
-  assert.deepEqual(Object.keys(ADMIN_WORKSPACE_TOOLS),['companies','replies','dealer-agent']);
-  assert.deepEqual(Object.values(ADMIN_WORKSPACE_TOOLS).map(tool=>tool.label),['Bolag','Svarsbibliotek','Dialogtest']);
+  // Retired tools' document addresses still open their owner navs.
   for(const name of ['replies','dealer-agent','dealer-studio'])assert.equal(adminDocumentHref('/admin/'+name),'/admin/dealers');
   assert.equal(adminDocumentHref('/partner/companies'),'/partner/companies');
   assert.equal(adminDocumentHref('/control/zones'),'/admin/scenes?tab=miljoer');
@@ -72,7 +70,7 @@ test('compatibility redirect preserves clip context and never rewrites API or au
 });
 test('workspace reader authorizes before any runtime or catalogue access',async()=>{
   let reads=0;
-  await assert.rejects(serveAdminWorkspaceData(new Request('https://site.invalid/studio/api/admin/workspace/companies'),{
+  await assert.rejects(serveAdminWorkspaceData(new Request('https://site.invalid/studio/api/admin/workspace/company-team?operator=north'),{
     authorize:async()=>{throw Error('denied');},runtime:async()=>{reads++;},
   }),/denied/);assert.equal(reads,0);
 });
@@ -84,7 +82,7 @@ test('Admin documents retain the existing navigation exception without opening A
   const normalized=normalizeNativeStudioPageRequest(request,config);
   assert.equal(new URL(normalized.url).pathname,'/studio/admin/dealers/dragan');
   assert.equal(normalized.headers.get('sec-fetch-site'),null);
-  for(const bad of [new Request(request,{method:'POST'}),new Request(request,{headers:{...headers,origin:'https://foreign.invalid'}}),new Request(request,{headers:{...headers,'next-action':'fixture'}}),new Request('https://site.invalid/studio/api/admin/workspace/companies',{headers})])assert.throws(()=>normalizeNativeStudioPageRequest(bad,config),/studio_request_rejected/);
+  for(const bad of [new Request(request,{method:'POST'}),new Request(request,{headers:{...headers,origin:'https://foreign.invalid'}}),new Request(request,{headers:{...headers,'next-action':'fixture'}}),new Request('https://site.invalid/studio/api/admin/workspace/company-team?operator=north',{headers})])assert.throws(()=>normalizeNativeStudioPageRequest(bad,config),/studio_request_rejected/);
 });
 test('login restores the exact Admin page and context without accepting external returns or duplicate selectors',()=>{
   // The room nav owns its room and dealer selection; only the company follows (Jakob 2026-10-28).
@@ -98,23 +96,38 @@ test('login restores the exact Admin page and context without accepting external
   for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','/admin/dealers/dragan?flik=klipp&flik=tal','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/admin');
 });
 // The workspace reader serves exactly the embedded tools' sections (ADMIN_WORKSPACE_TOOLS) plus the legacy read-only ones.
-test('workspace reads saved data and lists company memberships only for company tools',async()=>{
-  let authorized=false,directories=0;
+test('dealer workspace tools read saved data without any company team reads',async()=>{
+  let authorized=false;
   const runtime=async()=>{assert.equal(authorized,true);return {gamePolicy:{readSaved:async()=>({project:{revision:'saved',dealers:[]}})},
-    videoRegistry:async()=>({videos:[]}),listLaneOperators:async()=>[{id:'operator'}],listOperatorDirectory:async()=>{directories++;return [{id:'operator',members:[]}];}};};
+    videoRegistry:async()=>({videos:[]}),listOperatorDirectory:async()=>assert.fail('No team read')};};
   const options={authorize:async()=>{authorized=true;},runtime};
   const request=section=>new Request('https://site.invalid/studio/api/admin/workspace/'+section);
-  const response=await serveAdminWorkspaceData(request('companies'),options);assert.equal(response.status,200);const data=await response.json();
-  assert.equal(data.project.revision,'saved');assert.equal(data.directory.operators[0].id,'operator');assert.equal(directories,1);
-  assert.match(response.headers.get('cache-control'),/private, no-store/);
-  for(const section of ['replies','dealer-agent']){const other=await serveAdminWorkspaceData(request(section),options);assert.equal(other.status,200,section);assert.equal((await other.json()).directory,null);}
-  assert.equal(directories,1);
+  for(const section of ['replies','dealer-agent']){const other=await serveAdminWorkspaceData(request(section),options);assert.equal(other.status,200,section);const data=await other.json();assert.equal(data.project.revision,'saved');assert.equal(data.directory,null);}
+});
+test('company team read is authorized, scoped and independent of project, video and company catalogue',async()=>{
+  let authorized=false;const reads=[];
+  const options={authorize:async()=>{authorized=true;},runtime:async()=>{
+    assert.equal(authorized,true);
+    return {listOperatorDirectory:async id=>{reads.push(id);return id==='north'?[{id:'north',members:[]}]:[];},
+      gamePolicy:{readSaved:()=>assert.fail('No project read')},videoRegistry:()=>assert.fail('No video read'),listLaneOperators:()=>assert.fail('No catalogue read')};
+  }};
+  const request=id=>new Request('https://site.invalid/studio/api/admin/workspace/company-team?operator='+id);
+  const response=await serveAdminWorkspaceData(request('north'),options),data=await response.json();
+  assert.equal(response.status,200);assert.equal(data.source,'registered');assert.equal(data.operator.id,'north');assert.equal(data.standardRoles.length,3);
+  assert.equal(data.project,undefined);assert.equal(data.videos,undefined);assert.equal(data.directory,undefined);
+  assert.match(response.headers.get('cache-control'),/private, no-store/);assert.equal(response.headers.get('vary'),'Cookie');
+  assert.equal((await serveAdminWorkspaceData(request('missing'),options)).status,404);assert.deepEqual(reads,['north','missing']);
+  await assert.rejects(serveAdminWorkspaceData(request('north'),{...options,authorize:async()=>{throw Error('denied');}}),/denied/);
+  assert.deepEqual(reads,['north','missing']);
 });
 test('workspace reader rejects unknown sections, queries and writes',async()=>{
   const options={authorize:async()=>{},runtime:async()=>({gamePolicy:{readSaved:async()=>({project:{revision:'saved',dealers:[]}})},videoRegistry:async()=>({videos:[]}),
     listLaneOperators:async()=>[],listOperatorDirectory:async()=>[]})};
   const request=section=>new Request('https://site.invalid/studio/api/admin/workspace/'+section);
   assert.equal((await serveAdminWorkspaceData(request('unknown'),options)).status,400);
+  for(const invalid of ['companies','company-team','company-team?operator=','company-team?operator=north&operator=south','company-team?operator=north&extra=1','company-team?operator=../north']){
+    assert.equal((await serveAdminWorkspaceData(request(invalid),{...options,runtime:()=>assert.fail('Invalid request must not read')})).status,400,invalid);
+  }
   assert.equal((await serveAdminWorkspaceData(request('companies?extra=1'),options)).status,400);
   assert.equal((await serveAdminWorkspaceData(new Request(request('companies'),{method:'POST'}),options)).status,400);
   const media=await serveAdminWorkspaceData(request('videos'),options);assert.equal(media.status,200);assert.equal((await media.json()).directory,null);
