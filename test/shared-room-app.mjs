@@ -514,6 +514,15 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.equal(free.disabled,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].children[1].disabled,true);
   for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
   assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 USD · demo$/);
+  // Closing betting does not invent another player's ownership or wager on an empty box.
+  for(const phase of ['round','settled']){
+    view.render({snapshot:seated(3,{phase}),chip:.5,can:{...can,bet:false},notice:'',connected:true});
+    assert.equal(free.disabled,true,'an empty box cannot accept a bet outside the betting window');
+    assert.doesNotMatch(free.getAttribute('aria-label'),/upptagen/);
+    assert.doesNotMatch(free.title,/Annans insats/);
+    const picker=controls.children.find(node=>node.getAttribute?.('aria-label')==='Välj satsningsruta');
+    assert.doesNotMatch(picker.children[2].textContent,/upptagen/);
+  }
   view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
   assert.equal(nodes.get('limits').textContent,'–','no snapshot shows no stale placeholder limits');
   view.close();leaveSeat.click();assert.equal(calls.length,4);
