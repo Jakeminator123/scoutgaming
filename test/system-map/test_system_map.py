@@ -1,5 +1,6 @@
 """Small, isolated fixtures: no product data or network access."""
 from contextlib import redirect_stderr, redirect_stdout
+from copy import deepcopy
 from html.parser import HTMLParser
 import importlib.util
 import io
@@ -42,6 +43,7 @@ class Fixture(unittest.TestCase):
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture\n", encoding="utf-8")
         self.write_table()
+        self.write_relations({"version": 1, "graphs": []})
         self.command("add", ".")
         self.command("-c", "user.name=System Map Fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgSign=false", "commit", "--quiet", "-m", "fixture")
 
@@ -59,8 +61,60 @@ class Fixture(unittest.TestCase):
             status = system_map.main(list(args), root=self.root)
         return status, out.getvalue(), error.getvalue()
 
+    def write_relations(self, data):
+        file = self.root / "tools/system-map/relations.json"
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(json.dumps(data), encoding="utf-8")
+
+    def relation_fixture(self):
+        return {"version": 1, "graphs": [{"id": "chain", "category": "code", "title": "Fixture chain", "nodes": [
+            {"id": "a", "label": "Caller", "place": "Fixture", "col": 0, "row": 0},
+            {"id": "b", "label": "Callee", "place": "Fixture", "col": 1, "row": 0}], "edges": [
+            {"id": "a-b", "source": "a", "target": "b", "kind": "Anrop", "label": "Run", "explanation": "Fixture calls run.",
+             "conditional": False, "evidence": [{"path": "apps/ui/main.mjs", "match": "run();"}]}]}]}
+
 
 class SystemMapTests(Fixture):
+    def test_missing_relations_manifest_fails_without_replacing_previous_artifact(self):
+        self.assertEqual(self.invoke()[0], 0)
+        artifact = self.root / ".cache/system-map/index.html"
+        original = artifact.read_bytes()
+        (self.root / "tools/system-map/relations.json").unlink()
+        status, _, error = self.invoke()
+        self.assertEqual(status, 2)
+        self.assertIn("relations.json saknas", error)
+        self.assertIn("Ingen karta skrevs", error)
+        self.assertEqual(artifact.read_bytes(), original)
+
+    def test_invalid_relation_schema_returns_input_error_without_a_new_artifact(self):
+        base = self.relation_fixture()
+        cases = [(None, "rot"), ({}, "version"), ({"version": 1}, "graphs"), ({"version": 1, "graphs": {}}, "graphs")]
+        edits = [(("version",), 2), (("graphs", 0), None), (("graphs", 0, "title"), ""),
+                 (("graphs", 0, "nodes"), {}), (("graphs", 0, "nodes", 0, "col"), False),
+                 (("graphs", 0, "nodes", 1, "id"), "a"), (("graphs", 0, "edges"), None),
+                 (("graphs", 0, "edges", 0, "source"), "unknown"), (("graphs", 0, "edges", 0, "conditional"), "false"),
+                 (("graphs", 0, "edges", 0, "evidence"), []), (("graphs", 0, "edges", 0, "evidence"), None),
+                 (("graphs", 0, "edges", 0, "evidence", 0), {}),
+                 (("graphs", 0, "edges", 0, "evidence", 0, "path"), "../outside.mjs"),
+                 (("graphs", 0, "edges", 0, "evidence", 0, "match"), ""),
+                 (("graphs", 0, "edges", 0, "evidence", 0, "match"), ["run();"])]
+        for path, value in edits:
+            data = deepcopy(base)
+            target = data
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            cases.append((data, str(path[-1]) if isinstance(path[-1], str) else "[0]"))
+        for data, location in cases:
+            with self.subTest(location=location, data=data):
+                self.write_relations(data)
+                status, _, error = self.invoke()
+                self.assertEqual(status, 2)
+                self.assertIn("relations.json:", error)
+                self.assertIn(location, error)
+                self.assertIn("Ingen karta skrevs", error)
+                self.assertFalse((self.root / ".cache/system-map/index.html").exists())
+
     def test_real_git_files_directories_literal_brackets_and_encoded_spaces(self):
         self.write_table(code="[Fil](src/main.py), [mapp](src), [route](apps/admin/[[...path]]/route.ts), [guide](docs/with%20space.md)")
         html, errors, warnings = system_map.render(self.root)
@@ -179,6 +233,22 @@ await import(`./${choice}.mjs`);
         self.assertEqual([r["mode"] for r in refs], ["import", "export", "type", "import", "require", "dynamic", "dynamic", "dynamic"])
         self.assertEqual(refs[0]["line"], source[:source.index("import item")].count("\n") + 1)
 
+    def test_regex_expression_positions_do_not_create_false_references(self):
+        for expression in ["ready ? /require('fake')/ : /import('fake')/", "ready ?? /require('fake')/",
+                           "ready && /require('fake')/", "ready |= /require('fake')/", "ready !== /require('fake')/",
+                           "ready + /require('fake')/", "ready / /require('fake')/", "typeof /require('fake')/",
+                           "void /require('fake')/", "await /require('fake')/", "[.../require('fake')/.source]"]:
+            with self.subTest(expression=expression):
+                refs = graph.references(f"const pattern = {expression};\nrequire('./real.cjs');")
+                self.assertEqual(refs, [{"line": 2, "mode": "require", "specifier": "./real.cjs"}])
+        self.assertEqual(graph.references("function f() { throw /require('fake')/; }"), [])
+
+    def test_division_after_values_and_postfix_operators_keeps_real_references(self):
+        for value in ["ready++", "ready--", "'return'", "'='", "obj.return", "obj.if(ready)", "(ready)", "/ready/"]:
+            with self.subTest(value=value):
+                self.assertEqual([r["specifier"] for r in graph.references(f"const n = {value} / require('./real.cjs') / 2;")], ["./real.cjs"])
+        self.assertEqual([r["specifier"] for r in graph.references("if (ready) 'value' / require('./real.cjs');")], ["./real.cjs"])
+
     def test_resolves_relative_alias_workspace_and_test_references_without_inventing_targets(self):
         self.add({"apps/ui/tsconfig.json": json.dumps({"compilerOptions": {"paths": {"@/*": ["./*"]}}}),
                   "apps/ui/main.ts": "import './local.js';\nimport '@/local';\nexport { value } from '@fixture/shared';\nimport thing from './missing.mjs';\nimport unknown from '@/missing';\nimport('https://secret.invalid/?token=PRIVATE');\nimport('./'+choice);\nimport fs from 'node:fs';",
@@ -226,8 +296,7 @@ await import(`./${choice}.mjs`);
         self.assertNotIn("apps/ui/link.mjs", {n["id"] for n in self.build()["nodes"]})
 
     def test_semantic_anchors_relocate_and_fail_on_missing_or_ambiguous_match(self):
-        manifest = {"graphs": [{"id": "chain", "nodes": [{"id": "a"}, {"id": "b"}], "edges": [
-            {"id": "a-b", "source": "a", "target": "b", "kind": "Anrop", "evidence": [{"path": "apps/ui/main.mjs", "match": "run();"}]}]}]}
+        manifest = self.relation_fixture()
         self.add({"apps/ui/main.mjs": "// moved\n\nrun();\n", "tools/system-map/relations.json": json.dumps(manifest)})
         data = self.build();edge = data["graphs"][0]["edges"][0]
         self.assertEqual(edge["status"], "anchored")
@@ -239,6 +308,18 @@ await import(`./${choice}.mjs`);
             self.assertEqual(proof["status"], status)
             self.assertIsNone(proof["line"])
             self.assertEqual(len(data["issues"]), 1)
+
+    def test_obsolete_relations_can_be_removed_without_preserving_counts_or_names(self):
+        manifest = self.relation_fixture()
+        self.add({"apps/ui/main.mjs": "run();", "tools/system-map/relations.json": json.dumps(manifest)})
+        self.assertEqual(self.build()["stats"]["semantic"], 1)
+        manifest["graphs"][0]["edges"] = []
+        self.write_relations(manifest)
+        self.assertEqual(self.build()["stats"]["semantic"], 0)
+        self.assertEqual(self.invoke()[0], 0)
+        manifest["graphs"] = []
+        self.write_relations(manifest)
+        self.assertEqual(self.invoke()[0], 0)
 
 
 if __name__ == "__main__":

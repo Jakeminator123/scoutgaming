@@ -18,6 +18,12 @@ EXTENSIONS = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}
 OTHER_EXTENSIONS = {".py", ".sql", ".sh", ".bash", ".ps1", ".css", ".scss", ".json", ".html", ".yml", ".yaml", ".toml", ".dockerfile"}
 MAX_BYTES = 1_000_000
 WORD = re.compile(r"[A-Za-z_$][\w$]*")
+OPERATORS = re.compile(r"\.\.\.|>>>=?|\*\*=?|&&=?|\|\|=?|\?\?=?|===?|!==?|<<=?|>>=?|=>|\+\+|--|\?\.|[+*/%&|^!<>=-]=?")
+EXPRESSION_PREFIXES = {"=", "(", "[", ":", ",", "?", "!", "~", ";", "{", "=>", "...",
+                       "+", "-", "*", "/", "%", "**", "&", "|", "^", "&&", "||", "??",
+                       "<", ">", "<=", ">=", "==", "!=", "===", "!==", "<<", ">>", ">>>",
+                       "+=", "-=", "*=", "/=", "%=", "**=", "&=", "|=", "^=", "&&=", "||=", "??=", "<<=", ">>=", ">>>="}
+EXPRESSION_KEYWORDS = {"return", "throw", "case", "delete", "void", "typeof", "new", "in", "instanceof", "yield", "await", "else", "do"}
 
 
 def run(root, *args):
@@ -123,10 +129,16 @@ def tokens(text):
             line += raw.count("\n")
             kind = "opaque" if quote_char == "`" or "\\" in raw or not raw.endswith(quote_char) else "string"
             result.append((kind, raw[1:-1], start_line))
+            after_control = False
             continue
         # Regex literal in expression position; never treat its contents as code.
+        # Token kinds matter: "return" / require(...) is division, not a regex.
         previous = result[-1][1] if result else "="
-        if char == "/" and (after_control or previous in {"=", "(", "[", ":", ",", "!", "&&", "||", "return", "=>", ";", "{"}):
+        previous_kind = result[-1][0] if result else "punct"
+        keyword = previous_kind == "word" and (len(result) < 2 or result[-2][1] not in {".", "?."})
+        expression_start = (previous_kind == "punct" and previous in EXPRESSION_PREFIXES
+                            or keyword and previous in EXPRESSION_KEYWORDS)
+        if char == "/" and (after_control or expression_start):
             start, in_class = i, False
             i += 1
             while i < len(text) and text[i] != "\n":
@@ -149,8 +161,9 @@ def tokens(text):
             result.append(("word", word[0], line))
             i += len(word[0])
         else:
-            op = text[i:i+2] if text[i:i+2] in {"=>", "&&", "||", "?."} else char
-            if op == "(": parens.append(previous in {"if", "while", "for", "switch", "with", "catch"})
+            operator = OPERATORS.match(text, i)
+            op = operator[0] if operator else char
+            if op == "(": parens.append(keyword and previous in {"if", "while", "for", "switch", "with", "catch"})
             if op == ")" and parens: after_control = parens.pop()
             result.append(("punct", op, line))
             i += len(op)
@@ -288,11 +301,64 @@ def proof_link(root, path, line, revision, dirty):
             "dirty": path in dirty}
 
 
-def semantic_graphs(root, manifest, sources, revision, dirty):
+def read_relations(root, manifest):
+    """Validate the data consumed by the viewer, without locking graph contents."""
     if not manifest.is_file():
-        return [], []
+        raise ValueError("tools/system-map/relations.json saknas; manifestet krävs för handgranskade samband.")
     data = json.loads(manifest.read_text(encoding="utf-8"))
-    graphs, issues = data.get("graphs", []), []
+
+    def require(condition, location, expected):
+        if not condition:
+            raise ValueError(f"relations.json: {location} måste vara {expected}.")
+
+    def strings(item, fields, location):
+        require(isinstance(item, dict), location, "ett objekt")
+        for field in fields:
+            require(isinstance(item.get(field), str) and bool(item[field].strip()), f"{location}.{field}", "en icke-tom sträng")
+
+    def members(items, location):
+        require(isinstance(items, list), location, "en lista")
+        ids = set()
+        for index, item in enumerate(items):
+            here = f"{location}[{index}]"
+            strings(item, ("id",), here)
+            require(item["id"] not in ids, f"{here}.id", "unik i listan")
+            ids.add(item["id"])
+        return ids
+
+    require(isinstance(data, dict), "rot", "ett objekt")
+    require(type(data.get("version")) is int and data["version"] == 1, "version", "1")
+    graphs = data.get("graphs")
+    members(graphs, "graphs")
+    for index, graph in enumerate(graphs):
+        here = f"graphs[{index}]"
+        strings(graph, ("title", "category"), here)
+        require(isinstance(graph.get("note", ""), str), f"{here}.note", "en sträng")
+        node_ids = members(graph.get("nodes"), f"{here}.nodes")
+        members(graph.get("edges"), f"{here}.edges")
+        for n, node in enumerate(graph["nodes"]):
+            location = f"{here}.nodes[{n}]"
+            strings(node, ("label", "place"), location)
+            for coordinate in ("col", "row"):
+                require(type(node.get(coordinate)) is int, f"{location}.{coordinate}", "ett heltal")
+        for e, edge in enumerate(graph["edges"]):
+            location = f"{here}.edges[{e}]"
+            strings(edge, ("source", "target", "kind", "label", "explanation"), location)
+            for endpoint in ("source", "target"):
+                require(edge[endpoint] in node_ids, f"{location}.{endpoint}", "ett nod-id i samma graf")
+            require(type(edge.get("conditional")) is bool, f"{location}.conditional", "en boolesk flagga")
+            evidence = edge.get("evidence")
+            require(isinstance(evidence, list) and bool(evidence), f"{location}.evidence", "en lista med minst ett kodankare")
+            for p, proof in enumerate(evidence):
+                proof_location = f"{location}.evidence[{p}]"
+                strings(proof, ("path", "match"), proof_location)
+                require(safe_path(root, proof["path"]), f"{proof_location}.path", "en tillåten relativ reposökväg")
+                require(len(proof["match"].splitlines()) == 1, f"{proof_location}.match", "en enda kodrad")
+    return graphs
+
+
+def semantic_graphs(root, manifest, sources, revision, dirty):
+    graphs, issues = read_relations(root, manifest), []
     for graph in graphs:
         for edge in graph["edges"]:
             edge["level"] = "semantic"

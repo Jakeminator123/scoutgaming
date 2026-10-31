@@ -22,13 +22,20 @@ Olösta automatiska referenser redovisas i kartan och är inte i sig ett exitfel
 - `START-HERE.md`, avsnitt Systemkarta: fyra tabellkolumner anger ansvar,
   kodingångar, drift/data och beteenden att verifiera. Uppdatera sakunderlaget
   där när kontraktet ändras. Markdownlänkar verifieras som Git-spårade sökvägar.
-- `relations.json`: fem handgranskade kedjor. En nod har `id`, `label`, `place`,
-  `col` och `row`. En riktad kant har `source`, `target`, `kind`, `label`,
+- `relations.json`: det obligatoriska manifestet för handgranskade kedjor, med
+  `version: 1` och en `graphs`-lista. Saknad fil eller ogiltig struktur ger exit 2
+  utan ny karta. Varje graf har ett unikt `id` samt `title`, `category`, `nodes` och `edges`;
+  `note` är valfri text. En nod har `id`, `label`, `place`,
+  `col` och `row`. En riktad kant har `id`, `source`, `target`, `kind`, `label`,
   `explanation`, `conditional` och minst ett `evidence` med `path` + `match`.
   `match` är en granskad kodrad. Generatorn söker exakt efter den med yttre
   blanksteg borttagna; en enda träff krävs. Raden flyttas automatiskt när kod
   läggs före den. Noll eller flera träffar ger **behöver översyn**, inget
   påhittat radnummer och exit 1. Granska innebörden innan ankaret uppdateras.
+  Nod- och kant-id är unika inom grafen; kanter måste peka på dess noder.
+  `col` och `row` är heltal och `conditional` en boolesk flagga. Tomma eller
+  saknade `evidence` godtas inte. Förbrukade samband och grafer får tas bort;
+  valideringen kräver inga bestämda namn eller antal.
 - `graph.py`: inventering och begränsad lexikal JS/TS-parser. Git-spårade
   filer i arbetskopian används; nya ospårade filer ingår inte. `.ignore`,
   `.gitignore`, privata mappar och symlänkar utesluts före filinnehåll läses.
