@@ -54,7 +54,7 @@ Allt som är grönt går direkt till produktion, i denna ordning:
 3. Render `croupier-v3` deployas manuellt (Render MCP) efter varje grön merge; kontrollera `https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Director och Gateway deployas om när deras kod ändras.
 4. Admin-publicering (paket och rummets spelinställningar) sist, när koden är live.
 
-`CROUPIER_SHARED_TABLE_ENABLED` (delat bord) är `=1` i produktionen sedan O03 (satt 2026-10-28 13:52Z, deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`) och i preview. Med bordet på deployas `croupier-v3` bara när bordet är tomt, tills F11:s driftacceptans är kvitterad (rättningen är mergad i #529) ([ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)). Se [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
+`CROUPIER_SHARED_TABLE_ENABLED` (delat bord) är `=1` i produktionen sedan O03 (satt 2026-10-28 13:52Z, deploy `dep-dbgvsc5g1s2s73cdoqkg` på `5f5bc88d`) och i preview. F11:s överlapp och återanslutning är [driftverifierade på e8d0b935](docs/plans/organisation/F11-DRIFTKVITTO.md). En kod- och schemakompatibel Render-release har därför ingen generell F11-spärr med tomma bord; flaggbyte och publicering följer fortfarande sina egna tomt-bord-krav ([ENVIRONMENT-RESTORATION](docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten)). Se [ENVIRONMENT-VARIABLES.md](docs/ENVIRONMENT-VARIABLES.md#delade-blackjackrum--avgränsad-inkoppling).
 
 ## Preview
 

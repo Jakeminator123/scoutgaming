@@ -65,6 +65,7 @@ Beställd sammanställning av systemgranskningen. KORPLAN-v2 är enda aktiva kö
 | --- | --- | --- | --- |
 | [plans/organisation/ARBETSSATT.md](plans/organisation/ARBETSSATT.md) | Arbetssätt: aktiviteter, agenter och nya fynd | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/BESLUTSLOGG.md](plans/organisation/BESLUTSLOGG.md) | Beslutslogg och nya fynd | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
+| [plans/organisation/F11-DRIFTKVITTO.md](plans/organisation/F11-DRIFTKVITTO.md) | Verkligt tvåinstansprov, pengar och avgränsat deploybeslut | Drift / MERGEAGENTEN | Vid nytt relevant driftprov |
 | [plans/organisation/gemensamt/aktiviteter/GEM-01.md](plans/organisation/gemensamt/aktiviteter/GEM-01.md) | GEM-01: Förstädning med bevis för varje kandidat | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/gemensamt/aktiviteter/GEM-02.md](plans/organisation/gemensamt/aktiviteter/GEM-02.md) | GEM-02: Miljöinventering utan att läsa eller ändra hemligheter | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
 | [plans/organisation/gemensamt/aktiviteter/GEM-03.md](plans/organisation/gemensamt/aktiviteter/GEM-03.md) | GEM-03: Beslutsspår för Git-historik och eventuell ny produktrepo | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
