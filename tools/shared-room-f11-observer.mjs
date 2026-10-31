@@ -23,6 +23,11 @@ const hash = value => createHash('sha256').update(JSON.stringify(value)).digest(
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const eventTypes = new Set(['speak', 'idle', 'deal', 'reveal', 'settle', 'turn']);
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
+export const F11_SQL_INTERVAL_MS = 2000;
+const propagationMs = 2000;
+// A query or other client work may consume the existing observation budget.
+// SQL coverage stays bounded independently of silence on the change-only sockets.
+const sqlCoverageMs = F11_SQL_INTERVAL_MS + propagationMs;
 
 // This receipt is evidence for independent review, not authenticated authority.
 // The live driver must establish absence BEFORE its API writes and read back the
@@ -125,6 +130,7 @@ export function validateF11GatewayProof(proof, socketAt, manifest) {
 }
 function money(row, manifest) {
   scope(row, manifest);
+  need(integer(row.readStartedAt) && row.readStartedAt<=row.at && row.at-row.readStartedAt<=propagationMs, 'sql_read_window_invalid');
   need(row.source === 'preview-sql' && row.database === target.database && row.neonProjectId === target.neonProjectId
     && row.branchId === target.branchId, 'money_source_invalid');
   need(['before', 'during', 'after'].includes(row.stage) && integer(row.hands) && Array.isArray(row.balances)
@@ -176,7 +182,7 @@ function money(row, manifest) {
       && e.roundId === entry.roundId && e.type === 'payout' && e.amountCents === entry.returnedCents), 'payout_mismatch');
   }
   need(row.ledger.filter(e => e.type === 'payout').every(e => row.settlements.filter(s => s.ledgerId === e.id).length === 1), 'payout_without_settlement');
-  return { stage: row.stage, at: row.at, hands: row.hands, reservations: row.reservations.map(x => ({ id: x.id, amountCents: x.amountCents })),
+  return { stage: row.stage, at: row.at, readStartedAt:row.readStartedAt, hands: row.hands, reservations: row.reservations.map(x => ({ id: x.id, amountCents: x.amountCents })),
     members: row.members.map(x=>({actorId:x.actorId,active:x.active,memberGen:x.memberGen})), roomHead: structuredClone(row.roomHead),
     settlements: row.settlements.map(x => ({ roundId: x.roundId, actorId: x.actorId, ledgerId: x.ledgerId, returnedCents: x.returnedCents })),
     balances: row.balances.map(x => ({ actorId: x.actorId, balanceCents: x.balanceCents })),
@@ -244,7 +250,7 @@ export function createF11Observer(input) {
       const stateHash = hash(state);
       need(!versions.has(s.version) || versions.get(s.version) === stateHash, 'state_conflict'); versions.set(s.version,stateHash);
       c.frames.push({ at: row.at, version: s.version, presentationVer: s.presentationVer, phase: s.phase,
-        roundId: s.roundId, turnSeq: s.turnSeq, stateHash,
+        roundId: s.roundId, turnSeq: s.turnSeq, stateHash, ownersHash:hash(s.owners),
         presentationHash: hash(p), eventTypes: p?.events.map(e => e.type) ?? [] }); return;
     }
     if (row.type === 'close') {
@@ -259,7 +265,15 @@ export function createF11Observer(input) {
         && (row.probe === 'wrong-room' ? synthetic(row.roomId) && row.roomId !== manifest.roomId : row.roomId === manifest.roomId), 'negative_probe_invalid');
       need(!negatives.has(row.probe),'negative_probe_invalid');negatives.set(row.probe,row.at); return;
     }
-    if (row.type === 'money') { samples.push(money(row, manifest)); return; }
+    if (row.type === 'money') {
+      const sample=money(row, manifest),previous=samples.at(-1);
+      need(!previous || sample.readStartedAt>=previous.at,'sql_read_window_invalid');
+      if(previous?.roomHead) need(sample.roomHead && sample.roomHead.version>=previous.roomHead.version
+        && sample.roomHead.presentationVer>=previous.roomHead.presentationVer
+        && (sample.roomHead.version!==previous.roomHead.version || sample.roomHead.presentationVer===previous.roomHead.presentationVer
+          && equal(sample.roomHead.owners,previous.roomHead.owners)), 'room_head_regressed');
+      samples.push(sample); return;
+    }
     fail('event_type_invalid');
   }
   function finish() {
@@ -299,11 +313,23 @@ export function createF11Observer(input) {
         if (frame.eventTypes.length && !right.some(other => other.at <= frame.at + 2000 && other.at<end
           && other.presentationVer === frame.presentationVer && other.presentationHash === frame.presentationHash)) consistent = false;
       }
-      // Independent read-only database heads catch BOTH peers freezing while the
-      // room advances. They do not invent frames or demand heartbeat emissions.
-      const heads=samples.filter(s=>s.at>=start && s.at<end && s.roomHead);
-      if (!heads.length || heads.some(s=>[seeded(old,a),seeded(fresh,b)].some(frames=>!frames.some(f=>
-        f.at<=s.at+2000 && f.at<end && f.version>=s.roomHead.version && f.presentationVer>=s.roomHead.presentationVer)))) consistent=false;
+      // SQL snapshots occur between readStartedAt and at. Require bounded
+      // coverage THROUGH drain, not merely a few samples during early progress.
+      // A head must include every already-received commit before the read began,
+      // and BOTH sockets must reach that head within the propagation budget.
+      const heads=samples.filter(s=>s.at>=start && s.at<end), peers=[seeded(old,a),seeded(fresh,b)];
+      if (!heads.length || heads.some(s=>!s.roomHead) || heads[0].at-start>sqlCoverageMs
+        || end-heads.at(-1).readStartedAt>sqlCoverageMs
+        || heads.some((s,i)=>i>0 && s.at-heads[i-1].readStartedAt>sqlCoverageMs)
+        || !(heads.at(-1)?.roomHead?.version>heads[0]?.roomHead?.version)) consistent=false;
+      for(const s of heads) {
+        const h=s.roomHead;if(!h)continue;
+        const known=timeline.filter(f=>f.at<s.readStartedAt),ownersHash=hash(h.owners);
+        if(known.some(f=>f.version>h.version || f.presentationVer>h.presentationVer)
+          || timeline.some(f=>f.version===h.version && (f.presentationVer!==h.presentationVer || f.ownersHash!==ownersHash))
+          || peers.some(frames=>!frames.some(f=>f.at<=s.at+propagationMs && f.at<end
+            && f.version>=h.version && f.presentationVer>=h.presentationVer))) consistent=false;
+      }
       if (!consistent || !a.some(f => f.eventTypes.includes('deal')) || !b.some(f => f.eventTypes.includes('deal'))) continue;
       const last = old.frames.at(-1), again = all.find(c => c !== old && c.actor === old.actor && c.instance === fresh.instance
         && c.openedAt >= old.closedAt && c.openedAt - old.closedAt <= 10000 && c.frames.length);
@@ -371,6 +397,9 @@ negative: source=socket-capture, probe=wrong-room|revoked-session, connectionId,
   roomId, status=401|403|1008, stateFrames=0. Use a separate rejected socket for each probe.
 money: source=preview-sql, stage=before|during|after, roomId, actors, neonProjectId,
   branchId, database, balances, reservations, hands, ledger, settlements, members, roomHead (F11_MONEY_SQL export).
+  readStartedAt/at bracket the real read (<=2s). SQL is polled every 2s; overlapping
+  samples must cover start through drain with <=4s between possible observations.
+  Revisions never regress and must lie between already observed and promptly delivered socket revisions.
 Preparation after human approval: bind saved synthetic publication/accounts to scope;
   capture one old socket and one new-instance socket concurrently for >=30 seconds;
   run continuous synthetic hands with normal 20s/15s windows throughout deployment;

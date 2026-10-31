@@ -39,13 +39,27 @@ function f11Manifest() {
       openingId:`open-${i}`,openingCents:100000,currency:'USD',openingAt:new Date(0).toISOString()}))};
   m.ownership={...ownership,digest:receiptHash(ownership)};return m;
 }
-function f11Capture() {
+function withSqlCadence(c) {
+  // Synthetic SQL observations for this test fixture only. No live capture is
+  // loaded or repaired. Query intervals and socket arrivals are independent.
+  const start=c.events.find(e=>e.type==='open'&&e.connectionId==='new').at;
+  const end=c.events.find(e=>e.type==='open'&&e.connectionId==='old').instanceProof.gateway.draining.at;
+  for(let at=start+100;at<end;at+=2000) {
+    const basis=c.events.filter(e=>e.type==='money'&&e.at<=at).sort((a,b)=>a.at-b.at).at(-1);
+    const s=c.events.filter(e=>e.type==='frame'&&e.at<=at).sort((a,b)=>a.at-b.at).at(-1).frame.snapshot;
+    c.events.push({...structuredClone(basis),stage:'during',at,readStartedAt:at,
+      members:actors.map(actorId=>({actorId,active:true,memberGen:1})),
+      roomHead:{version:s.version,presentationVer:s.presentationVer,owners:[...s.owners]}});
+  }
+  c.events.sort((a,b)=>a.at-b.at);return c;
+}
+function f11Capture({sampled=true}={}) {
   const m = f11Manifest(), events = [];
   const add = (type,at,data) => events.push({type,at,...data});
   const target = at => add('target',at,{...m,source:'provider-api',engineSha:m.sha,vercelSha:m.sha,healthStatus:200,ready:true,suspended:false});
   const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,roundId:'round-2',fingerprint:'b'.repeat(64),
     sourceKey:JSON.stringify(['tick',m.roomId,'system',`tick-${id}`,actorId,type])});
-  const wallet = (at,stage,{holds=false,hands=0,settled=false,left=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
+  const wallet = (at,stage,{holds=false,hands=0,settled=false,left=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,readStartedAt:at,
     members:stage==='before'?[]:actors.map(actorId=>({actorId,active:!left,memberGen:left?2:1})),
     balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?99500:100500):100000})),
     reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
@@ -81,7 +95,7 @@ function f11Capture() {
     const snapshot=events.filter(e=>e.type==='frame'&&e.at<=row.at).sort((a,b)=>a.at-b.at).at(-1)?.frame.snapshot;
     row.roomHead=snapshot?{version:snapshot.version,presentationVer:snapshot.presentationVer,owners:[...snapshot.owners]}:null;
   }
-  return {manifest:m,events:events.sort((a,b)=>a.at-b.at)};
+  const capture={manifest:m,events:events.sort((a,b)=>a.at-b.at)};return sampled?withSqlCadence(capture):capture;
 }
 function f11Review(capture=f11Capture()) {
   const observer=createF11Observer(capture.manifest);
@@ -95,13 +109,14 @@ test('F11 accepts advancing revisions, simultaneous observed instances and recon
   assert.equal(new Set(result.overlap.instances).size,2);
 });
 function longPlanCapture() {
-  const c=f11Capture();c.manifest.endedAt=200000;
+  const c=f11Capture({sampled:false});c.manifest.endedAt=200000;
   const times=new Map([[40000,25000],[51000,70000],[51100,70100],[52000,72000],[60000,80000],[60100,80100],
     [61000,81000],[75000,120000],[75100,120100],[89500,160000],[89600,160100],[90000,179576],[91000,180000],
     [92000,180100],[105000,174353],[118000,198000],[118040,198040],[118050,198050],[118100,198100],
     [118200,198200],[119000,199000],[120000,200000]]);
   for(const e of c.events) {
     e.at=times.get(e.at)??e.at;
+    if(e.type==='money')e.readStartedAt=e.at;
     if(e.type==='open') {e.instanceProof.at=e.at;if(e.connectionId==='old')e.instanceProof.gateway.draining.at=170000;}
     if(e.type==='frame') {
       const s=e.frame.snapshot;
@@ -115,16 +130,50 @@ function longPlanCapture() {
   const fresh=c.events.find(e=>e.type==='frame'&&e.frame.snapshot.version===8);
   const again=c.events.find(e=>e.type==='frame'&&e.connectionId==='again');again.frame=structuredClone(fresh.frame);again.frame.snapshot.me.id=actors[0];
   for(const [at,version] of [[95000,5],[130000,6],[169000,7],[175000,8]]) {
-    const sample=structuredClone(c.events.find(e=>e.stage==='during'&&e.hands));sample.at=at;
+    const sample=structuredClone(c.events.find(e=>e.stage==='during'&&e.hands));sample.at=at;sample.readStartedAt=at;
     sample.roomHead.version=version;sample.roomHead.presentationVer=version;c.events.push(sample);
   }
-  c.events.sort((a,b)=>a.at-b.at);return c;
+  c.events.sort((a,b)=>a.at-b.at);return withSqlCadence(c);
 }
 test('F11 accepts change-only long plans and a post-drain revision before delayed client 1012',()=>{
   const result=f11Review(longPlanCapture());
   assert.equal(result.overlap.startedAt,50000);assert.equal(result.overlap.endedAt,170000);
   assert.equal(result.overlap.oldClientClosedAt,179576);assert.equal(result.overlap.durationMs,120000);
   assert.equal(result.overlap.endedBy,'verified-public-gateway-drain');assert.equal(result.acceptance,false);
+});
+test('F11 rejects zero, stale, future, conflicting or regressing SQL heads',()=>{
+  for(const [mutate,code] of [
+    [c=>{for(const e of c.events.filter(e=>e.roomHead))e.roomHead.version=e.roomHead.presentationVer=0;},'room_head_regressed|continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=0;},'continuous_overlap_not_proven'],
+    [c=>{c.events.find(e=>e.type==='money'&&e.at===130000).roomHead.version=4;},'room_head_regressed'],
+    [c=>{c.events.find(e=>e.type==='money'&&e.at===130000).roomHead.presentationVer=4;},'room_head_regressed'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at>=120000&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=5;},'continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead&&e.at>=120000&&e.at<170000))e.roomHead.version=e.roomHead.presentationVer=7;},'continuous_overlap_not_proven'],
+    [c=>{for(const e of c.events.filter(e=>e.roomHead))e.roomHead.owners=Array(7).fill(null);},'continuous_overlap_not_proven'],
+  ]) {const c=longPlanCapture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));}
+});
+test('F11 rejects missing SQL coverage including two sockets frozen after earlier valid progress',()=>{
+  for(const mutate of [
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>81000&&e.at<170000)
+      && !(e.type==='frame'&&e.at>120100&&e.at<170000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>150000&&e.at<170000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>=50000&&e.at<57000));},
+    c=>{c.events=c.events.filter(e=>!(e.type==='money'&&e.at>=100000&&e.at<=106000));},
+    c=>{for(const e of c.events.filter(e=>e.type==='money'&&e.at>=100000&&e.at<=106000))e.roomHead=null;},
+  ]) {const c=longPlanCapture();mutate(c);assert.throws(()=>f11Review(c),/continuous_overlap_not_proven|room_head_regressed/);}
+});
+test('F11 SQL timing brackets real reads without confusing an in-flight commit with a stale query',()=>{
+  const c=longPlanCapture(),row=c.events.find(e=>e.type==='money'&&e.at===80100);
+  row.readStartedAt=79950;row.roomHead.version=row.roomHead.presentationVer=4;
+  // v5 arrives at 80000 while this read is in flight; the preceding snapshot v4
+  // is possible. Its next poll observes v5. Requiring v5 here would be fabricated.
+  const reordered=c.events.find(e=>e.type==='money'&&e.at===81000).roomHead;
+  c.events.find(e=>e.type==='money'&&e.at===81000).roomHead={owners:reordered.owners,presentationVer:reordered.presentationVer,version:reordered.version};
+  assert.equal(f11Review(c).acceptance,false);
+  for(const mutate of [r=>{r.readStartedAt=r.at+1;},r=>{r.readStartedAt=r.at-2001;},r=>{delete r.readStartedAt;}]) {
+    const bad=longPlanCapture();mutate(bad.events.find(e=>e.type==='money'&&e.at===80100));
+    assert.throws(()=>f11Review(bad),/sql_read_window_invalid/);
+  }
 });
 test('F11 rejects stale or frozen peers even after a valid activity window and with long plans',()=>{
   for(const mutate of [
@@ -147,7 +196,7 @@ test('F11 requires inactive memberships and released seats before logout and at 
   for(const mutate of [
     c=>{c.events=c.events.filter(e=>!(e.stage==='during'&&e.members.every(m=>!m.active)));},
     c=>{c.events.find(e=>e.stage==='after').members[1].active=true;},
-    c=>{c.events.find(e=>e.stage==='after').roomHead.owners[0]=actors[0];},
+    c=>{const h=c.events.find(e=>e.stage==='after').roomHead;h.owners[0]=actors[0];h.version++;},
     c=>{for(const e of c.events.filter(e=>e.stage==='during'))e.members.forEach(m=>{m.active=true;});}
   ]) {const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),/leave_before_logout_not_proven/);}
 });

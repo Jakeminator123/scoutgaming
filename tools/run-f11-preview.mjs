@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { F11_TARGET, createF11Observer, validateF11Ownership, validateF11GatewayProof, f11FixtureDrained } from './shared-room-f11-observer.mjs';
+import { F11_TARGET, F11_SQL_INTERVAL_MS, createF11Observer, validateF11Ownership, validateF11GatewayProof, f11FixtureDrained } from './shared-room-f11-observer.mjs';
 import { parseSharedRoomCommand } from '../services/game/shared-room-command-contract.mjs';
 import { projectSharedRoomSnapshot } from '../services/game/shared-room-channel.mjs';
 
@@ -183,8 +183,8 @@ export async function runF11Preview(input, ports, {run=false}={}) {
   let fixture, startedAt, stopping=false, reconnectSeen=false, lastMoney=0, lastProbe=0, stateBytes=0, failure=null, restartReady=false, endedAt;
   const add=(type,at,data)=>{const event={...data,type,at};stateBytes+=Buffer.byteLength(JSON.stringify(event));
     f11Need(events.length<99000 && stateBytes<28*1024*1024,'capture_limit');events.push(event);};
-  const sample=async stage=>{const money=await ports.money(fixture.identity.roomId,fixture.actors);
-    add('money',ports.now(),{...F11_TARGET,...money,source:'preview-sql',stage,roomId:fixture.identity.roomId,actors:fixture.actors});return money;};
+  const sample=async stage=>{const readStartedAt=ports.now(),money=await ports.money(fixture.identity.roomId,fixture.actors);
+    add('money',ports.now(),{...F11_TARGET,...money,source:'preview-sql',stage,readStartedAt,roomId:fixture.identity.roomId,actors:fixture.actors});return money;};
   const saveConnections=()=>ports.save('connections.json',connections.map(c=>({connectionId:c.id,actorId:c.actorId,
     at:c.at,processId:c.processId??null,connectionNonce:c.nonce??null,closedAt:c.closedAt??null,closeCode:c.closeCode??null})));
   async function connect(index) {
@@ -244,7 +244,7 @@ export async function runF11Preview(input, ports, {run=false}={}) {
         lastProbe=ports.now();const previous=current[1];await connect(1);await previous.socket.close();
       }
       for(let i=0;i<2;i++)await command(i,false);
-      if(ports.now()-lastMoney>=2000){lastMoney=ports.now();const money=await sample('during');
+      if(ports.now()-lastMoney>=F11_SQL_INTERVAL_MS){lastMoney=ports.now();const money=await sample('during');
         if(!restartReady && money.hands>0 && fixture.actors.every((actor,i)=>latest[i]?.owners?.[i]===actor)) {
           restartReady=true;ports.progress({status:'awaiting-external-restart',runHash:f11Hash(plan.runId),remainingMs:deadline-ports.now()});
         }
