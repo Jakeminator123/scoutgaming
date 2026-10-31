@@ -37,13 +37,13 @@ Kod, lokal verifiering, merge, driftsättning och produktacceptans är olika sta
 | --- | --- | --- |
 | Legacy/Astrid | Den gamla clip-policy-kedjan är borttagen. Återstående worker-/medierester måste följas till faktisk användning; gatewaydelen är aktiv i spelcontainern. | Ta bort döda delar efter konsumentbevis; flytta eller ersätt levande konsument före radering. Inga RunPod-endpoints ändras. |
 | Material och Admin | Kompatibelt materialbyte med påverkan per rum/bolag och atomisk publicering är kvarvarande produktarbete. | Scope/CAS/samtidighet, grannrummets utkast och låsta publicerade versioner ska hålla. Återställning får inte öppna rum eller aktivera tal. |
-| Data och återställning | PITR och backupskript är inte ett genomfört restore-prov. | Isolerat återställningsmål och jämförelse före destruktiv data-/historikåtgärd. Ingen produktionsrensning bara för att tabeller ser gamla ut. |
+| Data och återställning | Återställningsprov från 28 oktober är dokumenterat. Det ersätter inte ett aktuellt prov för en ny destruktiv dataåtgärd. | Isolerat återställningsmål och jämförelse inför den data-/historikåtgärd som faktiskt beställs; inget generellt omprov för vanlig kod-/UI-städning. |
 | Native, partner och sessioner | Aktiva adaptrar är inte legacy bara på grund av namnet. Extern partnerwallet är inte real-money-accepterad. | Konsolidera ett belagt dubbelt/felaktigt kontrakt i taget med behörighets-, samtidighets- och pengaprov. |
 | Lounge och vyer | Prototyper och Admins layout får utvecklas; befintliga opublicerade prototyputkast är andras bevarade arbetsmaterial. | Välj ändringen i aktuell main och pröva den; merga inte en hel gammal prototypbranch. |
 | Tal | **PAUSAT enligt Jakob.** Generated speech, ny bank och läppsynk ingår inte nu. Talberoende öppning/avräkning har kvar konservativ reservtid. | Eget uppdrag för aktualitet/mute/distribution och godkända ljud-/bildrutebundna medier. |
 | Säkerhet och synlighet | Ingen ny bred historikscan eller synlighetsändring beställd. GitGuardians `too_large` innebär ofullständig historisk täckning trots 0 öppna fynd vid senaste kontroll. | Färsk säkerhetsstatus före push/merge. Ny scanning/synlighet kräver konkret scope och verifierade åtkomst-/kostnadsvillkor. |
 
-Det finns inget uppmätt totalprocenttal för hela produkten. Den externa uppföljningens cirka 65 % avser en viktad bedömning på basen `465c03f`, inte verifierat utförda aktiviteter. Redovisa avslutade leveranser och kvarvarande acceptanskriterier separat.
+Det finns inget uppmätt totalprocenttal för hela produkten. Den externa uppföljningen på `c0150add` uppskattar det bredare förenklingsarbetet till cirka 80 % (75–85 %), men detta är en bedömning, inget mål att fylla med nya städuppdrag. R1–R5 och S1–S6 är avslutade inom sina omfattningar. Redovisa leveranser och kvarvarande acceptanskriterier separat.
 
 ## Levererad första städvåg: S1–S3
 
@@ -82,6 +82,30 @@ Den tidigare organisationsvågen är avslutad: 4/4 + 3/3 + 2/2 leveranser (#723�
 Den gamla inventeringen, områdesplanerna och deras tomma aktiviteter är ersatta av denna körplan och sakguiderna i [docs-indexet](../../README.md). Git bevarar historiken; borttagna dokument redovisas i [HISTORIK](../../HISTORIK.md).
 
 ## Nya fynd och överlämning
+
+Den externa uppföljningens små efterrättningar: **#762 mergad** (gemensamt
+agentmandat och borttagna kosmetiska testlås), **#763 mergad** (avstängt
+fristående röstprov avvecklat, social fallback kvar). Båda har grön exakt CI.
+Tilldelningens dubbla katalogläsning är nästa avgränsade ändring. Atomisk
+publicering/materialbyte är ett eget produktuppdrag. Hela repoets filer och
+tester är inte därmed granskade eller nödvändighetsbevisade.
+
+[Atlas, PR #761](https://github.com/Jakeminator123/scoutgaming/pull/761) förenar de
+tidigare kartorna. Ansvarstabell, handgranskade kedjor och statiska kodreferenser
+visas tillsammans med tydliga bevisnivåer. 18 Pythonprov, generering och lokal
+browserkontroll har passerat. Kontrollen av kodankare ingår i befintlig CI;
+ändrade samband granskas och förbrukade samband raderas med koden. Kartan
+bevisar inte att varje fil används eller att dokumenterade prov har körts.
+
+Dokumentgranskning 31 oktober efter systemkartorna: sex ersatta planer avvecklas
+med Git-hänvisningar i [HISTORIK](../../HISTORIK.md). Saktext om UI/bygg/partner
+samlas i befintliga guider. Att bolagsplanerna står kvar har konkret kodstöd:
+012/014 är `deploymentOptional`, och spelaradministrationens skapväg saknar
+bolagsfält. Detta är kvarvarande arbete, inte återöppnad migreringsacceptans.
+Dokumentindexet förklarar vilka underlag som är guider, pausade planer, daterade
+beslutsunderlag och provmallar. Kontroll av länkar och rubriker kompletterar
+granskning av sakuppgifter; den bevisar inte att ett moln- eller produktpåstående
+fortfarande stämmer.
 
 Skriv en kort rad i [BESLUTSLOGG](BESLUTSLOGG.md): reproduktion + full SHA/resurs + berörd aktivitet + beslut. Skilj produktval från fel och osäkerhet. Ändra berörd rad här; skapa ingen konkurrerande tracker eller rapporthierarki.
 

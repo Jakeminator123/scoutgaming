@@ -1,6 +1,6 @@
 # Talkedjan: dealer-generisk, Paow först
 
-Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [PAOW-LIPSYNC](PAOW-LIPSYNC.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. O03 är genomfört (#527); milstolpar som byggts markeras i planen. Se [TALKEDJA-RUNPOD](../TALKEDJA-RUNPOD.md) för aktuell driftstatus. Varje återstående steg är en egen PR med grön CI och orkestratorn mergar. Bara Jakob godkänner ljud och läppsynk.
+Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [det historiska Paow-underlaget](../HISTORIK.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. O03 är genomfört (#527); milstolpar som byggts markeras i planen. Se [TALKEDJA-RUNPOD](../TALKEDJA-RUNPOD.md) för aktuell driftstatus. Arbetet är pausat enligt Jakob. Vid återupptag gäller aktuell körplan och mergeordningen i AGENTS; daterade mätningar nedan är inte färsk molnstatus. Bara Jakob godkänner ljud och läppsynk.
 
 ## Målbild
 
@@ -129,7 +129,7 @@ Den historiska anvisningen var `python -I fixa-callback-origin.py --kör` i `Des
 ## Jakob beslutar och gör
 
 1. **ElevenLabs-konto:** beslutet är att samla alla fyra röster hos Kevin (T7); verifierad åtkomst och genomförande återstår.
-2. **Röstunderlag:** Jakob-/ABYDM-underlag finns privat enligt [NEXT-AGENT](../NEXT-AGENT.md#talprov-och-röst-idn-2026-10-30). Rösterna på målkontot och Jakobs ljudbedömning måste verifieras före aktivt byte.
+2. **Röstunderlag:** Jakob-/ABYDM-underlag finns privat enligt [NEXT-AGENT](../NEXT-AGENT.md#jakob-2-och-tal-fortsatt-pausat). Rösterna på målkontot och Jakobs ljudbedömning måste verifieras före aktivt byte.
 3. **Preview-taluppsättning (T2):** ja eller nej, med kostnad (egna nycklar, egen budget, GPU), och om riktig dealermedia och bank får ligga i preview-Blob.
 4. **T1 i produktionen:** får Paows profil sparas i produktionens Admin för Dialogtest innan preview har tal?
 5. **Verifiera RunPod-konto, mall, endpoint och callback** före eventuell korrigering; den historiska fixern är inte verifierad för dagens bindning (se Före T3). Befintlig kvittens från 30 oktober 16:46 UTC anger att mall `5dkkc3wolw` rättades och återlästes mot `croupier-v3`, se [miljöguidens callbackkvittens](../ENVIRONMENT-VARIABLES.md). Previews separata mall återstår att verifiera enligt T2.
@@ -140,5 +140,5 @@ Den historiska anvisningen var `python -I fixa-callback-origin.py --kör` i `Des
 
 - Avatarlistan i `moving-transport.mjs` och Emils oägda transportväg (T3b). En-dealer-variabeln, kravet på exakt en driftprofil, `'dragan'`-kravet och budgetkonstanten raderades i T3.
 - Hårdkodade dealerlistor i talet och materialkatalogen, och tester som låser dem (T6).
-- PAOW-delen i Skapa material (Dealer Forge, `apps/studio/lib/dealer-forge-catalog.mjs`), om Paow blir en vanlig registerdealer, enligt [PAOW-LIPSYNC](PAOW-LIPSYNC.md).
-- [PAOW-LIPSYNC](PAOW-LIPSYNC.md) och detta dokument, när kedjan är verifierad och innehållet står i de levande dokumenten.
+- PAOW-delen i Skapa material (Dealer Forge, `apps/studio/lib/dealer-forge-catalog.mjs`), om Paow blir en vanlig registerdealer, enligt [det historiska Paow-underlaget](../HISTORIK.md).
+- Detta dokument, när kedjan är verifierad och innehållet står i sakguiderna. PAOW-LIPSYNC är redan borttagen; dess daterade underlag finns via [HISTORIK](../HISTORIK.md).

@@ -1,5 +1,7 @@
 # Ren start: radering i Neon och Blob
 
+**Användning efter granskning 31 oktober 2026:** behåll säkerhets- och återgångsvillkoren, men behandla objektlistor, antal och molnstatus nedan som den daterade inventeringen. Ingen ny molnläsning eller radering ingick i dokumentstädningen. Planen är inte ett stående raderingsmandat; följ aktuella referenser och Jakobs gällande avgränsning.
+
 > **Plan. I repot är K1 och repo-PR 2 byggda, mergade och driftsatta (avsnitt 3); i Neon och Blob är inget utfört.** Underlaget lästes 28 oktober 2026 från `main` `5bed596d0a` och från produktionens Neon (`wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`, databas `croupier_game`), bara med SELECT. Siffrorna ändras så fort Admin eller talet används; läs om dem omedelbart före start (avsnitt 3). Stagingen (`red-violet-36066351`) ingår inte, och dess bevisdata står kvar till O03.
 
 ## Beslut och avgränsning

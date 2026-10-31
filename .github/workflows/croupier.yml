@@ -111,8 +111,11 @@ jobs:
       - name: Environment registry and documentation contracts
         run: |
           node tools/check-environment-variables.mjs
+          node tools/check-documentation.mjs
+          python -m unittest discover -s test/system-map -v
+          python tools/system-map.py
           node migrering/status.mjs --check
-          node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
+          node --test --test-concurrency=2 test/check-environment-variables.mjs test/check-documentation.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
       # PR caches are scoped to their own merge ref; only main-scoped entries are shared by
       # every PR. The regression no longer runs on push main, so this keeps the package-tree

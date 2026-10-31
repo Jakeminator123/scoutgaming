@@ -32,7 +32,7 @@ export function WorkspaceTool({section,overrides={}}:{section:'replies'|'dealer-
   let content;
   switch(section){
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
-    case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
+    case 'dealer-agent':content=<ControlOpenClawChat {...common}/>;break;
   }
   return <div className="admin-workspace-tool">{content}</div>;
 }

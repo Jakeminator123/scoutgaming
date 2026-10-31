@@ -558,13 +558,15 @@ test('cached checks keep the commit index while test subprocesses lose repositor
   const seen = [];
   try {
     assert.equal(runChecks([['git', 'diff', '--cached', '--check'], [process.execPath, '--test', 'fixture.mjs'],
-      [process.execPath, 'tools/check-repo-limits.mjs', '--cached'], [process.execPath, 'other.mjs', '--cached']], {
+      [process.execPath, 'tools/check-repo-limits.mjs', '--cached'], [process.execPath, 'other.mjs', '--cached'],
+      [process.execPath, 'tools/check-documentation.mjs', '--cached']], {
       run(command, args, options) { seen.push(options.env); return {status: 0}; },
     }), 0);
     assert.equal(seen[0].GIT_INDEX_FILE, 'temporary-commit-index');
     assert.equal(seen[1].GIT_INDEX_FILE, undefined);
     assert.equal(seen[2].GIT_INDEX_FILE, 'temporary-commit-index', 'the repo-limit guard judges the commit index');
     assert.equal(seen[3].GIT_INDEX_FILE, undefined);
+    assert.equal(seen[4].GIT_INDEX_FILE, 'temporary-commit-index', 'documentation judges the commit index');
   } finally {
     if (saved === undefined) delete process.env.GIT_INDEX_FILE;
     else process.env.GIT_INDEX_FILE = saved;

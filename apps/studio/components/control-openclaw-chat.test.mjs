@@ -43,7 +43,6 @@ const props = {
   initialProject: project,
   initialVideos: { videos: [] },
   initialStatus: { configured: true, message: 'Konfigurerat' },
-  standaloneVoicePreviewAvailable: true,
   initialDealerId: 'astrid',
 };
 
@@ -53,9 +52,8 @@ test('chat panel receives the studio session props and opens the room with a ful
   const { ControlOpenClawChat } = loadTs(new URL('./control-openclaw-chat.tsx', import.meta.url), {
     './gateway-panel': { GatewayPanel },
   });
-  const hidden = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: false, initialDealerId: 'elin' }));
+  const hidden = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, initialDealerId: 'elin' }));
   assert.match(hidden, /id="gateway-stub"/);
-  assert.equal(panel.standaloneVoicePreviewAvailable, false);
   assert.equal(panel.status, props.initialStatus);
   assert.equal(panel.mode, 'off');
   assert.equal(panel.dealerId, 'elin');
