@@ -7,6 +7,7 @@ import { createPostgresTableStore } from '../services/game/games/blackjack/table
 import { createPostgresStore } from '../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createMemoryTableStore, DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
+import { createPglitePool } from './fixtures/pglite-pool.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
 
 const roomId = 'party', actorId = 'alice';
@@ -203,4 +204,160 @@ test('unopened, joined and reconnected snapshots expose only the requested playe
   base.test.setCurrency(actorId, 'USD');
   const reconnect = createTableCoordinator({ store: base, clock, random: new Proxy({}, { get: forbidden }) });
   assert.equal((await reconnect.snapshot(roomId, actorId, { client: true })).me.currency, 'USD');
+});
+
+// Membership is independent of the last empty betting box. PGlite verifies SQL rollback;
+// cross-connection races also run in postgres-shared-table.mjs.
+async function spotsSetup(t, sql = false, funds = { alice: 1000, bob: 1000, carol: 1000, dave: 1000 }) {
+  let store;
+  if (sql) {
+    const pool = await createPglitePool(); t.after(() => pool.end());
+    for (const [id, balance] of Object.entries(funds)) await pool.query(
+      'INSERT INTO croupier_game.players(id,name,balance,created_at) VALUES($1,$2,$3,$4)', [id, 'Synthetic betting test', balance, '2026-10-31T00:00:00.000Z']);
+    store = createPostgresTableStore({ pool, walletMode: 'demo' });
+    await store.assertInstalled(); await store.config.publish('spots', 'v1', structuredClone(DEFAULT_CONFIG));
+  } else {
+    store = createMemoryTableStore();
+    for (const [id, balance] of Object.entries(funds)) store.test.fund(id, balance);
+  }
+  let time = 100000, n = 0, table;
+  const restart = () => { table = createTableCoordinator({ store, clock: { now: () => time }, random: deterministicRandom('betting-spots') }); };
+  restart();
+  const h = {
+    store, restart, get table() { return table; }, get time() { return time; }, set time(value) { time = value; }, snap: actor => table.snapshot('spots', actor),
+    editRoom: change => store.runLocked({ rooms: ['spots'], players: [] }, async tx => { const room = await tx.rooms.read('spots'); change(room); await tx.rooms.write('spots', room); }),
+    send: (actorId, op, args = {}) => table.command({ actorId }, { roomId: 'spots', op, commandId: `spots-${++n}`, ...args }),
+    async join(actor, seats) { const s = await h.snap(actor); return h.send(actor, 'join', { seats, memberGen: s?.me.memberGen ?? 0,
+      seatGens: Object.fromEntries(seats.map(i => [i, s?.seatGen[i] ?? 0])) }); },
+    async bet(actor, seat, chip = 5, field = 'main') { return h.send(actor, 'bet', { seat, field, chip, windowId: (await h.snap(actor)).windowId }); },
+    async ready(actor) { return h.send(actor, 'ready', { windowId: (await h.snap(actor)).windowId }); },
+    async leave(actor) { return h.send(actor, 'leave', { memberGen: (await h.snap(actor)).me.memberGen }); },
+    async finish() {
+      for (let count = 0; count < 40; count++) {
+        const s = await h.snap('alice'); if (s.phase === 'settled') return s;
+        time = Math.max(time, s.plan?.turnAt ?? 0);
+        if (s.round?.phase === 'decisions') {
+          const handIndex = s.round.active, box = s.round.hands[handIndex].box;
+          await h.send(s.owners[box], 'act', { roundId: s.roundId, turnSeq: s.turnSeq, box, handIndex, action: 'stand' });
+        } else if (s.round?.phase === 'insurance') {
+          for (const player of s.players) if ((await h.snap(player.id)).me.insuranceDue)
+            await h.send(player.id, 'insurance', { roundId: s.roundId, phase: 'insurance', take: false });
+        } else {
+          time = Math.max(time, s.plan?.endAt ?? 0, s.actionDeadline ?? 0);
+          for (const tick of await table.dueTicks()) await table.tick(tick);
+        }
+      }
+      assert.fail('round did not settle');
+    },
+  };
+  return h;
+}
+
+for (const sql of [false, true]) test(`${sql ? 'SQL' : 'memory'}: taking an empty box preserves membership, reconnect and betting without another join`, async t => {
+  const h = await spotsSetup(t, sql);
+  await h.join('alice', [3]); const member = (await h.snap('alice')).me.memberGen;
+  await h.editRoom(room => { room.ready = ['alice']; }); // Defensive old-state case: no real stake backs ready.
+  await h.join('bob', [3]);
+  assert.deepEqual((await h.snap('alice')).me.seats, []);
+  assert.equal((await h.snap('alice')).me.memberGen, member);
+  assert.equal((await h.snap('alice')).me.active, true);
+  assert.equal((await h.snap('alice')).players.find(player => player.id === 'alice').ready, false);
+  await h.bet('alice', 3);
+  await assert.rejects(h.bet('bob', 3), { code: 'NOT_YOUR_BOX' });
+  await assert.rejects(h.join('bob', [3]), { code: 'SEAT_TAKEN' });
+  h.restart();
+  const bob = await h.snap('bob');
+  assert.equal(bob.me.active, true); assert.deepEqual(bob.me.seats, []);
+  assert.ok(bob.players.some(player => player.id === 'bob' && player.seats.length === 0));
+  await h.bet('bob', 4); assert.deepEqual((await h.snap('bob')).me.seats, [4]);
+  await h.join('carol', [6]); await h.bet('alice', 6); await h.join('dave', [2]);
+  assert.equal((await h.ready('alice')).result.started, false, 'another player with a real stake must still become ready');
+  assert.equal((await h.ready('bob')).result.started, true, 'members without a stake do not block ready, with or without an empty box');
+  await h.leave('carol');
+  assert.equal((await h.snap('carol')).me.active, false, 'a member without a hand leaves immediately during a round');
+  await assert.rejects(h.bet('carol', 5), { code: 'NOT_SEATED' });
+  const settled = await h.finish();
+  assert.equal(settled.phase, 'settled');
+  assert.deepEqual(settled.me.lastSettlement.hands.map(hand => hand.box).sort(), [3, 6]);
+  assert.deepEqual((await h.snap('bob')).me.lastSettlement.hands.map(hand => hand.box), [4]);
+  assert.equal((await h.snap('carol')).me.active, false);
+  await h.leave('alice'); await h.leave('bob'); await h.leave('dave');
+  const empty = await h.snap('carol');
+  assert.equal(empty.phase, 'bets'); assert.deepEqual(empty.owners, Array(7).fill(null));
+  await h.join('carol', [2]); assert.equal((await h.snap('carol')).me.active, true, 'the empty table can be entered again');
+});
+
+for (const sql of [false, true]) for (const claim of ['join', 'bet']) test(`${sql ? 'SQL' : 'memory'}: ${claim} claims cannot restore a previous owner's stake through undo`, async t => {
+  const h = await spotsSetup(t, sql);
+  await h.join('alice', [0]); await h.join('bob', [1]);
+  await h.bet('alice', 0, 100); await h.bet('bob', 1);
+  await h.send('alice', 'clear', { windowId: (await h.snap('alice')).windowId });
+  if (claim === 'join') await h.join('bob', [0, 1]);
+  await h.bet('bob', 0);
+  assert.deepEqual((await h.snap('bob')).me.seats, [0, 1]);
+  assert.equal((await h.store.read.funds('bob')).available, 990);
+  await h.send('bob', 'undo', { windowId: (await h.snap('bob')).windowId });
+  assert.deepEqual((await h.snap('bob')).bets.map(b => b.main), [0, 5, 0, 0, 0, 0, 0]);
+  assert.equal((await h.store.read.funds('bob')).available, 995);
+  await h.send('bob', 'undo', { windowId: (await h.snap('bob')).windowId });
+  assert.deepEqual((await h.snap('bob')).bets, Array.from({ length: 7 }, () => ({ main: 0, pp: 0, tp: 0 })));
+  assert.equal((await h.store.read.funds('bob')).available, 1000, 'earlier own bets still undo, without importing another player’s money');
+});
+
+for (const sql of [false, true]) test(`${sql ? 'SQL' : 'memory'}: failed empty-box bet rolls back ownership, generations, membership, ready, undo history and wallet`, async t => {
+  const h = await spotsSetup(t, sql, { alice: 10, bob: 1000, carol: 1000, dave: 1000 });
+  await h.join('alice', [0]); await h.join('bob', [1]); await h.join('carol', [6]); await h.join('dave', [3]);
+  await h.bet('dave', 3, 100); await h.bet('alice', 0);
+  await h.send('alice', 'clear', { windowId: (await h.snap('alice')).windowId });
+  await h.send('dave', 'clear', { windowId: (await h.snap('dave')).windowId });
+  await h.bet('carol', 6); await h.bet('bob', 0); await h.ready('carol');
+  await h.editRoom(room => { room.ready.push('dave'); });
+  const before = { room: await h.store.read.room('spots'), members: await h.store.read.members('spots'), funds: await h.store.read.funds('alice') };
+  await assert.rejects(h.bet('alice', 3, 25), { code: 'INSUFFICIENT_BALANCE' });
+  assert.deepEqual({ room: await h.store.read.room('spots'), members: await h.store.read.members('spots'), funds: await h.store.read.funds('alice') }, before);
+  await h.bet('alice', 3, 5); assert.deepEqual((await h.snap('alice')).me.seats, [3]);
+  assert.equal((await h.snap('dave')).players.find(player => player.id === 'dave').ready, false);
+});
+
+for (const sql of [false, true]) test(`${sql ? 'SQL' : 'memory'}: zero-box membership survives connected idleness, expires on absence and ignores stale ticks`, async t => {
+  const h = await spotsSetup(t, sql);
+  await h.join('alice', [3]); await h.join('bob', [3]); await h.leave('bob');
+  assert.deepEqual((await h.snap('alice')).owners, Array(7).fill(null));
+  h.time += 100000; await h.store.presence.touch('spots', 'alice', h.time);
+  assert.deepEqual(await h.table.dueTicks(), [], 'connected member without a box is not evicted by the 90-second box-idle clock');
+  h.time += 120000;
+  const [old] = await h.table.dueTicks(); assert.equal(old.playerId, 'alice'); assert.equal(old.kind, 'seat.release');
+  await h.store.presence.touch('spots', 'alice', h.time);
+  assert.equal((await h.table.tick(old)).outcome, 'superseded', 'a reconnect supersedes the old presence deadline');
+  h.time += 120000;
+  const [due] = await h.table.dueTicks();
+  assert.equal((await h.table.tick(due)).outcome, 'applied');
+  assert.equal((await h.snap('alice')).me.active, false);
+  await h.join('alice', [0]);
+  assert.equal((await h.table.tick(due)).replay, true, 'a completed old generation cannot evict a new membership');
+  assert.equal((await h.snap('alice')).me.active, true);
+  assert.deepEqual((await h.store.read.members('spots', { activeOnly: true })).map(member => member.actorId), ['alice']);
+  assert.equal((await h.store.read.members('spots')).length, 2, 'ordinary snapshot reads still retain inactive generations');
+});
+
+test('two members racing for one completely empty box: exactly one main bet wins; side bets cannot claim it', async t => {
+  const h = await spotsSetup(t);
+  await h.join('alice', [0]); await h.join('bob', [1]); await h.join('carol', [3]);
+  await assert.rejects(h.bet('alice', 3, 5, 'pp'), { code: 'NOT_YOUR_BOX' });
+  const results = await Promise.allSettled([h.bet('alice', 3), h.bet('bob', 3)]);
+  assert.deepEqual(results.map(result => result.status).sort(), ['fulfilled', 'rejected']);
+  assert.equal(results.find(result => result.status === 'rejected').reason.code, 'NOT_YOUR_BOX');
+  const s = await h.snap('carol');
+  assert.equal(s.bets[3].main, 5); assert.equal(s.me.active, true); assert.deepEqual(s.me.seats, []);
+  assert.equal((await h.store.read.funds('alice')).available + (await h.store.read.funds('bob')).available, 1995);
+  await h.leave('carol'); h.restart(); assert.equal((await h.snap('carol')).me.active, false);
+});
+
+test('any existing side stake also protects its box from join and main bet', async t => {
+  const h = await spotsSetup(t); await h.join('alice', [0]); await h.join('bob', [3]);
+  // Defensive legacy-state coverage: normal commands never allow a side bet without a main bet.
+  h.store.test.mutateRoom('spots', room => { room.bets[3].tp = 5; });
+  await assert.rejects(h.join('alice', [0, 3]), { code: 'SEAT_TAKEN' });
+  await assert.rejects(h.bet('alice', 3), { code: 'NOT_YOUR_BOX' });
+  assert.equal((await h.snap('bob')).bets[3].tp, 5);
 });

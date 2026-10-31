@@ -165,6 +165,9 @@ test('wait is idempotent: a replay repeats its receipt, a renewal only moves the
   assert.equal(notFull.result.waiting, false, 'a table with a free box needs no wait');
   assert.equal(Object.hasOwn((await h.room()).waiting ?? {}, 'carol'), false);
   await h.join(B, [4, 5, 6]);
+  assert.equal((await h.send('carol', 'wait')).result.waiting, false, 'seven empty choices do not block a bet');
+  for (const i of [0, 1, 2, 3]) await h.bet(A, i);
+  for (const i of [4, 5, 6]) await h.bet(B, i);
   const before = await h.room(), seen = await h.snap(A);
   const first = await h.send('carol', 'wait', {}, 'wait-1');
   assert.deepEqual(first.result, { op: 'wait', waiting: true, version: before.version });

@@ -11,7 +11,8 @@ export const WAITING_TEXT = 'Väntar på plats';
 export function waitingForSeat(snapshot, at = snapshot?.serverNow ?? 0) {
   const s = snapshot;
   return Boolean(s?.me && Array.isArray(s.me.seats) && Array.isArray(s.owners) && s.owners.length === 7
-    && s.me.seats.length === 0 && s.owners.every(owner => owner !== null) && !(s.me.pausedUntil > at));
+    && s.me.seats.length === 0 && s.owners.every((owner,i) => owner !== null
+      && (s.phase !== 'bets' || ['main','pp','tp'].some(field => s.bets?.[i]?.[field] > 0))) && !(s.me.pausedUntil > at));
 }
 
 /** state() returns the controller's {snapshot, connected, closed}; update() follows each restored snapshot. */

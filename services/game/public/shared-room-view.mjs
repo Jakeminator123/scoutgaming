@@ -1,6 +1,6 @@
 // Existing table DOM; all visible money, seats and controls come from a server snapshot.
 import { BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
-import { SEAT_COUNT, WINDOW_SIZE, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
+import { SEAT_COUNT, WINDOW_SIZE, availableBettingSeat, bettingSeat, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
 import { installDecisionShortcuts } from './shared-room-shortcuts.mjs';
 const number = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
 const money = (value,currency) => `${number(value)} ${typeof currency==='string'&&/^[A-Z]{3}$/.test(currency)?currency:'· valuta saknas'}`;
@@ -31,13 +31,15 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   const again=button(document,'Återanslut',()=>actions?.reconnect?.());again.id='shared-room-reconnect';again.className='shared-room-button shared-room-primary';again.hidden=true;sign.append(again);
   // K04 F8: an expired session links to the player's sign-in, which returns to this table (blackjack-entry.mjs).
   const signIn=document.createElement('a');signIn.id='shared-room-sign-in';signIn.className='shared-room-sign-in';signIn.href=signInHref;signIn.textContent='Logga in';signIn.hidden=true;extra.append(signIn);
-  const leave=button(document,'Lämna platser',()=>actions?.dispatch('leave'));leave.className='shared-room-button';
+  const leave=button(document,'Sluta spela',()=>actions?.dispatch('leave'));leave.className='shared-room-button';leave.title='Släpp dina rutor och fortsätt titta på bordet';
   const next=button(document,'Nästa runda',()=>actions?.dispatch('next'));next.id='shared-room-next';next.className='shared-room-next';next.hidden=true;
-  const picker=document.createElement('select');picker.setAttribute('aria-label','Välj eller lämna plats');picker.className='shared-room-select';
-  const choose=()=>{const selected=Number(picker.value);if(picker.value!==''&&Number.isInteger(selected))actions?.dispatch('join',{seat:selected});picker.value='';};
+  const picker=document.createElement('select');picker.setAttribute('aria-label','Välj satsningsruta');picker.className='shared-room-select';
+  picker.title='Du kan satsa på flera lediga rutor. Bordsvyn ändrar bara vad du ser.';
+  const select=index=>model?.snapshot?.me.active?actions?.selectBetSeat(index):actions?.dispatch('join',{seat:index});
+  const choose=()=>{const selected=Number(picker.value);if(picker.value!==''&&Number.isInteger(selected))select(selected);};
   picker.addEventListener('change',choose);cleanups.push(()=>picker.removeEventListener('change',choose));
   // A phone shows three boxes at a time; this chooses which three. A wide screen shows all seven and no chooser (styles.css).
-  const focus=document.createElement('select');focus.id='shared-room-window';focus.className='shared-room-select';focus.setAttribute('aria-label','Visa platser på bordet');
+  const focus=document.createElement('select');focus.id='shared-room-window';focus.className='shared-room-select';focus.setAttribute('aria-label','Bordsvy, visa satsningsrutor');
   for(let start=0;start<=SEAT_COUNT-WINDOW_SIZE;start++){const option=document.createElement('option');option.value=String(start);option.textContent=windowLabel(start);focus.append(option);}
   const show=()=>{const start=Number(focus.value);if(Number.isInteger(start))actions?.focusSeat(start+1);};focus.addEventListener('change',show);cleanups.push(()=>focus.removeEventListener('change',show));
   extra.append(picker,focus,leave);
@@ -93,35 +95,34 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   cleanups.push(installDecisionShortcuts($(document,'actions-top'),decisions));
   listen($(document,'ins-yes'),()=>actions?.dispatch('insurance',{take:true}));listen($(document,'ins-no'),()=>actions?.dispatch('insurance',{take:false}));
   $(document,'ins-yes').textContent='Ja';$(document,'ins-no').textContent='Nej';
-  const owns=index=>Boolean(model?.snapshot&&model.snapshot.owners[index]===model.snapshot.me.id);
-  const claimsByBet=index=>Boolean(model?.snapshot?.phase==='bets'&&model.snapshot.me.seats.length&&model.snapshot.owners[index]===null);
+  const claimsByBet=index=>Boolean(model?.snapshot?.phase==='bets'&&model.snapshot.me.active&&availableBettingSeat(model.snapshot,index));
   const slots=Array.from({length:7},(_,index)=>{
     // Admin table geometry positions the seat root; the controls keep 44 px touch
-    // targets at any scale; full bet rows only exist on the player's own boxes.
+    // targets at any scale; the selected betting box uses the shared dock.
     const root=document.createElement('div');root.className='seat seat-shared';root.dataset.seat=String(index);root.style.setProperty('--seat-i',String(index));
     const inside=document.createElement('div');inside.className='seat-inner seat-shared-inner';root.append(inside);
-    // The first circle joins the table. Once seated, a free circle places a main bet; an owned circle only focuses.
-    const join=button(document,`Plats ${index+1}`,()=>owns(index)?actions?.focusSeat(index):claimsByBet(index)?actions?.dispatch('bet',{seat:index,field:'main'}):actions?.dispatch('join',{seat:index}));join.className='spot seat-shared-join';inside.append(join);
+    // The first choice joins. Further choices only select a betting box; the dock
+    // places the main bet and the viewing window has its own independent control.
+    const join=button(document,`Ruta ${index+1}`,()=>select(index));join.className='spot seat-shared-join';inside.append(join);
     const bets=document.createElement('div');bets.className='seat-shared-bets';bets.hidden=true;bets.style.display='none';inside.append(bets);
     // The main bet is the seat's betting spot, the side bets sit beside it as smaller targets.
     const fields=Object.fromEntries([['pp','Par'],['main','Insats'],['tp','21+3']].map(([field,label])=>{
       const control=button(document,label,()=>actions?.dispatch('bet',{seat:index,field}));
       control.className='seat-shared-bet '+(field==='main'?'seat-shared-bet-main':'seat-shared-bet-side seat-shared-bet-'+field);bets.append(control);return[field,control];
     }));
-    // Leaving is a small control of its own; the seat circle only says the seat is yours.
-    const leaveSeat=button(document,'Lämna',()=>actions?.dispatch('join',{seat:index}));leaveSeat.className='seat-shared-leave';leaveSeat.hidden=true;leaveSeat.style.display='none';inside.append(leaveSeat);
+    const leaveSeat=button(document,'Släpp ruta',()=>actions?.dispatch('join',{seat:index}));leaveSeat.className='seat-shared-leave';leaveSeat.hidden=true;leaveSeat.style.display='none';inside.append(leaveSeat);
     return {root,inside,join,bets,fields,leaveSeat};
   });
   seatsHost.replaceChildren(...slots.map(slot=>slot.root));
   let docked=null;
-  // The chosen own seat's bets and Lämna share one labelled dock in every viewport.
+  // The selected own or free box uses one labelled dock in every viewport.
   // The same buttons move, so a seat never has two sets of controls.
   function dockSeat(index){
     if(docked===index)return;
     const previous=docked===null?null:slots[docked];
-    if(previous){previous.inside.append(previous.bets,previous.leaveSeat);previous.leaveSeat.textContent='Lämna';}
+    if(previous)previous.inside.append(previous.bets,previous.leaveSeat);
     docked=index;dock.hidden=index===null;
-    if(index!==null){const slot=slots[index];dock.append(slot.bets,slot.leaveSeat);slot.leaveSeat.textContent='Lämna';}
+    if(index!==null){const slot=slots[index];dock.append(slot.bets,slot.leaveSeat);}
   }
   // Keyboard focus survives the table's own changes. A restore disables every control for a moment (the binding is
   // checked again), a round hides the bets and a phone's dock moves its buttons: Chrome then drops focus to the page.
@@ -160,7 +161,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   // Settle the dock before presentation measures the reserved control area.
   function arrange(){
     const s=model.snapshot,phone=compact(),visible=phone?seatWindow(s,model.focusSeat).boxes:slots.map((_,i)=>i);
-    const primary=primarySeat(s,s.phase==='round'?s.round?.hands?.[s.round.active]?.box:model.focusSeat,visible);
+    const primary=s.phase==='bets'?bettingSeat(s,model.betSeat):primarySeat(s,s.round?.hands?.[s.round.active]?.box,visible);
     dockSeat(s.phase==='bets'&&primary!==null?primary:null);
     return {s,phone,visible,primary};
   }
@@ -219,7 +220,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       sign.hidden=!(value.offline||value.reconnecting)||value.stopped===true;again.hidden=!value.offline;
       signText.textContent=value.offline?'Anslutningen till bordet bröts. Bordet visar senaste läget.':'Återansluter till bordet…';
       sign.dataset.state=value.offline?'offline':'reconnecting';
-      leave.disabled=!can.leave;leave.hidden=!s?.me.seats.length;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
+      leave.disabled=!can.leave;leave.hidden=!s?.me.active;next.hidden=s?.phase!=='settled';next.disabled=!can.next;
       for(const [id,[,op]] of Object.entries(labels)){const node=$(document,id);if(!node)continue;node.disabled=!can[op];
         // Redo waits for a main bet and Upprepa for a previous round; the tooltip names the reason.
         if(op==='ready'||op==='repeat')node.title=hints[op]??'';}
@@ -230,7 +231,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       const ownDecision=s?.phase==='round'&&s.round?.phase==='decisions'&&s.me.seats.includes(activeBox);
       const serverNow=value.serverNow??s?.serverNow,opens=s?.plan?.turnAt??0,deadline=s?.actionDeadline;
       timer.hidden=!ownDecision;
-      if(ownDecision)timer.textContent=`Plats ${activeBox+1} · `+(serverNow<opens?`Beslut om ${Math.ceil((opens-serverNow)/1000)} s`
+      if(ownDecision)timer.textContent=`Ruta ${activeBox+1} · `+(serverNow<opens?`Beslut om ${Math.ceil((opens-serverNow)/1000)} s`
         :Number.isFinite(deadline)?deadline>serverNow?`${Math.ceil((deadline-serverNow)/1000)} s kvar`:'Tiden är slut':'Din tur');
       if($(document,'actions-top'))$(document,'actions-top').hidden=!ownDecision;
       // The insurance question shows from turnAt, when every card of its plan shows (K04 review of #481). At the
@@ -248,46 +249,48 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       const betCurrency=s.phase==='settled'?s.me.lastSettlement?.currency:s.me.currency;
       $(document,'total-bet').textContent=money(s.me.seats.reduce((sum,i)=>sum+s.bets[i].main+s.bets[i].pp+s.bets[i].tp,0),betCurrency);
       $(document,'last-win').textContent=s.me.lastSettlement?money(s.me.lastSettlement.returned,s.me.lastSettlement.currency):'–';
-      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?(s.me.seats.length?'Lägg insatser':'Välj en plats för att börja'):s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
+      $(document,'banner').textContent=value.notice||(s.me.pausedUntil>(value.serverNow??s.serverNow)?'Pausen är aktiv':s.phase==='bets'?(s.me.active?'Välj ruta, lägg insats':'Välj en satsningsruta för att börja'):s.phase==='settled'?'Rundan är avslutad':can.act.length?'Din tur':'Rundan pågår');
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
       $(document,'banner').title=$(document,'banner').textContent;
-      picker.replaceChildren(...['Välj plats',...s.owners.map((owner,i)=>`${owner===s.me.id?'Lämna':owner===null?'Välj':'Upptagen'} ${i+1}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&s.owners[i-1]!==null&&s.owners[i-1]!==s.me.id;return option;}));
-      picker.value='';picker.disabled=!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
+      const selected=bettingSeat(s,value.betSeat);
+      picker.replaceChildren(...['Välj ruta',...s.owners.map((owner,i)=>`Ruta ${i+1} · ${['main','pp','tp'].some(field=>s.bets[i][field]>0)?owner===s.me.id?'din':'upptagen':availableBettingSeat(s,i)?'ledig':'upptagen'}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&!availableBettingSeat(s,i-1);return option;}));
+      picker.value=selected===null?'':String(selected);picker.disabled=s.me.active?s.phase!=='bets':!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
       const key=JSON.stringify([s.me.currency,s.settings.chips]);
       // K6: a viewer without a seat at a full table waits for one (shared-room-waiting.mjs renews the wait). The
       // status line's title follows its final text.
       const banner=$(document,'banner');
-      if(!value.notice&&!s.me.seats.length&&s.owners.every(owner=>owner!==null)&&!(s.me.pausedUntil>(value.serverNow??s.serverNow)))banner.textContent='Väntar på plats';
+      if(!value.notice&&!s.me.seats.length&&s.owners.every((_,i)=>!availableBettingSeat(s,i))&&!(s.me.pausedUntil>(value.serverNow??s.serverNow)))banner.textContent='Väntar på ledig satsningsruta';
       banner.title=banner.textContent;
       if(key!==chipKey){chipKey=key;chipHost.replaceChildren(...s.settings.chips.map(amount=>{const node=button(document,number(amount),()=>actions?.selectChip(amount));node.setAttribute('aria-label',money(amount,s.me.currency));node.title=money(amount,s.me.currency);node.className='chip';node.dataset.value=String(amount);return node;}));}
       for(const node of chipHost.children){node.disabled=value.busy||!value.connected||value.retry;node.classList.toggle('sel',Number(node.dataset.value)===value.chip);node.setAttribute('aria-pressed',String(Number(node.dataset.value)===value.chip));}
-      const several=s.me.seats.length>1,chosen=primarySeat(s,s.phase==='round'?activeBox:value.focusSeat);
+      const chosen=s.phase==='bets'?selected:primarySeat(s,activeBox);
       // Side bets and Lämna act only in the betting window; during a round the seat keeps its circle and main stake,
       // so its controls stay clear of the cards that are dealt above them.
       const betting=s.phase==='bets';
       // The chips and table buttons belong to the betting window, as on the native table (body.in-round).
       scene.dataset.sharedPhase=s.phase;
       for(const [i,slot] of slots.entries()){
-        const own=s.owners[i]===s.me.id,occupied=s.owners[i]!==null,freeBet=claimsByBet(i);
+        const own=s.owners[i]===s.me.id,occupied=!availableBettingSeat(s,i),freeBet=claimsByBet(i);
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
-        // Short visible label so 44 px pills fit the seat spacing; the full text stays in aria-label.
-        // Own markers show their seat number and confirmed main stake; selecting one chooses its dock.
-        slot.join.textContent=own?`Du ${i+1}`:freeBet?'+':String(i+1);
-        if(own){const amount=document.createElement('span');amount.className='seat-shared-amount';amount.textContent=number(s.bets[i].main);slot.join.append(amount);}
-        const label=own?`Plats ${i+1}, din plats`:occupied?`Plats ${i+1} upptagen`:freeBet?`Lägg huvudinsats ${money(value.chip,s.me.currency)} på plats ${i+1}`:`Välj plats ${i+1}`;
-        slot.join.setAttribute('aria-label',label);slot.join.title=own?`Plats ${i+1} · Insats ${money(s.bets[i].main,betCurrency)}`:freeBet?label:'';
-        // The chosen one of several own circles stays focusable (aria-disabled), so choosing it never drops focus to the page.
-        slot.join.disabled=own?!several:occupied||!(freeBet?can.bet:can.join);slot.join.setAttribute('aria-disabled',String(own&&several&&i===chosen));
-        slot.join.setAttribute('aria-pressed',String(own&&(!several||i===chosen)));
-        slot.leaveSeat.hidden=!own||!betting;slot.leaveSeat.style.display=own&&betting?'':'none';slot.leaveSeat.disabled=!can.join;slot.leaveSeat.setAttribute('aria-label',`Lämna plats ${i+1}`);
-        slot.bets.hidden=!own;slot.bets.style.display=own?'':'none';
+        // The amount is the chip's main label; its small box number is not a player identity.
+        slot.join.textContent='';
+        const amount=document.createElement('span');amount.className='seat-shared-amount';amount.textContent=own||occupied?number(s.bets[i].main):'+';
+        const box=document.createElement('span');box.className='seat-shared-number';box.textContent=`Ruta ${i+1}`;slot.join.append(amount,box);
+        const label=own?`Välj satsningsruta ${i+1}, din ruta`:occupied?`Satsningsruta ${i+1} upptagen`:`Välj satsningsruta ${i+1}`;
+        slot.join.setAttribute('aria-label',label);slot.join.title=own||occupied?`Ruta ${i+1} · ${own?'Din insats':'Annans insats'} ${money(s.bets[i].main,betCurrency)}`:'Välj ruta, lägg sedan insats i panelen';
+        // Local selection never writes ownership or money, even while a command is pending.
+        slot.join.disabled=own?false:occupied||!(freeBet||can.join);slot.join.setAttribute('aria-disabled',String(i===chosen));
+        slot.join.setAttribute('aria-pressed',String(i===chosen));
+        slot.leaveSeat.hidden=!own||!betting;slot.leaveSeat.style.display=own&&betting?'':'none';slot.leaveSeat.disabled=!can.join;slot.leaveSeat.setAttribute('aria-label',`Släpp satsningsruta ${i+1}`);
+        const showBets=own||freeBet&&i===selected;
+        slot.bets.hidden=!showBets;slot.bets.style.display=showBets?'':'none';
         for(const [field,node] of Object.entries(slot.fields)){
           node.hidden=field!=='main'&&!betting;
           // A side bet opens once its box has a main bet; until then the tooltip says why.
           const closedSide=field!=='main'&&!(s.bets[i].main>0);
-          node.disabled=!can.bet||!own||closedSide;node.title=closedSide?hints.side??'':'';
+          node.disabled=!can.bet||!(own||freeBet&&field==='main')||closedSide;node.title=closedSide?hints.side??'':`Lägg till ${money(value.chip,s.me.currency)}`;
           node.classList.toggle('staked',s.bets[i][field]>0);
-          node.textContent=(field==='main'?`Plats ${i+1}\nInsats `:({pp:'Par',tp:'21+3'})[field]+' ')+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],betCurrency)}`);}
+          node.textContent=(field==='main'?`Ruta ${i+1}\nInsats `:({pp:'Par',tp:'21+3'})[field]+' ')+number(s.bets[i][field]);node.setAttribute('aria-label',`Satsningsruta ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],betCurrency)}`);}
       }
       arrange();
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});

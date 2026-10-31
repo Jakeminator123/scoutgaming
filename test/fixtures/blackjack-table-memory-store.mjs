@@ -63,7 +63,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
       },
       members: {
         get: async (roomId, a) => { room(roomId); return clone(get().members[mkey(roomId, a)]) ?? null; },
-        list: async roomId => { room(roomId); return Object.values(clone(get().members)).filter(m => m.roomId === roomId); },
+        list: async (roomId, { activeOnly = false } = {}) => { room(roomId); return Object.values(clone(get().members)).filter(m => m.roomId === roomId && (!activeOnly || m.active)); },
         put: async (roomId, m) => { room(roomId); player(m.actorId); get().members[mkey(roomId, m.actorId)] = { ...clone(m), roomId }; },
         roomsOf: async a => { player(a); return Object.values(get().members).filter(m => m.actorId === a && m.active).map(m => m.roomId).sort(); },
       },
@@ -150,7 +150,7 @@ export function createMemoryTableStore({ hooks = {} } = {}) {
         return clone(value);
       },
       rooms: async () => Object.keys(db.rooms).sort(),
-      members: async roomId => Object.values(clone(db.members)).filter(m => m.roomId === roomId),
+      members: async (roomId, { activeOnly = false } = {}) => Object.values(clone(db.members)).filter(m => m.roomId === roomId && (!activeOnly || m.active)),
       memberRooms: async a => Object.values(db.members).filter(m => m.actorId === a && m.active).map(m => m.roomId).sort(),
       presence: async (roomId, a) => db.presence[mkey(roomId, a)] ?? null,
       tick: async id => clone(db.ticks[id]) ?? null,
