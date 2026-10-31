@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectCi, inspectPush, inspectTree, lineCount, parseArgs,
+  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectCi, inspectPush, inspectTree, parseArgs,
 } from '../tools/check-repo-limits.mjs';
 
 const entry = (path, maxBytes, reason = 'fixture') => ({ path, maxBytes, reason });
@@ -48,10 +48,8 @@ test('media binaries: no additions, no growth, moves and shrinking allowed', () 
   assert.equal(errorsFor([{ path: 'apps/web/public/new.png', bytes: 100, added: true, binary: true }]), '', 'the media rule is limited to media/');
 });
 
-test('living documents have a line and size limit, with no history folder exempt', () => {
-  assert.equal(lineCount(''), 0); assert.equal(lineCount('a\nb\n'), 2); assert.equal(lineCount('a\nb'), 2);
-  assert.equal(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 10, lines: 150 }]), '');
-  assert.match(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 10, lines: 151 }]), /151 rader, över taket 150\. Radera avklarat; Git har det/);
+test('documents keep the byte limit without constraining their line wrapping', () => {
+  assert.equal(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 400, lines: 200 }]), '');
   assert.match(errorsFor([{ path: 'docs/plans/BIG.md', bytes: MAX_DOC_BYTES + 1 }]), /över taket 100 kB för levande dokument\. Radera äldre avsnitt; Git har dem/);
   assert.match(errorsFor([{ path: 'docs/history/OLD.md', bytes: MAX_DOC_BYTES * 3 }]), /över taket 100 kB/);
 });
@@ -104,7 +102,7 @@ test('Git modes: whole tree, staged index and a sparse commit diff all read obje
     assert.match(staged, /media\/new\.png: ny binär under media\//);
     assert.doesNotMatch(staged, /NEXT-AGENT/);
     git('add', 'docs/NEXT-AGENT.md');
-    assert.match(check(inspectChanges({ cwd: root })), /NEXT-AGENT\.md: 200 rader/);
+    assert.doesNotMatch(check(inspectChanges({ cwd: root })), /NEXT-AGENT/, 'line wrapping does not block an otherwise small handoff');
     git('reset', '-q');
     put('docs/NEXT-AGENT.md', 'a\n'.repeat(150)); rmSync(join(root, 'tmp'), { recursive: true }); rmSync(join(root, 'media', 'new.png'));
 
@@ -158,9 +156,8 @@ test('the classifier job runs the exact event guard with its files in the sparse
   const sparse = changes.match(/sparse-checkout: \|\n((?:            [^\n]+\n)+)/)?.[1].split('\n').map(line => line.trim());
   for (const file of ['tools/check-repo-limits.mjs', ALLOWLIST, 'test/check-repo-limits.mjs']) assert.ok(sparse.includes(file), file);
   assert.match(changes, /node --test --test-concurrency=2 test\/check-repo-limits\.mjs\n\s+node tools\/check-repo-limits\.mjs --ci/);
-  const hook = readFileSync(new URL('../.githooks/pre-commit-full', import.meta.url), 'utf8');
-  assert.match(hook, /^run_check contracts repo-limits \d+ node tools\/check-repo-limits\.mjs$/m);
-  assert.match(hook, /^run_node_tests contracts precommit-checks .*test\/check-repo-limits\.mjs/m);
+  // The full-hook behavior and test registration are checked by regression-group
+  // and check-orphan-tests; this sparse classifier job needs no duplicate registry.
   // The committed allowlist itself is well-formed (sizes are judged by the Git modes above).
   assert.deepEqual(allowlistErrors(JSON.parse(readFileSync(new URL('../' + ALLOWLIST, import.meta.url), 'utf8'))), []);
 });

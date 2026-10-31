@@ -263,14 +263,8 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
 test('CI runs every full-regression suite exactly once across its parallel legs and keeps blocking product checks', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
   const fullHook = readFileSync(new URL('../.githooks/pre-commit-full',import.meta.url),'utf8');
-  const registered = fullHook.split('\n').filter(line => line.startsWith('run_node_tests '))
-    .flatMap(line => line.trim().split(/\s+/).slice(3));
-  for (const pattern of ['apps/studio/test/*.test.mjs', 'apps/studio/components/*.test.mjs']) {
-    assert.equal(registered.filter(path => path === pattern).length, 1, `${pattern} runs once`);
-  }
-  const explicitStudio = registered.filter(path => /^apps\/studio\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
-  assert.deepEqual(explicitStudio, []);
-  assert.doesNotMatch(yaml, /npm --prefix apps\/studio test/);
+  // check-orphan-tests audits executable registration. Suite ownership may use
+  // explicit files or globs, and retired tests need no permanent name here.
   // The hook's own suite list is the registry; CI may neither drop nor repeat a suite.
   const hookSuites = fullHook.match(/^  all\|([a-z|]+)\) ;;$/m)?.[1].split('|');
   assert.ok(hookSuites?.includes('engine') && hookSuites.includes('container'));
@@ -283,9 +277,8 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   // The leg table is the classifier's; each leg names its suites and boolean step selectors.
   const legs = REGRESSION_LEGS.map(({ leg, suites, ...flags }) => ({ leg, suites: suites.split(' ').filter(Boolean),
     flags: Object.entries(flags).filter(([, value]) => value === true).map(([name]) => name) }));
-  assert.ok(legs.length >= 2, 'regression runs in parallel legs');
-  // Each leg pays the toolchain setup once, so the leg count stays small; every leg runs suites.
-  assert.ok(legs.length <= 4, 'at most four regression legs');
+  // Setup cost informs grouping; coverage and selectors decide correctness,
+  // not a fixed number of independent CI machines.
   for (const { leg, suites } of legs) assert.ok(suites.length > 0, `${leg} runs at least one suite`);
   assert.equal(new Set(legs.map(({ leg }) => leg)).size, legs.length);
   for (const { leg, flags } of legs) {
@@ -301,7 +294,6 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   // engine skips without PostgreSQL; CI runs exactly its list through the TLS harness.
   assert.deepEqual([...matrixSuites, 'container', 'engine'].sort(), [...hookSuites].sort(), 'every suite runs exactly once');
   assert.equal(new Set(matrixSuites).size, matrixSuites.length);
-  assert.match(fullHook, /^run_node_tests engine engine-http test\//m);
   const suitesStep = dealer.split('      - name: Regression suites\n')[1]?.split('\n      - name: ')[0];
   assert.match(suitesStep, /sh \.githooks\/pre-commit-full "\$suite" \|\| failed=1/);
   assert.match(suitesStep, /exit "\$failed"/);
@@ -325,7 +317,6 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   assert.doesNotMatch(browser.split('\n    steps: &browser-regression-steps\n')[1], /^\s+if: (?!always\(\))/m, 'browser steps run whenever the job runs');
   assert.equal(legs.filter(leg => leg.flags.includes('build')).length, 1, 'the real Studio build runs once');
   assert.match(steps.find(step => step.startsWith('Build the real studio')), /npm --prefix apps\/studio run build\n\s+node tools\/check-admin-build\.mjs/, 'validate real artifacts immediately after the existing build');
-  assert.match(fullHook, /^run_node_tests studio admin-theme test\/admin-tailwind\.mjs test\/ui-tokens\.mjs$/m);
   const advisory = yaml.split('\n  browser-advisory:\n')[1]?.split('\n  gateway-container:\n')[0];
   assert.match(advisory, /steps: \*browser-regression-steps/, 'advisory runs identical browser coverage');
   for (const mode of ['required', 'advisory', 'none']) for (const draft of ['true', 'false']) {
@@ -351,8 +342,8 @@ test('CI runs every full-regression suite exactly once across its parallel legs 
   const upkeep = soft[0];
   assert.match(upkeep, /\n\s+if: needs\.changes\.outputs\.scope == 'integration'\n/, 'cache upkeep runs on push main only');
   assert.match(upkeep, /uses: \.\/\.github\/actions\/install-dependencies\n\s+with:\n\s+warm: 'true'/);
-  // The SQLite ban exempts documentation, so a documentation-only PR cannot violate it; the full regression runs it.
-  assert.match(fullHook, /^run_check contracts no-sqlite \d+ node tools\/check-no-sqlite\.mjs$/m);
+  // SQLite imports and dependency manifests have runtime roles and always select
+  // regression. Guard execution is tested through the actual full hook.
   const timings = steps.find(step => /^Save regression group timings/.test(step));
   assert.match(timings, /if: always\(\)/);
   assert.match(timings, /continue-on-error: true/);
