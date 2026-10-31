@@ -19,7 +19,43 @@ function captureJpeg(video) {
   throw new Error('image_too_large');
 }
 
-export function createAstridCameraControl({ container, identity, send, fetchImpl = fetch,
+async function readObservationConfig({ identity, presentationContext = () => null, fetchImpl = fetch }, signal) {
+  const fail = text => { throw Object.assign(new Error('configuration_failed'), { configurationReason: text }); };
+  let response, config;
+  try { response = await fetchImpl('/api/dealer/observation?' + new URLSearchParams({ dealer: identity()?.dealerId ?? '', ...(presentationContext() ? { presentationContext: JSON.stringify(presentationContext()) } : {}) }), { cache: 'no-store', ...(signal ? { signal } : {}) }); }
+  catch { fail('Cannot reach the server. Check the connection and try Record again.'); }
+  if (response.ok === false) fail(response.status === 401 ? 'Your session has expired. Sign in or select your profile again.'
+    : `Cannot read server settings${Number.isInteger(response.status) ? ` (HTTP ${response.status})` : ''}. Try Record again.`);
+  try { config = await response.json(); } catch { fail('The server returned invalid settings. Try Record again.'); }
+  if (!config || typeof config.enabled !== 'boolean' || (config.enabled && !/^[a-f0-9]{64}$/.test(config.profileRevision))) fail('The server returned invalid settings. Try Record again.');
+  return config;
+}
+
+export function createAstridCameraControl(options = {}) {
+  let mounted = null, cancelled = false;
+  const controller = new AbortController(), owner = options.identity();
+  const cancelPending = () => { cancelled = true; controller.abort(); };
+  window.addEventListener('pagehide', cancelPending, { once: true });
+  const ready = readObservationConfig(options, controller.signal).then(config => {
+    if (cancelled || document.hidden || !sameIdentity(owner, options.identity()) || config.enabled !== true
+      || config.transcription?.enabled !== true || config.transcription?.outputLanguage !== 'original'
+      || config.transcription?.acceptsAutoLanguage !== true) return false;
+    mounted = mountAstridCameraControl({ ...options, initialConfig: config });
+    options.onReady?.();
+    return true;
+  }, () => false).finally(() => window.removeEventListener('pagehide', cancelPending));
+  return {
+    ready,
+    stop(...args) { cancelPending(); mounted?.stop(...args); },
+    destroy() { cancelPending(); mounted?.destroy(); window.removeEventListener('pagehide', cancelPending); },
+    refreshPlayback() { mounted?.refreshPlayback(); },
+    get debugContainer() { return mounted?.debugContainer ?? null; },
+    get active() { return mounted?.active ?? false; },
+    get busy() { return mounted?.busy ?? false; },
+  };
+}
+
+function mountAstridCameraControl({ container, identity, send, fetchImpl = fetch, initialConfig,
   mediaDevices = navigator.mediaDevices, AudioWorkletNodeClass = window.AudioWorkletNode,
   AudioContextClass = window.AudioContext || window.webkitAudioContext,
   RecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -104,17 +140,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     visionReason = !visionEnabled && config.enabled ? 'Camera is off. Select GPT-5.6 Terra or GPT-6 Luna for images; voice can use the selected model.' : '';
     render();
   }
-  async function readConfig(signal) {
-    const fail = text => { throw Object.assign(new Error('configuration_failed'), { configurationReason: text }); };
-    let response, config;
-    try { response = await fetchImpl('/api/dealer/observation?' + new URLSearchParams({ dealer: identity()?.dealerId ?? '', ...(presentationContext() ? { presentationContext: JSON.stringify(presentationContext()) } : {}) }), { cache: 'no-store', ...(signal ? { signal } : {}) }); }
-    catch { fail('Cannot reach the server. Check the connection and try Record again.'); }
-    if (response.ok === false) fail(response.status === 401 ? 'Your session has expired. Sign in or select your profile again.'
-      : `Cannot read server settings${Number.isInteger(response.status) ? ` (HTTP ${response.status})` : ''}. Try Record again.`);
-    try { config = await response.json(); } catch { fail('The server returned invalid settings. Try Record again.'); }
-    if (!config || typeof config.enabled !== 'boolean' || (config.enabled && !/^[a-f0-9]{64}$/.test(config.profileRevision))) fail('The server returned invalid settings. Try Record again.');
-    return config;
-  }
+  const readConfig = signal => readObservationConfig({ identity, presentationContext, fetchImpl }, signal);
   async function refreshConfig() {
     if (busy() || mode || modeStarting) return;
     const revision = ++configRevision, token = epoch;
@@ -427,11 +453,20 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   camera.onclick = () => { cameraOptIn = !cameraOptIn; if (!cameraOptIn) { for (const track of cameraStream?.getTracks() ?? []) track.stop(); cameraStream = null; video.srcObject = null; } render(); };
   longPress(record, recordClick);
   longPress(playback, () => { Promise.resolve().then(() => onPlaybackToggle()).then(render).catch(() => report('Playback audio could not be changed.', true)); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
-  window.addEventListener('pagehide', () => stop());
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !debug.hidden) { event.preventDefault(); showLog(false); } });
-  report('Voice off.'); void refreshConfig();
-  return { stop, debugContainer, refreshPlayback() {
+  const onVisibility = () => { if (document.hidden) stop(); };
+  const onPageHide = () => stop();
+  const onKeyDown = event => { if (event.key === 'Escape' && !debug.hidden) { event.preventDefault(); showLog(false); } };
+  document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('pagehide', onPageHide);
+  document.addEventListener('keydown', onKeyDown);
+  applyConfig(initialConfig); report('Voice off.');
+  return { stop, debugContainer, destroy() {
+    stop(); configRevision++;
+    document.removeEventListener('visibilitychange', onVisibility);
+    window.removeEventListener('pagehide', onPageHide);
+    document.removeEventListener('keydown', onKeyDown);
+    root.remove();
+  }, refreshPlayback() {
     if ((mode || modeStarting || busy()) && !getPlaybackEnabled()) stop('Dealer playback muted. Voice off.');
     else render();
   },

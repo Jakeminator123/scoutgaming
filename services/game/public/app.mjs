@@ -1780,7 +1780,11 @@ if(localPresentationEnabled&&!studioPreview){
   window.addEventListener('pagehide',cancelNextDealChat,{once:true});
 }
 const astridCamera = !studioPreview
-  ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
+  ? createAstridCameraControl({ container: $('#chat'), onReady: () => {
+      document.body.classList.add('astrid-voice-ui');
+      const voiceStyle = document.createElement('link'); voiceStyle.rel = 'stylesheet'; voiceStyle.href = '/astrid-voice-shell.css'; document.head.append(voiceStyle);
+      setChatOpen(false);
+    }, identity: () => ({ ...poseIdentity(), playerId: player?.id }),
     dealerName: DEALER.name, wakeNames: [...new Set([DEALER.name, DEALER.key])],
     presentationContext: () => chatPresentationContext(entrySelection, DEALER.key),
     canStart: () => !chatBusy && !speaking,
@@ -1789,10 +1793,6 @@ const astridCamera = !studioPreview
     onPlaybackEnable: () => setMuted(false),
     getPlaybackEnabled: () => !voice.muted,
     send: ({ message, images, profileRevision }) => sendChat({ message, images, profileRevision }) }) : null;
-if (astridCamera) {
-  document.body.classList.add('astrid-voice-ui');
-  const voiceStyle = document.createElement('link'); voiceStyle.rel = 'stylesheet'; voiceStyle.href = '/astrid-voice-shell.css'; document.head.append(voiceStyle);
-}
 
 // Memory belongs to the authenticated server player, not this tab's display log.
 const chatMemory = document.createElement('details');
@@ -1806,7 +1806,6 @@ const memoryForget = document.createElement('button'); memoryForget.type = 'butt
 const memoryLimit = document.createElement('small'); memoryLimit.textContent = 'Raderar lokalt spelarchattminne, inte leverantörernas loggar. Stoppar ett pågående svar.';
 memoryPanel.append(memoryInfo, memoryStatus, memoryForget, memoryLimit); chatMemory.append(memorySummary, memoryPanel); $('#chat').append(chatMemory);
 if(studioPreview){chatMemory.hidden=true;memoryForget.disabled=true;}
-if (astridCamera) setChatOpen(false);
 chatMemory.addEventListener('toggle', async () => {
   if (studioPreview || !chatMemory.open) return;
   try {
