@@ -61,7 +61,7 @@ const canonical=value=>JSON.stringify(value,(_key,item)=>object(item)?Object.fro
 // startup limits (K04, 400 kbit/s), so it loads afterwards and the dealer
 // appears with its first verified frame. Every film keeps its exact hash,
 // package and identity checks; a media error never grants or revokes controls.
-function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError,retryDelaysMs}){
+function boundPresentation({document,window,roomId,signal,fetchImpl,createPresentation,transport,startupFor,onError,onRecovered,retryDelaysMs}){
   let current=null,job=null,generation=0,closed=false;
   const pending=new Set();
   function dispose(owned){
@@ -141,7 +141,8 @@ function boundPresentation({document,window,roomId,signal,fetchImpl,createPresen
           onReady:dealer=>{if(owned.closed||mountSignal.aborted||dealer===binding.selection.dealer)return;
             owned.mismatch??=new Error('shared_room_presentation_dealer_mismatch');
             if(owned.authorized){dispose(owned);onError();}},
-          onError:()=>{if(!owned.closed)onError();}});
+          onError:error=>{if(!owned.closed)onError(error);},
+          onRecovered:error=>{if(!owned.closed&&!mountSignal.aborted)onRecovered(error);}});
         if(owned.closed){port.close();check();throw abortError();}
         owned.port=port;check();mismatch();
         await port.restoreSnapshot(snapshot,{signal:connection,receivedAt});check();mismatch();
@@ -179,6 +180,8 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
   let startup=createPresentationStartup({document,dealerId:null});
   const lifetime=new AbortController();
   let presentation,view,controller,socket,commands,seats,chat,closed=false;
+  const mediaWarning='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
+  let captionFailure=null;
   // A room without published game settings says so on the loading screen too, not the generic reload text.
   const fail=code=>{startup.fail(code===ROOM_CONFIG_MISSING?ROOM_NOT_READY:undefined);controller?.fail(code);};
   const close=()=>{if(closed)return;closed=true;lifetime.abort();window.removeEventListener('pagehide',close);socket?.stop();seats?.stop();chat?.close();controller?.stop();
@@ -188,8 +191,13 @@ export async function mountSharedRoomApp({document=globalThis.document,window=gl
     commands=createCommands({roomId});
     presentation=boundPresentation({document,window,roomId,signal:lifetime.signal,fetchImpl,createPresentation,transport:presentationTransport,retryDelaysMs:bindingRetryDelaysMs,
       startupFor:dealerId=>{startup.close();if(loading){loading.hidden=false;loading.textContent=loadingText;}
-        startup=createPresentationStartup({document,dealerId});return startup;},onError:()=>{
-        const caption=document.getElementById('caption');if(caption)caption.textContent='Presentationen är inte tillgänglig. Bordets spelstatus är oförändrad.';
+        startup=createPresentationStartup({document,dealerId});return startup;},onError:error=>{
+        captionFailure=error;
+        const caption=document.getElementById('caption');if(caption)caption.textContent=mediaWarning;
+      },onRecovered:error=>{
+        if(!error||captionFailure!==error)return;
+        captionFailure=null;
+        const caption=document.getElementById('caption');if(caption?.textContent===mediaWarning)caption.textContent='';
       }});
     view=createView({document,onLayout:layout=>presentation.layout?.(layout),signInHref:signInPath(window.location)});
     controller=createSharedRoomController({roomId,commands,view,presentation,reconnect:()=>socket?.reconnect?.()});

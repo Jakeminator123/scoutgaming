@@ -31,7 +31,7 @@ const untilAborted = (work, signal) => !signal ? work : new Promise((resolve, re
   work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
 });
 
-export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets', idleConfigRead = true,
+export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, onRecovered = () => {}, onGestureWait = () => {}, muted, composition = null, entry = null, transport = null, idlePhase = () => 'bets', idleConfigRead = true,
   connection = globalThis.navigator?.connection ?? null }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');
   if (typeof idleConfigRead !== 'boolean') throw new TypeError('Invalid idle configuration policy');
@@ -202,6 +202,18 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // idle and the speech gate stayed shut ("väntar på ledigt bord") until a
   // reload. Retry the same clip shortly, and again when the tab is visible.
   const transientPlayback = error => /paused to save power|play\(\) request was interrupted/i.test(error?.message ?? '');
+  // Recovery belongs to this failure and these exact bytes. A different idle,
+  // a later action or a newly published asset cannot clear its warning.
+  let idleRecovery = null;
+  const failedIdle = (error, video) => {
+    idleRecovery = transientPlayback(error) || ['local_film_no_presented_frame', 'local_film_stalled'].includes(error.code)
+      ? { error, id: video.id, sha256: video.sha256 } : null;
+    onError(error);
+  };
+  const recoveredIdle = video => {
+    if (!idleRecovery || !video.sha256 || idleRecovery.id !== video.id || idleRecovery.sha256 !== video.sha256) return;
+    const { error } = idleRecovery; idleRecovery = null; onRecovered(error);
+  };
   let idleTransientRetries = 0;
   const retryIdleSoon = () => { clearTimeout(idleRetryTimer); idleRetryTimer = setTimeout(() => { idleRetryTimer = null; if (closed || document.hidden) return; idleRun = 0; resumeIdle(); }, 700); };
   // The retry budget belongs to this configuration's exact idle, not a UI epoch.
@@ -501,13 +513,13 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onFrame: () => { if (epoch !== serial || closed) return;
         idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
-        seenDealer(); onIdle(); },
+        recoveredIdle(video); seenDealer(); onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (staleRoom(error)) { idleRun = 0; return; }
         if (requireReload(error)) return;
         onBusy();
-        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        idleError = `Idle: ${error.message}`; status.textContent = idleError; failedIdle(error, video);
         if (transientPlayback(error) && idleTransientRetries++ < 20) { idleRun = 0; retryIdleSoon(); return; }
         if (!['local_film_no_presented_frame', 'local_film_stalled'].includes(error.code)) return;
         if (idleRetries >= 1) { idleFailed = true; return; }
@@ -536,12 +548,12 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       onFrame: () => { if (epoch !== serial || closed) return;
         idleTransientRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
-        idle.presented(clip.playId); seenDealer(); if (clip.standardBase) onIdle(); },
+        recoveredIdle(video); idle.presented(clip.playId); seenDealer(); if (clip.standardBase) onIdle(); },
       onEvent: event => { if (epoch === serial && event.state === 'start') idle.started(clip.playId); },
     }).then(() => { if (epoch !== serial) return; if (idle.mode === 'rotation') idle.updateScene({phase:readIdlePhase()}); idle.completed(clip.playId); if (clip.repeat) idleRun = 0; resumeIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (staleRoom(error)) { idleRun = 0; return; }
-        if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        if (requireReload(error)) return; idleError = `Idle: ${error.message}`; status.textContent = idleError; failedIdle(error, video);
         if (transientPlayback(error) && idleTransientRetries++ < 20) { retryIdleSoon(); return; }
         idle.failed(clip.playId); resumeIdle(); });
   }
@@ -577,7 +589,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   // onUnavailable(): this step's exact media is missing or declared unavailable
   // (not a retryable playback failure); the shared table ends its film at once.
   // shown(): the caller's card for this step is already on the table (the shared table's card cursor).
-  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, onUnavailable, shown, startOffset, handoverAt, playbackRate, clockTime } = {}) {
+  async function present(event, { signal, onPresented, onSelected, onFrame, onProgress, onUnavailable, onSoundUnavailable, shown, startOffset, handoverAt, playbackRate, clockTime } = {}) {
     if (packageChanged) return false;
     const kind = event.type === 'speak' ? 'speech' : event.type;
     presentationKind = kind;
@@ -682,6 +694,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (requireReload(error)) return false;
       // A line refused by the sound policy already shows the sound control.
       const soundBlocked = kind === 'speech' && error.code === 'local_film_sound_blocked';
+      if (soundBlocked) onSoundUnavailable?.();
       // K04 F9: a take that stalls after its card is already on the table ends its step without text;
       // the receipt still names the stall. Before the card shows, the failure line stays.
       let cardShown = false;

@@ -282,6 +282,44 @@ test('a frame of another dealer fails the restore before the binding is confirme
   assert.match(fresh.nodes.get('caption').textContent,/inte tillgänglig/);assert.equal(fresh.controller.state.connected,true,'server-owned controls are unchanged');
 });
 
+test('media recovery clears only its own warning and stale mounts cannot clear newer errors or speech',async t=>{
+  let current=presentationBinding(seated(3));
+  const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(current)});
+  await h.restore(seated(3));const first=h.mounts[0],caption=h.nodes.get('caption');
+  const recovered=new Error('recoverable idle'),newer=new Error('missing asset');
+  first.onError(recovered);first.onReady('astrid');assert.match(caption.textContent,/inte tillgänglig/);
+  first.onRecovered(recovered);assert.equal(caption.textContent,'');
+  first.onError(recovered);first.onError(newer);first.onRecovered(recovered);assert.match(caption.textContent,/inte tillgänglig/);
+  first.onError(recovered);caption.textContent='Hej från dealern';first.onRecovered(recovered);assert.equal(caption.textContent,'Hej från dealern');
+  const next=seated(4,{windowId:'window-2',configVersion:'cfg-2',settings:{...snapshot().settings,configVersion:'cfg-2'}});
+  current=presentationBinding(next,{packageRevision:2});await h.restore(next);
+  const second=h.mounts[1];second.onError(recovered);first.onRecovered(recovered);assert.match(caption.textContent,/inte tillgänglig/);
+  second.onRecovered(recovered);assert.equal(caption.textContent,'');
+  first.onError(newer);assert.equal(caption.textContent,'','disposed mounts cannot report new failures');
+});
+
+test('sound policy is quiet on shared speech while genuine failures and stale callbacks still report errors',async()=>{
+  const errors=[],cards={restore(){},sync(){},clear(){},show(){},reveal(){},close(){}};
+  let run=0,oldSound;
+  const media={state(){},close(){},present:async(event,options)=>{
+    run++;
+    if(run===1){oldSound=options.onSoundUnavailable;options.onSoundUnavailable();}
+    else oldSound();
+    return false;
+  }};
+  const ports=createSharedRoomPresentationPorts({media,cards,onError:error=>errors.push(error),clock:()=>1000});
+  const signal=new AbortController().signal;
+  try{
+    ports.restoreSnapshot(seated(1),{signal});
+    ports.restoreSnapshot(seated(2,{presentationVer:1}),{signal});
+    await ports.present({roomId,ver:1,kind:'collect',events:[{type:'speak',line:'win'}]},{signal});
+    assert.deepEqual(errors,[]);
+    ports.restoreSnapshot(seated(3,{presentationVer:2}),{signal});
+    await ports.present({roomId,ver:2,kind:'collect',events:[{type:'speak',line:'win'},{type:'deal',shoeDraw:1}]},{signal});
+    assert.deepEqual(errors,['shared_room_media_unavailable','shared_room_media_unavailable']);
+  }finally{ports.close();}
+});
+
 test('an existing client retains the active N2 presentation and remounts once for the next window package',async t=>{
   let current=presentationBinding(seated(3),{branding:{color:'#123456'}}),closes=0;
   const h=await bindingHarness(t,{fetchImpl:async()=>Response.json(current),createPresentation:async options=>{
@@ -1409,15 +1447,16 @@ test('a dealer film that shows no frame for a minute never blocks seat, chips, b
 
 test('the dealer place reads Dealern laddas… until the first verified frame, and a failed film says so',async t=>{
   const {document,nodes}=documentFixture(),window=new EventTarget();window.matchMedia=()=>({matches:false});window.fetch=async()=>Response.json({});
-  let media,ready=0;
+  let media,ready=0;const errors=[],recovered=[];
   const selection={presentation:'local',dealer:'astrid',localDealer:'astrid',operator:'north',roomId,packageRevision:1,registeredDealers:[{id:'astrid',label:'Astrid'}]};
-  const port=await mountSharedRoomPresentation({document,window,selection,onReady:id=>{assert.equal(id,'astrid');ready++;},onError(){},createComposition:()=>null,
+  const port=await mountSharedRoomPresentation({document,window,selection,onReady:id=>{assert.equal(id,'astrid');ready++;},onError:error=>errors.push(error),onRecovered:error=>recovered.push(error),createComposition:()=>null,
     loadAdapters:async()=>[{PerformancePlayer:class{dispose(){}}},{createLocalPresentation:async value=>{media=value;return{state(){},start(){},close(){}};}},
       {createLocalCardOverlay:()=>({restore(){},sync(){},clear(){},close(){}})}]});
   t.after(()=>port.close());
   const placeholder=()=>nodes.get('scene').children.find(node=>node.className==='shared-room-dealer-placeholder');
   assert.equal(placeholder().textContent,'Dealern laddas…');assert.equal(placeholder().attributes.role,'status');assert.equal(ready,0);
-  media.onError(new Error('Film playback stalled'));assert.equal(placeholder().textContent,'Dealern kunde inte visas.');
+  const failure=new Error('Film playback stalled');media.onError(failure);assert.equal(placeholder().textContent,'Dealern kunde inte visas.');
+  media.onRecovered(failure);assert.deepEqual(errors,[failure]);assert.deepEqual(recovered,[failure],'the failure identity reaches the app');
   media.onIdle();assert.equal(placeholder(),undefined);assert.equal(ready,1);
   media.onError(new Error('later'));assert.equal(placeholder(),undefined,'a later idle error does not bring the placeholder back');
 });

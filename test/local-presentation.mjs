@@ -801,7 +801,7 @@ test('a shared table whose binding is confirmed plays its idle films without rea
   assert.ok(f.jobs.length>=2,'the idle film still plays');
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, idleConfigRead, connection, muted: mutedPort = () => false} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null, standardVideo = null, transitions = null, openclaw = null, filmedMaterial = null, prepared = null, onGestureWait = () => {}, idlePhase = () => 'bets', player: customPlayer = null, configExtra = null, onError = () => {}, onRecovered = () => {}, idleConfigRead, connection, muted: mutedPort = () => false} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, appended: [], setAttribute() {}, append(...nodes) { value.appended.push(...nodes); }, remove() { value.removed = true; }, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
@@ -818,7 +818,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); }, ...(prepared ? { prepareLocalClip(take) { prepared.push(take); } } : {}) };
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => tableVersion,
-    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, muted: mutedPort,
+    receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {busy++;}, onGestureWait, idlePhase, onError, onRecovered, muted: mutedPort,
     ...(idleConfigRead === undefined ? {} : {idleConfigRead}), ...(connection === undefined ? {} : {connection}) });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
   return { controller, jobs, receipts, requests, elements, setVersion(value){tableVersion=value;}, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; }, get busy() {return busy;} };
@@ -1286,7 +1286,8 @@ for(const moved of ['action','version'])test(`a sound click after the line stopp
 
 test('a line whose sound wait ran out is quiet; the control stays and a later click only unlocks', async t => {
   const f=await controllerFixture(t);f.controller.state({speech:true});
-  const playing=f.controller.present({type:'speak',line:'win'});await new Promise(resolve=>setImmediate(resolve));
+  let soundUnavailable=0;
+  const playing=f.controller.present({type:'speak',line:'win'},{onSoundUnavailable:()=>soundUnavailable++});await new Promise(resolve=>setImmediate(resolve));
   const job=f.jobs[0];let resumed=0;
   assert.equal(job.options.muted,false);assert.equal(typeof job.options.onSoundBlocked,'function');
   job.options.onSoundBlocked(()=>{resumed++;return true;});
@@ -1294,6 +1295,7 @@ test('a line whose sound wait ran out is quiet; the control stays and a later cl
   assert.equal(button.textContent,'Slå på ljud');
   job.reject(Object.assign(new Error('Speech sound needs a user gesture'),{code:'local_film_sound_blocked',cause:new DOMException(AUTOPLAY_REFUSAL,'NotAllowedError')}));
   assert.equal(await playing,false);
+  assert.equal(soundUnavailable,1,'the shared owner can distinguish sound policy from unavailable media');
   assert.equal(f.status.textContent,'','the sound control replaces any text');
   const failed=f.receipts.at(-1);assert.equal(failed.state,'failed');assert.equal(failed.code,'local_film_sound_blocked');assert.equal(failed.soundUnlocked,false);
   assert.notEqual(button.removed,true);
@@ -1378,6 +1380,25 @@ const missingIdleFrame = () => Object.assign(new Error('Film ended without a pre
 const stalledIdle = () => Object.assign(new Error('Film playback stalled'), {code:'local_film_stalled'});
 const idleRetryFixture = t => controllerFixture(t,{dealerId:'dragan',ownIdle:{id:'dragan-bound-idle',fileName:'breath.mp4',sha256:'b'.repeat(64),src:'/api/presentation/videos/dragan-bound-idle'}});
 const flushIdle = () => new Promise(resolve=>setImmediate(resolve));
+
+test('only a current frame of the failed exact idle reports recovery; asset errors remain failures',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const recovered=[],errors=[];
+  const f=await controllerFixture(t,{dealerId:'nora',ownIdle:{id:'own',fileName:'own.mp4',sha256:'a'.repeat(64)},
+    onError:error=>errors.push(error),onRecovered:error=>recovered.push(error)});
+  f.controller.start();const failure=stalledIdle();f.jobs[0].reject(failure);await flushIdle();
+  t.mock.timers.tick(500);await flushIdle();assert.equal(f.jobs.length,2);
+  f.jobs[0].options.onReceipt({state:'presented'});assert.deepEqual(recovered,[],'failed owner is stale');
+  f.jobs[1].options.onReceipt({state:'start'});assert.deepEqual(recovered,[],'playing is not a frame');
+  f.jobs[1].options.onReceipt({state:'presented'});assert.deepEqual(recovered,[failure]);
+  f.jobs[1].options.onReceipt({state:'presented'});assert.equal(recovered.length,1);
+  const unavailable=Object.assign(new Error('missing exact media'),{status:404});
+  f.jobs[1].reject(unavailable);await flushIdle();
+  f.controller.state({action:true});f.controller.state({action:false});
+  f.jobs.at(-1).options.onReceipt({state:'presented'});
+  assert.deepEqual(errors,[failure,unavailable]);assert.deepEqual(recovered,[failure],'asset failure is not a recoverable playback interruption');
+  f.controller.close();f.jobs.at(-1).options.onReceipt({state:'presented'});assert.equal(recovered.length,1);
+});
 
 test('a stalled own idle retries the exact clip once; frames and state changes cannot replenish its budget',async t=>{
   const f=await idleRetryFixture(t);t.mock.timers.enable({apis:['setTimeout']});
