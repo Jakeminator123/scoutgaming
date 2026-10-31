@@ -53,6 +53,7 @@ syfte och kodreferenser, inte en ny moln- eller AV-acceptans.
 
 ## Underhåll
 
+- Kör `node tools/check-documentation.mjs` för relativa länkar till Git-spårade mål och Markdownankare (`--json` ger feldata). Dokumentations-CI och kontraktssviten kör kontrollen; pre-commit använder `--cached` för commitens eget index. Kontrollen bedömer inte saktextens aktualitet.
 - Uppdatera befintlig sakguide. Nya dokument får en tydlig ingång här eller i ett områdesindex.
 - Radera förbrukade planer, dubbletter och kvitton med uppdaterade länkar och en Git-hänvisning i [HISTORIK](HISTORIK.md). Skapa ingen historikmapp.
 - Ett aktivt kontrakt eller releasebeslut får behålla sitt nödvändiga bevis. En gammal länk ensam motiverar ingen dokumentdubblett.
