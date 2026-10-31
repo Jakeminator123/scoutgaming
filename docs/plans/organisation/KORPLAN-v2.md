@@ -65,6 +65,14 @@ Första publicerade provet fann ett ytterligare transportfel på Team; [#753](ht
 
 Efter första städvågen väljs en levande legacykedja åt gången: Admins isolerade provspel, sessionsutfärdande eller det äldre referens-/mappingflödet. Atomisk bolagspublicering och materialersättning är separata funktionsändringar. Namnbyten i molnet och stora workspaceomläggningar prioriteras inte framför belagda dubbletter. Talet väntar fortfarande.
 
+## Levererad systemkarta och smal CI-selektion: S4–S6
+
+Jakobs nästa uppdrag till de tre befintliga teamchattarna är genomfört. REPOAGENTEN #755 (`71af69d97351f3b21b737b5010ce3f03b76ad7a9`, CI 41212844431) verifierade och länkade kartans kod-/provgränser. ARKITEKTEN #757 (`6611a1398753cb6e16494441e2d08223a2772142`, CI 41213561936) byggde `tools/system-map.py`; 8/8 Pythonprov och oberoende granskning passerade. Orkestratorn genererade kartan på integrerad `1c920187b11f84b5c02abec72cad920a29428833`: sex områden, 37/37 referenser, inga fel eller varningar. Faktisk browserkontroll bekräftade läsbar layout, zoom och expandera/fäll ihop. Lokala fillänkar verifierades som referenser; klick från HTTP-preview till `file://` är inte ett accepterat webbflöde. Den fristående filen öppnas lokalt enligt START-HERE.
+
+DRIFTAGENTEN #756 (`07ca8ee6ee145d292c82826010ff6f220472ec80`, CI 41213034222) begränsar endast vanliga M/100644-ändringar i tre befintliga Admin-CSS-filer till `studio-admin-contracts` + `access-presentation`, med verkligt bygge/artefaktkontroll och obligatorisk Chrome. Databas/engine och tal/gameplay utelämnas för just denna klass. Orkestratorns 22/22 riktade prov passerade, inklusive riktiga Git-mergefixturer och negativa gateprov. Okända/blandade ändringar, nya/raderade/omdöpta filer och preview/nattlig/manuell körning behåller full täckning. Inga sparade minuter eller bredare totalprestandavinster är uppmätta.
+
+Alla tre PR:er är verifierat våra genom tilldelad teamchatt, rapporterad head och samma frysta GitHub-SHA. Ett commitnamn eller PR-kontot ensamt bevisar inte uppdragets ägare. Inga oklara kollegors PR:er ingick i denna mergeomgång.
+
 ## Avslutat underlag
 
 Den tidigare organisationsvågen är avslutad: 4/4 + 3/3 + 2/2 leveranser (#723–737). Secure-cookie, pushkontroll, avvecklad clip-policy, tålig talstart och F11 ska inte beställas om. [Beslutsloggen](BESLUTSLOGG.md) och [F11-driftkvittot](F11-DRIFTKVITTO.md) anger bevis och gränser.
