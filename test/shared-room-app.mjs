@@ -446,7 +446,7 @@ test('existing DOM receives server balances, native seat/chip controls, Swedish 
   assert.match(nodes.get('balance').textContent,/17,5 USD demo/);assert.equal(nodes.get('seats').children.length,7);
   // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
   const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
-  assert.equal(join.tagName,'BUTTON');assert.equal(join.textContent,'Du');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
+  assert.equal(join.tagName,'BUTTON');assert.equal(join.getAttribute('aria-label'),'Plats 1, din plats');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
   assert.equal(leaveSeat.textContent,'Lämna');assert.equal(leaveSeat.hidden,false);leaveSeat.click();assert.deepEqual(calls[0],['join',{seat:0}]);
   assert.equal(nodes.get('seats').children[1].children[0].children[2].hidden,true,'a free seat has no leave control');
   nodes.get('chips').children[1].disabled=false;nodes.get('chips').children[1].click();assert.deepEqual(calls[1],['chip',1]);
@@ -506,7 +506,7 @@ test('the view closes side bets without a main bet on their box and shows why on
   main.click();assert.deepEqual(calls,[['bet',{seat:0,field:'main'}]]);
   view.render({snapshot:seated(2,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]}),chip:.5,can:{...can,ready:true,repeat:true},
     hints:{ready:'',repeat:'',side:hints.side},notice:'',retry:false,busy:false,connected:true});
-  assert.equal(main.textContent,'Insats 5');assert.equal(main.classes.has('staked'),true);
+  assert.equal(main.getAttribute('aria-label'),'Plats 1, huvudinsats, 5 USD');assert.equal(main.classes.has('staked'),true);
   for(const side of [pp,tp]){assert.equal(side.disabled,false);assert.equal(side.title,'');}
   assert.equal(nodes.get('deal-now').disabled,false);assert.equal(nodes.get('deal-now').title,'');
   view.close();

@@ -90,7 +90,9 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     if (!snapshot || closed || !connected) return;
     const next = [snapshot.deadline,snapshot.actionDeadline,snapshot.plan?.turnAt,snapshot.plan?.endAt,snapshot.me.pausedUntil]
       .filter(t => Number.isFinite(t) && t > serverTime()).sort((a,b) => a-b)[0];
-    if (next !== undefined) clockTimer = setTimeout(() => { draw(); schedule(); }, Math.min(2147483647, Math.max(1,next-serverTime()+1)));
+    // Only an own decision needs a seconds display; long pauses keep their one deadline timer.
+    const countdown=snapshot.phase==='round'&&snapshot.round?.phase==='decisions'&&snapshot.me.seats.includes(snapshot.round.hands?.[snapshot.round.active]?.box);
+    if (next !== undefined) clockTimer = setTimeout(() => { draw(); schedule(); }, Math.min(countdown?1000:2147483647, Math.max(1,next-serverTime()+1)));
   }
   function confirmed() {
     if (waiting && snapshot && (waiting.version !== undefined ? snapshot.version >= waiting.version : snapshot.me.pausedUntil >= waiting.pausedUntil)) {

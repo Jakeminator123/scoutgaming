@@ -65,7 +65,7 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
       if (state.decisionBars) {
         const covered = await page.evaluate(() => {
           const panel = document.getElementById('actions-top').getBoundingClientRect();
-          return [...document.querySelectorAll('#local-card-overlay .card-face')].map(node => node.getBoundingClientRect())
+          return [...document.querySelectorAll('#local-card-overlay .card-face > rect')].map(node => node.getBoundingClientRect())
             .filter(card => card.width > 0 && Math.min(card.right, panel.right) > Math.max(card.left, panel.left) && Math.min(card.bottom, panel.bottom) > Math.max(card.top, panel.top)).length;
         });
         assert.equal(covered, 0, `${viewport.width}, ${label}: the decision panel covers no card`);
@@ -174,8 +174,46 @@ test('Chrome shared-table seat circles: centred under the cards\' box at 16:9, 1
     assert.ok(Math.abs(m.circle.x - m.landing) <= 1, `${where}: the circle is centred on box 4 (${m.circle.x} vs ${m.landing})`);
     assert.ok(Math.abs(m.total.x - m.landing) <= 1, `${where}: the hand total is centred on box 4`);
     const gap = m.circle.top - m.total.bottom;
-    assert.ok(gap >= -0.5 && gap <= 8, `${where}: the circle is ${gap.toFixed(1)} px below the hand total`);
+    assert.ok(gap >= 6 && gap <= 12, `${where}: the circle is ${gap.toFixed(1)} px below the hand total`);
     assert.deepEqual(await page.evaluate(measureLayout), [], `${where}: no control covers another`);
     await context.close();
   }
+});
+
+// The tall live window used to strand the controls far below the cards. The dock
+// also stays clickable on a small phone; pending commands preserve the decision row.
+test('Chrome shared-table dock: labelled bets, split clearance and stable pending decisions', { skip, timeout: 180000 }, async t => {
+  const fixture = await openLayoutFixture(browserModule, { channel });
+  t.after(() => fixture.close());
+  for (const viewport of [{ width: 1690, height: 1348 }, { width: 2288, height: 1493 }, { width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    const { page, context, show, delay } = await fixture.open(viewport, { plane: 'table' });
+    await show(tableSnapshot({ own: [3, 4], bets: { 3: { main: 5 }, 4: { main: 10 } } }));
+    assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}: betting controls`);
+    assert.match(await page.locator('#shared-room-dock').textContent(), /Plats 4/);
+    await page.getByRole('button', { name: 'Plats 5, din plats', exact: true }).click();
+    assert.match(await page.locator('#shared-room-dock').textContent(), /Plats 5/);
+    await context.close();
+    // Restore an authoritative mid-round snapshot, including a split at box 4.
+    const game = await fixture.open(viewport, { plane: 'table' });
+    const snapshot = decision([3, 4]);
+    snapshot.round.hands.splice(1, 0, { box: 3, cards: [{ r: '8', s: 'D', shoeDraw: 10 }, { r: '3', s: 'S', shoeDraw: 11 }] });
+    await game.show(snapshot);
+    assert.deepEqual(await game.page.evaluate(measureLayout), [], `${viewport.width}: split controls`);
+    const geometry = await game.page.evaluate(() => {
+      const rect = node => node.getBoundingClientRect();
+      const circles = [...document.querySelectorAll('.seat:not([hidden]) .seat-shared-join')].map(rect);
+      const ink = [...document.querySelectorAll('#local-card-overlay .card-totals [data-seat]')].map(rect);
+      return { overlaps: circles.some(a => ink.some(b => Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)),
+        gap: rect(document.getElementById('actions-top')).top-Math.max(...circles.map(r=>r.bottom)), cards: ink.length };
+    });
+    assert.ok(geometry.cards > 0, 'the clearance test measures actual restored cards');
+    assert.equal(geometry.overlaps, false, `${viewport.width}: markers clear split hands and totals`);
+    if(viewport.width>860)assert.ok(geometry.gap>=8&&geometry.gap<70, `${viewport.width}: decisions beside the hands (${geometry.gap})`);
+    await game.delay(1200);
+    await game.page.locator('#actions-top [data-act="hit"]').click();
+    assert.equal(await game.page.locator('#actions-top').isVisible(), true, 'sending never removes the decision row');
+    assert.equal(await game.page.locator('#actions-top [data-act="hit"]').isDisabled(), true, 'pending decisions remain server-gated');
+    await game.context.close();
+  }
+  assert.deepEqual(fixture.unexpected, []); assert.deepEqual(fixture.pageErrors, []);
 });

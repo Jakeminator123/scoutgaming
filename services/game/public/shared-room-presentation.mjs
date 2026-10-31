@@ -400,15 +400,14 @@ export async function mountSharedRoomPresentation({ document, window, selection,
     const plane=composition?.referencePlane(),compact=window.matchMedia?.(BLACKJACK_COMPACT_QUERY).matches;
     const boxes=compact?seatWindow(value.snapshot,value.focusSeat).boxes:[0,1,2,3,4,5,6];
     const width=scene.width,height=scene.height;
-    // K04 F13: the seats keep clear of the bottom controls (dock, action zone, wallet and chips), so the room
-    // above them is measured. A seat's controls reach about 140 px below its anchor on a wide screen; a phone
-    // shows only the seat's circle there (its bets dock in the bottom controls).
+    // Reserve the bottom dock's height, independent of its optional placement beside
+    // the desktop hand. Only the fixed-size seat circles remain on the felt.
     // The bottom controls change height with the phase (a phone's dock and chips belong to the betting window). The
     // plane keeps the tallest seen at this screen size, so cards never move between phases; a resize measures anew.
     const hud=document.getElementById('hud-bottom')?.getBoundingClientRect?.(),size=`${Math.round(width)}x${Math.round(height)}`;
     if(size!==floorSize){floorSize=size;floorTop=undefined;}
-    if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,hud.top-scene.top);
-    const floor=floorTop??height-150,below=compact?28:140;
+    if(hud?.height>0)floorTop=Math.min(floorTop??Infinity,height,height-hud.height);
+    const floor=floorTop??height-150,below=28;
     let projected;
     // The seats stand on the same boxes as the cards (layoutGameOverlay): centred under each box, the circle just
     // below the hand total at a fixed pixel size, in every window shape. A phone moves its three touch targets apart

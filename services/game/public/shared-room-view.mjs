@@ -1,6 +1,6 @@
 // Existing table DOM; all visible money, seats and controls come from a server snapshot.
 import { BLACKJACK_COMPACT_QUERY } from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
-import { SEAT_COUNT, WINDOW_SIZE, crowding, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
+import { SEAT_COUNT, WINDOW_SIZE, primarySeat, seatWindow, tableProfileName, windowLabel } from './shared-room-layout.mjs';
 import { installDecisionShortcuts } from './shared-room-shortcuts.mjs';
 const number = value => new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(value);
 const money = (value,currency) => `${number(value)} ${typeof currency==='string'&&/^[A-Z]{3}$/.test(currency)?currency:'· valuta saknas'}`;
@@ -52,8 +52,9 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   for(const id of ['chat','table-pick','cashier','gate','autobet','sign-out','actions']){const node=$(document,id);if(node){node.hidden=true;node.inert=true;node.style.display='none';}}
   // One action zone above the wallet and chips: status line, Redo, Nästa runda, insurance and the decision panel.
   // It is part of the bottom grid, so neither the wallet nor the chips can cover it, and it never covers a card.
-  // On a phone the chosen own seat's bets dock above it (#shared-room-dock).
+  // The chosen own seat's bets dock beside it on desktop and above it on a phone.
   const zone=document.createElement('div');zone.id='shared-room-actions';zone.className='shared-room-actions';
+  const timer=document.createElement('span');timer.id='shared-room-timer';timer.className='shared-room-timer';timer.hidden=true;zone.append(timer);
   const dock=document.createElement('div');dock.id='shared-room-dock';dock.className='shared-room-dock';dock.hidden=true;
   if(hud){hud.prepend(dock,zone);zone.append(...['banner','deal-now'].map(id=>$(document,id)),next,...['insurance','actions-top'].map(id=>$(document,id)).filter(Boolean));}
   else scene.append(next);
@@ -113,14 +114,14 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   });
   seatsHost.replaceChildren(...slots.map(slot=>slot.root));
   let docked=null;
-  // A phone docks the chosen own seat's bets and Lämna above the action zone: its three boxes are narrower than one bet row.
+  // The chosen own seat's bets and Lämna share one labelled dock in every viewport.
   // The same buttons move, so a seat never has two sets of controls.
   function dockSeat(index){
     if(docked===index)return;
     const previous=docked===null?null:slots[docked];
     if(previous){previous.inside.append(previous.bets,previous.leaveSeat);previous.leaveSeat.textContent='Lämna';}
     docked=index;dock.hidden=index===null;
-    if(index!==null){const slot=slots[index];dock.append(slot.bets,slot.leaveSeat);slot.leaveSeat.textContent=`Lämna plats ${index+1}`;}
+    if(index!==null){const slot=slots[index];dock.append(slot.bets,slot.leaveSeat);slot.leaveSeat.textContent='Lämna';}
   }
   // Keyboard focus survives the table's own changes. A restore disables every control for a moment (the binding is
   // checked again), a round hides the bets and a phone's dock moves its buttons: Chrome then drops focus to the page.
@@ -156,48 +157,55 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
   // Chrome moves focus off a closed control at its next frame, so the check runs again then.
   const keepFocusSoon=()=>{keepFocus();view?.requestAnimationFrame?.(keepFocus);};
   const rect=node=>typeof node?.getBoundingClientRect==='function'?node.getBoundingClientRect():null;
-  // Layout after every render and after the presentation lays the seats out again on resize. Own seats closer than a
-  // full bet row share its space (K04 F14); a row at a phone's edge moves inside the scene; a seat whose controls would
-  // reach the wallet, chips or action zone lifts above them (K04 F12, F13).
-  // The dock is settled before the presentation measures the bottom controls for its seat layout.
+  // Settle the dock before presentation measures the reserved control area.
   function arrange(){
     const s=model.snapshot,phone=compact(),visible=phone?seatWindow(s,model.focusSeat).boxes:slots.map((_,i)=>i);
-    const primary=primarySeat(s,model.focusSeat,visible);
-    dockSeat(phone&&s.phase==='bets'&&primary!==null?primary:null);
-    seatsHost.classList?.toggle('seats-docked',phone);
+    const primary=primarySeat(s,s.phase==='round'?s.round?.hands?.[s.round.active]?.box:model.focusSeat,visible);
+    dockSeat(s.phase==='bets'&&primary!==null?primary:null);
     return {s,phone,visible,primary};
   }
   function onScreen(){
     if(closed||!model?.snapshot)return;
-    const {s,phone,visible,primary}=arrange(),own=s.me.seats.filter(i=>visible.includes(i));
-    const points=own.map(i=>[i,rect(slots[i].root)?.left]).filter(([,x])=>Number.isFinite(x));
-    const crowd=crowding(points);
-    for(const [i,slot] of slots.entries()){
-      const mine=s.owners[i]===s.me.id,state=crowd.get(i);
-      slot.root.classList.toggle('primary',mine&&i===primary);slot.root.classList.toggle('crowded',Boolean(mine&&!phone&&state?.crowded));
-      if(state?.crowded)slot.root.style.setProperty('--seat-bet-w',state.betWidth+'px');else slot.root.style.removeProperty('--seat-bet-w');
-      slot.root.style.removeProperty('--seat-shift-x');slot.root.style.removeProperty('--seat-lift');
-    }
-    const edge=rect(scene),floor=rect(hud);if(!edge)return;
-    const bottom=Math.min(edge.bottom,floor&&floor.height?floor.top:Infinity)-6;
-    // Crowded own seats line their bets up on the lowest of their arc, so the chosen seat's second line is below them all.
-    const line=Math.max(...points.filter(([i])=>crowd.get(i)?.crowded).map(([i])=>rect(slots[i].root).top));
-    let lift=0;
-    for(const [i,slot] of slots.entries()){
+    const {phone,primary}=arrange();
+    for(const [i,slot] of slots.entries())slot.root.classList.toggle('primary',i===primary);
+    // Keep the controls below the actual cards/totals, including split hands. Never lift
+    // a seat into its total to make room for a betting row: the row has its own dock.
+    const shown=node=>{
+      for(let parent=node;parent;parent=parent.parentElement){const style=view?.getComputedStyle?.(parent);
+        if(parent.hidden||style?.display==='none'||style?.visibility==='hidden'||style?.opacity==='0')return null;}
+      const r=rect(node);return r&&r.width>0&&r.height>0?r:null;
+    };
+    const totals=[...document.querySelectorAll('#local-card-overlay .card-totals [data-seat]')];
+    const seatRects=[];
+    for(const slot of slots){
       if(slot.root.hidden)continue;
-      const anchor=rect(slot.root);if(!anchor)continue;
-      if(crowd.get(i)?.crowded&&!phone)slot.root.style.setProperty('--seat-row-y',Math.round(line-anchor.top)+'px');else slot.root.style.removeProperty('--seat-row-y');
-      const row=slot.bets.parentNode===dock?[]:[...slot.bets.children,slot.leaveSeat].map(rect).filter(r=>r&&r.width>0);
-      // The bet row stays inside the scene; the seat's circle stays on its box.
-      if(row.length){const left=Math.min(...row.map(r=>r.left)),right=Math.max(...row.map(r=>r.right));
-        const shift=Math.round(Math.max(0,edge.left+8-left)-Math.max(0,right-(edge.right-8)));
-        if(shift)slot.root.style.setProperty('--seat-shift-x',shift+'px');}
-      // The rows are measured with their own offset; the seat box itself never includes it.
-      lift=Math.max(lift,Math.ceil(Math.max(...[rect(slot.inside),...row].filter(Boolean).map(r=>r.bottom))-bottom));
+      slot.root.style.removeProperty('--seat-clearance');
+      const circle=shown(slot.join);if(!circle)continue;
+      const obstacles=totals.map(shown).filter(r=>r&&r.right>circle.left&&r.left<circle.right);
+      const below=Math.max(circle.top,...obstacles.map(r=>r.bottom+8));
+      slot.root.style.setProperty('--seat-clearance',`${Math.max(0,below-circle.top)}px`);
+      seatRects.push(shown(slot.join));
     }
-    // Every seat lifts by the same amount, so the arc keeps its shape and no row meets a neighbour's circle.
-    if(lift>0)for(const slot of slots)if(!slot.root.hidden)slot.root.style.setProperty('--seat-lift',-lift+'px');
+    if(!hud)return;
+    hud.style.removeProperty('top');hud.style.removeProperty('bottom');
+    const edge=rect(scene),floor=rect(hud);if(!edge||!floor)return;
+    const cards=totals.map(shown).filter(Boolean);
+    const bottom=Math.max(edge.top+80,...seatRects.filter(Boolean).map(r=>r.bottom),...cards.map(r=>r.bottom));
+    // On a tall desktop keep the action/bet panel next to the hands. Short windows
+    // retain the normal bottom dock; its layout reservation stays the same either way.
+    if(phone){
+      // With no cards on the table, short phones can move only their touch row
+      // above the dock. Filmed cards and totals never move with these controls.
+      if(model.snapshot.phase==='bets'){
+        const lift=Math.max(0,bottom-(floor.top-12));
+        if(lift)for(const slot of slots)if(!slot.root.hidden)slot.root.style.setProperty('--seat-clearance',`${-lift}px`);
+      }
+      return;
+    }
+    const top=bottom+16;
+    if(top+floor.height<=edge.bottom-8){hud.style.top=`${top-edge.top}px`;hud.style.bottom='auto';}
   }
+
   const resized=()=>view?.requestAnimationFrame?.(onScreen);
   if(typeof view?.addEventListener==='function'){view.addEventListener('resize',resized);cleanups.push(()=>view.removeEventListener('resize',resized));}
   let chipKey='';
@@ -218,10 +226,17 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       // Redo belongs to a seated player's betting window; outside it the action zone shows the next step instead.
       $(document,'deal-now').hidden=!(s?.phase==='bets'&&s.me.seats.length);
       for(const node of decisions)node.disabled=!can.act.includes(node.dataset.act);
-      if($(document,'actions-top'))$(document,'actions-top').hidden=!can.act.length;
+      const activeBox=s?.round?.hands?.[s.round.active]?.box;
+      const ownDecision=s?.phase==='round'&&s.round?.phase==='decisions'&&s.me.seats.includes(activeBox);
+      const serverNow=value.serverNow??s?.serverNow,opens=s?.plan?.turnAt??0,deadline=s?.actionDeadline;
+      timer.hidden=!ownDecision;
+      if(ownDecision)timer.textContent=`Plats ${activeBox+1} · `+(serverNow<opens?`Beslut om ${Math.ceil((opens-serverNow)/1000)} s`
+        :Number.isFinite(deadline)?deadline>serverNow?`${Math.ceil((deadline-serverNow)/1000)} s kvar`:'Tiden är slut':'Din tur');
+      if($(document,'actions-top'))$(document,'actions-top').hidden=!ownDecision;
       // The insurance question shows from turnAt, when every card of its plan shows (K04 review of #481). At the
       // start of the plan it would tell the player of the dealer's ace before the up card was dealt on screen.
       $(document,'insurance').hidden=!(s?.me?.insuranceDue&&s.phase==='round'&&s.round?.phase==='insurance'&&(value.serverNow??s.serverNow)>=(s.plan?.turnAt??0));
+      $(document,'banner').hidden=Boolean(ownDecision||!$(document,'insurance').hidden);
       $(document,'ins-yes').disabled=!can.insurance||Boolean(s&&s.me.pausedUntil>(value.serverNow??s.serverNow));$(document,'ins-no').disabled=!can.insurance;
       const limits=$(document,'limits');
       if(!s){$(document,'banner').textContent='Ansluter…';$(document,'balance').textContent='–';$(document,'total-bet').textContent='–';if(limits)limits.textContent='–';dockSeat(null);keepFocusSoon();return;}
@@ -246,7 +261,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       banner.title=banner.textContent;
       if(key!==chipKey){chipKey=key;chipHost.replaceChildren(...s.settings.chips.map(amount=>{const node=button(document,number(amount),()=>actions?.selectChip(amount));node.setAttribute('aria-label',money(amount,s.me.currency));node.title=money(amount,s.me.currency);node.className='chip';node.dataset.value=String(amount);return node;}));}
       for(const node of chipHost.children){node.disabled=value.busy||!value.connected||value.retry;node.classList.toggle('sel',Number(node.dataset.value)===value.chip);node.setAttribute('aria-pressed',String(Number(node.dataset.value)===value.chip));}
-      const several=s.me.seats.length>1,chosen=primarySeat(s,value.focusSeat);
+      const several=s.me.seats.length>1,chosen=primarySeat(s,s.phase==='round'?activeBox:value.focusSeat);
       // Side bets and Lämna act only in the betting window; during a round the seat keeps its circle and main stake,
       // so its controls stay clear of the cards that are dealt above them.
       const betting=s.phase==='bets';
@@ -256,10 +271,11 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
         const own=s.owners[i]===s.me.id,occupied=s.owners[i]!==null,freeBet=claimsByBet(i);
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
         // Short visible label so 44 px pills fit the seat spacing; the full text stays in aria-label.
-        // The own seat's circle reads "Du"; with several own seats it chooses whose bets show in full, else it takes no click.
-        slot.join.textContent=own?'Du':freeBet?'+':String(i+1);
+        // Own markers show their seat number and confirmed main stake; selecting one chooses its dock.
+        slot.join.textContent=own?`Du ${i+1}`:freeBet?'+':String(i+1);
+        if(own){const amount=document.createElement('span');amount.className='seat-shared-amount';amount.textContent=number(s.bets[i].main);slot.join.append(amount);}
         const label=own?`Plats ${i+1}, din plats`:occupied?`Plats ${i+1} upptagen`:freeBet?`Lägg huvudinsats ${money(value.chip,s.me.currency)} på plats ${i+1}`:`Välj plats ${i+1}`;
-        slot.join.setAttribute('aria-label',label);slot.join.title=freeBet?label:'';
+        slot.join.setAttribute('aria-label',label);slot.join.title=own?`Plats ${i+1} · Insats ${money(s.bets[i].main,betCurrency)}`:freeBet?label:'';
         // The chosen one of several own circles stays focusable (aria-disabled), so choosing it never drops focus to the page.
         slot.join.disabled=own?!several:occupied||!(freeBet?can.bet:can.join);slot.join.setAttribute('aria-disabled',String(own&&several&&i===chosen));
         slot.join.setAttribute('aria-pressed',String(own&&(!several||i===chosen)));
@@ -271,11 +287,11 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
           const closedSide=field!=='main'&&!(s.bets[i].main>0);
           node.disabled=!can.bet||!own||closedSide;node.title=closedSide?hints.side??'':'';
           node.classList.toggle('staked',s.bets[i][field]>0);
-          node.textContent=({main:'Insats',pp:'Par',tp:'21+3'})[field]+' '+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],betCurrency)}`);}
+          node.textContent=(field==='main'?`Plats ${i+1}\nInsats `:({pp:'Par',tp:'21+3'})[field]+' ')+number(s.bets[i][field]);node.setAttribute('aria-label',`Plats ${i+1}, ${field==='main'?'huvudinsats':field==='pp'?'par':'21 plus 3'}, ${money(s.bets[i][field],betCurrency)}`);}
       }
       arrange();
       onLayout({snapshot:s,focusSeat:value.focusSeat,seats:slots.map(slot=>slot.root)});
-      onScreen();keepFocusSoon();
+      onScreen();view?.requestAnimationFrame?.(onScreen);keepFocusSoon();
     },
     get snapshot(){return model?.snapshot;},
     close(){if(closed)return;closeAsk();closed=true;cleanups.forEach(fn=>fn());actions=null;},

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { calibration } from '../packages/presentation/contracts/calibration.mjs';
 import { ROOM_LIMIT_PRESETS } from '../packages/presentation/contracts/room-game-config.mjs';
 import { PAOW_KEVIN_PROFILE as paow } from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
-import { SEAT_HALF_PX, crowding, fallbackSeatLayout, primarySeat, seatWindow, tableProfileName, windowLabel } from '../services/game/public/shared-room-layout.mjs';
+import { SEAT_HALF_PX, fallbackSeatLayout, primarySeat, seatWindow, tableProfileName, windowLabel } from '../services/game/public/shared-room-layout.mjs';
 import { compositionAnchorFrames, projectAnchorRects } from '../packages/presentation/runtime/composition-anchors.mjs';
 import { projectTableGamePlane } from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import { defaultBlackjackAutoScale, defaultBlackjackTableGeometry, defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
@@ -50,14 +50,6 @@ test('a seat window shows three boxes around the active hand, the chosen seat or
   assert.equal(primarySeat(seatedAt([1, 5]), 5), 5);
   assert.equal(primarySeat(seatedAt([1, 5]), 3, [2, 3, 4, 5]), 5, 'the first own seat on screen when the chosen seat is not own');
   assert.equal(primarySeat(snapshot(), 2), null);
-});
-
-// K04 F14: with seven own seats at 1440 px, neighbouring bet rows caught each other's clicks.
-test('own seats closer than one bet row are crowded and keep their main bet inside the gap', () => {
-  const far = crowding([[0, 100], [6, 900]]), near = crowding([[2, 400], [3, 467], [4, 534]]);
-  assert.deepEqual([far.get(0).crowded, far.get(6).crowded], [false, false]);
-  for (const box of [2, 3, 4]) { assert.equal(near.get(box).crowded, true); assert.ok(near.get(box).betWidth <= 67 - 4 && near.get(box).betWidth >= 44); }
-  assert.equal(crowding([[3, 500]]).get(3).crowded, false, 'one own seat is never crowded');
 });
 
 // K04 F16: seats follow the room dealer's filmed landings; a dealer without a profile keeps the calibrated row.
@@ -339,7 +331,7 @@ test('money labels use the account unit and historical winnings retain their set
     assert.equal(nodes.get('last-win').textContent, '25,5 EUR');
     const chip = nodes.get('chips').children[0];
     assert.equal(chip.getAttribute('aria-label'), `5 ${currency}`); chip.click();
-    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    const fields = (nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock').children.find(node => node.className === 'seat-shared-bets') ?? nodes.get('seats').children[3].children[0].children[1]).children;
     assert.ok(fields.some(node => node.getAttribute('aria-label')?.endsWith(`5 ${currency}`)));
   }
   assert.deepEqual(calls, [5, 5, 5], 'labelling changes no chip amount');
@@ -360,7 +352,7 @@ test('settled own stakes keep their receipt currency after a wallet change and r
   const render = () => view.render({ snapshot: s, can: everything, notice: '', connected: true });
   const stakes = currency => {
     assert.equal(nodes.get('total-bet').textContent, `25 ${currency}`);
-    const fields = nodes.get('seats').children[3].children[0].children[1].children;
+    const fields = (nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock').children.find(node => node.className === 'seat-shared-bets') ?? nodes.get('seats').children[3].children[0].children[1]).children;
     assert.deepEqual(fields.map(node => node.getAttribute('aria-label')), [
       `Plats 4, par, 2 ${currency}`, `Plats 4, huvudinsats, 20 ${currency}`, `Plats 4, 21 plus 3, 3 ${currency}`,
     ]);
@@ -390,8 +382,44 @@ test('settled stakes with an old receipt without currency never borrow the curre
   view.render({ snapshot: s, can: everything, notice: '', connected: true });
   assert.equal(nodes.get('total-bet').textContent, '25 · valuta saknas');
   assert.equal(nodes.get('last-win').textContent, '50 · valuta saknas');
-  const main = nodes.get('seats').children[3].children[0].children[1].children[1];
+  const main = (nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock').children.find(node => node.className === 'seat-shared-bets') ?? nodes.get('seats').children[3].children[0].children[1]).children[1];
   assert.equal(main.getAttribute('aria-label'), 'Plats 4, huvudinsats, 25 · valuta saknas');
   assert.equal(nodes.get('balance').textContent.replace(/\s+/g, ' '), '1 000 EUR demo');
   view.close();
+});
+
+
+test('the decision panel shows server time and remains present while commands are gated', () => {
+  const { document, nodes } = viewDocument();
+  const view = createSharedRoomView({ document });
+  const s = seatedAt([4], { phase: 'round', actionDeadline: 17000, plan: { turnAt: 2000 },
+    round: { phase: 'decisions', active: 0, hands: [{ box: 4, cards: [] }] } });
+  const render = serverNow => view.render({ snapshot: s, can: everything, notice: '', connected: true, serverNow });
+  const zone = nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-actions');
+  const timer = zone.children.find(node => node.id === 'shared-room-timer');
+  render(1000);assert.equal(timer.textContent, 'Plats 5 · Beslut om 1 s');
+  assert.equal(nodes.get('actions-top').hidden, false, 'a future decision is visible but disabled');
+  render(2500);assert.equal(timer.textContent, 'Plats 5 · 15 s kvar');
+  assert.ok(nodes.get('actions-top').children.every(node => node.disabled), 'only can.act may enable a decision');
+  render(17000);assert.equal(timer.textContent, 'Plats 5 · Tiden är slut');
+  s.round.active = 1;s.round.hands.push({ box: 2, cards: [] });
+  render(18000);assert.equal(timer.hidden, true);assert.equal(nodes.get('actions-top').hidden, true, 'another player owns the next decision');
+  view.close();
+});
+
+
+test('the countdown redraws against server time without extending the decision deadline', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let now=1000;const renders=[];
+  const controller=createSharedRoomController({roomId,now:()=>now,commands:{state:'idle',stop(){}},
+    view:{bind(){},render:value=>renders.push(value),close(){}},presentation:{restoreSnapshot(){},present(){},close(){}}});
+  t.after(()=>controller.stop());
+  const s=seatedAt([3],{actionDeadline:4000,phase:'round',plan:{turnAt:1000},
+    round:{phase:'decisions',active:0,hands:[{box:3,cards:[]}],legalActions:['hit','stand']}});
+  await controller.restoreSnapshot(s,{signal:new AbortController().signal,receivedAt:1000});
+  now=2000;t.mock.timers.tick(1000);
+  assert.equal(renders.at(-1).serverNow,2000);assert.deepEqual(renders.at(-1).can.act,['hit','stand']);
+  now=4000;t.mock.timers.tick(2000);
+  assert.equal(renders.at(-1).serverNow,4000);assert.deepEqual(renders.at(-1).can.act,[]);
+  assert.equal(renders.at(-1).snapshot.actionDeadline,4000,'the server deadline is unchanged');
 });
