@@ -32,7 +32,7 @@ async function withPage(run,prepare=()=>{}){
   await fixtureSource();
   const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try{
-    const context=await browser.newContext(),failures=[],state={catalog:catalog(),reads:0,lifecycleReads:0,status:200,lifecycleStatus:200,writes:[],beforeRead:null,beforeLifecycle:null,assignmentStatus:200};
+    const context=await browser.newContext(),failures=[],state={catalog:catalog(),reads:0,completedReads:[],lifecycleReads:0,status:200,lifecycleStatus:200,writes:[],beforeRead:null,beforeLifecycle:null,assignmentStatus:200};
     prepare(state);
     await context.addInitScript(studioHistoryBootstrap);
     await context.route('**/*',async route=>{
@@ -42,7 +42,8 @@ async function withPage(run,prepare=()=>{}){
       if(url.pathname==='/admin/_data/catalog'){
         const request=++state.reads,json=structuredClone(state.catalog),status=state.status;
         await state.beforeRead?.(request);
-        return route.fulfill({status,json}).catch(()=>{});
+        await route.fulfill({status,json,headers:{'x-fixture-catalog-read':String(request)}}).catch(()=>{});
+        state.completedReads.push(request);return;
       }
       if(url.pathname==='/api/admin/resource-lifecycle'){
         state.lifecycleReads++;await state.beforeLifecycle?.();
@@ -138,13 +139,29 @@ test('switching companies keeps their separate lane drafts and never transfers a
 
 test('a company switch aborts the old read, ignores its late response and publishes only the selected company',{skip:!browserModule},()=>{
   let release;const gate=new Promise(resolve=>{release=resolve;});
+  let releaseRefresh;const refreshGate=new Promise(resolve=>{releaseRefresh=resolve;});
   return withPage(async(page,state)=>{
-    await page.waitForFunction(()=>typeof window.__switch==='function');
-    await page.evaluate(()=>window.__switch('beta'));await ready(page);
-    release();await page.getByRole('heading',{name:/^Beta/,level:1}).waitFor();
-    await scene(page).check();await publish(page).click();await page.waitForFunction(()=>window.__changes===1);
-    assert.equal(state.reads,3);assert.equal(state.writes[0].operatorId,'beta');assert.equal(state.catalog.administration.operators[0].packageRevision,1);
-  },state=>{state.beforeRead=async request=>{if(request===1)await gate;};});
+    try{
+      await page.exposeFunction('__catalogReads',()=>({started:state.reads,completed:state.completedReads}));
+      await page.waitForFunction(async()=>(await window.__catalogReads()).started===1);
+      state.catalog.administration.compositions[1].name='Betas aktuella miljö';
+      const aborted=page.waitForEvent('requestfailed',{predicate:request=>new URL(request.url()).pathname==='/admin/_data/catalog'});
+      await page.evaluate(()=>window.__switch('beta'));await ready(page);
+      assert.match((await aborted).failure().errorText,/aborted/i);
+      release();await page.waitForFunction(async()=>(await window.__catalogReads()).completed.includes(1));
+      await page.getByRole('heading',{name:/^Beta/,level:1}).waitFor();
+      await page.getByText('Betas aktuella miljö',{exact:true}).waitFor();
+      state.catalog.administration.compositions[1].name='Katalogen efter publicering';
+      await scene(page).check();await publish(page).click();
+      await page.waitForFunction(async()=>(await window.__catalogReads()).started===3);
+      assert.equal(await page.getByText('Katalogen efter publicering',{exact:true}).count(),0,'the held refresh has not reached the editor');
+      const refreshed=page.waitForResponse(response=>response.headers()['x-fixture-catalog-read']==='3');
+      releaseRefresh();await (await refreshed).finished();
+      await page.getByText('Katalogen efter publicering',{exact:true}).waitFor();await ready(page);
+      assert.equal(await page.evaluate(()=>window.__changes),1);assert.equal(state.reads,3);
+      assert.equal(state.writes[0].operatorId,'beta');assert.equal(state.catalog.administration.operators[0].packageRevision,1);
+    }finally{release();releaseRefresh();}
+  },state=>{state.beforeRead=async request=>{if(request===1)await gate;if(request===3)await refreshGate;};});
 });
 
 test('standalone package editor still reads its own catalog and manual refresh reads it again',{skip:!browserModule},()=>withPage(async(page,state)=>{

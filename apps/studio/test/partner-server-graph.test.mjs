@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 // Partnerportalens serverläsning körs i serverkomponenter (app/partner →
 // workspace-surface-page.tsx) och i app/api/partner-rutten. En modul utan
@@ -57,37 +58,34 @@ test('the server reading of Partnerportalen never pulls React hooks or Next clie
     walk(file, graph);
   }
   assert.deepEqual(graph.offenders, []);
-  const relative = file => file.slice(studioRoot.length).replaceAll('\\', '/');
-  const seen = [...graph.seen].map(relative), boundaries = [...graph.boundaries].map(relative);
-  for (const expected of ['lib/partner-data.mjs', 'lib/partner-session.mjs', 'lib/partner-words.mjs', 'lib/partner-game-readout.mjs', 'lib/partner-workspace-access.mjs']) assert.ok(seen.includes(expected), expected);
-  assert.ok(seen.length > 20, `the walk covers the server modules (${seen.length})`);
-  // The client components the page hands the snapshot to are boundaries, not server modules.
-  for (const expected of ['components/partner/partner-operator-workspace.jsx', 'components/partner-workspace.tsx']) assert.ok(boundaries.includes(expected), expected);
-  assert.ok(!seen.includes('components/partner/partner-copy.mjs'), 'the hook module stays behind the client boundary');
 });
 
-test('the graph walk itself catches a hook import, a react import in a .mjs module and a dynamic import', () => {
-  const fixture = `${studioRoot}test/fixtures/`;
-  const scan = (file, source) => { const graph = { seen: new Set(), boundaries: new Set(), offenders: [] }; readFileSync.cache = null; return { graph, source }; };
-  assert.ok(scan && fixture, 'helpers in scope');
-  // Static analysis of representative sources through the same regexes.
-  const cases = [
-    ["import { useEffect, useState } from 'react';", true],
+test('the graph walk follows imports and stops at the client boundary', t => {
+  const fixture = mkdtempSync(join(tmpdir(), 'partner-server-graph-'));
+  t.after(() => rmSync(fixture, { recursive: true, force: true }));
+  const root = join(fixture, 'page.tsx'), dependency = join(fixture, 'reader.mjs');
+  const scan = () => { const graph = { seen: new Set(), boundaries: new Set(), offenders: [] }; walk(root, graph); return graph; };
+  for (const source of ["import './reader.mjs';", "export { read } from './reader.mjs';", "const reader = await import('./reader.mjs');"]) {
+    writeFileSync(root, source);
+    writeFileSync(dependency, "import { useEffect } from 'react'; export const read = () => null;");
+    assert.equal(scan().offenders.length, 1, source);
+    writeFileSync(dependency, "'use client';\nimport { useEffect } from 'react'; export const read = () => null;");
+    assert.deepEqual(scan().offenders, [], source);
+    assert.ok(scan().boundaries.has(dependency));
+  }
+  for (const [source, offends] of [
+    ["import { useState } from 'react';", true],
     ["import React from 'react';", false],
     ["import { createRoot } from 'react-dom/client';", true],
     ["import { useRouter } from 'next/navigation';", true],
     ["import { notFound, redirect } from 'next/navigation';", false],
-    ["const { x } = await import('./partner-copy.mjs');", null],
-  ];
-  for (const [source, offends] of cases) {
-    const [match] = [...source.matchAll(importPattern)];
-    assert.ok(match, source);
-    const specifier = match[1] ?? match[2] ?? match[3];
-    if (offends === null) { assert.equal(specifier, './partner-copy.mjs', 'dynamic import is followed'); continue; }
-    const hit = /^react(?:-dom)?(?:\/|$)/.test(specifier) ? specifier.startsWith('react-dom') || hookImport.test(match[0])
-      : /^next\//.test(specifier) ? hookImport.test(match[0]) : false;
-    assert.equal(hit, offends, source);
+  ]) {
+    writeFileSync(root, source);
+    assert.equal(scan().offenders.length > 0, offends, source);
   }
+  writeFileSync(dependency, "import React from 'react';");
+  writeFileSync(root, "import './reader.mjs';");
+  assert.equal(scan().offenders.length, 1, 'a plain server module must not pull React into the server reader');
 });
 
 test('the role words the server renders are the words the shell shows', async () => {

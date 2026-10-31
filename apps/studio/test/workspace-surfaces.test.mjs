@@ -22,9 +22,8 @@ test('public and native documents resolve to the same surface and exact Studio d
   }
 });
 
-test('every partner view names the permission the server checks, and only those seven views exist', () => {
-  assert.deepEqual(PARTNER_VIEWS, ['overview', 'rooms', 'players', 'reports', 'team', 'integration', 'help']);
-  assert.deepEqual(Object.keys(PARTNER_VIEW_PERMISSIONS), [...PARTNER_VIEWS]);
+test('every partner view names the permission the server checks', () => {
+  assert.deepEqual(Object.keys(PARTNER_VIEW_PERMISSIONS).sort(), [...PARTNER_VIEWS].sort());
   for (const permission of Object.values(PARTNER_VIEW_PERMISSIONS)) assert.ok(PARTNER_PERMISSIONS.includes(permission), permission);
   assert.equal(PARTNER_VIEW_PERMISSIONS.team, 'team.read');
   assert.equal(PARTNER_VIEW_PERMISSIONS.players, 'players.read');

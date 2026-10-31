@@ -163,36 +163,54 @@ test('revocation while authority awaits and between lock-plan attempts cannot re
 
 test('real PostgreSQL adapter calls authority after R/P/A on its same fake SQL client and rolls back denial', async () => {
   const clients = [];
+  let lockedClient, auditLock;
   const pool = {
     async query() { assert.fail('the locked work must not query through the pool'); },
     async connect() {
-      const client = { statements: [], released: false, async query(sql, values = []) {
+      const client = { statements: [], events: [], released: false, async query(sql, values = []) {
         this.statements.push({ sql, values });
-        if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { command: sql, rows: [] };
-        if (sql.includes('SELECT id FROM croupier_game.players')) return { rows: [{ id: 'alice' }] };
-        if (sql.includes('SELECT version FROM croupier_game.shared_table_config_heads')) return { rows: [{ version: 'v1' }] };
+        const normalized = sql.trim().replace(/\s+/g, ' ');
+        if (/^(BEGIN|COMMIT|ROLLBACK);?$/i.test(normalized)) {
+          const command = normalized.replace(/;$/, '').toUpperCase();
+          this.events.push(command); return { command, rows: [] };
+        }
+        if (/\bpg_advisory_xact_lock\s*\(/i.test(sql)) this.events.push(JSON.stringify(values) === auditLock ? 'audit-lock' : 'room-lock');
+        if (/\bFROM\s+croupier_game\.players\b/i.test(sql)) {
+          if (/\bFOR\s+UPDATE\b/i.test(sql)) { assert.deepEqual(values, ['alice']); this.events.push('player-lock'); }
+          return { rows: [{ id: 'alice' }] };
+        }
+        if (/\bFROM\s+croupier_game\.shared_table_config_heads\b/i.test(sql)) {
+          this.events.push('config-read'); return { rows: [{ version: 'v1' }] };
+        }
         return { rows: [] };
       }, release() { this.released = true; } };
       clients.push(client); return client;
     },
   };
   const store = createPostgresTableStore({ pool, walletMode: 'demo' });
+  // With no room or player resources, the adapter still acquires its global audit lock.
+  // Learn that identity through the port rather than freeze its hashing implementation.
+  await store.runLocked({ rooms: [], players: [] }, async () => {});
+  const auditLocks = clients.at(-1).statements.filter(({ sql }) => /\bpg_advisory_xact_lock\s*\(/i.test(sql));
+  assert.equal(auditLocks.length, 1);
+  auditLock = JSON.stringify(auditLocks[0].values);
   const table = createTableCoordinator({ store, clock, random: deterministicRandom('sql-order'), authorizeCommand: async tx => {
-    assert.equal(clients.length, 2, 'one completed lock-plan read and one locked unit');
-    const client = clients[1];
-    assert.equal(client.released, false);
-    assert.equal(client.statements.length, 5);
-    assert.equal(client.statements[2].sql, 'SELECT pg_advisory_xact_lock($1::integer,$2::integer)');
-    assert.match(client.statements[3].sql, /players WHERE id=\$1 FOR UPDATE/);
-    assert.equal(client.statements[4].sql, 'SELECT pg_advisory_xact_lock($1::integer,$2::integer)');
+    const active = clients.filter(client => !client.released);
+    assert.equal(active.length, 1, 'one active client owns the locked unit');
+    lockedClient = active[0];
+    assert.deepEqual(lockedClient.events.filter(event => event !== 'config-read'), ['BEGIN', 'room-lock', 'player-lock', 'audit-lock']);
+    const locks = lockedClient.statements.filter(({ sql }) => /\bpg_advisory_xact_lock\s*\(/i.test(sql));
+    assert.notDeepEqual(locks[0].values, locks[1].values, 'room and audit use distinct locks');
+    lockedClient.events.push('authority');
+    const checkouts = clients.length, reads = lockedClient.events.filter(event => event === 'config-read').length;
     assert.equal(await tx.config.latest('party'), 'v1');
-    assert.equal(clients.length, 2, 'the authority port read stays on the active SQL client');
-    assert.match(client.statements.at(-1).sql, /shared_table_config_heads/);
+    assert.equal(clients.length, checkouts, 'the authority port never checks out another SQL client');
+    assert.ok(lockedClient.events.filter(event => event === 'config-read').length > reads, 'the authority read uses the locked client');
     return false;
   } });
   await assert.rejects(table.command(identity, join), denied);
-  assert.equal(clients[0].statements.at(-1).sql, 'COMMIT');
-  assert.equal(clients[1].statements.at(-1).sql, 'ROLLBACK');
+  assert.deepEqual(lockedClient.events.filter(event => event !== 'config-read'), ['BEGIN', 'room-lock', 'player-lock', 'audit-lock', 'authority', 'ROLLBACK']);
+  for (const client of clients.filter(client => client !== lockedClient)) assert.equal(client.events.at(-1), 'COMMIT');
   assert.ok(clients.every(client => client.released));
-  assert.ok(clients.every(client => client.statements.every(({ sql }) => !sql.includes('shared_table_receipts'))));
+  assert.ok(clients.every(client => client.statements.every(({ sql }) => !/shared_table_receipts/i.test(sql))));
 });

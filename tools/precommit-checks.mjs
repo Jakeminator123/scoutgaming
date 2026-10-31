@@ -119,9 +119,9 @@ export function addsTestFile(changes) {
 
 // Printed after a failed check whose plain output does not say what to do.
 const CHECK_HINTS = Object.freeze({
-  'tools/check-orphan-tests.mjs': 'Orphan tests: add each listed file to a run_node_tests line in .githooks/pre-commit-full '
-    + '(the suite that owns its area: studio, admin, contracts, database, presentation, access, speech, gameplay, engine or container), '
-    + 'or classify a helper/opt-in module in tools/orphan-tests-exceptions.json. CI fails the admin-contracts leg otherwise.',
+  'tools/check-orphan-tests.mjs': 'Orphan tests: register each listed file in an executable test command or glob '
+    + 'in .githooks/pre-commit-full, a CI workflow or its invoked package test script; '
+    + 'classify only actual helpers/opt-in modules in tools/orphan-tests-exceptions.json.',
 });
 
 // Static ESM only: do not evaluate helpers, dynamic imports or require calls.
