@@ -21,8 +21,8 @@ export const REGRESSION_LEGS = Object.freeze([
 ].map(Object.freeze));
 export const LIPSYNC_LEG = 'speech-gameplay';
 
-// Real-browser acceptance (Chrome) is its own job, "Regression (browser)", outside
-// the leg matrix. The selection says whether the final gate requires it:
+// Real-browser acceptance (Chrome) shares one step list across mutually exclusive
+// required/advisory jobs outside the leg matrix. Only the required job is in CI.needs:
 //   required  complete runs (nightly schedule, manual, push preview) and ready full-scope
 //             PRs that change browser client code (browserAcceptanceRequired)
 //   advisory  other ready full-scope PRs: it runs and reports, but CI does not wait on its result

@@ -193,7 +193,9 @@ jobs:
             ${{ runner.os }}-studio-next-v1-${{ hashFiles('apps/studio/package-lock.json') }}-
       - name: Build the real studio used by launcher regression tests
         if: ${{ matrix.build }}
-        run: npm --prefix apps/studio run build
+        run: |
+          npm --prefix apps/studio run build
+          node tools/check-admin-build.mjs
       # OpenClaw launcher acceptance runs in the access suite and needs the build above.
       - name: OpenClaw lab check
         if: ${{ matrix.build }}
@@ -311,14 +313,14 @@ jobs:
   # the gate requires it: required on nightly, manual and preview runs and on ready
   # full-scope PRs that change browser client code (services/game/public/**,
   # apps/studio/client/**, apps/studio/components/**); advisory on other ready full-scope PRs (it runs and
-  # reports, but a red result does not block CI).
+  # reports in a separate job outside CI.needs).
   browser-regression:
     name: Regression (browser)
     needs: changes
-    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.browser != 'none'
+    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.browser == 'required'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    steps:
+    steps: &browser-regression-steps
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -368,6 +370,16 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
+
+  # Same coverage, but not a prerequisite of the required CI check. The modes
+  # are mutually exclusive, so a run never pays for two browser executions.
+  browser-advisory:
+    name: Regression (browser advisory)
+    needs: changes
+    if: needs.changes.outputs.draft != 'true' && needs.changes.outputs.browser == 'advisory'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps: *browser-regression-steps
 
   # The pinned OpenClaw Gateway image build (about 90 s, mostly the base pull) runs
   # beside the regression legs instead of inside the access suite, and only when
@@ -499,7 +511,7 @@ jobs:
             fail('the Gateway container check is missing, failed, or ran against the classification.');
           }
           if ((legless && jobs['dealer-regression']?.result !== 'skipped')
-            || (browser === 'none' && jobs['browser-regression']?.result !== 'skipped')) {
+            || (browser !== 'required' && jobs['browser-regression']?.result !== 'skipped')) {
             fail('a regression job ran against the classification.');
           }
           if (!['true', 'false'].includes(moving)
@@ -509,10 +521,7 @@ jobs:
             || required.some(name => jobs[name]?.result !== 'success')) {
             fail('a required check failed, was cancelled, skipped, or was not reported.');
           }
-          // Advisory: a ready PR without browser client changes reports Chrome acceptance without waiting on it; the nightly run on main requires it.
-          const chrome = jobs['browser-regression']?.result;
-          if (browser === 'advisory' && chrome !== 'success') {
-            console.log(`::warning title=Regression (browser)::Chrome acceptance reported ${chrome ?? 'nothing'}. It does not block this PR; the nightly run on main requires it.`);
-          }
+          // Advisory results belong to the separate visible job; they cannot be
+          // observed through needs without also delaying this gate.
           console.log(`CI passed: ${scope} (${legs.join(', ') || 'no regression legs'}; browser ${browser})`);
           NODE

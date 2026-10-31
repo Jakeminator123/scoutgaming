@@ -31,6 +31,7 @@ run_node_tests() {
 run_check studio frontend-typecheck 180 node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.json --noEmit --incremental false
 # Discover Studio tests once, without a second hand-maintained registry.
 run_node_tests studio studio-tests apps/studio/test/*.test.mjs apps/studio/components/*.test.mjs
+run_node_tests studio admin-theme test/admin-tailwind.mjs test/ui-tokens.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
 run_node_tests admin dealer-filmed-profile-import apps/studio/client/admin/lib/dealer-filmed-profile.test.mjs

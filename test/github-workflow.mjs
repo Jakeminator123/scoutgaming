@@ -444,7 +444,7 @@ for (const scenario of ['warm', 'cold', 'incomplete', 'missing-tool']) {
   });
 }
 
-test('the required CI gate waits for every job in the PR workflow and runs even when one fails', async () => {
+test('the required CI gate waits for all blocking jobs, excludes advisory and runs even when one fails', async () => {
   const yaml = (await readFile(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const jobs = [...yaml.split('\njobs:\n')[1].matchAll(/^  ([a-z][a-z0-9-]*):\n/gm)].map(match => match[1]);
   assert.ok(jobs.includes('ci') && jobs.includes('dealer-regression') && jobs.includes('browser-regression'));
@@ -453,7 +453,8 @@ test('the required CI gate waits for every job in the PR workflow and runs even 
   assert.match(gate, /^    name: \$\{\{ needs\.changes\.outputs\.draft == 'true' && 'CI \(utkast\)' \|\| 'CI' \}\}\n/);
   assert.match(gate, /\n    if: always\(\)\n/);
   const needs = gate.match(/\n    needs: \[([^\]]+)\]\n/)?.[1].split(',').map(name => name.trim());
-  assert.deepEqual([...needs].sort(), jobs.filter(name => name !== 'ci').sort(), 'a job the gate does not need could fail without blocking a merge');
+  assert.deepEqual([...needs].sort(), jobs.filter(name => !['ci', 'browser-advisory'].includes(name)).sort(), 'only browser advisory may run outside the required gate');
+  assert.ok(jobs.includes('browser-advisory') && !needs.includes('browser-advisory'), 'advisory never delays the required gate');
   assert.ok(jobs.includes('targeted'), 'draft PRs run the targeted job');
   const header = yaml.split('\njobs:\n')[0];
   assert.match(header, /\non:\n  push:\n    branches: \[main, preview\]\n  pull_request:\n    branches: \[main, preview\]\n    types: \[opened, synchronize, reopened, ready_for_review\]\n  schedule:\n    - cron: '0 2 \* \* \*'\n  workflow_dispatch:\n/, 'main and preview share the gate; ready_for_review starts the full run; the complete regression on main runs nightly at 02:00 UTC and on demand');
