@@ -21,11 +21,11 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 
 | ID / område | Ägare och avgränsning | Status | Acceptans |
 | --- | --- | --- | --- |
-| R1 Spelkontroller | Astra: `betting-spots-1031`; klient och riktade prov | PÅGÅR | Spelare/kameravy skiljs från satsningsruta. Flera lediga rutor kan väljas och satsas på. Rutbyte lägger ingen oavsiktlig insats; annans aktiva ruta, stängt fönster och otillåtet sidobet nekas. Begripliga markerare och kontroller även på liten skärm. |
-| R2 Test och legacy | Sol: `legacy-fixtures-1031`; gamla kodkopior och deras tester | PÅGÅR | `kevin-5aa7ed1` förklaras och avvecklas. Oberoende förväntningar för regler, pengar, proof och presentation finns kvar; nödvändiga små timingdata får tydlig hemvist. Inga skyddade brancher ändras. |
-| R3 Dokument och regler | Sol: `docs-unlock-1031`; docs-index, ordlista och gamla planer | PÅGÅR | Avklarade dubbletter borta; länkar hela. En körplan, kort ordlista, ingen historisk layout- eller mappfrysning. F11:s riktiga driftkvitto och aktiva sakguider kvar. |
-| R4 Typer och runtime | MERGEAGENTEN; web/Studio-manifest och låsfiler | PÅGÅR | Node-typer matchar Node 24, React-typer matchar respektive app. Frysta installationer, typkontroller och berörda byggen passerar utan bred runtimeuppgradering. |
-| R5 Central objektkontroll | MERGEAGENTEN; CI och befintlig storlekskontroll | PÅGÅR | Även en stor blob som läggs till och sedan tas bort före PR-slutet nekas centralt. Hela nya intervallet kontrolleras; saknad bas/ofullständig historik får inte passera tyst. Gammal mediehistorik laddas inte ner som bieffekt. |
+| R1 Spelkontroller | Astra: `betting-spots-1031`; klient, rutägarskap och riktade prov | LOKALT VERIFIERAD | Spelare/kameravy skiljs från satsningsruta. Flera lediga rutor kan väljas och satsas på. Rutbyte lägger ingen oavsiktlig insats; annans aktiva ruta, stängt fönster och otillåtet sidobet nekas. Begripliga markerare och kontroller även på liten skärm. |
+| R2 Test och legacy | Sol: `legacy-fixtures-1031`; gamla kodkopior och deras tester | LOKALT VERIFIERAD | `kevin-5aa7ed1` förklaras och avvecklas. Oberoende förväntningar för regler, pengar, proof och presentation finns kvar; nödvändiga små timingdata får tydlig hemvist. Inga skyddade brancher ändras. |
+| R3 Dokument och regler | Sol: `docs-unlock-1031`; docs-index, ordlista och gamla planer | LOKALT VERIFIERAD | Avklarade dubbletter borta; länkar hela. En körplan, kort ordlista, ingen historisk layout- eller mappfrysning. F11:s riktiga driftkvitto och aktiva sakguider kvar. |
+| R4 Typer och runtime | MERGEAGENTEN; web/Studio-manifest och låsfiler | LOKALT VERIFIERAD | Node-typer matchar Node 24, React-typer matchar respektive app. Frysta installationer, typkontroller och berörda byggen passerar utan bred runtimeuppgradering. |
+| R5 Central objektkontroll | MERGEAGENTEN; CI och befintlig storlekskontroll | LOKALT VERIFIERAD | Även en stor blob som läggs till och sedan tas bort före PR-slutet nekas centralt. Hela nya intervallet kontrolleras; saknad bas/ofullständig historik får inte passera tyst. Raderad eller orelaterad mediehistorik laddas inte ner som bieffekt; schedule/manual kontrollerar dagens HEAD-träd. |
 
 Kod, lokal verifiering, merge, driftsättning och produktacceptans är olika status. Markera inte en rad klar enbart för att agenten har öppnat en PR. G1 är löpande releasekontroll, ingen separat halvfärdig produktleverans.
 
@@ -41,7 +41,21 @@ Kod, lokal verifiering, merge, driftsättning och produktacceptans är olika sta
 | Tal | **PAUSAT enligt Jakob.** Generated speech, ny bank och läppsynk ingår inte nu. Talberoende öppning/avräkning har kvar konservativ reservtid. | Eget uppdrag för aktualitet/mute/distribution och godkända ljud-/bildrutebundna medier. |
 | Säkerhet och synlighet | Ingen ny bred historikscan eller synlighetsändring beställd. GitGuardians `too_large` innebär ofullständig historisk täckning trots 0 öppna fynd vid senaste kontroll. | Färsk säkerhetsstatus före push/merge. Ny scanning/synlighet kräver konkret scope och verifierade åtkomst-/kostnadsvillkor. |
 
-Det finns inget meningsfullt totalprocenttal för hela produkten. Redovisa avslutade leveranser och kvarvarande acceptanskriterier, inte en uppskattad procent baserad på antal dokument eller gröna tester.
+Det finns inget uppmätt totalprocenttal för hela produkten. Den externa uppföljningens cirka 65 % avser en viktad bedömning på basen `465c03f`, inte verifierat utförda aktiviteter. Redovisa avslutade leveranser och kvarvarande acceptanskriterier separat.
+
+## Nästa våg: städning och systemansvar
+
+Jakobs uppföljning 31 oktober flyttar tyngdpunkten från visuell putsning till levande konsumenter, färre överlappande vägar, namngivning och en begriplig systemkarta. Den nya huvudagenten tar över efter R1–R5:s release; föregående huvudagent skriver inte samtidigt i nästa våg. Extern granskning är underlag att kontrollera, inte en orderlista.
+
+| Spår | Första avgränsning | Ansvar och klartkriterium |
+| --- | --- | --- |
+| S1 Övergångskod | `nativeStudioAdminEnabled()` är alltid sant och används i 28 route-/sidfiler; servern har konstanta Neon-/lokalmedia-val. Dessa fynd är återlästa i kod. | REPOAGENTEN följer anropen, tar bort omöjliga grenar och deras förbrukade testlås. Aktiva hjälpmoduler, behörighet och provspel isoleras fortsatt. Ingen talaktivering. |
+| S2 Bolagsflöde och systemkarta | `CompaniesPage` bäddar fortfarande in `WorkspaceTool section="companies"` vid skapande och team. Den dubbla redigeringsvägen är belagd; ingen ny visuell bugg eller laddtid har mätts. | ARKITEKTEN avgränsar skapa/team/inställningar till ett bolagsval och smala datakontrakt. Huvudagenten äger systemkartan i befintlig ingångsdokumentation: produktväg → kod → datakälla → drift → ansvar → bevis. |
+| S3 Tester och leverans | Granskaren rapporterar tre överhoppade byggprov, kosmetiska lås, bred CI-selektion och rådgivande browserjobb i väntkedjan. Dessa behöver återverifieras mot den levererade workflowversionen. | DRIFTAGENTEN granskar körningar/beroenden och flyttar behållna byggprov till befintligt byggjobb. Separat avgränsad PR för motiverat testurval; inga nya fullbyggen eller lättade ägar-/SHA-/säkerhetskrav. |
+
+De tre spåren kan förberedas parallellt. Gemensamma API-/sessionskontrakt, workflowfiler och systemkartan får en utsedd skrivare innan ändring. Huvudagenten tilldelar filägarskap, samlar korta rapporter, granskar, mergar och verifierar drift. Aktiva teamchattar får nya avgränsade uppdrag; avslutade underagenter återupptas inte.
+
+Efter första städvågen väljs en levande legacykedja åt gången: Admins isolerade provspel, sessionsutfärdande eller det äldre referens-/mappingflödet. Atomisk bolagspublicering och materialersättning är separata funktionsändringar. Namnbyten i molnet och stora workspaceomläggningar prioriteras inte framför belagda dubbletter. Talet väntar fortfarande.
 
 ## Avslutat underlag
 

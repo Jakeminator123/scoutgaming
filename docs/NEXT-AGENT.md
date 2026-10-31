@@ -10,7 +10,7 @@ Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd sam
 
 **Avslutad första genomförandevåg 31 oktober:** 4/4 + 3/3 + 2/2 leveranser (inklusive talstart och F11). Produktens övriga acceptans/backlog är inte 100 %. Nästa session börjar med denna överlämning och körplanen, inte gamla chattexporter.
 
-**Ny etapp enligt Jakob:** talet väntar. R1 separerar satsningsrutor från spelare/kameravy, R2 avvecklar gamla kodkopior i testfixturer, R3 förenklar docs och föråldrade ändringsspärrar, R4 rättar typversioner och R5 kompletterar den centrala objektkontrollen. Tre kalla agenter arbetar i egna worktrees; MERGEAGENTEN granskar och levererar integrationen. Aktuell status och återstående områden finns bara i körplanens tabeller. Privat kort överlämning: `.cache/restlista-1031/HANDOFF.md`.
+**Ny etapp enligt Jakob:** talet väntar. R1 separerar satsningsrutor från spelare/kameravy, R2 avvecklar gamla kodkopior i testfixturer, R3 förenklar docs och föråldrade ändringsspärrar, R4 rättar typversioner och R5 kompletterar den centrala objektkontrollen. De avgränsade agentändringarna är lokalt granskade och samlade i `jakob/codex-rest-integration-1031`; MERGEAGENTEN slutför exakt CI, release och demoprov. Därefter tar en ny huvudchatt över S1–S3: övergångskod, bolagsflöde/systemkarta samt test-/leveransfriktion. Befintliga ARKITEKTEN, REPOAGENTEN och DRIFTAGENTEN får separata uppdrag från den nya huvudagenten. Aktuell status och återstående områden finns bara i körplanens tabeller. Privat kort överlämning: `.cache/restlista-1031/HANDOFF.md`.
 
 ## Spelkontroller och filmtempo, 31 oktober
 
