@@ -268,6 +268,25 @@ test('partial-clone-style missing old media is not read to check a new small com
   });
 });
 
+test('pre-push binds large allowances to the final blob, rejecting same-sized A to B to C objects', () => {
+  repository(({ root, git, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('large.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const a = commit('large A');
+    assert.deepEqual(pushCheck(root, a, base).errors, [], 'a single visible large blob remains allowed');
+    const bData = binary(big); bData[1] = 8;
+    put('large.bin', bData); const b = commit('same-sized B');
+    assert.notEqual(git('rev-parse', `${a}:large.bin`), git('rev-parse', `${b}:large.bin`));
+    assert.deepEqual(pushCheck(root, b, a).errors, [], 'an already remote A is not a hidden new object');
+    const aToB = pushErrors(pushCheck(root, b, base));
+    assert.match(aToB, new RegExp(`${a}: large\\.bin: stor mellanliggande blob`));
+    const cData = binary(big); cData[1] = 9;
+    put('large.bin', cData); const c = commit('same-sized C');
+    const aToC = pushErrors(pushCheck(root, c, base));
+    for (const hidden of [a, b]) assert.match(aToC, new RegExp(`${hidden}: large\\.bin: stor mellanliggande blob`));
+    assert.deepEqual(pushCheck(root, c, b).errors, [], 'the final blob is accepted when earlier objects are already remote');
+  });
+});
+
 test('pre-push preserves persistent exact allowances and rejects transient or stale allowances', () => {
   repository(({ root, put, commit }) => {
     put(ALLOWLIST, '[]'); const base = commit('base');

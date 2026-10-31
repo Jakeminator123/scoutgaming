@@ -339,8 +339,8 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
       errors.push(...checkRepoLimits({ files, allowlist: policy }).map(error => `${commit}: ${error}`));
       for (const file of files) if (file.bytes > MAX_FILE_BYTES && newBlobs.has(tree.get(file.path)?.oid)) {
         const final = finalTree.get(file.path), allowance = finalPolicy.get(file.path);
-        if (!final || allowance?.maxBytes !== file.bytes || sizeOf(final.oid) !== file.bytes) {
-          errors.push(`${commit}: ${file.path}: stor mellanliggande blob saknar kvarvarande fil med exakt undantag i pushens slutträd. Tillfälliga undantag får inte dölja nya stora objekt.`);
+        if (!final || final.oid !== tree.get(file.path).oid || allowance?.maxBytes !== file.bytes || sizeOf(final.oid) !== file.bytes) {
+          errors.push(`${commit}: ${file.path}: stor mellanliggande blob saknar samma blob-OID med exakt undantag i pushens slutträd. Tillfälliga undantag får inte dölja nya stora objekt.`);
         }
       }
     }
