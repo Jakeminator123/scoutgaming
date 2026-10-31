@@ -1,13 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createF11Observer, validateF11Manifest, runF11EvidenceCli } from '../tools/shared-room-f11-observer.mjs';
+import { createHash } from 'node:crypto';
+import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET } from '../tools/shared-room-f11-observer.mjs';
+import { prepareF11Fixture, runF11Preview, runF11PreviewCli, validateF11Plan, f11FixtureIdentity,
+  nextF11Command, correlateF11Log } from '../tools/run-f11-preview.mjs';
+import { createF11LivePorts, validateF11DatabaseUrl, f11ProviderReceipt } from '../tools/f11-preview-ports.mjs';
 
-const f11Manifest = () => ({ schemaVersion: 1, sha: 'a'.repeat(40), syntheticOnly: true,
-  origin: 'https://preview.scoutgaming.tech', engineOrigin: 'https://croupier-k06-k07-staging.onrender.com',
-  serviceId: 'srv-dbf61l0m7kps73ft7mk0', projectId: 'prj_7dgyvW5zakx1qJ8YaH5pueVTVi14',
-  neonProjectId: 'red-violet-36066351', branchId: 'br-plain-voice-b9yu49xi', database: 'croupier_staging',
-  environment: 'staging_k06_k07', workspaceId: 'croupier', roomId: 'f11-room', runId: 'f11-run',
-  actors: ['f11-alice','f11-bob'], startedAt: 0, endedAt: 120000 });
+const receiptHash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const actors = ['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
+function f11Manifest() {
+  const m = {...F11_TARGET,schemaVersion:1,sha:'a'.repeat(40),syntheticOnly:true,
+    roomId:'room-33333333-3333-4333-8333-333333333333',runId:'f11-run',actors:[...actors],startedAt:0,endedAt:120000};
+  const ownership={schemaVersion:1,source:'preview-api-created',runId:m.runId,operatorId:m.runId,roomId:m.roomId,
+    checkedAt:0,verifiedAt:0,absent:{operators:0,accounts:0,rooms:0,packages:0},
+    readback:{...F11_TARGET,roomId:m.roomId,operatorId:m.runId,configVersion:'config-1',packageRevision:1,roomCount:1,accountCount:2},
+    accounts:actors.map((actorId,i)=>({actorId,username:`${m.runId}-${i?'b':'a'}`,createdAt:0,
+      openingId:`open-${i}`,openingCents:100000,currency:'USD',openingAt:new Date(0).toISOString()}))};
+  m.ownership={...ownership,digest:receiptHash(ownership)};return m;
+}
 function f11Capture() {
   const m = f11Manifest(), events = [];
   const add = (type,at,data) => events.push({type,at,...data});
@@ -15,9 +25,9 @@ function f11Capture() {
   const ledger = (id,actorId,amountCents,type) => ({id,actorId,amountCents,type,roundId:'round-2',fingerprint:'b'.repeat(64),
     sourceKey:JSON.stringify(['tick',m.roomId,'system',`tick-${id}`,actorId,type])});
   const wallet = (at,stage,{holds=false,hands=0,settled=false}={}) => add('money',at,{...m,stage,source:'preview-sql',hands,
-    balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?9500:10500):10000})),
+    balances:m.actors.map((actorId,i)=>({actorId,balanceCents:settled?(i?99500:100500):100000})),
     reservations:holds?[{id:'reservation-1',actorId:m.actors[0],amountCents:500}]:[],
-    ledger:settled?[ledger('1',m.actors[0],-500,'consume:stake'),ledger('2',m.actors[1],-500,'consume:stake'),ledger('3',m.actors[0],1000,'payout')]:[],
+    ledger:[...m.ownership.accounts.map(a=>({id:a.openingId,actorId:a.actorId,amountCents:a.openingCents,currency:a.currency,at:a.openingAt,type:'open',roundId:null,sourceKey:null,fingerprint:null})),...(settled?[ledger('1',m.actors[0],-500,'consume:stake'),ledger('2',m.actors[1],-500,'consume:stake'),ledger('3',m.actors[0],1000,'payout')]:[])],
     settlements:settled?[{roundId:'round-2',actorId:m.actors[0],ledgerId:'3',returnedCents:1000},
       {roundId:'round-2',actorId:m.actors[1],ledgerId:null,returnedCents:0}]:[]});
   const open = (at,connectionId,actorId,instanceId) => add('open',at,{connectionId,actorId,roomId:m.roomId,connectionNonce:`nonce-${connectionId}`,
@@ -30,15 +40,15 @@ function f11Capture() {
       shoe:{id:'shoe-1',total:312,remaining:300,dealt:12,cutAfter:260,cutReached:false,commitment:'d'.repeat(64),shufflePending:false,decks:6,burn:1},
       plan:null,deadline:phase==='bets'?version*20000:null,actionDeadline:phase==='round'?version*15000:null},
     presentation:{roomId:m.roomId,ver:version,events:[{type:phase==='round'?'deal':'idle'}]}}});
-  target(0);wallet(1,'before');open(1000,'old','f11-alice','instance-old');
-  frame(2000,'old','f11-alice',1,'bets');frame(20000,'old','f11-alice',2);wallet(52000,'during',{holds:true});
-  frame(40000,'old','f11-alice',3);wallet(61000,'during',{hands:2});
-  open(50000,'new','f11-bob','instance-new');
+  target(0);wallet(1,'before');open(1000,'old','11111111-1111-4111-8111-111111111111','instance-old');
+  frame(2000,'old','11111111-1111-4111-8111-111111111111',1,'bets');frame(20000,'old','11111111-1111-4111-8111-111111111111',2);wallet(52000,'during',{holds:true});
+  frame(40000,'old','11111111-1111-4111-8111-111111111111',3);wallet(61000,'during',{hands:2});
+  open(50000,'new','22222222-2222-4222-8222-222222222222','instance-new');
   for(const [at,version,phase] of [[51000,4,'bets'],[60000,5,'round'],[75000,6,'round'],[89500,7,'round']]) {
-    frame(at,'old','f11-alice',version,phase);frame(at+100,'new','f11-bob',version,phase);
+    frame(at,'old','11111111-1111-4111-8111-111111111111',version,phase);frame(at+100,'new','22222222-2222-4222-8222-222222222222',version,phase);
   }
-  add('close',90000,{connectionId:'old',code:1012});open(91000,'again','f11-alice','instance-new');
-  frame(92000,'again','f11-alice',7);frame(105000,'new','f11-bob',8);frame(118000,'again','f11-alice',9,'settled');
+  add('close',90000,{connectionId:'old',code:1012});open(91000,'again','11111111-1111-4111-8111-111111111111','instance-new');
+  frame(92000,'again','11111111-1111-4111-8111-111111111111',7);frame(105000,'new','22222222-2222-4222-8222-222222222222',8);frame(118000,'again','11111111-1111-4111-8111-111111111111',9,'settled');
   add('negative',118100,{source:'socket-capture',probe:'wrong-room',connectionId:'negative-room',actorId:m.actors[0],roomId:'f11-other',stateFrames:0,status:403});
   add('negative',118200,{source:'socket-capture',probe:'revoked-session',connectionId:'negative-session',actorId:m.actors[1],roomId:m.roomId,stateFrames:0,status:1008});
   wallet(119000,'after',{settled:true});target(120000);
@@ -92,7 +102,7 @@ test('F11 requires both negative probes without leaked state and actual reservat
     [c=>{c.events=c.events.filter(e=>e.stage!=='during');},'active_money_not_observed'],
     [c=>{c.events.find(e=>e.stage==='after').balances[0].balanceCents++;},'balance_mismatch'],
     [c=>{c.events.find(e=>e.stage==='after').hands=1;},'unsettled_money'],
-    [c=>{const r=c.events.find(e=>e.stage==='after');r.ledger.push({...r.ledger[0],id:'99'});},'duplicate_wallet_effect'],
+    [c=>{const r=c.events.find(e=>e.stage==='after');r.ledger.push({...r.ledger.find(e=>e.type==='consume:stake'),id:'99'});},'duplicate_wallet_effect'],
     [c=>{const r=c.events.find(e=>e.stage==='after');r.settlements.push({...r.settlements[0]});},'duplicate_settlement'],
     [c=>{c.events.find(e=>e.stage==='after').settlements[0].returnedCents++;},'payout_mismatch']]) {
     const c=f11Capture();mutate(c);assert.throws(()=>f11Review(c),new RegExp(code));
@@ -101,11 +111,11 @@ test('F11 requires both negative probes without leaked state and actual reservat
 test('F11 requires settlement for every debited actor and exact audited round, including losing hands',()=>{
   for(const mutate of [r=>{r.settlements=r.settlements.filter(s=>s.returnedCents>0);},
     r=>{r.settlements.find(s=>s.returnedCents===0).roundId='different-round';},
-    r=>{r.ledger.find(e=>e.actorId==='f11-bob').roundId='different-round';}]) {
+    r=>{r.ledger.find(e=>e.actorId==='22222222-2222-4222-8222-222222222222'&&e.type==='consume:stake').roundId='different-round';}]) {
     const c=f11Capture();mutate(c.events.find(e=>e.stage==='after'));
     assert.throws(()=>f11Review(c),/consumption_without_settlement/);
   }
-  const c=f11Capture();delete c.events.find(e=>e.stage==='after').ledger[0].roundId;
+  const c=f11Capture();delete c.events.find(e=>e.stage==='after').ledger.find(e=>e.type==='consume:stake').roundId;
   assert.throws(()=>f11Review(c),/ledger_invalid/);
 });
 
@@ -116,12 +126,12 @@ test('F11 requires complete shared snapshots and consistent ownership but permit
   }
   for(const key of ['owners','seatGen']) {
     const c=f11Capture(),s=c.events.find(e=>e.type==='frame'&&e.connectionId==='new').frame.snapshot;
-    s[key][0]=key==='owners'?'f11-bob':2;
+    s[key][0]=key==='owners'?'22222222-2222-4222-8222-222222222222':2;
     assert.throws(()=>f11Review(c),/state_conflict/,key);
   }
   const c=f11Capture();for(const e of c.events.filter(e=>e.type==='frame')) {
     e.frame.snapshot.me.available=e.connectionId==='new'?5:10;
-    e.frame.snapshot.serverNow=e.at;e.frame.snapshot.players=[{id:'f11-alice',online:e.connectionId==='new'}];
+    e.frame.snapshot.serverNow=e.at;e.frame.snapshot.players=[{id:'11111111-1111-4111-8111-111111111111',online:e.connectionId==='new'}];
   }
   assert.equal(f11Review(c).acceptance,false);
 });
@@ -166,6 +176,161 @@ test('F11 explicit offline CLI validates bounded evidence and keeps missing inst
   assert.equal(await runF11EvidenceCli(['--run','--manifest','m','--events','e'],{
     size:async path=>({size:files[path].length}),read:async path=>files[path],output:x=>output.push(x)}),1);
   assert.deepEqual(JSON.parse(output.at(-1)),{status:'unverifiable',acceptance:false,code:'f11_instance_evidence_required'});
+});
+
+const livePlan=()=>({...F11_TARGET,schemaVersion:1,syntheticOnly:true,sha:'a'.repeat(40),runId:'f11-run',
+  roomKey:'44444444-4444-4444-8444-444444444444',sourceLaneId:'existing-lane',gameConfig:{language:'en',limitPreset:'standard'},chip:5,durationMs:120000});
+function creationPorts() {
+  const plan=livePlan(),identity=f11FixtureIdentity(plan),calls=[],files=new Map();let read=0,clock=0;
+  const ports={now:()=>clock,sleep:async ms=>{clock+=ms;},provider:async()=>({...F11_TARGET,source:'provider-api',engineSha:plan.sha,
+    vercelSha:plan.sha,ready:true,suspended:false,healthStatus:200}),
+    inspect:async()=>{calls.push('inspect');return ++read===1?{at:0,database:plan.database,sourceReady:true,unchangedHash:'a'.repeat(64),
+      absent:{operators:0,accounts:0,rooms:0,packages:0}}:{at:clock,unchangedHash:'a'.repeat(64),room:{id:identity.roomId,
+        operatorId:plan.runId,presentationLaneId:plan.sourceLaneId},packageRevision:1,configVersion:'config-1',roomCount:1,
+        accounts:actors.map((actorId,i)=>({actorId,username:identity.usernames[i],createdAt:0,status:'active',balanceCents:100000,
+          openings:[{id:`open-${i}`,type:'open',amountCents:100000,currency:'USD',at:new Date(0).toISOString(),sourceKey:null,fingerprint:null}]}))};},
+    adminLogin:async()=>{calls.push('login');},
+    http:async(_actor,method,path,body)=>{calls.push(`${method} ${path.split('?')[0]}`);
+      if(path.endsWith('operator-create'))return {ok:true,operator:{id:plan.runId,slug:plan.runId,status:'active'},missingRoles:[]};
+      if(method==='GET')return {ok:true,ready:true,operator:{id:plan.runId},presentationLaneId:plan.sourceLaneId,
+        packageRevision:null,rooms:[],projectRevision:'project-1',administrationRevision:'admin-1'};
+      assert.equal(body.operatorId,plan.runId);assert.equal(body.expectedPackageRevision,null);
+      return {ok:true,duplicate:false,room:{id:identity.roomId,operatorId:plan.runId,presentationLaneId:plan.sourceLaneId},packageRevision:1,published:true};},
+    register:async(index,username)=>{calls.push(`register ${username}`);return {id:actors[index]};},
+    save:async(name,value)=>{files.set(name,structuredClone(value));},progress:()=>{},close:async()=>{calls.push('closed');}};
+  return {plan,identity,ports,calls,files,setClock:value=>{clock=value;}};
+}
+
+test('live F11 import/help/read and missing run flag never construct credentials or mutation ports',async()=>{
+  let created=0,stdin=0;
+  const options={read:async()=>JSON.stringify(livePlan()),input:{async *[Symbol.asyncIterator](){stdin++;yield '{}';}},
+    output:()=>{},portsFactory:()=>{created++;assert.fail('network port');}};
+  for(const args of [[],['--help'],['--read','plan'],['--run'],['--run','plan','--output','out']])await runF11PreviewCli(args,options);
+  assert.equal(created,0);assert.equal(stdin,0);
+  await assert.rejects(prepareF11Fixture(livePlan(),new Proxy({},{get:()=>assert.fail('port access')})),/explicit_run_required/);
+  await assert.rejects(runF11Preview(livePlan(),null),/explicit_run_required/);
+  await assert.rejects(createF11LivePorts({credentials:{}}),/explicit_run_required/);
+});
+test('live F11 binds API UUIDs to absence checks, exact SQL readback and a durable creation receipt',async()=>{
+  const f=creationPorts(),result=await prepareF11Fixture(f.plan,f.ports,{run:true});
+  assert.equal(f.calls[0],'inspect');assert.deepEqual(result.actors,actors);
+  assert.equal(result.ownership.roomId,f.identity.roomId);assert.equal(result.ownership.operatorId,f.plan.runId);
+  assert.deepEqual(f.files.get('creation.json').steps.map(row=>row.state),['requested','verified','requested','verified','requested','verified','requested','verified']);
+  assert.ok(f.files.has('ownership.json'));
+  const m={...f11Manifest(),roomId:f.identity.roomId,ownership:result.ownership};assert.doesNotThrow(()=>validateF11Manifest(m));
+});
+test('live F11 refuses existing fixtures before login, UUID collisions and wrong SQL identities',async()=>{
+  const existing=creationPorts();existing.ports.inspect=async()=>({at:0,database:existing.plan.database,absent:{operators:1,accounts:0,rooms:0,packages:0}});
+  await assert.rejects(prepareF11Fixture(existing.plan,existing.ports,{run:true}),/fixture_already_exists/);assert.deepEqual(existing.calls,[]);
+  const collision=creationPorts();collision.ports.register=async()=>({id:actors[0]});
+  await assert.rejects(prepareF11Fixture(collision.plan,collision.ports,{run:true}),/account_creation_unverified/);
+  assert.equal(collision.files.get('creation.json').steps.at(-1).state,'requested');
+  const wrong=creationPorts(),inspect=wrong.ports.inspect;let reads=0;
+  wrong.ports.inspect=async()=>{const row=await inspect();if(++reads===2)row.accounts[0].actorId=actors[1];return row;};
+  await assert.rejects(prepareF11Fixture(wrong.plan,wrong.ports,{run:true}),/account_readback_invalid/);
+});
+test('F11 opening transactions are retained, exact and mandatory in every monetary sample',()=>{
+  for(const change of [row=>row.ledger.shift(),row=>{row.ledger[0].amountCents=1;},row=>{row.ledger[0].actorId=actors[1];},
+    row=>{row.ledger[0].sourceKey='invented';},row=>{row.ledger.push({...row.ledger[0],id:'extra-open'});}]) {
+    const c=f11Capture();change(c.events.find(row=>row.type==='money'&&row.stage==='during'));
+    assert.throws(()=>f11Review(c),/opening_ledger/);
+  }
+  const m=f11Manifest();m.ownership.accounts[0].cookie='private';
+  const {digest,...rest}=m.ownership;m.ownership.digest=receiptHash(rest);
+  assert.throws(()=>validateF11Manifest(m),/ownership_accounts_invalid/);
+  const mismatch=f11Capture();mismatch.events.find(row=>row.type==='money'&&row.stage==='during').balances[0].balanceCents++;
+  assert.throws(()=>f11Review(mismatch),/balance_mismatch/);
+});
+test('F11 DB and provider inputs pin the exact endpoint, database and frozen deployment without cloud credentials',()=>{
+  const valid=`postgresql://fixture:synthetic@${F11_TARGET.databaseHost}/${F11_TARGET.database}?sslmode=require`;
+  assert.equal(new URL(validateF11DatabaseUrl(valid)).hostname,F11_TARGET.databaseHost);
+  for(const value of [valid.replace(F11_TARGET.database,'production'),valid.replace(F11_TARGET.databaseHost,'localhost'),
+    valid.replace('sslmode=require','sslmode=disable'),`${valid}&host=evil.invalid`,`${valid}&sslrootcert=secret`])
+    assert.throws(()=>validateF11DatabaseUrl(value),/database_target_invalid/);
+  const p=livePlan(),receipt={source:'provider-api-capture',at:1,service:{id:p.serviceId,branch:'preview',suspended:'not_suspended',serviceDetails:{url:p.engineOrigin}},
+    deployment:{id:'dep-test',serviceId:p.serviceId,status:'live',commit:{id:p.sha}},vercel:{id:'dpl_test',projectId:p.projectId,readyState:'READY',meta:{githubCommitSha:p.sha}}};
+  assert.equal(f11ProviderReceipt(receipt,p,1).engineSha,p.sha);
+  for(const r of [{...receipt,at:-60000},{...receipt,service:{...receipt.service,id:'production'}},
+    {...receipt,deployment:{...receipt.deployment,commit:{id:'b'.repeat(40)}}}])assert.throws(()=>f11ProviderReceipt(r,p,1),/provider_receipt_invalid/);
+});
+test('F11 socket provenance requires the actual log payload, resource and instance labels',()=>{
+  const p=livePlan(),c={at:1,processId:actors[0],nonce:actors[1]},receipt={source:'render-api-capture',serviceId:p.serviceId,
+    deployment:{id:'dep-test',serviceId:p.serviceId,commit:{id:p.sha}},log:{id:'log-test',timestamp:new Date(1).toISOString(),
+      message:JSON.stringify({event:'shared_room_socket_identity',processId:c.processId,socketNonce:c.nonce,at:1}),
+      labels:[{name:'resource',value:p.serviceId},{name:'instance',value:`${p.serviceId}-old`},{name:'type',value:'app'}]}};
+  assert.equal(correlateF11Log(receipt,c,p).instanceId,`${p.serviceId}-old`);
+  for(const mutate of [r=>{r.log.labels[0].value='other';},r=>{r.log.message='{}';},r=>{r.log.labels[1].value='old';},
+    r=>{r.deployment.commit.id='b'.repeat(40);}]) {const r=structuredClone(receipt);mutate(r);assert.throws(()=>correlateF11Log(r,c,p),/f11_/);}
+});
+test('F11 commands retain actual generations, turn sequence and deadlines and stop new bets while draining',()=>{
+  const s={...f11Capture().events.find(row=>row.type==='frame').frame.snapshot,serverNow:100,me:{id:actors[0],active:true,memberGen:4},
+    players:[{id:actors[0],ready:false}],settings:{chips:[5],limits:{min:5,max:100}},deadline:20000};
+  assert.deepEqual(nextF11Command(s,{seat:0,chip:5}),{op:'bet',windowId:s.windowId,seat:0,field:'main',chip:5});
+  assert.deepEqual(nextF11Command(s,{seat:0,chip:5,draining:true}),{op:'leave',memberGen:4});
+  const hand={...s,phase:'round',roundId:'round-own',turnSeq:8,plan:{turnAt:200},actionDeadline:500,
+    round:{active:0,hands:[{box:0}],legalActions:['stand']}};
+  assert.equal(nextF11Command(hand,{seat:0,chip:5}),null);
+  assert.deepEqual(nextF11Command(hand,{seat:0,chip:5,elapsedMs:101}),{op:'act',roundId:'round-own',turnSeq:8,box:0,handIndex:0,action:'stand'});
+  assert.equal(nextF11Command(hand,{seat:0,chip:5,elapsedMs:500}),null);assert.equal(hand.serverNow,100);
+});
+
+// Replay captured public state through independently injectable clock/socket/SQL
+// ports. No server, credentials, dependency installation or external I/O.
+function runningPorts({restart=true}={}) {
+  const f=creationPorts(),source=f11Capture(),sockets=[],commands=[],progress=[],processes=[actors[0],actors[1]];
+  let clock=0,nonce=0,lastVersion=null,failedOnce=false;
+  const frameAt=()=>source.events.filter(row=>row.type==='frame'&&row.at<=clock).at(-1)?.frame??source.events.find(row=>row.type==='frame').frame;
+  const send=c=>{const frame=structuredClone(frameAt());frame.roomId=f.identity.roomId;frame.snapshot.roomId=f.identity.roomId;
+    frame.presentation.roomId=f.identity.roomId;frame.snapshot.me={id:actors[c.index],active:true,memberGen:1};
+    frame.snapshot.serverNow=clock;frame.snapshot.settings={configVersion:'config-1',language:'en',betMs:20000,actionMs:15000,refill:1000,chips:[5],limits:{min:5,max:100,sideMax:5}};
+    frame.snapshot.players=actors.map(id=>({id,ready:false,leaving:false,online:true,seats:[]}));c.callbacks.frame(frame);};
+  f.ports.now=()=>clock;f.ports.progress=value=>progress.push(value);
+  f.ports.sleep=async ms=>{
+    clock+=ms;f.setClock(clock);
+    const current=frameAt().snapshot.version;
+    if(current!==lastVersion){lastVersion=current;for(const c of sockets)if(!c.closed)send(c);}
+    if(restart&&clock>=90000)for(const c of sockets)if(!c.closed&&c.index===0&&c.processId===processes[0]){c.closed=true;c.callbacks.close(1012);}
+  };
+  f.ports.socket=async(index,_room,callbacks)=>{
+    const processId=restart&&clock>=50000?processes[1]:processes[0],socketNonce=`00000000-0000-4000-8000-${String(++nonce).padStart(12,'0')}`;
+    const c={index,processId,closed:false,callbacks};sockets.push(c);callbacks.identity(`v1.${processId}.${socketNonce}`);send(c);
+    return {close:async()=>{if(!c.closed){c.closed=true;callbacks.close(1000);}}};
+  };
+  f.ports.command=async(index,roomId,body)=>{assert.equal(roomId,f.identity.roomId);commands.push({index,...structuredClone(body)});
+    if(!failedOnce){failedOnce=true;throw Error('unknown outcome');}return {status:409,body:{}};};
+  f.ports.money=async()=>{
+    const base=structuredClone(source.events.find(row=>row.type==='money'&&row.stage===(clock>=120000?'after':'before')));
+    for(const row of base.ledger)if(row.sourceKey){const key=JSON.parse(row.sourceKey);key[1]=f.identity.roomId;row.sourceKey=JSON.stringify(key);}
+    return {...base,hands:clock>=20000&&clock<100000?2:0,
+      reservations:clock>=50000&&clock<60000?[{id:'own-hold',actorId:actors[0],amountCents:500}]:[]};
+  };
+  f.ports.negative=async()=>({connectionId:`negative-${++nonce}`,status:403,stateFrames:0});f.ports.revoke=async()=>{};
+  f.ports.provenance=async c=>({source:'render-api-capture',serviceId:f.plan.serviceId,deployment:{id:'dep-test',serviceId:f.plan.serviceId,commit:{id:f.plan.sha}},
+    log:{id:`log-${c.nonce}`,timestamp:new Date(c.at).toISOString(),message:JSON.stringify({event:'shared_room_socket_identity',processId:c.processId,socketNonce:c.nonce,at:c.at}),
+      labels:[{name:'resource',value:f.plan.serviceId},{name:'instance',value:`${f.plan.serviceId}-${c.processId}`},{name:'type',value:'app'}]}});
+  return {...f,sockets,commands,progress,getClock:()=>clock};
+}
+test('F11 driver captures two sockets, preserves ambiguous command IDs and closes only its ports',async()=>{
+  const f=runningPorts(),result=await runF11Preview(f.plan,f.ports,{run:true});
+  assert.equal(result.status,'evidence-complete-review-required',JSON.stringify(result));assert.equal(result.acceptance,false);
+  const retries=f.commands.filter(row=>row.index===0);assert.equal(retries[0].commandId,retries[1].commandId);
+  assert.ok(f.progress.some(row=>row.status==='awaiting-external-restart'));assert.ok(f.sockets.every(c=>c.closed));assert.equal(f.calls.at(-1),'closed');
+  assert.ok(f.files.has('capture.ndjson'));assert.ok(f.files.has('manifest.json'));
+});
+test('F11 timeout without external restart is unverifiable and releases its own resources',async()=>{
+  const f=runningPorts({restart:false}),result=await runF11Preview(f.plan,f.ports,{run:true});
+  assert.equal(result.acceptance,false);assert.equal(result.code,'f11_restart_not_observed');
+  assert.ok(f.getClock()<=165000);assert.ok(f.sockets.every(c=>c.closed));assert.equal(f.calls.at(-1),'closed');
+  assert.ok(f.files.has('creation.json'));assert.ok(f.files.has('review.json'));
+});
+test('F11 a mid-run read failure stops betting, drains only its fixture and sanitizes the error',async()=>{
+  const f=runningPorts(),money=f.ports.money;let reads=0,closed=0;
+  f.ports.money=async()=>{if(++reads===2)throw Error('private-connection-secret');return money();};
+  f.ports.close=async()=>{closed++;};
+  const result=await runF11Preview(f.plan,f.ports,{run:true});
+  assert.equal(result.status,'unverifiable');assert.equal(result.acceptance,false);assert.equal(result.obligationsCleared,true);
+  assert.equal(closed,1);assert.ok(f.sockets.every(c=>c.closed));
+  assert.equal(JSON.stringify([...f.files]).includes('private-connection-secret'),false);
 });
 
 let sequence = 0;
