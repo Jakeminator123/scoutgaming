@@ -21,6 +21,7 @@
 //                                                        CI: PR-merge-diffen plus ändrade allowlistposter,
 //                                                        så att en gles blob:none-klon bara hämtar diffens blobbar.
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -227,10 +228,131 @@ export function inspectChanges({ cwd = repository, tree = null, base = 'HEAD' } 
   return { files, allowlist, complete: false };
 }
 
+// Pre-push checks every new commit, not just the final diff. Only object metadata
+// and the named allowlist are read; old media/document contents are never loaded.
+// Missing objects (including promised partial-clone objects) fail without lazy fetch.
+export function inspectPush({ cwd = repository, updates, remote, branch = 'main' } = {}) {
+  const git = (args, input) => {
+    try {
+      return execFileSync('git', args, { cwd, input, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+        env: { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0' },
+        stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
+    } catch {
+      throw Error(`Pushgränser: Git-metadata kunde inte läsas (${args[0]}). Hämta den saknade basen eller objekten uttryckligen och försök igen.`);
+    }
+  };
+  const oidPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
+  const zero = oid => /^0+$/.test(oid);
+  const refs = String(updates ?? '').trim().split(/\r?\n/).filter(Boolean).map(line => {
+    const fields = line.trim().split(/\s+/);
+    if (fields.length !== 4 || !oidPattern.test(fields[1]) || !oidPattern.test(fields[3])
+      || !fields[2].startsWith('refs/heads/')) throw Error('Pushgränser: ogiltiga pushreferenser.');
+    return { head: fields[1], base: fields[3] };
+  }).filter(ref => !zero(ref.head));
+  if (!refs.length) return { errors: [], commits: 0, blobs: 0, refs: 0 };
+  if (git(['rev-parse', '--is-shallow-repository']).trim() !== 'false') {
+    throw Error('Pushgränser: shallow-historik kan dölja nya objekt. Hämta fullständig historik före push.');
+  }
+  const requireCommit = oid => {
+    if (git(['cat-file', '-t', oid]).trim() !== 'commit') throw Error('Pushgränser: pushens bas eller head är ingen känd commit.');
+  };
+  let advertisedBase;
+  const creationBases = head => {
+    if (!advertisedBase) {
+      if (typeof remote !== 'string' || !remote || remote.startsWith('-') || !/^[\w./-]+$/.test(branch)) {
+        throw Error('Pushgränser: verifierbar fjärrbas krävs för första pushen.');
+      }
+      const rows = git(['ls-remote', '--exit-code', '--refs', remote, `refs/heads/${branch}`]).trim().split(/\r?\n/);
+      const fields = rows.length === 1 ? rows[0].split(/\s+/) : [];
+      if (fields.length !== 2 || !oidPattern.test(fields[0]) || fields[1] !== `refs/heads/${branch}`) {
+        throw Error('Pushgränser: fjärrens huvudbranch kunde inte verifieras.');
+      }
+      advertisedBase = fields[0];
+      requireCommit(advertisedBase);
+    }
+    // Common ancestors are proven reachable from the advertised remote commit.
+    // Never fall back to scanning an entire old history or trusting stale tracking refs.
+    const bases = git(['merge-base', '--all', head, advertisedBase]).trim().split(/\r?\n/);
+    if (!bases.length || bases.some(oid => !oidPattern.test(oid))) throw Error('Pushgränser: känd gemensam fjärrbas saknas.');
+    return bases;
+  };
+  const trees = new Map(), policies = new Map(), sizes = new Map(), seenCommits = new Set(), seenBlobs = new Set();
+  const treeAt = commit => {
+    if (!trees.has(commit)) trees.set(commit, new Map(parseLsTree(git(['ls-tree', '-r', '-z', commit]))
+      .filter(file => file.type === 'blob').map(file => [file.path, file])));
+    return trees.get(commit);
+  };
+  const sizeOf = oid => {
+    if (!sizes.has(oid)) {
+      const size = objectSizes(git, [oid]).get(oid);
+      if (!Number.isSafeInteger(size) || size < 0) throw Error('Pushgränser: objektstorlek saknas.');
+      sizes.set(oid, size);
+    }
+    return sizes.get(oid);
+  };
+  const policyAt = commit => {
+    const blob = treeAt(commit).get(ALLOWLIST);
+    if (!blob) return [];
+    if (!policies.has(blob.oid)) {
+      if (sizeOf(blob.oid) > MAX_FILE_BYTES) throw Error('Pushgränser: allowlistan är större än 1 MB.');
+      let policy;
+      try { policy = JSON.parse(git(['cat-file', 'blob', blob.oid])); }
+      catch { throw Error('Pushgränser: allowlistan kunde inte läsas som lokal JSON.'); }
+      const errors = allowlistErrors(policy);
+      if (errors.length) throw Error('Pushgränser: ogiltig allowlista: ' + errors.join('\n'));
+      policies.set(blob.oid, policy);
+    }
+    return policies.get(blob.oid);
+  };
+  const errors = [];
+  for (const ref of refs) {
+    requireCommit(ref.head);
+    const bases = zero(ref.base) ? creationBases(ref.head) : [ref.base];
+    for (const base of bases) { requireCommit(base); git(['merge-base', '--is-ancestor', base, ref.head]); }
+    const commits = git(['rev-list', '--topo-order', '--reverse', ref.head, '--not', ...bases]).trim().split(/\r?\n/).filter(Boolean);
+    if (!commits.length) continue;
+    const objects = git(['rev-list', '--objects', '--no-object-names', ref.head, '--not', ...bases]).trim().split(/\r?\n/).filter(Boolean);
+    const newBlobs = new Set();
+    // Batch metadata only. An incomplete enumeration or missing object aborts the push.
+    const metadata = git(['cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'], objects.join('\n') + '\n').trim().split(/\r?\n/);
+    if (metadata.length !== objects.length) throw Error('Pushgränser: ofullständig objektlista.');
+    metadata.forEach((line, index) => {
+      const [oid, type, size] = line.split(' ');
+      if (oid !== objects[index] || !['commit', 'tree', 'blob', 'tag'].includes(type) || !/^\d+$/.test(size)
+        || !Number.isSafeInteger(Number(size))) throw Error('Pushgränser: saknad eller ogiltig objektmetadata.');
+      if (type === 'blob') { newBlobs.add(oid); seenBlobs.add(oid); sizes.set(oid, Number(size)); }
+    });
+    const finalTree = treeAt(ref.head), finalPolicy = new Map(policyAt(ref.head).map(entry => [entry.path, entry]));
+    for (const commit of commits) {
+      seenCommits.add(commit);
+      const tree = treeAt(commit), policy = policyAt(commit), paths = new Set();
+      for (const file of tree.values()) if (newBlobs.has(file.oid)) paths.add(file.path);
+      // Changed allowances must still match their actual files, even if those blobs
+      // were already remote. Check each parent so merge-only allowance edits count.
+      const parents = git(['rev-list', '--parents', '-n', '1', commit]).trim().split(' ').slice(1);
+      for (const parent of parents.length ? parents : [null]) {
+        const before = new Map((parent ? policyAt(parent) : []).map(entry => [entry.path, entry.maxBytes]));
+        const after = new Map(policy.map(entry => [entry.path, entry.maxBytes]));
+        for (const path of new Set([...before.keys(), ...after.keys()])) if (before.get(path) !== after.get(path)) paths.add(path);
+      }
+      const files = [...paths].map(path => ({ path, bytes: tree.has(path) ? sizeOf(tree.get(path).oid) : null }));
+      errors.push(...checkRepoLimits({ files, allowlist: policy }).map(error => `${commit}: ${error}`));
+      for (const file of files) if (file.bytes > MAX_FILE_BYTES && newBlobs.has(tree.get(file.path)?.oid)) {
+        const final = finalTree.get(file.path), allowance = finalPolicy.get(file.path);
+        if (!final || allowance?.maxBytes !== file.bytes || sizeOf(final.oid) !== file.bytes) {
+          errors.push(`${commit}: ${file.path}: stor mellanliggande blob saknar kvarvarande fil med exakt undantag i pushens slutträd. Tillfälliga undantag får inte dölja nya stora objekt.`);
+        }
+      }
+    }
+  }
+  return { errors: [...new Set(errors)], commits: seenCommits.size, blobs: seenBlobs.size, refs: refs.length };
+}
+
 export function parseArgs(args) {
   const ref = value => typeof value === 'string' && /^[\w./^~-]+$/.test(value) && !value.startsWith('-');
   if (args.length === 0) return { tree: 'HEAD' };
   if (args.length === 1 && args[0] === '--cached') return { cached: true };
+  if (args.length === 3 && args[0] === '--push') return { push: true, remote: args[2] };
   if (args.length === 2 && args[0] === '--tree' && ref(args[1])) return { tree: args[1] };
   if (args.length === 4 && args[0] === '--tree' && ref(args[1]) && args[2] === '--changed-since' && ref(args[3])) return { tree: args[1], since: args[3] };
   return null;
@@ -239,8 +361,14 @@ export function parseArgs(args) {
 export function main(args = process.argv.slice(2), { cwd = repository } = {}) {
   const options = parseArgs(args);
   if (!options) {
-    console.error('Användning: node tools/check-repo-limits.mjs [--cached | --tree <ref> [--changed-since <ref>]]');
+    console.error('Användning: node tools/check-repo-limits.mjs [--cached | --tree <ref> [--changed-since <ref>] | --push <remote-name> <remote-url>]');
     return 2;
+  }
+  if (options.push) {
+    const result = inspectPush({ cwd, updates: readFileSync(0, 'utf8'), remote: options.remote });
+    for (const error of result.errors) console.error(error);
+    if (!result.errors.length) console.log(`Pushgränser: ${result.commits} nya commits, ${result.blobs} nya blobbar, ${result.refs} referenser kontrollerade.`);
+    return result.errors.length ? 1 : 0;
   }
   const result = options.cached ? inspectChanges({ cwd })
     : options.since ? inspectChanges({ cwd, tree: options.tree, base: options.since })
