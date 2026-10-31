@@ -1,0 +1,34 @@
+{
+  "source": "Kevin 5aa7ed1 migration oracle, captured before removing duplicate executable fixtures",
+  "seed": "blackjack-regression-v1",
+  "nonce": "abababababababababababababababababababababababababababababababab",
+  "rounds": 67,
+  "steps": 381,
+  "net": -390,
+  "actions": [
+    "double",
+    "hit",
+    "split",
+    "stand"
+  ],
+  "insuranceOffers": 4,
+  "trace": "2da07a9861d7e642d476bea36362d1497487015b09910f04c0d404f6aac142fb",
+  "proofs": [
+    {
+      "commitment": "d6fcd9b5754f014fd528a3414e3c58e8d9aaf12b61c6596b0bceb29594d9e96e",
+      "digest": "9d31bf6fc7b8195b7ed01c751d9c8beaed47599f561aeb8dd6bdc3e02354c28a",
+      "draws": 319
+    },
+    {
+      "commitment": "ef6a917c4a164c4bac5b826ffc1583f5a2e9fae1f0137279726754a1e89160e3",
+      "digest": "062953ab45ab5054c81752d70d7c9f004060dbe0a6811d952e6f9346e58e2081",
+      "draws": 323
+    }
+  ],
+  "sourceBlobs": {
+    "shoe-game.mjs": "b59177421de2a6fe203e4e0bdf0676a4bb9b25ef",
+    "public/blackjack.mjs": "5ce0fe431186bd11c2a893766a2ce6c63b1cc6dc",
+    "shoe-proof.mjs": "54e9737a3d89fe763d907f20282bd298480b7f35"
+  },
+  "capture": "SHA-256 of newline-separated JSON {round,paid,shoe:cards,dealt,delta} after every command; separate fixed shoe UUIDs, nonce, uint32 seed; split first, double on 9-11, hit below 17, otherwise stand; alternating insurance boxes [0,3]/[]"
+}
