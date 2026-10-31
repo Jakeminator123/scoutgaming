@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, scryptSync } from 'node:crypto';
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, readdir } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET, F11_MONEY_SQL } from '../tools/shared-room-f11-observer.mjs';
 import { prepareF11Fixture, runF11Preview, runF11PreviewCli, validateF11Plan, f11FixtureIdentity,
@@ -348,6 +350,19 @@ test('live F11 import/help/read and missing run flag never construct credentials
   await assert.rejects(prepareF11Fixture(livePlan(),new Proxy({},{get:()=>assert.fail('port access')})),/explicit_run_required/);
   await assert.rejects(runF11Preview(livePlan(),null),/explicit_run_required/);
   await assert.rejects(createF11LivePorts({credentials:{}}),/explicit_run_required/);
+});
+test('F11 direct CLI loads live ports before safely refusing invalid synthetic credentials',async t=>{
+  const temp=await mkdtemp(join(tmpdir(),'f11-cli-startup-'));t.after(()=>rm(temp,{recursive:true,force:true}));
+  const planFile=join(temp,'plan.json');await writeFile(planFile,JSON.stringify(livePlan()));
+  const result=spawnSync(process.execPath,[fileURLToPath(new URL('../tools/run-f11-preview.mjs',import.meta.url)),
+    '--run',planFile,'--output',join(temp,'new-output'),'--provenance',join(temp,'absent-provenance.ndjson'),'--credentials-stdin'],
+  {input:JSON.stringify({admin:{user:'synthetic-cli',pass:''},databaseUrl:'not-a-database-url'}),encoding:'utf8',timeout:10000,windowsHide:true,
+    env:{PATH:process.env.PATH??'',SystemRoot:process.env.SystemRoot??''}});
+  assert.equal(result.error,undefined);assert.equal(result.signal,null);assert.equal(result.stderr,'');assert.equal(result.status,1);
+  assert.deepEqual(result.stdout.trim().split(/\r?\n/).map(line=>JSON.parse(line)),
+    [{status:'unverifiable',acceptance:false,code:'f11_credentials_invalid'}]);
+  // Credential refusal precedes dependency construction, network/SQL and mkdir.
+  assert.deepEqual(await readdir(temp),['plan.json']);
 });
 test('F11 common HTTP transport satisfies the actual Studio login CSRF gate; missing Sec-Fetch-Site stops before SQL',async t=>{
   const plan=livePlan(),password='f11-fixture-password',salt='f11-fixture-salt';

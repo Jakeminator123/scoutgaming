@@ -3,7 +3,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { F11_TARGET, F11_SQL_INTERVAL_MS, createF11Observer, validateF11Ownership, validateF11GatewayProof, f11FixtureDrained } from './shared-room-f11-observer.mjs';
+import { F11_TARGET, F11_SQL_INTERVAL_MS, createF11Observer, validateF11Ownership, correlateF11Log, f11FixtureDrained } from './shared-room-f11-observer.mjs';
+export { correlateF11Log } from './shared-room-f11-observer.mjs';
 import { parseSharedRoomCommand } from '../services/game/shared-room-command-contract.mjs';
 import { projectSharedRoomSnapshot } from '../services/game/shared-room-channel.mjs';
 
@@ -136,45 +137,6 @@ export function nextF11Command(snapshot, {seat, chip, draining=false, bothSeated
   if (!s.settings?.chips?.includes(chip) || chip < s.settings.limits.min || chip > s.settings.limits.max) return null;
   if (!s.bets[seat].main) return {op:'bet',windowId:s.windowId,seat,field:'main',chip};
   return {op:'ready',windowId:s.windowId};
-}
-
-function renderLog(receipt, plan) {
-  f11Need(receipt?.source === 'render-api-capture' && receipt.serviceId === plan.serviceId
-    && receipt.deployment?.serviceId === plan.serviceId && receipt.deployment?.commit?.id === plan.sha
-    && typeof receipt.deployment.id === 'string' && receipt.deployment.id.startsWith('dep-'), 'provenance_required');
-  const log=receipt.log;
-  let payload;try { payload=JSON.parse(log?.message); } catch { f11Need(false,'provenance_required'); }
-  const labels=Array.isArray(log.labels) ? Object.fromEntries(log.labels.map(x=>[x.name,x.value])) : log.labels;
-  const at=payload?.event==='cloud_gateway_lifecycle' && typeof payload.at==='string'?Date.parse(payload.at):payload?.at;
-  f11Need(integer(at) && typeof log.id==='string' && /^[a-zA-Z0-9_.:-]{1,128}$/.test(log.id)
-    && typeof labels?.instance==='string' && labels.instance.startsWith(`${plan.serviceId}-`)
-    && labels.resource===plan.serviceId && labels.type==='app'
-    && Math.abs(Date.parse(log.timestamp)-at)<=2000, 'socket_log_mismatch');
-  return {payload,proof:{source:'render-app-log',logId:log.id,instanceId:labels.instance,serviceId:plan.serviceId,sha:plan.sha,at}};
-}
-
-export function correlateF11Log(bundle, connection, plan) {
-  const {payload,proof}=renderLog(bundle?.socket,plan);
-  f11Need(payload?.event==='shared_room_socket_identity' && payload.processId===connection.processId
-    && payload.socketNonce===connection.nonce && integer(payload.at) && Math.abs(payload.at-connection.at)<=2000, 'socket_log_mismatch');
-  f11Need(Array.isArray(bundle.gateway) && bundle.gateway.length<=1000,'public_listener_evidence_required');
-  const lifecycle=bundle.gateway.map(row=>renderLog(row,plan)).map(({payload:p,proof:e})=>{
-    f11Need(p.event==='cloud_gateway_lifecycle' && typeof p.at==='string' && new Date(e.at).toISOString()===p.at && p.commitSha===plan.sha
-      && e.instanceId===proof.instanceId,'gateway_log_mismatch');
-    return {...e,fullInstanceId:p.instanceId,runtimeId:p.runtimeId,listenerId:p.listenerId,phase:p.phase,
-      ...(p.phase==='listening'?{binding:p.binding}:{})};
-  });
-  // Startup loopback listeners are deliberately ineligible. The latest public
-  // listener before THIS socket must remain live until this socket was opened.
-  const listening=lifecycle.filter(e=>e.phase==='listening' && e.binding?.address==='0.0.0.0'
-    && e.binding.port===10000 && e.at<=payload.at).sort((a,b)=>b.at-a.at)[0];
-  const draining=lifecycle.filter(e=>e.phase==='draining' && listening
-    && ['fullInstanceId','runtimeId','listenerId'].every(key=>e[key]===listening[key]))
-    .sort((a,b)=>a.at-b.at)[0]??null;
-  proof.connectionNonce=connection.nonce;proof.gateway={listening,draining};
-  validateF11GatewayProof(proof,payload.at,plan);
-  f11Need(connection.closeCode!==1012 || draining && draining.at<=connection.closedAt+2000,'drain_evidence_required');
-  return proof;
 }
 
 export async function runF11Preview(input, ports, {run=false}={}) {
