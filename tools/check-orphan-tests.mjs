@@ -324,7 +324,9 @@ export function auditOrphanTests({ root = repositoryRoot } = {}) {
     else if (!excepted.has(file)) orphans.push(file);
   }
   return { files: unique, orphans, covered, exceptions: entries, errors,
-    python: { files: pythonFiles, coverage: 'not-evaluated', note: 'Python runner coverage is outside this JavaScript audit.' } };
+    python: { files: pythonFiles, coverage: 'not-evaluated',
+      note: 'Limited to discovered test_*.py files in test/ or tests/ directories under services/. '
+        + 'Python tests elsewhere are not inventoried; Python runner coverage is outside this JavaScript audit.' } };
 }
 
 function main() {
@@ -336,7 +338,7 @@ function main() {
   } else if (result.errors.length === 0) {
     console.log(`Checked ${result.files.length} JavaScript/TypeScript test candidates. Orphans: 0. Explicit helper/opt-in classifications: ${result.exceptions.length}.`);
   }
-  console.log(`Separate Python inventory: ${result.python.files.length} test files. ${result.python.note}`);
+  console.log(`Separate Python inventory under services/: ${result.python.files.length} matching test files. ${result.python.note}`);
   return result.orphans.length > 0 || result.errors.length > 0 ? 1 : 0;
 }
 
