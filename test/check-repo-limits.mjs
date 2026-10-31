@@ -4,8 +4,9 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
-  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectTree, lineCount, parseArgs,
+  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectPush, inspectTree, lineCount, parseArgs,
 } from '../tools/check-repo-limits.mjs';
 
 const entry = (path, maxBytes, reason = 'fixture') => ({ path, maxBytes, reason });
@@ -58,6 +59,7 @@ test('living documents have a line and size limit, with no history folder exempt
 test('arguments accept only the documented modes', () => {
   assert.deepEqual(parseArgs([]), { tree: 'HEAD' });
   assert.deepEqual(parseArgs(['--cached']), { cached: true });
+  assert.deepEqual(parseArgs(['--push', 'origin', 'https://github.com/fixture/repo.git']), { push: true, remote: 'https://github.com/fixture/repo.git' });
   assert.deepEqual(parseArgs(['--tree', 'HEAD', '--changed-since', 'HEAD^1']), { tree: 'HEAD', since: 'HEAD^1' });
   for (const bad of [['--tree'], ['--tree', '--cached'], ['--cached', '--tree', 'HEAD'], ['--tree', 'HEAD', '--changed-since'], ['x']]) assert.equal(parseArgs(bad), null);
 });
@@ -161,4 +163,180 @@ test('the classifier job runs the guard on the merge diff with its files in the 
   assert.match(hook, /^run_node_tests contracts precommit-checks .*test\/check-repo-limits\.mjs/m);
   // The committed allowlist itself is well-formed (sizes are judged by the Git modes above).
   assert.deepEqual(allowlistErrors(JSON.parse(readFileSync(new URL('../' + ALLOWLIST, import.meta.url), 'utf8'))), []);
+});
+
+
+const zeroOid = '0'.repeat(40);
+const pushLine = (head, base, name = 'one', local = `refs/heads/jakob/${name}`) => `${local} ${head} refs/heads/jakob/${name} ${base}\n`;
+const pushCheck = (root, head, base, remote) => inspectPush({ cwd: root, updates: pushLine(head, base), remote });
+const pushErrors = result => result.errors.join('\n');
+const localRemote = ({ root, git }) => {
+  const remote = join(root, '.git', 'fixture-remote.git');
+  git('init', '-q', '--bare', remote);
+  git('push', '-q', remote, 'main');
+  return remote;
+};
+
+test('pre-push sees an oversized add then delete, and accepts ordinary small commits', () => {
+  repository(({ root, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('small.txt', 'small'); const small = commit('small');
+    assert.deepEqual(pushCheck(root, small, base).errors, []);
+    put('assets/transient.bin', binary(big)); const middle = commit('large intermediate object');
+    rmSync(join(root, 'assets', 'transient.bin')); const head = commit('delete large file');
+    assert.equal(check(inspectChanges({ cwd: root, tree: head, base })), '', 'a final-tree diff misses the deleted blob');
+    const result = pushCheck(root, head, base);
+    assert.equal(result.commits, 3);
+    assert.match(pushErrors(result), new RegExp(middle));
+    assert.match(pushErrors(result), /assets\/transient\.bin: 1\.00 MB, över gränsen/);
+  });
+});
+
+test('pre-push follows merge parents and ignores local replace objects hiding a large commit', () => {
+  repository(({ root, git, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    git('checkout', '-qb', 'side'); put('side.bin', binary(big)); const middle = commit('large side commit');
+    rmSync(join(root, 'side.bin')); commit('delete on side');
+    git('checkout', '-q', 'main'); put('small.txt', 'small'); commit('main change');
+    git('merge', '-q', '--no-ff', 'side', '-m', 'merge side'); const head = git('rev-parse', 'HEAD');
+    assert.match(pushErrors(pushCheck(root, head, base)), /side\.bin: 1\.00 MB/);
+    const replacement = git('commit-tree', `${base}^{tree}`, '-p', base, '-m', 'hide large tree');
+    git('replace', middle, replacement);
+    assert.match(pushErrors(pushCheck(root, head, base)), /side\.bin: 1\.00 MB/, 'a local replacement cannot hide objects that Git will push');
+  });
+});
+
+test('pre-push checks all ref updates and refuses malformed or unavailable bases', () => {
+  repository(({ root, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('small.txt', 'small'); const small = commit('small');
+    put('second.bin', binary(big)); const large = commit('large on second ref');
+    const result = inspectPush({ cwd: root, updates: pushLine(small, base) + pushLine(large, small, 'two') });
+    assert.equal(result.refs, 2);
+    assert.match(pushErrors(result), /second\.bin: 1\.00 MB/);
+    assert.throws(() => pushCheck(root, small, '1'.repeat(40)), /saknade basen/);
+    assert.throws(() => inspectPush({ cwd: root, updates: 'incomplete' }), /ogiltiga pushreferenser/);
+    assert.equal(inspectPush({ cwd: root, updates: pushLine(zeroOid, base) }).commits, 0, 'deletion is left to the ownership guard');
+  });
+});
+
+test('first push uses advertised reachable main, without scanning its old oversized history', () => {
+  repository(fixture => {
+    const { root, git, put, commit } = fixture;
+    // An intentionally unallowlisted OLD blob is outside the new-object range.
+    put('old.bin', binary(big)); put(ALLOWLIST, '[]'); commit('old history');
+    rmSync(join(root, 'old.bin')); commit('remote main');
+    const remote = localRemote(fixture);
+    put('small.txt', 'new small'); const small = commit('first feature push');
+    assert.deepEqual(pushCheck(root, small, zeroOid, remote).errors, []);
+    assert.throws(() => pushCheck(root, small, zeroOid), /verifierbar fjärrbas/);
+    put('new.bin', binary(big)); commit('new intermediate large blob');
+    rmSync(join(root, 'new.bin')); const head = commit('delete new blob');
+    assert.match(pushErrors(pushCheck(root, head, zeroOid, remote)), /new\.bin: 1\.00 MB/);
+    git('update-ref', 'refs/remotes/origin/main', small);
+    // A stale tracking ref cannot stand in for an unavailable advertised main.
+    const other = join(root, '.git', 'other');
+    git('init', '-q', '-b', 'main', other);
+    git('-C', other, 'config', 'user.name', 'fixture'); git('-C', other, 'config', 'user.email', 'fixture@example.invalid');
+    git('-C', other, 'config', 'core.hooksPath', join(other, 'no-hooks'));
+    git('-C', other, 'commit', '-q', '--allow-empty', '-m', 'unrelated remote');
+    assert.throws(() => pushCheck(root, head, zeroOid, other), /saknade basen/);
+  });
+});
+
+test('shallow history and missing new objects stop the push instead of skipping unseen commits', () => {
+  repository(fixture => {
+    const { root, git, put, commit, env } = fixture;
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('small.txt', 'small'); const head = commit('head');
+    const remote = localRemote(fixture), shallow = join(root, '.git', 'shallow-fixture');
+    execFileSync('git', ['clone', '-q', '--branch', 'main', '--depth', '1', pathToFileURL(remote).href, shallow], { env, stdio: 'pipe' });
+    assert.throws(() => pushCheck(shallow, head, zeroOid, remote), /shallow-historik/);
+    const blob = git('rev-parse', `${head}:small.txt`);
+    rmSync(join(root, '.git', 'objects', blob.slice(0, 2), blob.slice(2)));
+    assert.throws(() => pushCheck(root, head, base), /metadata|objektlista/);
+  });
+});
+
+test('partial-clone-style missing old media is not read to check a new small commit', () => {
+  repository(({ root, git, put, commit }) => {
+    put('old.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('old.bin', big)])); const base = commit('base');
+    const oldBlob = git('rev-parse', `${base}:old.bin`);
+    put('small.txt', 'small'); const head = commit('small');
+    rmSync(join(root, '.git', 'objects', oldBlob.slice(0, 2), oldBlob.slice(2)));
+    assert.deepEqual(pushCheck(root, head, base).errors, []);
+  });
+});
+
+test('pre-push binds large allowances to the final blob, rejecting same-sized A to B to C objects', () => {
+  repository(({ root, git, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('large.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const a = commit('large A');
+    assert.deepEqual(pushCheck(root, a, base).errors, [], 'a single visible large blob remains allowed');
+    const bData = binary(big); bData[1] = 8;
+    put('large.bin', bData); const b = commit('same-sized B');
+    assert.notEqual(git('rev-parse', `${a}:large.bin`), git('rev-parse', `${b}:large.bin`));
+    assert.deepEqual(pushCheck(root, b, a).errors, [], 'an already remote A is not a hidden new object');
+    const aToB = pushErrors(pushCheck(root, b, base));
+    assert.match(aToB, new RegExp(`${a}: large\\.bin: stor mellanliggande blob`));
+    const cData = binary(big); cData[1] = 9;
+    put('large.bin', cData); const c = commit('same-sized C');
+    const aToC = pushErrors(pushCheck(root, c, base));
+    for (const hidden of [a, b]) assert.match(aToC, new RegExp(`${hidden}: large\\.bin: stor mellanliggande blob`));
+    assert.deepEqual(pushCheck(root, c, b).errors, [], 'the final blob is accepted when earlier objects are already remote');
+  });
+});
+
+test('pre-push preserves persistent exact allowances and rejects transient or stale allowances', () => {
+  repository(({ root, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('large.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const allowed = commit('explicit exception');
+    assert.deepEqual(pushCheck(root, allowed, base).errors, [], 'a visible exact exception remains reviewable');
+    put('small.txt', 'small'); const small = commit('small');
+    assert.deepEqual(pushCheck(root, small, allowed).errors, [], 'existing allowances remain valid');
+    put(ALLOWLIST, JSON.stringify([entry('large.bin', big + 1)])); const stale = commit('stale allowance');
+    assert.match(pushErrors(pushCheck(root, stale, allowed)), /har krympt/);
+    rmSync(join(root, 'large.bin')); put(ALLOWLIST, '[]'); const hidden = commit('hide exception and file');
+    assert.match(pushErrors(pushCheck(root, hidden, base)), /Tillfälliga undantag/);
+  });
+  repository(({ root, put, commit }) => {
+    put('large.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const base = commit('base');
+    put(ALLOWLIST, '[]'); commit('remove allowance while retaining blob');
+    put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const head = commit('restore allowance');
+    assert.match(pushErrors(pushCheck(root, head, base)), /large\.bin: 1\.00 MB, över gränsen/);
+  });
+});
+
+// The classifier uses a sparse checkout; load only these two named current hook
+// sources from HEAD if they are absent on disk. Never inspect historical content.
+function hookSource(path) {
+  try { return readFileSync(new URL('../' + path, import.meta.url)); }
+  catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    return execFileSync('git', ['show', `HEAD:${path}`], { cwd: new URL('..', import.meta.url), stdio: ['ignore', 'pipe', 'pipe'] });
+  }
+}
+
+test('real pre-push hook feeds both guards the full batch and retains ownership refusal', () => {
+  repository(({ root, git, put, commit, env }) => {
+    put('tools/check-repo-limits.mjs', readFileSync(new URL('../tools/check-repo-limits.mjs', import.meta.url)));
+    put('tools/check-push-target.mjs', hookSource('tools/check-push-target.mjs'));
+    put('tools/repository-policy.json', JSON.stringify({ repository: 'fixture/repo', branch: 'main', featureBranches: ['jakob/*'], protectedBranches: ['kevin*'] }));
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('small.txt', 'small'); const small = commit('small');
+    put('large.bin', binary(big)); const large = commit('large');
+    const hook = join(root, '.git', 'fixture-pre-push'); writeFileSync(hook, hookSource('.githooks/pre-push'));
+    const shell = process.platform === 'win32' ? join(git('--exec-path'), '..', '..', '..', 'bin', 'sh.exe') : 'sh';
+    const run = input => spawnSync(shell, [hook, 'origin', 'https://github.com/fixture/repo.git'], { cwd: root, env, input, encoding: 'utf8' });
+    const clean = run(pushLine(small, base) + pushLine(small, base, 'two'));
+    assert.equal(clean.status, 0, clean.stderr || clean.error?.message);
+    assert.match(clean.stdout, /2 referenser kontrollerade/);
+    const refused = run(pushLine(small, base) + pushLine(large, small, 'two'));
+    assert.equal(refused.status, 1, refused.stderr);
+    assert.match(refused.stderr, /large\.bin: 1\.00 MB/);
+    const foreign = run(pushLine(small, base, 'one', 'refs/heads/kevin-test'));
+    assert.equal(foreign.status, 1);
+    assert.match(foreign.stderr, /protected branch/);
+    assert.doesNotMatch(foreign.stdout, /Pushgränser/);
+  });
 });
