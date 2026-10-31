@@ -17,6 +17,11 @@ Exit 0 betyder att referenser och handgranskade kodankare kunde kontrolleras;
 1 betyder att kartan skrevs med fel; 2 betyder ogiltiga indata och ingen ny karta.
 Olösta automatiska referenser redovisas i kartan och är inte i sig ett exitfel.
 
+De befintliga kontrakts- och dokumentationsjobben i CI kör Pythonproven och
+generatorn. Ändrade ansvar eller kodankare uppdateras i samma PR som koden;
+förbrukade samband tas bort. Kontrollen låser inga produkter, filnamn eller
+antal samband och kräver inte att pensionerad implementation återinförs.
+
 ## Underlag och underhåll
 
 - `START-HERE.md`, avsnitt Systemkarta: fyra tabellkolumner anger ansvar,
