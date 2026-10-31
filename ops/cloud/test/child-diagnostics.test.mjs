@@ -11,6 +11,76 @@ const guard = { event: 'moving_drift_guard_rejected', phase: 'submit', reason: '
   revisionMatches: true, operationMatches: true, profileMatches: true, endpointMatches: true, catalogueMatches: true, executorFenceMatches: true,
   appliedRevisionMatches: true, appliedOperationMatches: true, executionIdentityMatches: true, observationCatalogueMatches: true };
 
+const socketIdentity = { event: 'shared_room_socket_identity', processId: '38657101-da59-4796-96e2-2dbf7e014c4b',
+  socketNonce: '62fe0cc0-912f-4a4d-8a56-819794c8b2c1', at: 1793448000000 };
+
+test('room socket correlation forwards only generated UUIDs and a safe timestamp, never extra fields', () => {
+  const emitted=[];
+  const {web}=withChildDiagnostics({web:{}},{emit:line=>emitted.push(JSON.parse(line))});
+  const line=JSON.stringify({...socketIdentity,source:'private-source',cookie:'private-cookie',token:'private-token',
+    text:'private-text',url:'https://private.invalid',headers:{authorization:'Bearer private-secret'},actorId:'private-actor'});
+  web.onStdoutLine(line);web.onStderrLine(line);
+  assert.deepEqual(emitted,[{...socketIdentity,source:'game'},{...socketIdentity,source:'game'}]);
+  assert.equal(JSON.stringify(emitted).includes('private'),false);
+});
+
+test('room socket correlation drops missing, malformed or unsafe required fields', () => {
+  for(const key of ['processId','socketNonce']) {
+    for(const value of [undefined,null,1,{},[],socketIdentity[key].toUpperCase(),'private-token','https://private.invalid',
+      socketIdentity[key]+'\n',socketIdentity[key].replace('-4','-1'),socketIdentity[key].slice(0,19)+'0'+socketIdentity[key].slice(20)]) {
+      assert.equal(safeChildDiagnosticLine(JSON.stringify({...socketIdentity,[key]:value})),null,key);
+    }
+  }
+  for(const at of [undefined,null,'1793448000000',true,{},-1,1.5,Number.MAX_SAFE_INTEGER,8640000000000001,Infinity])
+    assert.equal(safeChildDiagnosticLine(JSON.stringify({...socketIdentity,at})),null);
+  for(const at of [0,Date.now(),8640000000000000])
+    assert.equal(JSON.parse(safeChildDiagnosticLine(JSON.stringify({...socketIdentity,at}))).at,at);
+});
+
+test('room socket diagnostics share the existing stream flood cap and never propagate emitter failures', () => {
+  const emitted=[];
+  const {web}=withChildDiagnostics({web:{}},{limit:2,emit:line=>{emitted.push(JSON.parse(line));throw Error('sink unavailable');}});
+  web.onStdoutLine(JSON.stringify({...socketIdentity,processId:'invalid'}));
+  web.onStdoutLine(JSON.stringify(socketIdentity));
+  web.onStderrLine(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}));
+  web.onStderrLine(JSON.stringify(socketIdentity));web.onStdoutLine(JSON.stringify(socketIdentity));
+  assert.deepEqual(emitted,[{...socketIdentity,source:'game'},{event:'moving_speech_cleanup_requires_recovery',source:'game'}]);
+});
+
+test('the actual room upgrade console.info record crosses a real child stdout and production forwarder', {timeout:5000}, async t => {
+  const emitted=[],startedAt=Date.now();let received;
+  const observed=new Promise(resolve=>{received=resolve;});
+  const moduleUrl=new URL('../../../services/game/shared-room-upgrade.mjs',import.meta.url).href;
+  const script=`
+    import {EventEmitter} from 'node:events';
+    import {createSharedRoomUpgrade} from ${JSON.stringify(moduleUrl)};
+    class Server extends EventEmitter {
+      handleUpgrade(request,socket,head,done){const client=new EventEmitter();client.readyState=3;done(client);}
+      close(done){done();}
+    }
+    const request=Object.assign(new EventEmitter(),{method:'GET',url:'/shared-room/synthetic',rawHeaders:[],
+      headers:{host:'engine.invalid',origin:'https://player.invalid',upgrade:'websocket',connection:'Upgrade',cookie:'private-cookie'}});
+    const raw=Object.assign(new EventEmitter(),{readable:true,writable:true,readableEnded:false,destroyed:false,pause(){},resume(){}});
+    const upgrade=createSharedRoomUpgrade({engineOrigin:'https://engine.invalid',origin:'https://player.invalid',WebSocketServer:Server,
+      channel:{async prepare(){return {attach(){}};},close(){}}});
+    console.info('private startup text https://private.invalid');
+    await upgrade.handleUpgrade(request,raw,Buffer.alloc(0));await upgrade.close();
+    setInterval(()=>{},1000);
+  `;
+  const specs=withChildDiagnostics({web:{command:process.execPath,args:['--input-type=module','-e',script],cwd:process.cwd(),
+    env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot}}},{emit:line=>{emitted.push(JSON.parse(line));received();}});
+  const group=await startChildren(specs,{portCheck:async()=>{},wait:async()=>{}});
+  t.after(()=>group.stop());
+  await Promise.race([observed,group.ended.then(()=>assert.fail('child exited before correlation log'))]);
+  await group.stop();
+  assert.equal(emitted.length,1);
+  const row=emitted[0];
+  assert.deepEqual(Object.keys(row).sort(),['at','event','processId','socketNonce','source']);
+  assert.equal(row.event,socketIdentity.event);assert.equal(row.source,'game');
+  assert.notEqual(row.processId,row.socketNonce);assert.ok(row.at>=startedAt && row.at<=Date.now());
+  assert.equal(JSON.stringify(row).includes('private'),false);
+});
+
 test('allowlisted finite game diagnostics are forwarded verbatim and tagged as game output', () => {
   const forwarded = JSON.parse(safeChildDiagnosticLine(JSON.stringify(guard)));
   assert.equal(forwarded.event, 'moving_drift_guard_rejected'); assert.equal(forwarded.source, 'game');
