@@ -52,7 +52,7 @@ GitHub-plugin/CLI bekräftar publikt repo, inga öppna PR:er vid starten och akt
 | K1-01 | ARKITEKTEN: Secure på preview_session (SEC-01 / FA-01) | MERGAD | #725 head a91038242c9e24b1fd3ebde16b1b1c36f6753eaa, Astra/high 0 fynd, CI 11 godkända/0 fel. Main b080df8c74420ce7ac68b80d64ae25eb1043589e. Render prod/preview live på denna SHA; Gästläget är av i preview, så cookieutfärdning där är inte observerad; relevanta produktlogikprov passerar. |
 | K1-02 | REPOAGENTEN: dokumentdrift (DOC-01/02 / FA-02) | VERIFIERAD | #724, head 3ace7db36b512823ebf754ee5da23103c05577b9, granskad diff och grön CI. Mergad som c300e1e3e2da6067e8e0d201e188a61a0f259705. |
 | K1-03 | DRIFTAGENTEN: F11-beredskapsunderlag (GAM-01, REL-01/02/04 / FA-03/04) | VERIFIERAD | Läsuppdrag klart: 1/1 isolerat F11-prov, live preview-SHA och SQL verifierade. Underlaget visar att verkligt överlappsprov ännu inte är körklart; K2-02 förbereder det. |
-| G1 | MERGEAGENTEN: kontrollerad integration och release | PAGAR | Jakob har gett fullt beslutsmandat utan fler frågor. Frysta headar, mergegrind, preview-/runtimebevis styr fortfarande varje steg. |
+| G1 | MERGEAGENTEN: kontroll vid varje ny integration och release | LÖPANDE GRIND | Den valda genomförandevågen är avslutad (4/4 + 3/3 + 2/2); G1 är ingen kvarstående leverans i den vågen. Jakobs fullmandat gäller fortsatt, och varje ny release kräver frysta headar, mergegrind samt relevanta preview-/runtimebevis. |
 
 ```text
 färsk main + KORPLAN-v2
