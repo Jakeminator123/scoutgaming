@@ -547,7 +547,7 @@ test('checked gateway reopens authorized room sockets and still drains them on s
   const config = { ...validateCloudConfig(fixture()), singleOrigin:true, gameOrigin:origin, boOrigin:origin,
     labOrigin:origin, publicPort:0, vercelIngress:ingress };
   const web = createServer((request, response) => {
-    response.writeHead(request.url === '/api/bo/speech-qa' ? 403 : 401); response.end();
+    response.writeHead(401); response.end();
   });
   const room = new WebSocketServer({ noServer:true }), clients = [];
   let gateway, admitted = 0;

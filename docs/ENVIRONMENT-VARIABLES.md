@@ -75,6 +75,8 @@ Studio läser inte längre `CROUPIER_STREAM_LANE` (Admins `connectedLane` är al
 
 Speech (`apps/speech`) läser `PORT` och samma transportnycklar som web; den har inga egna namn. Native Node-funktionerna `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns i `vercel.json`. Inga `NEXT_PUBLIC_*`-variabler får innehålla hemligheter.
 
+Den fristående operatörens tal-QA-adapter är avvecklad 31 oktober. Dess källfil är borttagen ur miljöregistrets `sources`; inga variabler eller panelvärden ändras av detta. Produktens taladaptrar och deras budget-/behörighetskontroller finns kvar.
+
 ### Sparade röst-ID:n i Vercel
 
 Jakobs beslut 2026-10-30: projektet `scoutgaming` lagrar `ELEVENLABS_PAOW_VOICE_ID`, `ELEVENLABS_DRAGAN_VOICE_ID` och `ELEVENLABS_JAKOB_VOICE_ID` som Config i **Production, Preview och Development**, utan branchfilter. Det gäller de tre miljöerna i detta projekt, inte det separata projektet `scoutgaming-preview`.

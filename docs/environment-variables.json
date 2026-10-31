@@ -28,7 +28,6 @@
         "ops/cloud/container-entry.mjs",
         "ops/cloud/vercel-ingress.mjs",
         "ops/cloud/storage-export.mjs",
-        "services/game/operator-speech-qa.mjs",
         "packages/presentation/server/generated-speech-runtime.mjs",
         "services/game/storage/studio-runtime.mjs",
         "packages/presentation/server/studio-policy-runtime.mjs",
