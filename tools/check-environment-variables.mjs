@@ -107,13 +107,13 @@ function analyzeEnvironment(source, file, names) {
     const line = node.loc.start.line;
     if (!found.has(line)) found.set(line, new Set());
     found.get(line).add(name);
-    // Keep the surrounding value/default expression, without formatting or
-    // comments, so a staged default change still requires the inventory update.
+    // Keep the surrounding value/default expression, without formatting,
+    // comments, local binding names or unrelated sibling call arguments.
     let context = node;
     const boundaries = ['ObjectProperty', 'VariableDeclarator', 'AssignmentPattern'];
     while (parents.has(context) && !boundaries.includes(context.type)) {
       const parent = parents.get(context);
-      if (!boundaries.includes(parent.type) && !(/Expression$/.test(parent.type) && !/Function|Class|Object/.test(parent.type))) break;
+      if (boundaries.includes(parent.type) || !(/Expression$/.test(parent.type) && !/Function|Class|Object|Call/.test(parent.type))) break;
       context = parent;
     }
     contexts.push(JSON.stringify(context, (key, value) => /^(?:loc|start|end|extra|.*Comments|comments|tokens)$/.test(key) ? undefined : value));

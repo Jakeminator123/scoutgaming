@@ -43,13 +43,15 @@ test('rejects duplicate registry names', () => {
   assert.match(validateRegistry(registry).join(' '), /duplicate A/);
 });
 
-test('detects semantic environment edits, including defaults, but ignores comments and descriptions', () => {
+test('compares environment expressions and defaults without comments or surrounding binding metadata', () => {
   assert.equal(hasEnvChange('env.OLD;', 'env.NEW;'), true);
   assert.equal(hasEnvChange('env.PORT;', 'env.PORT; env.PORT;'), true);
   assert.equal(hasEnvChange('const x = 1;', 'const x = 2;'), false);
   assert.equal(hasEnvChange('const x = env.PORT ?? "1";', 'const x = env.PORT ?? "2";'), true);
   assert.equal(hasEnvChange('const x = env.PORT;', '// process.env.FIXED_FLAG\nconst x = env.PORT; const text = "env.FIXED_FLAG";'), false);
   assert.equal(hasEnvChange('const x = env.PORT;', 'const x = env.PORT /* explanation */;'), false);
+  assert.equal(hasEnvChange('const port = env.PORT ?? "1";', 'const listenPort = env.PORT ?? "1";'), false);
+  assert.equal(hasEnvChange('console.log("old label", env.PORT);', 'console.log("new label", env.PORT);'), false);
   assert.equal(hasEnvChange('if (env.PORT) {}', 'if (env.PORT) { const text = "process.env.FIXED_FLAG"; }'), false);
   assert.equal(hasEnvChange('export default env.PORT;', 'export default env.PORT; const text = "env.FIXED_FLAG";'), false);
   assert.equal(hasEnvChange('# LAB_REMOTE_URL=old', '# LAB_REMOTE_URL=new', true), true);
@@ -144,11 +146,11 @@ test('the CLI rejects an env read and passes when it becomes a comment and descr
   assert.match(unlisted.stderr, /ACTIVE_PORT is read .* but missing from registry/);
 });
 
-test('a real staged comment passes without inventory edits; env reads, defaults and template changes require both inventories', t => {
+test('real staged comments, binding renames and log labels pass; env reads, defaults and templates require both inventories', t => {
   const repository = mkdtempSync(join(tmpdir(), 'croupier-env-staged-'));
   t.after(() => rmSync(repository, { recursive: true, force: true }));
   const runtime = 'packages/example/runtime.mjs';
-  const baseline = 'export const port = process.env.ACTIVE_PORT ?? "1";\n';
+  const baseline = 'export const port = process.env.ACTIVE_PORT ?? "1";\nconsole.log("old label", process.env.ACTIVE_PORT);\n';
   const registry = { schema: 1, hardcodedNames: { names: ['FIXED_FLAG'] }, services: {
     sample: { sources: [runtime], templates: ['.env.example'], required: [], firstBoot: [],
       conditional: ['ACTIVE_PORT', 'OTHER_PORT'], managed: [], blocked: [] },
@@ -175,6 +177,11 @@ test('a real staged comment passes without inventory edits; env reads, defaults 
   git('add', runtime);
   const comment = cli();
   assert.equal(comment.status, 0, comment.stderr);
+  for (const source of [baseline.replace('const port', 'const listenPort'), baseline.replace('old label', 'new label')]) {
+    writeFileSync(join(repository, runtime), source); git('add', runtime);
+    const benign = cli();
+    assert.equal(benign.status, 0, benign.stderr);
+  }
   for (const source of [baseline.replace('"1"', '"2"'), baseline + 'export const other = process.env.OTHER_PORT;\n']) {
     writeFileSync(join(repository, runtime), source); git('add', runtime);
     const result = cli();

@@ -93,6 +93,8 @@ Läskontroll 2026-10-30: `ELEVENLABS_API_KEY` på Render `croupier-v3` listar Ja
 
 Fem flaggor hade bara ett värde i produktionen och preview och är sedan Miljövariabler 2 fasta i koden. Ingen källfil läser dem. `node tools/check-environment-variables.mjs` fäller env-läsningar och env-deklarationer av namnen i `hardcodedNames`, även i prov och byggskript. Kommentarer, beskrivande strängar och vanliga objektfält får nämna namnen. Kontrollen använder Studios låsta Babel-parser för JS/TS: direkta `process.env`-/`env`-medlemmar, destrukturering och lokala `const`-alias, samt env-objekt i konfiguration. Den kontrollerar också `.env`-mallar (inklusive kommenterade exempelnycklar), JSON-fältet `env` och Render-blueprints. Andra konfigurationsformat ingår inte. Godtyckligt beräknade nycklar, funktionsreturer och omtilldelade alias utvärderas inte. `docs/`, Markdown och `.github/workflows/` ligger fortsatt utanför denna audit. Kravet på båda inventeringsfilerna i samma commit vid env-ändringar är oförändrat.
 
+Staged-kontrollen jämför env-uttryck och deras direkta standardvärden i HEAD och index. Lokala bindningsnamn och andra argument i ett omgivande funktionsanrop ingår inte; den tolkar inte hjälpfunktioners egna standardvärden. Den är en avgränsad syntaxkontroll, ingen fullständig semantisk jämförelse.
+
 | Tidigare variabel | Fast värde | Var det står i koden |
 | --- | --- | --- |
 | `CROUPIER_VERCEL_UNIFIED_UI` | `1`: en publik origin för spel och Admin | `packages/server-transport/configuration.mjs` (`unifiedUi`, `labUiOrigin` = den publika originen), `apps/studio/lib/studio-native-runtime.mjs`, `studio-native-request.mjs`, `apps/studio/proxy.ts` |
