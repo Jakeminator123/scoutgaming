@@ -51,6 +51,19 @@ test('constant specifiers and require aliases respect lexical scopes', () => {
   assert.deepEqual(sqliteImports("function callback(require) { require('node:sqlite'); }"), [], 'a passed callback is not the Node loader');
 });
 
+test('local functions, catch bindings and destructured parameters named require are not Node loaders', () => {
+  for (const source of [
+    "function require() {} require('node:sqlite');",
+    "try {} catch ({ require }) { require('node:sqlite'); }",
+    "function callback({ require }) { require('node:sqlite'); }",
+    "function callback([require]) { require('node:sqlite'); }",
+    "function callback(require = () => {}) { require('node:sqlite'); }",
+    "function callback() { { var require = () => {}; } require('node:sqlite'); }",
+    "const callback = function require() { require('node:sqlite'); };",
+  ]) assert.deepEqual(sqliteImports(source), [], source);
+  assert.equal(sqliteImports("function callback({ require }) { require('node:sqlite'); } require('node:sqlite');").length, 1, 'a nested binding must not hide the outer Node loader');
+});
+
 test('manifest dependencies include aliased SQLite packages without matching descriptions', () => {
   assert.deepEqual(sqliteDependencies(JSON.stringify({
     description: 'Replace sqlite3 with PostgreSQL',

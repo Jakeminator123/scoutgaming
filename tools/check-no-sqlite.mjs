@@ -31,14 +31,30 @@ export function sqliteImports(source, file = 'source.mjs') {
     plugins: [/\.[cm]?tsx?$/.test(file) && ['typescript', { dts: /\.d\.[cm]?ts$/.test(file) }], (!/\.[cm]?ts$/.test(file)) && 'jsx'].filter(Boolean),
   });
   const scopes = new WeakMap(), nodes = [];
+  const bindPattern = (pattern, scope, value = null) => {
+    if (!pattern) return;
+    if (pattern.type === 'Identifier') scope.bindings.set(pattern.name, value);
+    else if (pattern.type === 'AssignmentPattern') bindPattern(pattern.left, scope);
+    else if (pattern.type === 'RestElement') bindPattern(pattern.argument, scope);
+    else if (pattern.type === 'ArrayPattern') pattern.elements.forEach(item => bindPattern(item, scope));
+    else if (pattern.type === 'ObjectPattern') for (const item of pattern.properties) bindPattern(item.type === 'RestElement' ? item.argument : item.value, scope);
+  };
   const walk = (node, scope) => {
     if (!node || typeof node !== 'object' || typeof node.type !== 'string') return;
-    if (['Program', 'BlockStatement', 'CatchClause'].includes(node.type) || /Function|Method/.test(node.type)) scope = { parent: scope, bindings: new Map() };
-    scopes.set(node, scope); nodes.push(node);
-    if (node.type === 'VariableDeclaration') for (const declaration of node.declarations) {
-      if (declaration.id.type === 'Identifier') scope.bindings.set(declaration.id.name, node.kind === 'const' ? declaration.init : null);
+    if (['FunctionDeclaration', 'ClassDeclaration'].includes(node.type)) bindPattern(node.id, scope);
+    const functionScope = node.type === 'Program' || /Function|Method/.test(node.type);
+    if (functionScope || ['BlockStatement', 'CatchClause', 'ForStatement', 'ForInStatement', 'ForOfStatement', 'SwitchStatement', 'ClassExpression', 'StaticBlock'].includes(node.type)) {
+      scope = { parent: scope, bindings: new Map(), functionScope };
     }
-    for (const param of node.params || []) if (param.type === 'Identifier') scope.bindings.set(param.name, null);
+    scopes.set(node, scope); nodes.push(node);
+    if (['FunctionExpression', 'ClassExpression'].includes(node.type)) bindPattern(node.id, scope);
+    if (node.type === 'VariableDeclaration') {
+      let target = scope;
+      if (node.kind === 'var') while (target.parent && !target.functionScope) target = target.parent;
+      for (const declaration of node.declarations) bindPattern(declaration.id, target, node.kind === 'const' ? declaration.init : null);
+    }
+    for (const param of node.params || []) bindPattern(param, scope);
+    if (node.type === 'CatchClause') bindPattern(node.param, scope);
     if (node.type === 'ImportDeclaration') for (const binding of node.specifiers) {
       const nodeModule = ['node:module', 'module'].includes(node.source.value);
       scope.bindings.set(binding.local.name, nodeModule && binding.imported?.name === 'createRequire' ? 'createRequire'
