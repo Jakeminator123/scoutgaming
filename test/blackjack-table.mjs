@@ -284,7 +284,7 @@ test('concurrent seat claims: one wins, the other is refused; stale seat generat
   const [a, b] = await Promise.allSettled([
     t.send('kevin', 'join', { seats: [3], seatGens: { 3: 0 }, memberGen: 0 }), t.send('john', 'join', { seats: [3], seatGens: { 3: 0 }, memberGen: 0 })]);
   assert.deepEqual([a.status, b.status].sort(), ['fulfilled', 'rejected']);
-  assert.equal([a, b].find(x => x.status === 'rejected').reason.code, 'SEAT_TAKEN');
+  assert.equal([a, b].find(x => x.status === 'rejected').reason.code, 'STALE_COMMAND');
   const s = await t.snap('ana');
   assert.equal(s.seatGen[3], 1); assert.equal(s.owners.filter(Boolean).length, 2);
   const winner = s.owners[3];

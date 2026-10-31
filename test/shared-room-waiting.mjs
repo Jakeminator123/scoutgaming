@@ -43,6 +43,7 @@ function harness({ snapshot = full(), connected = true } = {}) {
 test('a viewer waits for a seat only at a full table, without a seat and without a pause', () => {
   assert.equal(waitingForSeat(full()), true);
   assert.equal(waitingForSeat(free()), false, 'a free seat is joined, not waited for');
+  assert.equal(waitingForSeat(full({phase:'bets',bets:Array.from({length:7},()=>({main:0,pp:0,tp:0}))})), false, 'empty choices never make the betting table full');
   assert.equal(waitingForSeat(full({ owners: Array(7).fill('carol'), me: me({ seats: [0, 1, 2, 3, 4, 5, 6] }) })), false);
   assert.equal(waitingForSeat(full({ me: me({ pausedUntil: 2000 }) })), false, 'a paused account does not wait');
   assert.equal(waitingForSeat(full({ me: me({ pausedUntil: 2000 }) }), 3000), true, 'until the pause is over');

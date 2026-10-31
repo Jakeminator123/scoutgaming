@@ -108,11 +108,12 @@ test('a player with two boxes can bet on one and drop the other, mid-round: the 
   assert.equal(v.snapshot.seatGen[4], s.seatGen[4] + 1, 'its generation moves on, so a stale claim of box 4 is refused');
 });
 
-test('a seated player opens a free box by betting on it; another player\'s box, a side bet alone and an unseated guest cannot (Kevin: CH)', async () => {
+test('a seated player opens a free box by betting on it; another player\'s stake, a side bet alone and an unseated guest cannot (Kevin: CH)', async () => {
   const t = setup();
   await t.join('kevin', [3]); await t.join('john', [5]);
   const v = await t.bet('kevin', 2, 25);
   assert.deepEqual([...v.snapshot.me.seats].sort(), [2, 3]); assert.equal(v.snapshot.bets[2].main, 25);
+  await t.bet('john', 5, 5);
   await rejects(t.bet('kevin', 5, 5), 'NOT_YOUR_BOX');
   await rejects(t.bet('kevin', 6, 5, 'pp'), 'NOT_YOUR_BOX');
   assert.equal((await t.snap()).owners[6], null, 'a side bet alone does not open a box');
@@ -292,9 +293,8 @@ test('next locks only the players who lose their last box, never one who keeps a
   assert.equal(s.me.active, true); assert.equal((await t.snap('john')).me.active, false);
 });
 
-// fd6e7dd17 'tick skips quiet rooms': main's scheduler never loads and saves a room just to look at it (dueTicks is
-// read-only), but it still read every member and presence row of a room nobody sits at. A quiet room costs one read.
-test('dueTicks reads no members or presence of a room nobody sits at, and still runs the table that plays (Kevin 24 Oct: prod CPU)', async () => {
+// The scheduler is read-only and skips historical memberships and presence in quiet rooms.
+test('dueTicks reads only active memberships, no historical presence, and still runs the table that plays', async () => {
   const store = createMemoryTableStore();
   let time = 100000, n = 0;
   const reads = [];
@@ -313,7 +313,9 @@ test('dueTicks reads no members or presence of a room nobody sits at, and still 
   const { deadline } = await table.snapshot('party', 'kevin');
   reads.length = 0;
   assert.deepEqual(await table.dueTicks(deadline - 1), []);
-  assert.deepEqual(reads.filter(([k]) => k === 'members').map(([, room]) => room), ['party'], 'members are read only where someone sits');
+  const membershipReads = reads.filter(([kind]) => kind === 'members');
+  assert.equal(membershipReads.length, 21);
+  assert.ok(membershipReads.every(([, , options]) => options.activeOnly === true), 'no historical member bodies are requested');
   assert.deepEqual(reads.filter(([k]) => k === 'presence').map(([, room, p]) => [room, p]), [['party', 'kevin']], 'presence only of a seated member');
   time = deadline;
   const due = await table.dueTicks();

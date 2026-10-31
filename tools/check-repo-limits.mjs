@@ -17,8 +17,10 @@
 //   node tools/check-repo-limits.mjs                     hela HEAD-trädet (git ls-tree -r -l)
 //   node tools/check-repo-limits.mjs --tree <ref>        hela trädet för <ref>
 //   node tools/check-repo-limits.mjs --cached            pre-commit: indexet mot HEAD, bara ändrade filer
+//   node tools/check-repo-limits.mjs --ci                CI: exakt eventintervall, alla nya commits/objekt;
+//                                                        schema/manuellt: bara det aktuella trädet.
 //   node tools/check-repo-limits.mjs --tree HEAD --changed-since HEAD^1
-//                                                        CI: PR-merge-diffen plus ändrade allowlistposter,
+//                                                        slutdiffen plus ändrade allowlistposter,
 //                                                        så att en gles blob:none-klon bara hämtar diffens blobbar.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -178,10 +180,16 @@ export function inspectChanges({ cwd = repository, tree = null, base = 'HEAD' } 
   const git = runner(cwd);
   const range = tree ? [base, tree] : ['--cached'];
   const common = ['--no-renames', '--no-ext-diff', '--no-textconv', '-z'];
-  // numstat reads both sides, so a partial clone prefetches the diff's blobs in one batch here.
-  const binary = parseNumstat(git(['-c', 'diff.relative=false', 'diff', '--numstat', ...common, ...range, '--']));
   const records = parseRawDiff(git(['-c', 'diff.relative=false', 'diff', '--raw', '--no-abbrev', ...common, ...range, '--']))
     .filter(record => record.mode !== '160000' && record.baseMode !== '160000');
+  // Git prefetches before applying --diff-filter. Limit the pathspec itself to
+  // surviving paths so deletions never download retired media. Modified paths
+  // still need both sides for the existing binary-growth rule.
+  const binary = new Set(), presentPaths = records.filter(record => record.status !== 'D').map(record => record.path);
+  for (let offset = 0; offset < presentPaths.length; offset += 128) {
+    const batch = git(['--literal-pathspecs', '-c', 'diff.relative=false', 'diff', '--numstat', ...common, ...range, '--', ...presentPaths.slice(offset, offset + 128)]);
+    for (const path of parseNumstat(batch)) binary.add(path);
+  }
   const target = path => tree ? `${tree}:${path}` : `:${path}`;
   let hasBase = true;
   try { git(['rev-parse', '--verify', '--quiet', `${base}^{tree}`]); } catch { hasBase = false; }
@@ -230,8 +238,9 @@ export function inspectChanges({ cwd = repository, tree = null, base = 'HEAD' } 
 
 // Pre-push checks every new commit, not just the final diff. Only object metadata
 // and the named allowlist are read; old media/document contents are never loaded.
-// Missing objects (including promised partial-clone objects) fail without lazy fetch.
-export function inspectPush({ cwd = repository, updates, remote, branch = 'main' } = {}) {
+// Missing objects fail without lazy fetch. CI alone explicitly hydrates the exact
+// new object set and policies/allowance targets that the inspection needs.
+export function inspectPush({ cwd = repository, updates, remote, branch = 'main', hydrate = false } = {}) {
   const git = (args, input) => {
     try {
       return execFileSync('git', args, { cwd, input, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
@@ -242,6 +251,14 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
     }
   };
   const oidPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
+  const hydrateObjects = oids => {
+    if (!hydrate || !oids.length) return;
+    const unique = [...new Set(oids)];
+    const missing = git(['cat-file', '--batch-check=%(objectname) %(objecttype)'], unique.join('\n') + '\n')
+      .trim().split(/\r?\n/).filter(line => line.endsWith(' missing')).map(line => line.split(' ')[0]);
+    if (missing.some(oid => !oidPattern.test(oid))) throw Error('CI-gränser: ogiltigt objekt-ID.');
+    if (missing.length) git(['fetch', '--no-tags', '--no-recurse-submodules', '--filter=blob:none', '--stdin', 'origin'], missing.join('\n') + '\n');
+  };
   const zero = oid => /^0+$/.test(oid);
   const refs = String(updates ?? '').trim().split(/\r?\n/).filter(Boolean).map(line => {
     const fields = line.trim().split(/\s+/);
@@ -284,6 +301,7 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
   };
   const sizeOf = oid => {
     if (!sizes.has(oid)) {
+      hydrateObjects([oid]);
       const size = objectSizes(git, [oid]).get(oid);
       if (!Number.isSafeInteger(size) || size < 0) throw Error('Pushgränser: objektstorlek saknas.');
       sizes.set(oid, size);
@@ -311,6 +329,13 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
     for (const base of bases) { requireCommit(base); git(['merge-base', '--is-ancestor', base, ref.head]); }
     const commits = git(['rev-list', '--topo-order', '--reverse', ref.head, '--not', ...bases]).trim().split(/\r?\n/).filter(Boolean);
     if (!commits.length) continue;
+    if (hydrate) {
+      // Prove the complete commit/tree graph exists before requesting any bytes.
+      git(['rev-list', '--objects', '--filter=blob:none', '--missing=error', ref.head, '--not', ...bases]);
+      const pending = git(['rev-list', '--objects', '--no-object-names', '--missing=print', ref.head, '--not', ...bases])
+        .trim().split(/\r?\n/).filter(line => line.startsWith('?')).map(line => line.slice(1));
+      hydrateObjects(pending);
+    }
     const objects = git(['rev-list', '--objects', '--no-object-names', ref.head, '--not', ...bases]).trim().split(/\r?\n/).filter(Boolean);
     const newBlobs = new Set();
     // Batch metadata only. An incomplete enumeration or missing object aborts the push.
@@ -348,9 +373,51 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
   return { errors: [...new Set(errors)], commits: seenCommits.size, blobs: seenBlobs.size, refs: refs.length };
 }
 
+// GitHub supplies a JSON file, not shell text. Bind every interval to the exact
+// checkout and event; never substitute HEAD^1 for an unknown push/PR base.
+export function inspectCi({ cwd = repository, env = process.env, event } = {}) {
+  const git = (args) => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0' },
+    stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const oid = value => typeof value === 'string' && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(value) && !/^0+$/.test(value);
+  const head = env.GITHUB_SHA;
+  if (!oid(head) || git(['rev-parse', 'HEAD']) !== head) throw Error('CI-gränser: eventets SHA matchar inte checkout.');
+  const name = env.GITHUB_EVENT_NAME;
+  if (['schedule', 'workflow_dispatch'].includes(name)) {
+    // These events have no new interval: intentionally inspect the current tree.
+    return { ...inspectTree({ cwd, tree: head }), mode: 'tree' };
+  }
+  if (!['push', 'pull_request'].includes(name)) throw Error('CI-gränser: okänd eventtyp.');
+  const payload = event ?? JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
+  let base;
+  if (name === 'pull_request') {
+    const pr = payload.pull_request;
+    if (!Number.isSafeInteger(payload.number) || payload.number < 1 || env.GITHUB_REF !== `refs/pull/${payload.number}/merge`
+      || !oid(pr?.head?.sha) || !oid(pr?.base?.sha)) throw Error('CI-gränser: ogiltig PR-identitet.');
+    // Read raw parent headers: a shallow boundary must not hide a parent.
+    const parents = git(['cat-file', 'commit', head]).split('\n\n')[0].split('\n').filter(line => line.startsWith('parent ')).map(line => line.slice(7));
+    if (parents.length !== 2 || parents[0] !== pr.base.sha || parents[1] !== pr.head.sha) throw Error('CI-gränser: PR-bas/head matchar inte mergeföräldrarna.');
+    base = pr.base.sha;
+  } else {
+    if (payload.after !== head || !oid(payload.before) || payload.deleted || payload.created
+      || !/^refs\/heads\/[A-Za-z0-9_./-]+$/.test(payload.ref ?? '') || payload.ref !== env.GITHUB_REF) throw Error('CI-gränser: okänt eller ogiltigt pushintervall.');
+    base = payload.before;
+  }
+  if (git(['rev-parse', '--is-shallow-repository']) === 'true') {
+    // No checkout and no historical media hydration. The server supplies only
+    // commit/tree history; inspectPush requests exact new blobs/changed policies.
+    git(['fetch', '--no-tags', '--no-recurse-submodules', '--filter=blob:none', '--unshallow', 'origin', head]);
+  }
+  const result = inspectPush({ cwd, updates: `HEAD ${head} refs/heads/ci ${base}\n`, hydrate: true });
+  // Keep the final diff's media-growth, binary and document-line rules as well.
+  if (!result.errors.length) result.errors.push(...checkRepoLimits(inspectChanges({ cwd, tree: head, base })));
+  return { ...result, mode: 'range' };
+}
+
 export function parseArgs(args) {
   const ref = value => typeof value === 'string' && /^[\w./^~-]+$/.test(value) && !value.startsWith('-');
   if (args.length === 0) return { tree: 'HEAD' };
+  if (args.length === 1 && args[0] === '--ci') return { ci: true };
   if (args.length === 1 && args[0] === '--cached') return { cached: true };
   if (args.length === 3 && args[0] === '--push') return { push: true, remote: args[2] };
   if (args.length === 2 && args[0] === '--tree' && ref(args[1])) return { tree: args[1] };
@@ -361,8 +428,16 @@ export function parseArgs(args) {
 export function main(args = process.argv.slice(2), { cwd = repository } = {}) {
   const options = parseArgs(args);
   if (!options) {
-    console.error('Användning: node tools/check-repo-limits.mjs [--cached | --tree <ref> [--changed-since <ref>] | --push <remote-name> <remote-url>]');
+    console.error('Användning: node tools/check-repo-limits.mjs [--ci | --cached | --tree <ref> [--changed-since <ref>] | --push <remote-name> <remote-url>]');
     return 2;
+  }
+  if (options.ci) {
+    const result = inspectCi({ cwd });
+    const errors = result.mode === 'tree' ? checkRepoLimits(result) : result.errors;
+    for (const error of errors) console.error(error);
+    if (!errors.length) console.log(result.mode === 'tree' ? `CI-gränser: hela aktuella trädet kontrollerat (${result.files.length} filer).`
+      : `CI-gränser: hela eventintervallet kontrollerat (${result.commits} commits, ${result.blobs} blobbar).`);
+    return errors.length ? 1 : 0;
   }
   if (options.push) {
     const result = inspectPush({ cwd, updates: readFileSync(0, 'utf8'), remote: options.remote });

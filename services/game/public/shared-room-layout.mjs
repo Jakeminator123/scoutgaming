@@ -19,7 +19,22 @@ export function seatWindow(snapshot, focusSeat) {
   const start = clamp(centre - 1, 0, SEAT_COUNT - WINDOW_SIZE);
   return { centre, start, boxes: Array.from({ length: WINDOW_SIZE }, (_, i) => start + i) };
 }
-export const windowLabel = start => `Visa platser ${start + 1}–${start + WINDOW_SIZE}`;
+export const windowLabel = start => `Bordsvy ${start + 1}–${start + WINDOW_SIZE}`;
+
+export function availableBettingSeat(snapshot, index) {
+  return Boolean(snapshot && seat(index) && (snapshot.owners[index] === snapshot.me.id
+    || snapshot.phase === 'bets' && ['main', 'pp', 'tp'].every(field => snapshot.bets[index]?.[field] === 0)));
+}
+
+// Selecting an available betting box never changes the camera's three-box window.
+// A free box stays free until the server accepts a main bet on it.
+export function bettingSeat(snapshot, selected) {
+  const own = snapshot?.me?.seats ?? [];
+  if (!snapshot?.me?.active) return null;
+  if (availableBettingSeat(snapshot, selected)) return selected;
+  const fallback = own[0] ?? snapshot.owners.findIndex((_, index) => availableBettingSeat(snapshot, index));
+  return fallback < 0 ? null : fallback;
+}
 
 // The own seat whose Par, 21+3 and Lämna show: the chosen one, else the first one on screen, else the first.
 // Other own seats keep their main bet (desktop) or their marker (phone).

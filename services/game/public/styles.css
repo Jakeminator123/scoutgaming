@@ -206,9 +206,11 @@ html[data-presentation-standard="three-layer"] .seat-shared .seat-shared-inner {
 .seat-shared .seat-shared-join, .seat-shared-bet, .seat-shared-leave { pointer-events: auto; }
 .seat-shared .seat-shared-join { position: static; width: 44px; min-width: 44px; height: 44px; padding: 0 3px;
   flex-direction: column; gap: 1px; border-radius: 50%; font: 700 10px 'Space Grotesk', sans-serif; white-space: nowrap; }
-.seat-shared-amount { display: block; font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.seat-shared-amount { display: block; font-size: 15px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.seat-shared-number { font-size: 9px; font-weight: 500; opacity: .78; }
 .seat-shared.active .seat-shared-join { background: rgba(214,255,58,.9); border-color: rgba(214,255,58,.9); color: #101618; cursor: default; }
 .seat-shared.active:not(.primary) .seat-shared-join:not(:disabled) { background: rgba(214,255,58,.42); cursor: pointer; }
+.seat-shared.primary .seat-shared-join { outline: 2px solid #f2f1ed; outline-offset: 3px; }
 .seat-shared .seat-shared-join:disabled { cursor: default; }
 .seat-shared-bets { display: contents; }
 .seat-shared-bets[hidden] { display: none; }

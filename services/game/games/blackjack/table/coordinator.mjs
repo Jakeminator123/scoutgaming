@@ -28,6 +28,15 @@ const clientSettings = cfg => ({ configVersion: cfg.configVersion, language: cfg
   limits: { min: cfg.limits.min, max: cfg.limits.max, sideMax: cfg.limits.sideMax }, chips: [...cfg.chips], refill: cfg.refill });
 const sum = b => b.main + b.pp + b.tp;
 const owned = (r, p) => r.owners.flatMap((o, i) => o === p ? [i] : []);
+function claimBox(r, box, actorId) {
+  const previous = r.owners[box];
+  r.owners[box] = actorId; r.seatGen[box]++;
+  // Older table-wide undo snapshots may contain another owner's stake in this box.
+  // A new claim starts its history at zero; other owned boxes remain undoable.
+  for (const prior of r.history[actorId] ?? []) prior[box] = { main: 0, pp: 0, tp: 0 };
+  // A stale ready flag cannot trap a member whose last unbet choice was taken.
+  if (previous && !owned(r, previous).some(i => r.bets[i].main > 0)) r.ready = r.ready.filter(p => p !== previous);
+}
 const sorted = ids => [...new Set(ids.filter(Boolean))].sort();
 const fail = (code, message) => { throw new TableError(code, message); };
 const ROOM_ID = /^[a-z0-9_-]{1,128}$/;             // Main room-<UUID> ids are 41 chars; ':' remains forbidden for tick identity.
@@ -404,7 +413,9 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       if (!Array.isArray(seats) || !seats.length || seats.length > 7 || new Set(seats).size !== seats.length || seats.some(i => !Number.isInteger(i) || i < 0 || i > 6)) fail('INVALID_SEATS', 'Choose one or more boxes');
       for (const i of seats) {
         if (r.owners[i] === actorId) continue;
-        if (r.owners[i]) fail('SEAT_TAKEN', 'That box was just taken. Choose another');
+        // A selected but completely unbet box is not an exclusive player seat.
+        // Its previous member stays at the table; only the box pointer changes.
+        if (r.owners[i] && (r.phase !== 'bets' || sum(r.bets[i]) > 0)) fail('SEAT_TAKEN', 'That box was just taken. Choose another');
         if (input.seatGens?.[i] !== r.seatGen[i]) fail('STALE_COMMAND', 'That box was just taken. Choose another');
       }
       const inPlay = new Set(r.phase === 'round' ? (publicView(r.game).round?.hands ?? []).map(h => h.box) : []), later = [];
@@ -419,7 +430,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       const resent = seats.length === own.length && seats.every(i => own.includes(i));
       if (r.unplayed?.[actorId]) r.unplayed[actorId] = r.unplayed[actorId].filter(i => r.owners[i] === actorId && (resent || !seats.includes(i)));
       if (later.length) r.boxesAfterRound[actorId] = [...seats].sort(); else delete r.boxesAfterRound[actorId];
-      for (const i of seats) if (r.owners[i] !== actorId) { r.owners[i] = actorId; r.seatGen[i]++; }
+      for (const i of seats) if (r.owners[i] !== actorId) claimBox(r, i, actorId);
       const memberGen = me?.active ? me.memberGen : (me?.memberGen ?? 0) + 1;
       await tx.members.put(roomId, { actorId, name: name ?? me?.name ?? null, memberGen, active: true, joinedAt: me?.active ? me.joinedAt : t });
       result = { op, memberGen, seats: owned(r, actorId), seatGen: [...r.seatGen] };
@@ -427,11 +438,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
       // A finished round never waits for one particular player (preview 28 Oct 2026: a present owner who never
       // pressed Nästa runda held a settled room for an hour, and a player without a box got NOT_SEATED). Anyone
       // at the table may open the next window; `next` keeps its own checks, lock plan and reset below.
-      if (op !== 'next' && (!me?.active || !own.length)) fail('NOT_SEATED', 'Choose your boxes and enter your name first');
+      if (op !== 'next' && (!me?.active || !own.length && !['bet', 'leave', 'refill'].includes(op))) fail('NOT_SEATED', 'Choose your boxes and enter your name first');
       if (r.leaving.includes(actorId) && op !== 'leave') fail('LEAVING', 'Your current hand is finishing before you leave');
       if (op === 'leave') {
         if (input.memberGen !== me.memberGen) fail('STALE_COMMAND', 'Your seat changed. Reload the table');
-        if (r.phase === 'round') { if (!r.leaving.includes(actorId)) r.leaving.push(actorId); }
+        if (r.phase === 'round' && own.length) { if (!r.leaving.includes(actorId)) r.leaving.push(actorId); }
         else await releaseSeats(tx, r, actorId);
       } else if (op === 'refill') {
         try {
@@ -449,9 +460,10 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (op === 'clear') r.ready = r.ready.filter(x => x !== actorId);
         const prior = structuredClone(r.bets), next = structuredClone(r.bets), mine = [...own];
         if (op === 'bet') {
-          // :393 a seated player opens a free box with a main bet
-          if (!mine.includes(input.seat) && input.field === 'main' && Number.isInteger(input.seat) && input.seat >= 0 && input.seat < 7 && !r.owners[input.seat]) {
-            r.owners[input.seat] = actorId; r.seatGen[input.seat]++; mine.push(input.seat);
+          // The room lock makes the first main bet exclusive. Membership remains;
+          // a denied wallet write rolls ownership and stale-ready cleanup back.
+          if (!mine.includes(input.seat) && input.field === 'main' && Number.isInteger(input.seat) && input.seat >= 0 && input.seat < 7 && sum(r.bets[input.seat]) === 0) {
+            claimBox(r, input.seat, actorId); mine.push(input.seat);
           }
           if (!mine.includes(input.seat) || !['main', 'pp', 'tp'].includes(input.field)) fail('NOT_YOUR_BOX', 'Choose one of your boxes');
           if (!cfg.chips.includes(input.chip)) fail('INVALID_CHIP', 'Choose a chip from this table');
@@ -484,7 +496,9 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         if (r.deadline && t >= r.deadline) fail('BETTING_CLOSED', 'Betting is closed');
         if (!r.ready.includes(actorId)) r.ready.push(actorId);
         const seated = [];
-        for (const p of sorted(r.owners)) if (t - ((await tx.presence.get(roomId, p)) ?? -Infinity) < onlineMs || p === actorId) seated.push(p);
+        // Merely viewing or selecting an empty box does not hold the betting window.
+        for (const p of sorted(r.owners.filter((owner, i) => owner && r.bets[i].main > 0)))
+          if (t - ((await tx.presence.get(roomId, p)) ?? -Infinity) < onlineMs || p === actorId) seated.push(p);
         result.started = false;
         if (seated.every(p => r.ready.includes(p))) {
           // A refused consume leaves `ready` accepted and the start to the window.close tick (O01 2.5).
@@ -553,7 +567,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   async function waitForBox(tx, r, actorId, commandId, t) {
     const before = JSON.stringify(r.waiting ?? {});
     const waiting = Object.fromEntries(waitingAt(r, t).map(p => [p, r.waiting[p]]));
-    const registered = r.owners.every(Boolean) && !r.owners.includes(actorId);
+    const registered = r.owners.every((owner, i) => owner && (r.phase !== 'bets' || sum(r.bets[i]) > 0)) && !r.owners.includes(actorId);
     if (registered && Object.hasOwn(waiting, actorId) && t - waiting[actorId] < WAIT_WRITE_AFTER_MS) return { op: 'wait', waiting: true, version: r.version };
     if (registered && !Object.hasOwn(waiting, actorId))
       await audit(tx, r.roomId, r.phase === 'bets' ? null : r.roundId, 'player.wait', { playerId: actorId, commandId });
@@ -585,8 +599,8 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   }
 
   // ---- ticks ----------------------------------------------------------------------------
-  // A member whose absence is watched: active, seated and not already leaving.
-  const watched = (r, m) => m.active && owned(r, m.actorId).length > 0 && !r.leaving.includes(m.actorId);
+  // Presence belongs to membership, including a member whose last empty box was taken.
+  const watched = (r, m) => m.active && !r.leaving.includes(m.actorId);
   // The time-driven transitions of advance() (:260-292), each with its own identity (O01 2.3).
   function candidates(r, members, seenOf) {
     const out = [], add = (kind, anchor, scheduledAt, extra = {}) =>
@@ -604,10 +618,11 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     for (const m of members) {
       if (!watched(r, m)) continue;
       const at = Math.max(seenOf(m.actorId) ?? -Infinity, m.joinedAt) + absentMs;
-      add(r.phase === 'round' ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
+      const boxes = owned(r, m.actorId);
+      add(r.phase === 'round' && boxes.length ? 'seat.absent' : 'seat.release', ['absent', m.actorId, m.memberGen], at, { playerId: m.actorId });
       // A seat holder without a main bet gives up his boxes IDLE_SEAT_MS after the window opened, his join or his
       // last command in this window, whichever is latest.
-      if (opened === null || owned(r, m.actorId).some(i => r.bets[i].main)) continue;
+      if (opened === null || !boxes.length || boxes.some(i => r.bets[i].main)) continue;
       const act = r.lastAct?.[m.actorId], since = Math.max(opened, m.joinedAt, act?.windowId === r.windowId ? act.at : -Infinity);
       add('seat.idle', [r.windowId, m.actorId, m.memberGen], since + IDLE_SEAT_MS, { playerId: m.actorId });
     }
@@ -643,14 +658,14 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
   }
   async function dueForRoom(roomId, at, due, observeRoom) {
     {
-      // Kevin 24 Oct (prod CPU): a room nobody sits at has no member tick, so its members and
-      // presence are not read; presence only for the members an absence tick can concern.
+      // A room with no box owners can still have present members. Read only active
+      // memberships; historical rows never need presence reads for the scheduler.
       const r = await store.read.room(roomId), seen = {};
       if (r && observeRoom) {
         try { observeRoom(roomId, Object.freeze({ version: r.version, presentationVer: r.presentationVer ?? 0 })); }
         catch { /* An observer is a hint only; it cannot fail a due-check. */ }
       }
-      const members = r.owners.some(Boolean) ? await store.read.members(roomId) : [];
+      const members = await store.read.members(roomId, { activeOnly: true });
       for (const m of members) if (watched(r, m)) seen[m.actorId] = await store.read.presence(roomId, m.actorId);
       for (const c of candidates(r, members, p => seen[p])) {
         if (c.scheduledAt > at) continue;
@@ -690,8 +705,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
         await tx.ticks.put(row); return row;
       };
       const r = await tx.rooms.read(desc.roomId);
-      // As in dueTicks: a room without owners (or none at all) has no member tick to read for.
-      const members = r?.owners.some(Boolean) ? await tx.members.list(desc.roomId) : [], seen = {};
+      const members = r ? await tx.members.list(desc.roomId, { activeOnly: true }) : [], seen = {};
       for (const m of members) if (watched(r, m)) seen[m.actorId] = await tx.presence.get(desc.roomId, m.actorId);
       const current = r && candidates(r, members, p => seen[p]).find(c => c.tickId === base);
       if (!current) return record('superseded');
@@ -768,7 +782,7 @@ export function createTableCoordinator({ store, clock, random, absentMs = 120000
     }
     const view = publicView(r.game), members = await store.read.members(roomId), t = now();
     const players = [];
-    for (const m of members) if (m.active && owned(r, m.actorId).length) players.push({ id: m.actorId, seats: owned(r, m.actorId),
+    for (const m of members) if (m.active) players.push({ id: m.actorId, seats: owned(r, m.actorId),
       ready: r.ready.includes(m.actorId), leaving: r.leaving.includes(m.actorId),
       online: t - ((await store.read.presence(roomId, m.actorId)) ?? -Infinity) < onlineMs });
     const m = actorId && members.find(x => x.actorId === actorId);

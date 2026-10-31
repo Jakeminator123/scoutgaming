@@ -99,7 +99,7 @@ test('all server command intents use current window, membership and turn identif
 });
 
 test('stale or foreign controls cannot write; a disconnected snapshot cannot authorize a new command',async t=>{
-  const h=harness(t),connection=new AbortController();await h.restore(seated(2,{owners:[actor,null,null,null,null,null,'bob']}),connection.signal);
+  const h=harness(t),connection=new AbortController();await h.restore(seated(2,{owners:[actor,null,null,null,null,null,'bob'],bets:snapshot().bets.map((bet,i)=>i===6?{...bet,main:5}:bet)}),connection.signal);
   await h.controller.dispatch('bet',{seat:6,field:'main'});assert.equal(h.calls.length,0);
   await h.controller.dispatch('act',{action:'hit'});assert.equal(h.calls.length,0);
   connection.abort();await h.controller.dispatch('refill');assert.equal(h.calls.length,0);assert.equal(h.renders.at(-1).connected,false);
@@ -114,27 +114,37 @@ test('a seated player can bet on every free box without moving local focus; the 
   const send=(who,intent)=>table.command({actorId:who},{roomId,commandId:`free-box-${++n}`,...intent});
   await send(actor,{op:'join',seats:[3],memberGen:0,seatGens:{3:0}});
   await send('bob',{op:'join',seats:[6],memberGen:0,seatGens:{6:0}});
+  await send('bob',{op:'bet',windowId:(await table.snapshot(roomId,'bob')).windowId,seat:6,field:'main',chip:5});
   const h=harness(t,{send:async intent=>{try{return{status:'ok',...await send(actor,intent)};}catch(error){return{status:'rejected',code:error.code};}}});
   const refresh=()=>table.snapshot(roomId,actor,{client:true}).then(s=>h.restore(s));
   await refresh();h.controller.selectChip(5);
   // Box 5 is still free in the displayed snapshot when the other player claims it.
   const before=h.controller.state.snapshot,bob=await table.snapshot(roomId,'bob');
+  h.controller.selectBetSeat(5);
+  assert.equal(h.calls.length,0,'selecting an available box changes no server state');
+  assert.deepEqual([h.controller.state.betSeat,h.controller.state.focusSeat],[5,3]);
   await send('bob',{op:'join',seats:[5,6],memberGen:bob.me.memberGen,seatGens:{5:bob.seatGen[5],6:bob.seatGen[6]}});
+  await send('bob',{op:'bet',windowId:bob.windowId,seat:5,field:'main',chip:5});
   await h.controller.dispatch('bet',{seat:5,field:'main'});
   assert.equal(h.calls.length,1,'a free main bet must reach the server');
   assert.equal(h.controller.state.snapshot,before,'a rejected command cannot change local ownership or funds');
   assert.match(h.renders.at(-1).notice,/upptagen/i);
   assert.deepEqual((await table.snapshot(roomId,actor)).me.seats,[3]);
   assert.equal((await table.snapshot(roomId,actor)).me.available,1000);
-  await send('bob',{op:'join',seats:[6],memberGen:bob.me.memberGen,seatGens:{6:bob.seatGen[6]}});await refresh();
+  await send('bob',{op:'clear',windowId:bob.windowId});
+  await send('bob',{op:'join',seats:[6],memberGen:bob.me.memberGen,seatGens:{6:bob.seatGen[6]}});
+  await send('bob',{op:'bet',windowId:bob.windowId,seat:6,field:'main',chip:5});await refresh();
   for(const seat of [0,1,2,4,5]){
     const snapshotBefore=h.controller.state.snapshot;
+    const callsBefore=h.calls.length;h.controller.selectBetSeat(seat);
+    assert.equal(h.calls.length,callsBefore);assert.equal(h.controller.state.betSeat,seat);
     await h.controller.dispatch('bet',{seat,field:'main'});
     assert.deepEqual(h.calls.at(-1),{op:'bet',windowId:snapshotBefore.windowId,seat,field:'main',chip:5});
     assert.equal(h.controller.state.snapshot,snapshotBefore,'HTTP cannot claim a box before its snapshot');
     await refresh();assert.ok(h.controller.state.snapshot.me.seats.includes(seat));
     assert.equal(h.controller.state.snapshot.bets[seat].main,5);
     assert.equal(seatWindow(h.controller.state.snapshot,h.renders.at(-1).focusSeat).centre,3,'bet ownership never changes the viewing focus');
+    h.controller.focusSeat(1);assert.equal(h.controller.state.betSeat,seat,'changing the camera cannot change the betting target');h.controller.focusSeat(3);
   }
   const count=h.calls.length;await h.controller.dispatch('bet',{seat:6,field:'main'});assert.equal(h.calls.length,count);
   assert.equal(h.controller.state.snapshot.me.available,975);
@@ -478,30 +488,30 @@ test('an aborted binding fetch cannot mount late or replace a newer connection g
 
 test('existing DOM receives server balances, native seat/chip controls, Swedish error and explicit retry',()=>{
   const {document,nodes}=documentFixture(),calls=[];const view=createSharedRoomView({document});
-  view.bind({dispatch:(...args)=>calls.push(args),selectChip:amount=>calls.push(['chip',amount]),retry:()=>calls.push(['retry'])});
+  view.bind({dispatch:(...args)=>calls.push(args),selectChip:amount=>calls.push(['chip',amount]),selectBetSeat:seat=>calls.push(['select',seat]),retry:()=>calls.push(['retry'])});
   const can={join:true,bet:true,leave:true,act:[],insurance:false};
-  view.render({snapshot:seated(1,{owners:[actor,null,null,null,null,null,'bob'],me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
+  view.render({snapshot:seated(1,{owners:[actor,null,null,null,null,null,'bob'],bets:snapshot().bets.map((bet,i)=>i===6?{...bet,main:5}:bet),me:{...seated().me,available:17.5}}),chip:.5,can,notice:'Svaret saknas.',retry:true,busy:false,connected:true});
   assert.match(nodes.get('balance').textContent,/17,5 USD demo/);assert.equal(nodes.get('seats').children.length,7);
-  // The own seat's circle reads "Du" and takes no click; its small "Lämna" control leaves the seat.
+  // Selecting a betting box is local; its separate leave control writes membership.
   const own=nodes.get('seats').children[0],join=own.children[0].children[0],leaveSeat=own.children[0].children[2];
-  assert.equal(join.tagName,'BUTTON');assert.equal(join.getAttribute('aria-label'),'Plats 1, din plats');assert.equal(join.disabled,true);join.click();assert.equal(calls.length,0);
-  assert.equal(leaveSeat.textContent,'Lämna');assert.equal(leaveSeat.hidden,false);leaveSeat.click();assert.deepEqual(calls[0],['join',{seat:0}]);
+  assert.equal(join.tagName,'BUTTON');assert.equal(join.getAttribute('aria-label'),'Välj satsningsruta 1, din ruta');assert.equal(join.disabled,false);join.click();assert.deepEqual(calls.pop(),['select',0]);
+  assert.equal(leaveSeat.hidden,false);leaveSeat.click();assert.deepEqual(calls[0],['join',{seat:0}]);
   assert.equal(nodes.get('seats').children[1].children[0].children[2].hidden,true,'a free seat has no leave control');
   nodes.get('chips').children[1].disabled=false;nodes.get('chips').children[1].click();assert.deepEqual(calls[1],['chip',1]);
   // The status overlay is pointer-transparent; the retry control must sit in the clickable control bar.
   const status=nodes.get('scene').children.find(node=>node.id==='shared-room-status');assert.equal(status.children.some(node=>node.id==='shared-room-retry'),false);
   const controls=nodes.get('scene').children.find(node=>node.id==='shared-room-controls'),retry=controls.children.find(node=>node.id==='shared-room-retry');
   assert.equal(retry.hidden,false);retry.click();assert.deepEqual(calls[2],['retry']);
-  // Free boxes keep one touch-sized main-bet target, while full bet rows belong to owned boxes.
+  // An unselected free box has no visible betting row.
   assert.equal(own.children[0].children[1].hidden,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].hidden,true);
   assert.equal(nodes.get('seats').children[1].children[0].children[1].style.display,'none');
   const free=nodes.get('seats').children[1].children[0].children[0],occupied=nodes.get('seats').children[6].children[0].children[0];
-  assert.equal(free.textContent,'+');assert.match(free.attributes['aria-label'],/Lägg huvudinsats 0,5 USD på plats 2/);
-  free.click();assert.deepEqual(calls[3],['bet',{seat:1,field:'main'}]);
+  assert.equal(free.children[0].textContent,'+');assert.equal(free.attributes['aria-label'],'Välj satsningsruta 2');
+  free.click();assert.deepEqual(calls[3],['select',1]);
   assert.equal(occupied.disabled,true);occupied.click();assert.equal(calls.length,4);
-  // Joining can stay open after the betting deadline; the free main-bet target must not follow it.
-  view.render({snapshot:seated(2),chip:.5,can:{...can,bet:false},notice:'',connected:true});
-  assert.equal(free.disabled,true);free.click();assert.equal(calls.length,4);
+  // A closed betting window still permits local selection but never enables its main bet.
+  view.render({snapshot:seated(2),betSeat:1,chip:.5,can:{...can,bet:false},notice:'',connected:true});
+  assert.equal(free.disabled,false);assert.equal(nodes.get('seats').children[1].children[0].children[1].children[1].disabled,true);
   for(const id of ['chat','table-pick']){assert.equal(nodes.get(id).hidden,true);assert.equal(nodes.get(id).style.display,'none');}
   assert.match(nodes.get('limits').textContent,/^0,5 – 2\s?000 USD · demo$/);
   view.render({snapshot:null,chip:.5,can:{join:false,bet:false,leave:false,act:[],insurance:false},notice:'',retry:false,busy:false,connected:false});
@@ -537,15 +547,15 @@ test('the view closes side bets without a main bet on their box and shows why on
   const hints={ready:'Lägg en insats först.',repeat:'Det finns ingen tidigare insats att upprepa.',side:'Lägg en insats först.'};
   view.render({snapshot:seated(1),chip:.5,can,hints,notice:'',retry:false,busy:false,connected:true});
   const bets=nodes.get('seats').children[0].children[0].children[1],[pp,main,tp]=bets.children;
-  assert.equal(main.disabled,false);assert.equal(main.className.split(' ').includes('seat-shared-bet-main'),true);assert.equal(main.title,'');
+  assert.equal(main.disabled,false);assert.equal(main.className.split(' ').includes('seat-shared-bet-main'),true);assert.equal(main.title,'Lägg till 0,5 USD');
   for(const side of [pp,tp]){assert.equal(side.disabled,true);assert.equal(side.title,'Lägg en insats först.');assert.equal(side.className.split(' ').includes('seat-shared-bet-side'),true);}
   assert.equal(nodes.get('deal-now').disabled,true);assert.equal(nodes.get('deal-now').title,'Lägg en insats först.');
   assert.equal(nodes.get('max-btn').disabled,true);assert.equal(nodes.get('max-btn').title,'Det finns ingen tidigare insats att upprepa.');
   main.click();assert.deepEqual(calls,[['bet',{seat:0,field:'main'}]]);
   view.render({snapshot:seated(2,{bets:[{main:5,pp:0,tp:0},...snapshot().bets.slice(1)]}),chip:.5,can:{...can,ready:true,repeat:true},
     hints:{ready:'',repeat:'',side:hints.side},notice:'',retry:false,busy:false,connected:true});
-  assert.equal(main.getAttribute('aria-label'),'Plats 1, huvudinsats, 5 USD');assert.equal(main.classes.has('staked'),true);
-  for(const side of [pp,tp]){assert.equal(side.disabled,false);assert.equal(side.title,'');}
+  assert.equal(main.getAttribute('aria-label'),'Satsningsruta 1, huvudinsats, 5 USD');assert.equal(main.classes.has('staked'),true);
+  for(const side of [pp,tp]){assert.equal(side.disabled,false);assert.equal(side.title,'Lägg till 0,5 USD');}
   assert.equal(nodes.get('deal-now').disabled,false);assert.equal(nodes.get('deal-now').title,'');
   view.close();
 });
@@ -1692,16 +1702,16 @@ test('a state of another round, window or configuration never waits beside the p
 });
 
 // K6 (docs/plans/KEVIN-PORT.md, P-C): a viewer without a seat at a full table waits for one.
-const fullTable=(version,extra={})=>snapshot(version,{owners:Array(7).fill('bob'),seatGen:Array(7).fill(1),unopened:false,...extra});
+const fullTable=(version,extra={})=>snapshot(version,{owners:Array(7).fill('bob'),seatGen:Array(7).fill(1),bets:Array.from({length:7},()=>({main:5,pp:0,tp:0})),unopened:false,...extra});
 test('the status line tells a viewer without a seat at a full table that he waits for one',()=>{
   const {document,nodes}=documentFixture(),view=createSharedRoomView({document});view.bind({dispatch(){},selectChip(){},retry(){}});
   const can={join:false,bet:false,leave:false,act:[],insurance:false},render=(s,notice='')=>view.render({snapshot:s,chip:.5,can,notice,busy:false,connected:true,serverNow:1000});
   // The text and its title (the full text where a phone clamps the line) always match.
   const line=()=>{const banner=nodes.get('banner');assert.equal(banner.title,banner.textContent,'title follows text');return banner.textContent;};
-  render(fullTable(1));assert.equal(line(),'Väntar på plats');
+  render(fullTable(1));assert.equal(line(),'Väntar på ledig satsningsruta');
   render(fullTable(2),'Skickar…');assert.equal(line(),'Skickar…','a command notice comes first');
-  render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(line(),'Väntar på plats','a paused account does not wait');
-  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.match(line(),/Välj.*plats/,'a free seat ends the wait, title too');
+  render(fullTable(3,{me:{...snapshot().me,pausedUntil:5000}}));assert.notEqual(line(),'Väntar på ledig satsningsruta','a paused account does not wait');
+  render(snapshot(4,{owners:['bob','bob','bob','bob','bob','bob',null],unopened:false}));assert.match(line(),/Välj.*satsningsruta/,'a free seat ends the wait, title too');
   view.close();
 });
 test('the mounted table sends wait after a full table\'s snapshot, and not while the player has a seat',async t=>{

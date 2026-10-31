@@ -169,6 +169,11 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
       snapshot.players = [{ id: actorId, seats: [...input.seats], ready: false, leaving: false, online: true }];
       result = { op: 'join', version: snapshot.version, memberGen: snapshot.me.memberGen, seats: [...input.seats], seatGen: [...snapshot.seatGen] };
     } else if (input.op === 'bet') {
+      if (input.field === 'main' && snapshot.owners[input.seat] === null) {
+        snapshot.owners[input.seat] = actorId; snapshot.seatGen[input.seat]++;
+        snapshot.me.seats.push(input.seat); snapshot.me.seats.sort((a, b) => a - b);
+        snapshot.players[0].seats = [...snapshot.me.seats];
+      }
       effects++; snapshot.bets[input.seat][input.field] += input.chip; snapshot.me.available -= input.chip;
       result = { op: 'bet', version: snapshot.version, reserved: input.chip };
     } else assert.fail('Unexpected fixture command: ' + input.op);
@@ -198,7 +203,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
   browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}),
     args: ['--disable-background-networking', '--disable-component-update', '--disable-domain-reliability'] });
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
-    snapshot = initial(); presentation = null; loseBet = true; effects = 0; receipts = new Map(); httpBodies.length = 0; bindingReads.length = 0;
+    snapshot = initial(); presentation = null; loseBet = false; effects = 0; receipts = new Map(); httpBodies.length = 0; bindingReads.length = 0;
     const context = await browser.newContext({ viewport, isMobile: viewport.width < 860, serviceWorkers: 'block' });
     context.setDefaultTimeout(7000);
     await context.addCookies([{ name: 'fixture_session', value: 'isolated-browser', url: origin }]);
@@ -215,14 +220,18 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     assert.equal(await page.locator('#balance').textContent(), '1 000 USD demo');
     assert.ok(imported.has('/packages/presentation/contracts/shared-room-replay.mjs'), 'actual built canonical replay import loaded');
     assert.equal(imported.has('/app.mjs'), false, 'legacy writer is never imported by shared mount');
-    const picker = page.getByLabel('Välj eller lämna plats', { exact: true });
+    const picker = page.getByLabel('Välj satsningsruta', { exact: true });
     for (const seat of [0, 6]) {
-      const received = nextRequest(); await picker.selectOption(String(seat)); await received;
+      const received = nextRequest(); await picker.selectOption(String(seat));
+      if (seat === 6) await page.getByRole('button', { name: 'Satsningsruta 7, huvudinsats, 0 USD', exact: true }).click();
+      await received;
       await page.waitForFunction(() => window.fixture.app.controller.state.waiting !== null);
       assert.deepEqual(await page.evaluate(() => window.fixture.app.controller.state.snapshot.me.seats), seat === 0 ? [] : [0], 'HTTP reply cannot replace WS snapshot');
       broadcast(); await page.waitForFunction(version => window.fixture.app.controller.state.snapshot.version === version
         && window.fixture.app.controller.state.waiting === null, snapshot.version);
     }
+    loseBet = true;
+    await picker.selectOption('0');
     assert.deepEqual(await page.evaluate(() => window.fixture.app.controller.state.snapshot.me.seats), [0, 6]);
     // Chat panel: folded by default, a missing OpenClaw key is a notice only, the answer reaches the log.
     chatSettings = {}; chatAsked.length = 0;
@@ -245,7 +254,7 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
     assert.ok(chatBox.x >= 0 && chatBox.x + chatBox.width <= viewport.width, 'chat panel stays inside the viewport');
     await chatToggle.click(); await chatBody.waitFor({ state: 'hidden' });
     // A phone chooses which three boxes it shows; a wide screen shows all seven and has no chooser.
-    const windows = page.getByLabel('Visa platser på bordet', { exact: true });
+    const windows = page.getByLabel('Bordsvy, visa satsningsrutor', { exact: true });
     if (viewport.width < 860) {
       for (const [start, seats] of [['0', [0, 1, 2]], ['4', [4, 5, 6]]]) {
         await windows.selectOption(start);
@@ -260,18 +269,18 @@ test('Chrome built shared-room mount: desktop/mobile DOM, HTTP intent/retry, WS 
       assert.deepEqual(visible, [0, 1, 2, 3, 4, 5, 6]);
       for (const seat of [0, 6]) assert.equal(await page.locator(`.seat[data-seat="${seat}"] .spot`).isVisible(), true);
     }
-    const wager = page.getByRole('button', { name: 'Plats 1, huvudinsats, 0 USD', exact: true });
+    const wager = page.getByRole('button', { name: 'Satsningsruta 1, huvudinsats, 0 USD', exact: true });
     let received = nextRequest(); await wager.focus(); await wager.press('Enter'); await received;
     await page.locator('#shared-room-retry').waitFor({ state: 'visible' });
-    assert.equal(await wager.isDisabled(), true); assert.equal(await page.locator('#balance').textContent(), '1 000 USD demo');
-    assert.equal(httpBodies.length, 3); assert.equal(effects, 1);
+    assert.equal(await wager.isDisabled(), true); assert.equal(await page.locator('#balance').textContent(), '999 USD demo');
+    assert.equal(httpBodies.length, 3); assert.equal(effects, 2);
     const uncertainBody = httpBodies[2].bytes;
     received = nextRequest(); await page.locator('#shared-room-retry').focus(); await page.locator('#shared-room-retry').press('Enter'); await received;
     await page.waitForFunction(() => window.fixture.commands.state === 'idle' && window.fixture.app.controller.state.waiting !== null);
-    assert.equal(httpBodies[3].bytes, uncertainBody); assert.equal(effects, 1, 'explicit retry replays exactly one fixture effect');
+    assert.equal(httpBodies[3].bytes, uncertainBody); assert.equal(effects, 2, 'explicit retry never duplicates the bet');
     assert.ok(httpBodies.every(call => call.cookie === cookie && call.origin === origin && call.url === `${origin}/api/shared-room/${roomId}/command`));
-    broadcast(); await page.waitForFunction(() => window.fixture.app.controller.state.waiting === null && window.fixture.app.controller.state.snapshot.me.available === 999);
-    assert.equal(await page.locator('#balance').textContent(), '999 USD demo');
+    broadcast(); await page.waitForFunction(() => window.fixture.app.controller.state.waiting === null && window.fixture.app.controller.state.snapshot.me.available === 998);
+    assert.equal(await page.locator('#balance').textContent(), '998 USD demo');
     snapshot.version++; snapshot.presentationVer = 1; snapshot.phase = 'round'; snapshot.roundId = 'round-a';
     snapshot.round = { id: 'round-a', phase: 'decisions', active: 0, hands: [{ box: 0, cards: [{ r: 'A', s: 'S', shoeDraw: 1 }] }], dealer: [], legalActions: ['stand'] };
     presentation = { roomId, ver: 1, talkId: 'talk-a', auditSeq: 1, status: 'ready', kind: 'plan', configVersion: snapshot.configVersion,

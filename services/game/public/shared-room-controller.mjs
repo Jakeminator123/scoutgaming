@@ -1,4 +1,5 @@
 // UI intents only. WebSocket snapshots remain the sole source of cards, funds and rules.
+import { availableBettingSeat, bettingSeat } from './shared-room-layout.mjs';
 const seat = value => Number.isInteger(value) && value >= 0 && value < 7;
 const integer = value => Number.isSafeInteger(value) && value >= 0;
 const positive = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -6,12 +7,12 @@ const fail = () => { throw new TypeError('shared_room_invalid_controls'); };
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; };
 const messages = {
   STALE_COMMAND:'Bordet har ändrats. Använd de aktuella kontrollerna.', REQUEST_REUSED:'Kommandot kunde inte bekräftas. Ladda om sidan.',
-  PAUSED:'Din paus är aktiv.', NOT_SEATED:'Välj en ledig plats först.', SEAT_TAKEN:'Platsen är redan upptagen.',
-  NOT_YOUR_BOX:'Platsen är upptagen. Välj en annan insatsplats.',
+  PAUSED:'Din paus är aktiv.', NOT_SEATED:'Välj en ledig satsningsruta först.', SEAT_TAKEN:'Satsningsrutan är redan upptagen.',
+  NOT_YOUR_BOX:'Satsningsrutan är upptagen. Välj en annan ruta.',
   INSUFFICIENT_BALANCE:'Ditt tillgängliga demosaldo räcker inte.', LIMITS:'Insatsen ligger utanför bordets gränser.',
   BETTING_CLOSED:'Insatsfönstret är stängt.', READY:'Du är redan redo. Vänta på de andra spelarna.',
   NO_BETS:'Lägg en insats först.', NO_REPEAT:'Det finns ingen tidigare insats att upprepa.',
-  REFILL_REFUSED:'Demosaldo kan inte fyllas på just nu.', CLEAR_FIRST:'Rensa dina insatser innan du byter plats.',
+  REFILL_REFUSED:'Demosaldo kan inte fyllas på just nu.', CLEAR_FIRST:'Rensa dina insatser innan du släpper rutan.',
   NOT_YOUR_TURN:'Vänta på din tur.', DEADLINE_PASSED:'Tiden för ditt beslut har gått ut.',
   AUTHORITY_REJECTED:'Din inloggning eller rumsbehörighet har ändrats. Ladda om sidan.',
   shared_room_authentication_required:'Logga in igen för att fortsätta.', shared_room_forbidden:'Du har inte längre tillgång till rummet.',
@@ -34,7 +35,7 @@ function checked(raw, roomId) {
   const s = structuredClone(raw), cfg = s?.settings;
   if (s?.contract !== 'blackjack-table/1' || s.roomId !== roomId || !integer(s.version) || !integer(s.presentationVer)
     || !['bets','round','settled'].includes(s.phase) || typeof s.windowId !== 'string' || !s.windowId
-    || typeof s.me?.id !== 'string' || !integer(s.me.memberGen) || !Array.isArray(s.me.seats) || !s.me.seats.every(seat)
+    || typeof s.me?.id !== 'string' || !integer(s.me.memberGen) || typeof s.me.active !== 'boolean' || !Array.isArray(s.me.seats) || !s.me.seats.every(seat)
     || !Array.isArray(s.owners) || s.owners.length !== 7 || !Array.isArray(s.seatGen) || s.seatGen.length !== 7 || !s.seatGen.every(integer)
     || !Array.isArray(s.bets) || s.bets.length !== 7 || !s.bets.every(b => ['main','pp','tp'].every(k => typeof b?.[k] === 'number' && Number.isFinite(b[k]) && b[k] >= 0))
     || typeof s.me.available !== 'number' || !Number.isFinite(s.me.available) || s.me.available < 0 || !integer(s.me.pausedUntil)
@@ -47,7 +48,7 @@ function checked(raw, roomId) {
 }
 export function createSharedRoomController({ roomId, commands, view, presentation, now = Date.now, reconnect = null }) {
   if (!/^[a-z0-9_-]{1,128}$/.test(roomId) || !commands || !view || !presentation || (reconnect !== null && typeof reconnect !== 'function')) fail();
-  let snapshot = null, chip = null, focusSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
+  let snapshot = null, chip = null, focusSeat = null, betSeat = null, activeSignal, disconnected, clockOffset = 0, clockTimer;
   let closed = false, connected = false, presenting = false, sending = false, restoring = false, restoreGeneration = 0, waiting = null, notice = 'Ansluter till bordet…';
   // lost: the socket of the shown state closed and the client reconnects by itself (K04 B2); offline: its budget is spent.
   let offline = false, expired = false, lost = false;
@@ -68,8 +69,9 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     if (presenting) return result;
     const player = s.players?.find(p => p.id === s.me.id), bets = s.phase === 'bets' && !player?.ready && !player?.leaving;
     const inWindow = !s.deadline || serverTime() < s.deadline;
-    result.join = bets && !paused; result.leave = own && !player?.leaving;
-    result.bet = result.undo = result.doubleBets = result.allSeats = result.repeat = bets && own && inWindow && !paused;
+    result.join = bets && !paused; result.leave = s.me.active && !player?.leaving;
+    result.bet = bets && s.me.active && inWindow && !paused;
+    result.undo = result.doubleBets = result.allSeats = result.repeat = result.bet && own;
     // Local guards before the server's NO_BETS and NO_REPEAT (coordinator.mjs stays the authority).
     result.repeat = result.repeat && previous(s);
     // K04 B5: the server lets clear through READY, the deadline and a pause, and clear withdraws ready
@@ -83,7 +85,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
   // Why a betting control stays closed while betting is open: the same texts as the server's NO_BETS and NO_REPEAT.
   const hints = can => can.bet ? { ready:can.ready ? '' : messages.NO_BETS, repeat:can.repeat ? '' : messages.NO_REPEAT, side:messages.NO_BETS }
     : { ready:'', repeat:'', side:'' };
-  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, reconnecting:lost && !offline && !closed, signIn:expired,
+  function draw() { const can = available(); view.render({ snapshot, chip, focusSeat, betSeat, can, hints:hints(can), busy:sending || Boolean(waiting) || presenting, offline:offline && !closed, reconnecting:lost && !offline && !closed, signIn:expired,
     retry:commands.state === 'uncertain' && !sending && !closed && connected && !restoring && !activeSignal?.aborted, notice, connected, stopped:closed, serverNow:serverTime() }); }
   function schedule() {
     clearTimeout(clockTimer);
@@ -103,7 +105,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     const s = snapshot, can = available();
     if (op === 'act' ? !can.act.includes(args.action) : !Object.hasOwn(can,op) || !can[op]) return null;
     if (op === 'join') {
-      if (!seat(args.seat) || s.owners[args.seat] !== null && s.owners[args.seat] !== s.me.id) return null;
+      if (!availableBettingSeat(s, args.seat)) return null;
       const seats = s.me.seats.includes(args.seat) ? s.me.seats.filter(i => i !== args.seat) : [...s.me.seats,args.seat].sort((a,b) => a-b);
       return seats.length ? {op,memberGen:s.me.memberGen,seats,seatGens:Object.fromEntries(seats.map(i => [i,s.seatGen[i]]))} : {op:'leave',memberGen:s.me.memberGen};
     }
@@ -111,7 +113,7 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     if (['bet','undo','clear','doubleBets','allSeats','repeat','ready'].includes(op)) {
       // A seated player's main bet claims a free box atomically on the server. Focus is only a view choice.
       if (op === 'bet' && (!seat(args.seat) || !['main','pp','tp'].includes(args.field)
-        || !s.me.seats.includes(args.seat) && !(args.field === 'main' && s.owners[args.seat] === null))) return null;
+        || !s.me.seats.includes(args.seat) && !(args.field === 'main' && availableBettingSeat(s,args.seat)))) return null;
       if (op === 'bet' && args.field !== 'main' && !sideOpen(s,args.seat)) return null;
       return {op,windowId:s.windowId,...(op === 'bet' ? {seat:args.seat,field:args.field,chip} : op === 'allSeats' ? {chip} : {})};
     }
@@ -159,6 +161,9 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       snapshot = next; activeSignal = signal; connected = true; offline = false; lost = false; clockOffset = next.serverNow-receivedAt;
       // Keep the initial view when later bets add lower-numbered boxes to the sorted ownership list.
       if (focusSeat === null && next.me.seats.length) focusSeat = next.me.seats[0];
+      // The betting dock is independent of the viewing window. An unclaimed box may
+      // be selected, but only a server snapshot can make it the player's own.
+      betSeat = bettingSeat(next,betSeat);
       disconnected = () => { connected = false; lost = true; clearTimeout(clockTimer); if (!closed) { notice = 'Anslutningen avbröts. Återansluter…'; draw(); } };
       activeSignal?.addEventListener('abort',disconnected,{once:true});
       if (!next.settings.chips.includes(chip)) chip = next.settings.chips[0];
@@ -173,6 +178,11 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
     },
     dispatch(op,args) { const selected = intent(op,args); return selected ? execute(() => commands.send(selected)) : Promise.resolve(); },
     focusSeat(value) { if (!closed && seat(value)) { focusSeat=value; draw(); } },
+    selectBetSeat(value) {
+      if (!closed && snapshot?.me.active && availableBettingSeat(snapshot,value)) {
+        betSeat=value; draw();
+      }
+    },
     selectChip(value) { if (!closed && snapshot?.settings.chips.includes(value) && !sending && !waiting && commands.state === 'idle') { chip = value; draw(); } },
     retry() { return commands.state === 'uncertain' ? execute(() => commands.retry()) : Promise.resolve(); },
     // K04 F8: a session the server refused twice (shared-room-client.mjs, 1008) asks for a new sign-in, not a reload.
@@ -186,8 +196,8 @@ export function createSharedRoomController({ roomId, commands, view, presentatio
       if (closed) return; closed = true; connected = false; restoring = false; ++restoreGeneration; clearTimeout(clockTimer);
       activeSignal?.removeEventListener('abort',disconnected); commands.stop(); presentation.close(); view.close();
     },
-    get state() { return Object.freeze({snapshot,chip,waiting:waiting ? {...waiting} : null,closed,connected}); },
+    get state() { return Object.freeze({snapshot,chip,focusSeat,betSeat,waiting:waiting ? {...waiting} : null,closed,connected}); },
   };
-  view.bind({dispatch:api.dispatch,selectChip:api.selectChip,focusSeat:api.focusSeat,retry:api.retry,reconnect:api.reconnect}); draw(); return Object.freeze(api);
+  view.bind({dispatch:api.dispatch,selectChip:api.selectChip,focusSeat:api.focusSeat,selectBetSeat:api.selectBetSeat,retry:api.retry,reconnect:api.reconnect}); draw(); return Object.freeze(api);
 }
 

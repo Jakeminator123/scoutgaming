@@ -92,8 +92,8 @@ jobs:
       # Repo growth: files over 1 MB only via the shrinking allowlist, no new media binaries, short living docs.
       - name: Repository size limits (shrinking allowlist)
         run: |
-          node --test test/check-repo-limits.mjs
-          node tools/check-repo-limits.mjs --tree HEAD --changed-since HEAD^1
+          node --test --test-concurrency=2 test/check-repo-limits.mjs
+          node tools/check-repo-limits.mjs --ci
 
   # Prose-only PRs and every push to main (integration scope).
   documentation:

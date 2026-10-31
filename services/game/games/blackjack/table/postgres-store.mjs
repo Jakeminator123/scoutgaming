@@ -95,7 +95,7 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
   }
   const queryClient = { query: (sql, args) => transaction(client => client.query(sql, args)) };
   const readRoom = (client, id) => body(client, `SELECT body FROM ${schema}.shared_table_rooms WHERE room_id=$1`, [id]);
-  const members = async (client, id) => (await client.query(`SELECT body FROM ${schema}.shared_table_members WHERE room_id=$1 ORDER BY player_id`, [id])).rows.map(decode);
+  const members = async (client, id, { activeOnly = false } = {}) => (await client.query(`SELECT body FROM ${schema}.shared_table_members WHERE room_id=$1${activeOnly ? ' AND active' : ''} ORDER BY player_id`, [id])).rows.map(decode);
   const memberRooms = async (client, id) => (await client.query(`SELECT room_id FROM ${schema}.shared_table_members WHERE player_id=$1 AND active ORDER BY room_id`, [id])).rows.map(r => r.room_id);
   const presence = async (client, room, player) => {
     const row = await first(client, `SELECT seen FROM ${schema}.shared_table_presence WHERE room_id=$1 AND player_id=$2`, [room, player]);
@@ -171,7 +171,7 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
         },
         members: {
           get: (room, player) => { assertRoom(room); return body(client, `SELECT body FROM ${schema}.shared_table_members WHERE room_id=$1 AND player_id=$2`, [room, player]); },
-          list: room => { assertRoom(room); return members(client, room); },
+          list: (room, options) => { assertRoom(room); return members(client, room, options); },
           async put(room, member) {
             assertRoom(room); assertPlayer(member.actorId);
             const value = { ...member, roomId: room };
@@ -253,7 +253,7 @@ export function createPostgresTableStore({ pool, walletMode, lockTimeoutMs = 500
       // the caller already holds the shared Studio transaction.
       config: (room, version) => transaction(async client => frozenConfig(client, room, version === undefined ? await configHead(client, room) : version)),
       rooms: async () => (await queryClient.query(`SELECT room_id FROM ${schema}.shared_table_rooms ORDER BY room_id`)).rows.map(r => r.room_id),
-      members: id => members(queryClient, id), memberRooms: id => memberRooms(queryClient, id),
+      members: (id, options) => members(queryClient, id, options), memberRooms: id => memberRooms(queryClient, id),
       presence: (room, player) => presence(queryClient, room, player), tick: id => readTick(queryClient, id),
       walletGen: id => readWallet().gen(id), reservation: id => readWallet().reservation(id),
       funds: id => readWallet().funds(id), available: id => readWallet().available(id), pausedUntil: id => pausedUntil(queryClient, id),

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectPush, inspectTree, lineCount, parseArgs,
+  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectCi, inspectPush, inspectTree, lineCount, parseArgs,
 } from '../tools/check-repo-limits.mjs';
 
 const entry = (path, maxBytes, reason = 'fixture') => ({ path, maxBytes, reason });
@@ -151,13 +151,13 @@ test('Git modes: whole tree, staged index and a sparse commit diff all read obje
   });
 });
 
-test('the classifier job runs the guard on the merge diff with its files in the sparse checkout', () => {
+test('the classifier job runs the exact event guard with its files in the sparse checkout', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
   const changes = yaml.split('  changes:\n')[1]?.split('  documentation:\n')[0];
   assert.ok(changes);
   const sparse = changes.match(/sparse-checkout: \|\n((?:            [^\n]+\n)+)/)?.[1].split('\n').map(line => line.trim());
   for (const file of ['tools/check-repo-limits.mjs', ALLOWLIST, 'test/check-repo-limits.mjs']) assert.ok(sparse.includes(file), file);
-  assert.match(changes, /node --test test\/check-repo-limits\.mjs\n\s+node tools\/check-repo-limits\.mjs --tree HEAD --changed-since HEAD\^1/);
+  assert.match(changes, /node --test --test-concurrency=2 test\/check-repo-limits\.mjs\n\s+node tools\/check-repo-limits\.mjs --ci/);
   const hook = readFileSync(new URL('../.githooks/pre-commit-full', import.meta.url), 'utf8');
   assert.match(hook, /^run_check contracts repo-limits \d+ node tools\/check-repo-limits\.mjs$/m);
   assert.match(hook, /^run_node_tests contracts precommit-checks .*test\/check-repo-limits\.mjs/m);
@@ -176,6 +176,99 @@ const localRemote = ({ root, git }) => {
   git('push', '-q', remote, 'main');
   return remote;
 };
+
+const ciPush = (root, head, base) => inspectCi({ cwd: root,
+  env: { GITHUB_EVENT_NAME: 'push', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main' },
+  event: { before: base, after: head, ref: 'refs/heads/main' } });
+
+test('CI checks the complete multi-commit push, including hidden A to B to C allowances', () => {
+  repository(({ root, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    put('small.txt', 'small'); const small = commit('small');
+    assert.deepEqual(ciPush(root, small, base).errors, []);
+    put('large.bin', binary(big)); put(ALLOWLIST, JSON.stringify([entry('large.bin', big)])); const a = commit('A');
+    const b = binary(big); b[1] = 8; put('large.bin', b); const bHead = commit('B');
+    const c = binary(big); c[1] = 9; put('large.bin', c); const head = commit('C');
+    const errors = ciPush(root, head, base).errors.join('\n');
+    for (const hidden of [a, bHead]) assert.match(errors, new RegExp(`${hidden}: large\\.bin: stor mellanliggande blob`));
+    rmSync(join(root, 'large.bin')); put(ALLOWLIST, '[]'); const deleted = commit('delete');
+    assert.match(ciPush(root, deleted, base).errors.join('\n'), /Tillfälliga undantag/);
+  });
+});
+
+test('CI PR identity and complete ancestry include both side parents and hidden blobs', () => {
+  repository(({ root, git, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base');
+    git('checkout', '-qb', 'side'); put('large.bin', binary(big)); commit('add');
+    rmSync(join(root, 'large.bin')); commit('delete');
+    git('checkout', '-qb', 'feature', base); put('small.txt', 'small'); commit('small');
+    git('merge', '-q', '--no-ff', 'side', '-m', 'side merge'); const feature = git('rev-parse', 'HEAD');
+    git('checkout', '-q', 'main'); put('base.txt', 'base moved'); const movedBase = commit('base moves');
+    git('merge', '-q', '--no-ff', 'feature', '-m', 'PR merge'); const head = git('rev-parse', 'HEAD');
+    const env = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_SHA: head, GITHUB_REF: 'refs/pull/42/merge' };
+    const event = { number: 42, pull_request: { base: { sha: movedBase }, head: { sha: feature } } };
+    const result = inspectCi({ cwd: root, env, event });
+    assert.equal(result.commits, 5);
+    assert.match(result.errors.join('\n'), /large\.bin: 1\.00 MB/);
+    assert.throws(() => inspectCi({ cwd: root, env, event: { ...event, pull_request: { ...event.pull_request, base: { sha: base } } } }), /mergeföräldrarna/);
+    for (const changed of [{ GITHUB_SHA: base }, { GITHUB_REF: 'refs/pull/41/merge' }, { GITHUB_EVENT_NAME: 'pull_request_target' }]) {
+      assert.throws(() => inspectCi({ cwd: root, env: { ...env, ...changed }, event }), /CI-gränser/);
+    }
+    assert.throws(() => inspectCi({ cwd: root, env, event: { number: 42, pull_request: { base: { sha: movedBase }, head: { sha: '--all' } } } }), /PR-identitet/);
+    for (const name of ['schedule', 'workflow_dispatch']) {
+      const tree = inspectCi({ cwd: root, env: { GITHUB_EVENT_NAME: name, GITHUB_SHA: head } });
+      assert.equal(tree.mode, 'tree'); assert.deepEqual(checkRepoLimits(tree), []);
+    }
+  });
+});
+
+test('CI rejects unknown push bases and mismatched events without guessing an interval', () => {
+  repository(({ root, put, commit }) => {
+    put(ALLOWLIST, '[]'); const base = commit('base'); put('small.txt', 'small'); const head = commit('head');
+    const env = { GITHUB_EVENT_NAME: 'push', GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main' };
+    const event = { before: base, after: head, ref: 'refs/heads/main' };
+    for (const bad of [{ before: zeroOid }, { before: '--all' }, { after: base }, { ref: 'refs/heads/other' }, { created: true }, { deleted: true }]) {
+      assert.throws(() => inspectCi({ cwd: root, env, event: { ...event, ...bad } }), /pushintervall/);
+    }
+    assert.throws(() => ciPush(root, head, 'a'.repeat(40)), /metadata/);
+  });
+});
+
+test('CI unshallows blob:none history and fetches new blobs without touching old media', () => {
+  repository(fixture => {
+    const { root, git, put, commit, env } = fixture;
+    put('old.bin', binary(big + 100)); put(ALLOWLIST, JSON.stringify([entry('old.bin', big + 100)])); const base = commit('old base');
+    const old = git('rev-parse', `${base}:old.bin`);
+    put('large.bin', binary(big)); const added = commit('hidden large'); const large = git('rev-parse', `${added}:large.bin`);
+    rmSync(join(root, 'large.bin')); commit('delete large'); put('small.txt', 'small'); const head = commit('head');
+    const remote = localRemote(fixture);
+    git('--git-dir', remote, 'config', 'uploadpack.allowFilter', 'true');
+    git('--git-dir', remote, 'config', 'uploadpack.allowAnySHA1InWant', 'true');
+    const clone = join(root, '.git', 'partial-fixture');
+    execFileSync('git', ['clone', '-q', '--branch', 'main', '--no-checkout', '--depth', '2', '--filter=blob:none', pathToFileURL(remote).href, clone], { env, stdio: 'pipe' });
+    const local = (...args) => execFileSync('git', args, { cwd: clone, env: { ...env, GIT_NO_LAZY_FETCH: '1' }, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    const missing = object => spawnSync('git', ['cat-file', '-e', object], { cwd: clone, env: { ...env, GIT_NO_LAZY_FETCH: '1' }, stdio: 'pipe' }).status !== 0;
+    assert.equal(missing(old), true); assert.equal(missing(large), true);
+    const result = ciPush(clone, head, base);
+    assert.match(result.errors.join('\n'), /large\.bin: 1\.00 MB/);
+    assert.equal(result.commits, 3); assert.equal(local('rev-parse', '--is-shallow-repository'), 'false');
+    assert.equal(missing(large), false); assert.equal(missing(old), true, 'unrelated old media must remain absent');
+    // A clean exact interval still leaves the old media missing.
+    assert.deepEqual(ciPush(clone, head, local('rev-parse', `${head}^`)).errors, []);
+    assert.equal(missing(old), true);
+    // Retiring an old file must not download its bytes through numstat either.
+    rmSync(join(root, 'old.bin')); put(ALLOWLIST, '[]'); const retired = commit('retire old media');
+    git('push', '-q', remote, 'main');
+    local('fetch', '--filter=blob:none', 'origin', retired); local('update-ref', 'HEAD', retired);
+    assert.deepEqual(ciPush(clone, retired, head).errors, []);
+    assert.equal(missing(old), true, 'deleting old media must not hydrate it');
+    // Incomplete graph and unavailable new bytes fail closed, even in CI mode.
+    const unavailable = join(root, '.git', 'unavailable');
+    execFileSync('git', ['clone', '-q', '--branch', 'main', '--no-checkout', '--depth', '1', '--filter=blob:none', pathToFileURL(remote).href, unavailable], { env, stdio: 'pipe' });
+    execFileSync('git', ['remote', 'set-url', 'origin', join(root, 'missing-remote')], { cwd: unavailable, env, stdio: 'pipe' });
+    assert.throws(() => ciPush(unavailable, retired, base));
+  });
+});
 
 test('pre-push sees an oversized add then delete, and accepts ordinary small commits', () => {
   repository(({ root, put, commit }) => {

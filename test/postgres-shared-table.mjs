@@ -96,9 +96,9 @@ export async function runPostgresSharedTableChecks({ pool, createPool, restart }
     await tx.rooms.write(room, value);
   });
   try {
-    for (const id of ['first', 'second', 'third', 'shared', 'block', 'blocked-a', 'blocked-b', 'process'])
-      await pool.query('INSERT INTO croupier_game.players(id,name,balance,created_at) VALUES($1,$2,$3,$4)', [`table-${id}`, 'Synthetic SQL player', id === 'shared' ? 100 : 1000, '2026-10-22T00:00:00.000Z']);
-    for (const room of ['party', 'room-11111111-1111-4111-8111-111111111111', 'race', 'shared-a', 'shared-b', 'timeout', 'blocked', 'process'])
+    for (const id of ['first', 'second', 'third', 'shared', 'block', 'blocked-a', 'blocked-b', 'process', 'spots-a', 'spots-b', 'spots-holder', 'spots-poor'])
+      await pool.query('INSERT INTO croupier_game.players(id,name,balance,created_at) VALUES($1,$2,$3,$4)', [`table-${id}`, 'Synthetic SQL player', id === 'shared' ? 100 : id === 'spots-poor' ? 10 : 1000, '2026-10-22T00:00:00.000Z']);
+    for (const room of ['party', 'room-11111111-1111-4111-8111-111111111111', 'race', 'shared-a', 'shared-b', 'timeout', 'blocked', 'process', 'spots', 'spots-rollback'])
       await store.config.publish(room, 'v1', structuredClone(DEFAULT_CONFIG));
 
     await check('shared-table-two-clients-two-rooms-single-debit-and-global-audit', async () => {
@@ -147,8 +147,29 @@ export async function runPostgresSharedTableChecks({ pool, createPool, restart }
     await check('shared-table-concurrent-seat-claim-has-one-owner', async () => {
       const results = await Promise.allSettled([join('table-first', 0, 'race'), join('table-second', 0, 'race', other)]);
       assert.deepEqual(results.map(value => value.status).sort(), ['fulfilled', 'rejected']);
-      assert.equal(results.find(value => value.status === 'rejected').reason.code, 'SEAT_TAKEN');
+      assert.equal(results.find(value => value.status === 'rejected').reason.code, 'STALE_COMMAND');
       assert.equal((await table.snapshot('race', 'table-first')).owners.filter(Boolean).length, 1);
+    });
+    await check('shared-table-two-connections-main-bets-race-for-another-members-empty-box', async () => {
+      await join('table-spots-a', 0, 'spots'); await join('table-spots-b', 1, 'spots'); await join('table-spots-holder', 3, 'spots');
+      const results = await Promise.allSettled([bet('table-spots-a', 3, 5, 'spots'), bet('table-spots-b', 3, 5, 'spots', other)]);
+      assert.deepEqual(results.map(result => result.status).sort(), ['fulfilled', 'rejected']);
+      assert.equal(results.find(result => result.status === 'rejected').reason.code, 'NOT_YOUR_BOX');
+      const s = await other.snapshot('spots', 'table-spots-holder');
+      assert.equal(s.bets[3].main, 5); assert.equal(s.me.active, true); assert.deepEqual(s.me.seats, []); assert.equal(s.me.memberGen, 1);
+      assert.equal((await store.read.available('table-spots-a')) + (await store.read.available('table-spots-b')), 1995);
+      await bet('table-spots-holder', 4, 5, 'spots', other);
+      assert.deepEqual((await table.snapshot('spots', 'table-spots-holder')).me.seats, [4]);
+    });
+    await check('shared-table-empty-box-wallet-rejection-restores-ownership-members-and-every-durable-effect', async () => {
+      await join('table-spots-poor', 0, 'spots-rollback'); await join('table-spots-holder', 3, 'spots-rollback');
+      await bet('table-spots-holder', 0, 5, 'spots-rollback', other);
+      const before = await stable('spots-rollback', 'table-spots-poor');
+      await assert.rejects(bet('table-spots-poor', 3, 25, 'spots-rollback'), { code: 'INSUFFICIENT_BALANCE' });
+      assert.deepEqual(await stable('spots-rollback', 'table-spots-poor'), before);
+      const s = await other.snapshot('spots-rollback', 'table-spots-poor');
+      await send('table-spots-poor', 'leave', { memberGen: s.me.memberGen }, 'spots-rollback', other);
+      assert.equal((await table.snapshot('spots-rollback', 'table-spots-poor')).me.active, false);
     });
     await check('shared-table-concurrent-rooms-share-global-reservations', async () => {
       await join('table-shared', 0, 'shared-a'); await join('table-shared', 0, 'shared-b', other);

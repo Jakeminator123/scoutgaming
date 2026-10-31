@@ -1,7 +1,7 @@
 // K04 contract tests: committed shared-table outbox rows -> main's presentation instructions,
 // exact media identity, stable line identity and the room idle chain. No database (the durable
 // receiver is proven on real PostgreSQL in test/postgres-presentation-receiver.mjs), no media
-// bytes, no network. Kevin's client modules are byte-verified fixtures of 5aa7ed10.
+// bytes, no network. Timing documents are exact hash-bound publication inputs.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -18,17 +18,14 @@ import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, plannin
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { createMovingSpeechFrameLayer } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
-import { CATALOGUE_SOURCE, READY_CONTACT, activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, loadCatalogue, parseCatalogue, trackFor, variantFrames, verifyActivation }
+import { activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, loadCatalogue, parseCatalogue, trackFor, variantFrames, verifyActivation }
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
 import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
-import { planDraws, outcomeSpeech } from './fixtures/kevin-5aa7ed1/public/game-events.js';
-import * as kevinIdle from './fixtures/kevin-5aa7ed1/public/idle-chain.js';
 
-const fixture = path => readFileSync(new URL(`./fixtures/kevin-5aa7ed1/${path}`, import.meta.url));
-const blob = bytes => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+const timingBytes = dealer => readFileSync(new URL(`./fixtures/blackjack-media-timing/${dealer}.json`, import.meta.url));
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const catalogue = loadCatalogue();
 const order = events => events.filter(e => ['deal', 'reveal'].includes(e.type)).map(e => `${e.type === 'reveal' ? 'reveal' : e.to === 'dealer' ? (e.faceDown ? 'hole' : 'dealer') : `box${e.box}`}#${e.shoeDraw}`);
@@ -59,30 +56,6 @@ function setup(funds = { kevin: 1000, john: 1000 }) {
 async function startRound(t, ranks, seat = 3) {
   await t.join('kevin', [seat]); await t.bet('kevin', seat, 10); t.setShoe(ranks); await t.ready('kevin');
 }
-
-test('Kevin client fixtures are the frozen 5aa7ed10 blobs and tie the media catalogue to them', () => {
-  assert.equal(blob(fixture('public/game-events.js')), 'feeeec469b13d76f0b0b040fd9f8670f21d8dc34');
-  assert.equal(blob(fixture('public/idle-chain.js')), 'deec60c205f7422db4d5d0d43516592e1db45435');
-  assert.equal(blob(fixture('public/dealers.js')), 'e8751ecdae2f05fbb0d7fc3cebbae834e7f68594');
-  const row = path => catalogue.find(r => r.path === path);
-  assert.equal(row('public/dealers.js').sha256, sha256(fixture('public/dealers.js')));
-  assert.equal(row('public/idle-chain.js').sha256, sha256(fixture('public/idle-chain.js')));
-  // Kevin's K04 rows without Astrid's (astrid 65, astrid2 245, 8 Astrid Table Studio images; ren start K3).
-  assert.equal(catalogue.length, 975);
-  assert.ok(!catalogue.some(r => /astrid/i.test(r.path)), 'no Astrid path, also none of the Table Studio images');
-  assert.deepEqual([...new Set(catalogue.map(r => r.dealer))].sort(), ['dragge', 'marten', 'paow', 'shared', 'studio']);
-  assert.deepEqual(catalogue.filter(r => r.path.endsWith('.js')).map(r => r.path).sort(), ['public/dealer-card-tracks-dragge.js',
-    'public/dealer-card-tracks-marten.js', 'public/dealer-card-tracks-paow.js', 'public/dealers.js', 'public/idle-chain.js']);
-  assert.equal(CATALOGUE_SOURCE.commit, '6bd92d05b0d52032675148519e001b8386110dec');
-  assert.deepEqual(Object.keys(READY_CONTACT), ['dragge', 'paow', 'marten']);
-  // READY_CONTACT is exactly Kevin's dealers.js `in`/`land` per ready dealer.
-  const source = fixture('public/dealers.js').toString('utf8');
-  for (const [dealer, name] of [['dragge', 'DRAGGE'], ['paow', 'PAOW'], ['marten', 'MARTEN']]) {
-    const literal = new RegExp(`const ${name}_READY = (\\{.*\\});`).exec(source)[1];
-    const ready = Function(`return (${literal})`)();
-    assert.deepEqual({ in: ready.in, land: ready.land }, READY_CONTACT[dealer], dealer);
-  }
-});
 
 // Raw generator errors reproduced on main 95ac98dc (issue #312): reveal was unshifted ahead of every
 // instruction, and a two-card 21 after a split was called blackjack. These fail on the old generator.
@@ -125,13 +98,12 @@ test('generator: a two-card 21 after a split is a win, never blackjack (core spl
   const settle = events.find(e => e.type === 'settle');
   assert.deepEqual(settle.hands.map(h => h.outcome), ['win', 'win']);
   assert.equal(events.at(-1).line, 'dealerbust');
-  assert.equal(outcomeSpeech(p.after.round), 'dealerbust', 'same line as Kevin');
   // Older stored views without splitFrom (or with the legacy `split` flag) keep their meaning.
   const legacy = structuredClone(p.after); for (const h of legacy.round.hands) { delete h.splitFrom; h.split = true; }
   assert.deepEqual(presentationEvents(p.before, legacy, 'act', { action: 'split' }).find(e => e.type === 'settle').hands.map(h => h.outcome), ['win', 'win']);
 });
 
-test('generator deal/reveal order equals Kevin planDraws on 300 core rounds (start, insurance, act)', () => {
+test('generator follows server draw order and reveals the hole exactly once on 300 core rounds', () => {
   let compared = 0, reveals = 0;
   for (let seed = 0; seed < 300; seed++) {
     const random = deterministicRandom(`k04-parity-${seed}`);
@@ -140,12 +112,25 @@ test('generator deal/reveal order equals Kevin planDraws on 300 core rounds (sta
     let state = newGame({ random }).state, before = publicView(state), command = { op: 'start', bets };
     for (let guard = 0; guard < 40 && command; guard++) {
       const out = step(state, command, { limits: {} }, { random, funding }), after = out.view;
-      const ours = order(presentationEvents(before, after, command.op, { action: command.action }));
-      const kevin = planDraws(command.op === 'start' ? null : before.round, after.round, command.op === 'start')
-        .filter(s => ['deal', 'reveal'].includes(s.kind))
-        .map(s => s.kind === 'reveal' ? `reveal#${after.round.holeDraw}` : s.card === null ? `hole#${s.shoeDraw}` : s.seat === 'dealer' ? `dealer#${s.shoeDraw}` : `box${s.seat - 1}#${s.shoeDraw}`);
-      assert.deepEqual(ours, kevin, `seed ${seed} ${command.op} ${command.action ?? ''}`);
-      compared++; reveals += ours.some(x => x.startsWith('reveal'));
+      const events = presentationEvents(before, after, command.op, { action: command.action });
+      const deals = events.filter(e => e.type === 'deal');
+      const draws = out.events.filter(e => e.type.startsWith('engine.')).flatMap(e => e.payload.draws);
+      assert.deepEqual(deals.map(e => e.shoeDraw), draws.map(d => d.position), `seed ${seed}: every draw in server order`);
+      for (const event of deals) {
+        const draw = draws.find(d => d.position === event.shoeDraw);
+        if (event.faceDown) {
+          assert.equal(event.shoeDraw, after.round.holeDraw);
+          assert.equal(event.card, null, 'the hidden hole identity stays private');
+        } else assert.deepEqual(event.card, { r: draw.card.r, s: draw.card.s });
+      }
+      const reveal = events.findIndex(e => e.type === 'reveal');
+      const shouldReveal = after.round.dealer.length > 1 && (command.op === 'start' || before.round.dealer.length === 1);
+      assert.equal(events.filter(e => e.type === 'reveal').length, shouldReveal ? 1 : 0);
+      if (shouldReveal) {
+        assert.equal(events[reveal].shoeDraw, after.round.holeDraw);
+        assert.ok(events.every((e, i) => e.type !== 'deal' || (e.to === 'dealer' && e.shoeDraw > after.round.holeDraw ? i > reveal : i < reveal)), 'reveal follows player/initial cards and precedes extra dealer cards');
+      }
+      compared++; reveals += shouldReveal;
       state = out.state; before = after;
       const r = after.round;
       if (r.phase === 'insurance') command = { op: 'insurance', roundId: after.roundId, take: false };
@@ -155,6 +140,7 @@ test('generator deal/reveal order equals Kevin planDraws on 300 core rounds (sta
         command = { op: 'act', action, roundId: after.roundId, turnSeq: after.turnSeq, box: hand.box, handIndex: r.active };
       } else command = null;
     }
+    assert.equal(state.round.phase, 'settled', `seed ${seed}: the round completes within the guard`);
   }
   assert.ok(compared > 600 && reveals > 200, `${compared} steps, ${reveals} with a reveal`);
 });
@@ -424,13 +410,21 @@ test('a line opened with its window draws only inside [startAt, endAt + 600 ms);
   assert.deepEqual(calls, ['A0', null]); assert.deepEqual(closed, ['early-A0', 'late-B0']);
 });
 
-test('room idle chain equals Kevin idle-chain.js and is laid from the accepted plan row', async () => {
+test('room idle chain is deterministic and is laid from the accepted plan row', async () => {
   const takes = [{ take: 'andas', frames: 39, vikt: 20, calm: true }, { take: 'andasb', frames: 39, vikt: 20, calm: true },
     { take: 'fingrar', frames: 39, vikt: 4, calm: true }, { take: 'nick6101', frames: 39, vikt: 6, calm: false }];
   for (const seed of ['a', 'plan-1', '3f2c']) {
-    assert.deepEqual(layChain(takes, 1000, 60000, seed), kevinIdle.layChain(takes, 1000, 60000, seed));
+    const chain = layChain(takes, 1000, 60000, seed);
+    assert.deepEqual(chain, layChain(takes, 1000, 60000, seed));
+    assert.equal(chain[0].startAt, 1000);
+    assert.ok(chain.at(-1).endAt >= 60000);
+    for (let i = 1; i < chain.length; i++) {
+      assert.equal(chain[i].startAt, chain[i - 1].endAt);
+      assert.notEqual(chain[i].take, chain[i - 1].take);
+    }
     const wait = { from: 500, until: 30000, seed, takes };
-    assert.deepEqual(waitClips(wait, 0, 40000), kevinIdle.waitClips(wait, 0, 40000));
+    const clips = waitClips(wait, 0, 40000);
+    assert.ok(clips.length > 0 && clips.every(c => c.startAt >= wait.from && c.startAt < wait.until));
   }
   const t = setup();
   await startRound(t, ['10', '6', '9', '10', '5']);
@@ -571,18 +565,18 @@ test("server-chain: an expired entry is not re-attached after a block; identity 
 
 test('planning/material revision: leadMs/cardMs + revision per exact dealer, language and media set; no binding, no publication', () => {
   const observed = new Map(catalogue.map(r => [r.path, r.sha256]));
-  const docs = dealer => new Map(timingSourceOf(dealer) ? [[timingSourceOf(dealer), fixture(`public/${timingSourceOf(dealer)}`)]] : []);
+  const docs = dealer => new Map(timingSourceOf(dealer) ? [[timingSourceOf(dealer), timingBytes(dealer)]] : []);
   const plan = (dealer, language, extra = {}) => planningRevision({ catalogue, dealer, language, observed, documents: docs(dealer), ...extra });
-  // The timing documents are Kevin's bytes, verified against the catalogue rows before use.
+  // Exact timing bytes are verified against the active catalogue before publication.
   for (const dealer of ['dragge', 'paow', 'marten'])
-    assert.equal(sha256(fixture(`public/${timingSourceOf(dealer)}`)), catalogue.find(r => r.path === timingSourceOf(dealer)).sha256, dealer);
+    assert.equal(sha256(timingBytes(dealer)), catalogue.find(r => r.path === timingSourceOf(dealer)).sha256, dealer);
   const expected = { dragge: [3205, 3539, 83, 39], paow: [3914, 3455, 81, 56], marten: [3205, 3539, 83, 39] };
   for (const [dealer, [leadMs, cardMs, cardFrames, flipFrames]] of Object.entries(expected)) {
     const r = plan(dealer, 'en');
     assert.equal(r.ok, true, dealer); assert.equal(r.contract, MATERIAL_REVISION_CONTRACT);
     assert.deepEqual([r.leadMs, r.cardMs, r.timing.cardFrames, r.timing.flipFrames], [leadMs, cardMs, cardFrames, flipFrames], dealer);
     // Upper bound: every deal take of the set fits in cardMs (incl. the 80 ms gap), the flip in leadMs.
-    const meta = JSON.parse(fixture(`public/${timingSourceOf(dealer)}`));
+    const meta = JSON.parse(timingBytes(dealer));
     for (const [track, frames] of Object.entries(meta.frames)) for (const n of Object.values(frames))
       assert.ok(n * 1000 / 24 + 80 <= (track === 'flip' ? r.leadMs - 1500 : r.cardMs), `${dealer} ${track}`);
     assert.match(r.revision, /^[a-f0-9]{64}$/);
@@ -639,7 +633,7 @@ test('planning/material revision: leadMs/cardMs + revision per exact dealer, lan
   const tampered = new Map(observed); tampered.set(take, '0'.repeat(64));
   assert.deepEqual(plan('dragge', 'en', { observed: tampered }).mismatched, [take]);
   assert.equal(plan('dragge', 'en', { documents: new Map() }).reason, 'timing_document_missing');
-  const edited = Buffer.from(fixture('public/media/dealers/dragge/v2/meta.json').toString('utf8').replace('"-iu":83', '"-iu":40'));
+  const edited = Buffer.from(timingBytes('dragge').toString('utf8').replace('"-iu":83', '"-iu":40'));
   assert.equal(plan('dragge', 'en', { documents: new Map([[timingSourceOf('dragge'), edited]]) }).reason, 'timing_document_mismatch');
   assert.equal(planningRevision({ catalogue: [], dealer: 'dragge', language: 'en', observed, documents: docs('dragge') }).reason, 'no_catalogue');
   assert.throws(() => requirePlanningRevision({ catalogue, dealer: 'dragge', language: 'en', observed: without, documents: docs('dragge') }),

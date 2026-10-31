@@ -10,7 +10,7 @@
 //
 // Inside `work(tx)`:
 //   tx.rooms      RoomStatePort       read(roomId) -> state|null, write(roomId, state)
-//   tx.members    MembershipPort      get(roomId, actorId), list(roomId), put(roomId, member),
+//   tx.members    MembershipPort      get(roomId, actorId), list(roomId, {activeOnly?}), put(roomId, member),
 //                                     roomsOf(actorId) -> sorted active room ids
 //   tx.presence   (MembershipPort)    get(roomId, actorId) -> last seen ms|null (read only here)
 //   tx.receipts   CommandReceiptPort  get({roomId, actorId, commandId}), put(key, {fingerprint, result})
