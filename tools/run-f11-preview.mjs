@@ -73,7 +73,10 @@ export async function prepareF11Fixture(plan, ports, {run = false} = {}) {
   const created = await ports.http('admin','POST','/studio/api/admin/presentation-room',payload);
   f11Need(created.ok && created.duplicate === false && created.room?.id === identity.roomId
     && created.room.operatorId === identity.operatorId && created.room.presentationLaneId === plan.sourceLaneId
-    && created.packageRevision === 1 && created.published, 'room_creation_unverified');
+    && created.packageRevision === 1 && created.published?.packageRevision === 1
+    && typeof created.published.configVersion === 'string'
+    && created.published.gameConfig?.language === plan.gameConfig.language
+    && created.published.gameConfig?.limitPreset === plan.gameConfig.limitPreset, 'room_creation_unverified');
   await record('room-create','verified');
   const actors = [];
   for (let i=0;i<2;i++) {
@@ -85,7 +88,8 @@ export async function prepareF11Fixture(plan, ports, {run = false} = {}) {
   const after = await ports.inspect(plan,identity);
   f11Need(after.unchangedHash === before.unchangedHash && after.room?.id === identity.roomId
     && after.room.operatorId === identity.operatorId && after.room.presentationLaneId === plan.sourceLaneId
-    && after.packageRevision === 1 && after.roomCount === 1 && after.accounts?.length === 2, 'fixture_readback_invalid');
+    && after.packageRevision === created.packageRevision && after.configVersion === created.published.configVersion
+    && after.roomCount === 1 && after.accounts?.length === 2, 'fixture_readback_invalid');
   const accounts = actors.map((actorId,i) => {
     const row = after.accounts.find(row => row.actorId === actorId && row.username === identity.usernames[i]);
     f11Need(row && row.createdAt >= before.at && row.createdAt <= after.at && row.status === 'active'

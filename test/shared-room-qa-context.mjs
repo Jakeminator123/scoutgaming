@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, scryptSync } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createF11Observer, validateF11Manifest, runF11EvidenceCli, F11_TARGET } from '../tools/shared-room-f11-observer.mjs';
 import { prepareF11Fixture, runF11Preview, runF11PreviewCli, validateF11Plan, f11FixtureIdentity,
   nextF11Command, correlateF11Log } from '../tools/run-f11-preview.mjs';
-import { createF11LivePorts, validateF11DatabaseUrl, f11ProviderReceipt } from '../tools/f11-preview-ports.mjs';
+import { createF11LivePorts, validateF11DatabaseUrl, f11ProviderReceipt, readF11Fixture } from '../tools/f11-preview-ports.mjs';
 
 const receiptHash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const actors = ['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
@@ -199,7 +199,8 @@ function creationPorts() {
       if(method==='GET')return {ok:true,ready:true,operator:{id:plan.runId},presentationLaneId:plan.sourceLaneId,
         packageRevision:null,rooms:[],projectRevision:'project-1',administrationRevision:'admin-1'};
       assert.equal(body.operatorId,plan.runId);assert.equal(body.expectedPackageRevision,null);
-      return {ok:true,duplicate:false,room:{id:identity.roomId,operatorId:plan.runId,presentationLaneId:plan.sourceLaneId},packageRevision:1,published:true};},
+      return {ok:true,duplicate:false,room:{id:identity.roomId,operatorId:plan.runId,presentationLaneId:plan.sourceLaneId},packageRevision:1,
+        published:{configVersion:'config-1',packageRevision:1,gameConfig:plan.gameConfig}};},
     register:async(index,username)=>{calls.push(`register ${username}`);return {id:actors[index]};},
     save:async(name,value)=>{files.set(name,structuredClone(value));},progress:()=>{},close:async()=>{calls.push('closed');}};
   return {plan,identity,ports,calls,files,setClock:value=>{clock=value;}};
@@ -259,6 +260,86 @@ test('live F11 refuses existing fixtures before login, UUID collisions and wrong
   const wrong=creationPorts(),inspect=wrong.ports.inspect;let reads=0;
   wrong.ports.inspect=async()=>{const row=await inspect();if(++reads===2)row.accounts[0].actorId=actors[1];return row;};
   await assert.rejects(prepareF11Fixture(wrong.plan,wrong.ports,{run:true}),/account_readback_invalid/);
+  const stale=creationPorts(),read=stale.ports.inspect;
+  stale.ports.inspect=async()=>{const row=await read();if(row.configVersion)row.configVersion='different-published-config';return row;};
+  await assert.rejects(prepareF11Fixture(stale.plan,stale.ports,{run:true}),/fixture_readback_invalid/);
+});
+test('F11 ownership reads real PostgreSQL package rows while raw administration has no rooms',async t=>{
+  const {createPglitePool}=await import('./fixtures/pglite-pool.mjs');
+  const pool=await createPglitePool();t.after(()=>pool.end());
+  for(const file of ['001-studio-metadata.sql','005-operators.sql','023-operator-package-rooms.sql'])
+    await pool.query(await readFile(new URL(`../ops/neon-studio/${file}`,import.meta.url),'utf8'));
+  const f=creationPorts(),{plan,identity}=f,scope=[plan.environment,plan.workspaceId],dealer='fixture-dealer';
+  const laneId=`room-lane-${receiptHash([plan.sourceLaneId,dealer]).slice(0,24)}`;
+  const project={revision:'project-1',lanes:[{id:plan.sourceLaneId,layers:{dealer:{default:dealer}}}]};
+  const administration={gameLanes:[{schemaVersion:1,id:laneId,label:'Fixture',renderer:'portrait-video',dealer,mediaCollection:`${dealer}-presentation`}]};
+  for(const [kind,revision,value] of [['project','project-1',project],['administration','admin-1',administration]])
+    await pool.query('INSERT INTO croupier_studio.documents(environment_id,workspace_id,kind,revision,value) VALUES($1,$2,$3,$4,$5)',[...scope,kind,revision,value]);
+  const operator=id=>pool.query('INSERT INTO croupier_studio.operators VALUES($1,$2,$3,$3,$3,\'active\',0)',[...scope,id]);
+  const room=(id,operatorId)=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:plan.sourceLaneId,gameLaneId:laneId,state:'live'});
+  const ownRoom=room(identity.roomId,identity.operatorId),existingRoom=room('existing-room','existing');
+  const pack=(owner,revision,rooms,branding={})=>pool.query(`INSERT INTO croupier_studio.operator_packages
+    (environment_id,workspace_id,operator_id,package_revision,lanes,games,tables,branding,published_at_ms,rooms)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,0,$9)`,[...scope,owner,revision,JSON.stringify([plan.sourceLaneId]),'["blackjack"]',
+      JSON.stringify((rooms??[]).map(row=>row.id)),JSON.stringify(branding),rooms===null?null:JSON.stringify(rooms)]);
+  await operator('existing');await pack('existing',1,null);await pack('existing',2,[existingRoom]);
+  const read=async()=>{
+    const client=await pool.connect();
+    try {await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');return await readF11Fixture(client,plan,identity,{now:f.ports.now});}
+    finally {await client.query('ROLLBACK');await client.release();}
+  };
+  const before=await read();assert.deepEqual(before.absent,{operators:0,accounts:0,rooms:0,packages:0});
+  assert.equal(before.roomCount,0);assert.equal(before.sourceReady,true);
+  const api=f.ports.http;f.ports.inspect=read;
+  f.ports.http=async(actor,method,path,body)=>{
+    const response=await api(actor,method,path,body);
+    if(path.endsWith('operator-create'))await operator(identity.operatorId);
+    else if(method==='POST') {
+      await pack(identity.operatorId,1,[ownRoom],{roomGameConfigVersions:{[identity.roomId]:'config-1'}});
+      const config={configVersion:'config-1',roomId:identity.roomId,operatorId:identity.operatorId,packageRevision:1,
+        presentationLaneId:plan.sourceLaneId,...plan.gameConfig};
+      await pool.query('INSERT INTO croupier_game.shared_table_configs VALUES($1,$2,$3)',[identity.roomId,'config-1',JSON.stringify(config)]);
+      await pool.query('INSERT INTO croupier_game.shared_table_config_heads VALUES($1,$2)',[identity.roomId,'config-1']);
+      // The real repository changes document revision while stripping the derived
+      // rooms view; its persisted value remains unchanged for this new own room.
+      await pool.query("UPDATE croupier_studio.documents SET revision='admin-2' WHERE environment_id=$1 AND workspace_id=$2 AND kind='administration'",scope);
+    }
+    f.setClock(20);return response;
+  };
+  f.ports.register=async(index,username)=>{
+    const id=actors[index],at=new Date(10).toISOString();
+    await pool.query('INSERT INTO croupier_game.players(id,name,created_at) VALUES($1,$2,$3)',[id,username,at]);
+    await pool.query('INSERT INTO croupier_game.player_accounts VALUES($1,$2,$3,$4)',[`username:${username}`,id,'fixture-salt','fixture-hash']);
+    await pool.query("INSERT INTO croupier_game.transactions(player_id,type,amount,currency,at) VALUES($1,'open',1000,'USD',$2)",[id,at]);return {id};
+  };
+  const result=await prepareF11Fixture(plan,f.ports,{run:true}),after=await read();
+  assert.deepEqual(after.room,ownRoom);assert.equal(after.packageRevision,1);assert.equal(after.configVersion,'config-1');
+  assert.equal(after.unchangedHash,before.unchangedHash);assert.equal(result.ownership.readback.roomCount,1);
+  assert.equal(result.ownership.readback.packageRevision,1);assert.equal(result.ownership.accounts.length,2);
+  const raw=(await pool.query("SELECT value FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind='administration'",scope)).rows[0].value;
+  assert.equal(Object.hasOwn(raw,'rooms'),false);
+  for(const mutation of [
+    "UPDATE croupier_studio.documents SET value=value||'{\"changed\":true}'::jsonb WHERE kind='administration'",
+    "UPDATE croupier_studio.operator_packages SET rooms=jsonb_set(rooms::jsonb,'{0,name}','\"changed existing room\"')::text WHERE operator_id='existing' AND package_revision=2"
+  ]) {
+    const client=await pool.connect();try {
+      await client.query('BEGIN');await client.query(mutation);
+      const changed=await readF11Fixture(client,plan,identity);assert.notEqual(changed.unchangedHash,before.unchangedHash);
+    } finally {await client.query('ROLLBACK');await client.release();}
+  }
+  for(const mutation of [
+    "UPDATE croupier_game.shared_table_configs SET body=jsonb_set(body::jsonb,'{packageRevision}','2')::text",
+    "UPDATE croupier_studio.operator_packages SET branding='{\"roomGameConfigVersions\":{}}' WHERE operator_id=$1",
+    "UPDATE croupier_studio.operator_packages SET rooms=jsonb_set(rooms::jsonb,'{0,operatorId}','\"other-owner\"')::text WHERE operator_id=$1"
+  ]) {
+    const client=await pool.connect();try {
+      await client.query('BEGIN');await client.query(mutation,mutation.includes('$1')?[identity.operatorId]:undefined);
+      await assert.rejects(readF11Fixture(client,plan,identity),error=>['f11_fixture_readback_invalid','studio_corrupt_operator'].includes(error.code));
+    } finally {await client.query('ROLLBACK');await client.release();}
+  }
+  await pack(identity.operatorId,2,[]);
+  const superseded=await read();assert.equal(superseded.roomCount,0);assert.equal(superseded.room,undefined);
+  assert.equal(superseded.absent.packages,2,'historical packages still prohibit reusing the fixture identity');
 });
 test('F11 opening transactions are retained, exact and mandatory in every monetary sample',()=>{
   for(const change of [row=>row.ledger.shift(),row=>{row.ledger[0].amountCents=1;},row=>{row.ledger[0].actorId=actors[1];},

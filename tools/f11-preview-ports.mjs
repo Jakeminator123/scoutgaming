@@ -5,6 +5,9 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { F11_TARGET, F11_MONEY_SQL } from './shared-room-f11-observer.mjs';
+import { readAdministrationRooms } from '../packages/presentation/server/administration-room-projection.mjs';
+import { checkPackageRooms } from '../packages/presentation/contracts/package-rooms.mjs';
+import { roomGame } from '../packages/presentation/contracts/presentation-room.mjs';
 
 const need=(yes,code)=>{if(!yes)throw Object.assign(Error(`f11_${code}`),{code:`f11_${code}`});};
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -31,6 +34,63 @@ export function f11ProviderReceipt(row,plan,now) {
   'provider_receipt_invalid');
   return {...F11_TARGET,source:'provider-api',engineSha:d.commit.id,vercelSha:v.meta.githubCommitSha,
     ready:true,suspended:false,healthStatus:200,deployId:d.id};
+}
+
+// The caller owns the pinned, repeatable-read/read-only transaction. Raw Studio
+// documents are preserved verbatim; room authority comes from current packages,
+// using the same projection/validation as the real publication readers.
+export async function readF11Fixture(client,plan,identity,{now=Date.now}={}) {
+  const scope=[plan.environment,plan.workspaceId];
+  const docs=(await client.query('SELECT kind,value FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=ANY($3::text[])',[...scope,['project','administration']])).rows;
+  const project=docs.find(row=>row.kind==='project')?.value,administration=docs.find(row=>row.kind==='administration')?.value;
+  need(project&&administration,'source_required');
+  const source=project.lanes?.find(row=>row.id===plan.sourceLaneId),dealer=source?.layers?.dealer?.default;
+  const laneId=`room-lane-${hash([plan.sourceLaneId,dealer]).slice(0,24)}`;
+  const lane=administration.gameLanes?.find(row=>row.id===laneId);
+  const sourceReady=typeof dealer==='string'&&lane?.schemaVersion===1&&lane.renderer==='portrait-video'
+    && lane.dealer===dealer&&lane.mediaCollection===`${dealer}-presentation`;
+  const operators=(await client.query('SELECT operator_id,status FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND (operator_id=$3 OR slug=$3)',[...scope,identity.operatorId])).rows;
+  // All revisions count for absence; neither an old package nor a dangling room
+  // reference can be adopted as a newly created fixture.
+  const packs=(await client.query(`SELECT operator_id,package_revision,lanes::jsonb AS lanes,tables::jsonb AS tables,rooms::jsonb AS rooms,
+    branding::jsonb->'roomGameConfigVersions'->>($4::text) AS "bindingVersion"
+    FROM croupier_studio.operator_packages WHERE environment_id=$1 AND workspace_id=$2
+    AND (operator_id=$3 OR tables::jsonb ? $4 OR rooms::jsonb @> jsonb_build_array(jsonb_build_object('id',$4::text)))`,[...scope,identity.operatorId,identity.roomId])).rows;
+  let currentPackages;
+  const inventory=await readAdministrationRooms(async sql=>{
+    const result=await client.query(sql,scope);currentPackages=result.rows;return result;
+  });
+  const rooms=inventory.filter(row=>row.id===identity.roomId||row.operatorId===identity.operatorId);
+  const accounts=(await client.query(`SELECT p.id AS "actorId",p.name AS username,p.created_at AS "createdAt",p.status,
+    (p.balance*100)::bigint AS "balanceCents",a.email FROM croupier_game.players p LEFT JOIN croupier_game.player_accounts a ON a.player_id=p.id
+    WHERE p.name=ANY($1::text[]) OR a.email=ANY($2::text[])`,[identity.usernames,identity.usernames.map(name=>`username:${name}`)])).rows;
+  const authCount=Number((await client.query('SELECT count(*) FROM croupier_auth.users WHERE username=ANY($1::text[])',[identity.usernames])).rows[0].count);
+  const configs=(await client.query('SELECT c.version,c.body::jsonb AS body FROM croupier_game.shared_table_configs c WHERE c.room_id=$1',[identity.roomId])).rows;
+  const head=(await client.query('SELECT version FROM croupier_game.shared_table_config_heads WHERE room_id=$1',[identity.roomId])).rows[0];
+  const absent={operators:operators.length,accounts:accounts.length+authCount,rooms:rooms.length+configs.length,packages:packs.length};
+  for(const account of accounts) {
+    need(account.email===`username:${account.username}`,'account_namespace_invalid');delete account.email;
+    account.createdAt=Date.parse(account.createdAt);account.balanceCents=Number(account.balanceCents);
+    account.openings=(await client.query(`SELECT id::text,type,(amount*100)::bigint AS "amountCents",currency,at,
+      source_key AS "sourceKey",source_fingerprint AS fingerprint FROM croupier_game.transactions WHERE player_id=$1 ORDER BY id`,[account.actorId])).rows
+      .map(row=>({...row,amountCents:Number(row.amountCents)}));
+  }
+  if(rooms.length) {
+    const pack=packs[0],config=configs[0]?.body,ownedRooms=pack&&checkPackageRooms({operatorId:pack.operator_id,lanes:pack.lanes,tables:pack.tables,rooms:pack.rooms});
+    need(operators.length===1&&operators[0].operator_id===identity.operatorId&&operators[0].status==='active'
+      && packs.length===1&&pack.operator_id===identity.operatorId&&Number(pack.package_revision)===1
+      && ownedRooms?.length===1&&ownedRooms[0].id===identity.roomId&&ownedRooms[0].state==='live'
+      && roomGame(ownedRooms[0])==='blackjack'
+      && ownedRooms[0].presentationLaneId===plan.sourceLaneId
+      && configs.length===1&&head?.version===configs[0].version&&pack.bindingVersion===head.version
+      && config?.configVersion===head.version&&config.operatorId===identity.operatorId&&config.roomId===identity.roomId
+      && config.packageRevision===1&&config.presentationLaneId===plan.sourceLaneId
+      && config.language===plan.gameConfig.language&&config.limitPreset===plan.gameConfig.limitPreset,'fixture_readback_invalid');
+  }
+  return {at:now(),database:plan.database,absent,sourceReady,
+    unchangedHash:hash([project,administration,currentPackages.filter(row=>row.operator_id!==identity.operatorId)]),
+    room:rooms[0],roomCount:rooms.length,packageRevision:packs.length===1?Number(packs[0].package_revision):null,
+    configVersion:head?.version,accounts};
 }
 
 export async function createF11LivePorts({run=false,plan,credentials,outputDirectory,provenanceFile,progress=()=>{},fetchImpl=fetch}={}) {
@@ -129,40 +189,7 @@ export async function createF11LivePorts({run=false,plan,credentials,outputDirec
       firstDeploy??=found.deployId;return found;
     },
     async inspect(_plan,identity) {
-      return readTransaction(async client=>{
-        const scope=[plan.environment,plan.workspaceId];
-        const docs=(await client.query('SELECT kind,value FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=ANY($3::text[])',[...scope,['project','administration']])).rows;
-        const project=docs.find(row=>row.kind==='project')?.value,administration=docs.find(row=>row.kind==='administration')?.value;
-        need(project&&administration,'source_required');
-        const source=project.lanes?.find(row=>row.id===plan.sourceLaneId),dealer=source?.layers?.dealer?.default;
-        const laneId=`room-lane-${hash([plan.sourceLaneId,dealer]).slice(0,24)}`;
-        const lane=administration.gameLanes?.find(row=>row.id===laneId);
-        const sourceReady=typeof dealer==='string'&&lane?.schemaVersion===1&&lane.renderer==='portrait-video'
-          && lane.dealer===dealer&&lane.mediaCollection===`${dealer}-presentation`;
-        const operators=(await client.query('SELECT operator_id,status FROM croupier_studio.operators WHERE environment_id=$1 AND workspace_id=$2 AND (operator_id=$3 OR slug=$3)',[...scope,identity.operatorId])).rows;
-        const packs=(await client.query('SELECT package_revision,tables::jsonb AS tables FROM croupier_studio.operator_packages WHERE environment_id=$1 AND workspace_id=$2 AND (operator_id=$3 OR tables::jsonb ? $4)',[...scope,identity.operatorId,identity.roomId])).rows;
-        const accounts=(await client.query(`SELECT p.id AS "actorId",p.name AS username,p.created_at AS "createdAt",p.status,
-          (p.balance*100)::bigint AS "balanceCents",a.email FROM croupier_game.players p LEFT JOIN croupier_game.player_accounts a ON a.player_id=p.id
-          WHERE p.name=ANY($1::text[]) OR a.email=ANY($2::text[])`,[identity.usernames,identity.usernames.map(name=>`username:${name}`)])).rows;
-        const authCount=Number((await client.query('SELECT count(*) FROM croupier_auth.users WHERE username=ANY($1::text[])',[identity.usernames])).rows[0].count);
-        const configs=(await client.query('SELECT c.version,c.body::jsonb AS body FROM croupier_game.shared_table_configs c WHERE c.room_id=$1',[identity.roomId])).rows;
-        const head=(await client.query('SELECT version FROM croupier_game.shared_table_config_heads WHERE room_id=$1',[identity.roomId])).rows[0];
-        const rooms=(administration.rooms??[]).filter(row=>row.id===identity.roomId||row.operatorId===identity.operatorId);
-        const rest={...administration,rooms:(administration.rooms??[]).filter(row=>!rooms.includes(row))};
-        const absent={operators:operators.length,accounts:accounts.length+authCount,rooms:rooms.length+configs.length,packages:packs.length};
-        for(const account of accounts) {
-          need(account.email===`username:${account.username}`,'account_namespace_invalid');delete account.email;
-          account.createdAt=Date.parse(account.createdAt);account.balanceCents=Number(account.balanceCents);
-          account.openings=(await client.query(`SELECT id::text,type,(amount*100)::bigint AS "amountCents",currency,at,
-            source_key AS "sourceKey",source_fingerprint AS fingerprint FROM croupier_game.transactions WHERE player_id=$1 ORDER BY id`,[account.actorId])).rows
-            .map(row=>({...row,amountCents:Number(row.amountCents)}));
-        }
-        if(rooms.length)need(operators.length===1&&operators[0].operator_id===identity.operatorId&&operators[0].status==='active'
-          && packs.length===1&&packs[0].tables.length===1&&packs[0].tables[0]===identity.roomId
-          && configs.length===1&&head?.version===configs[0].version&&configs[0].body.operatorId===identity.operatorId,'fixture_readback_invalid');
-        return {at:Date.now(),database:plan.database,absent,sourceReady,unchangedHash:hash([project,rest]),room:rooms[0],roomCount:rooms.length,
-          packageRevision:packs.length===1?Number(packs[0].package_revision):null,configVersion:head?.version,accounts};
-      });
+      return readTransaction(client=>readF11Fixture(client,plan,identity));
     },
     async adminLogin() {
       const res=await request('admin','POST','/studio/api/auth/login',{user:credentials.admin.user,pass:credentials.admin.pass,returnTo:'/admin'});
