@@ -172,7 +172,7 @@ test('generated workspace chunks allow encoded bracket folders without widening 
   for (const surface of ['partner']) {
     const path = `/studio/_next/static/chunks/app/${surface}/%5B%5B...path%5D%5D/page-99ec07720d222a1e.js`;
     assert.deepEqual(platformRoute(new URL(path + '?dpl=fixture', config.publicOrigin), config),
-      {kind:'lab', destination:config.labUiOrigin + path + '?dpl=fixture'});
+      {kind:'studio', destination:config.labUiOrigin + path + '?dpl=fixture'});
     assert.equal(backendPlatformPath(path), false);
   }
   for (const path of [
@@ -195,7 +195,7 @@ test('unknown document paths cannot create customer or API aliases', () => {
   }
   assert.equal(platformRoute(new URL('/partner/demo-north/%74eam', native.publicOrigin), native).kind, 'reject');
   for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/admin']) {
-    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'lab', path);
+    assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'studio', path);
   }
 });
 
@@ -374,7 +374,7 @@ test('lobby operator survives into the engine proxy, also on a partner launch; o
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
   const native = platformConfiguration({...env,});
   for (const path of ['/studio/api/project','/studio/api/social','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
-    assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab',path);
+    assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'studio',path);
   }
   assert.equal(platformRoute(new URL('/studio/api/social/profile',native.publicOrigin),native).kind,'backend');
   for (const path of ['/api/studio-game/command','/api/table','/api/presentation/config']) assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'backend',path);
@@ -412,7 +412,7 @@ test('platform routes preserve exact backend boundaries, public origin and query
     assert.equal(platformRoute(new URL(path + '?requestId=a%20b', config.publicOrigin), config).kind, 'backend');
   }
   // Native Admin is fixed: Studio's own media API stays in Studio.
-  assert.equal(platformRoute(new URL('/studio/api/videos/id?requestId=a%20b', config.publicOrigin), config).kind, 'lab');
+  assert.equal(platformRoute(new URL('/studio/api/videos/id?requestId=a%20b', config.publicOrigin), config).kind, 'studio');
   // The retired Admin-to-player handoff and BO config have no backend ingress.
   for (const path of ['/api/bo/config', `/api/bo/game-login?state=${'a'.repeat(64)}`, `/api/bo/lab-login?state=${'a'.repeat(64)}`]) {
     assert.equal(backendPlatformPath(new URL(path, config.publicOrigin).pathname), false, path);
@@ -425,7 +425,7 @@ test('platform routes preserve exact backend boundaries, public origin and query
     assert.equal(platformRoute(new URL(PLATFORM_SOCKET_ENDPOINTS[path], config.publicOrigin), config).kind, 'reject');
   }
   for (const path of ['/api/auth/lab/check', '/api/auth/access', '/__vercel/lab/session', '/api/internal', '/studio/api/unknown', '/studio/api/original-media', '/studio/api/original-media/player', '/api/bo/login', '/api/bo/users', '/api/bo/users/role', '/api/bo/%75sers', '/studio/api/../project', '//api/bo/users']) assert.equal(backendPlatformPath(path), false, path);
-  assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'lab');
+  assert.equal(platformRoute(new URL('/studio/activity', config.publicOrigin), config).kind, 'studio');
   // A bare start is a lobby entry (canonical game entry is fixed); a room start is the frontend route.
   assert.equal(platformRoute(new URL('/game', config.publicOrigin), config).kind, 'redirect');
   assert.equal(platformRoute(new URL('/game?operator=sg-test&table=room-1', config.publicOrigin), config).kind, 'frontend');
@@ -596,7 +596,7 @@ test('actual /play/{game} route handlers are permanent redirects to /game and th
   assert.equal((await readdir(new URL('../lib/', import.meta.url))).some(name => name.startsWith('game-url')), false, 'no Render game URL default remains');
 });
 
-test('actual Next middleware disables rewrite caching for backend and authenticated Lab without leaking ingress to the UI zone', async () => {
+test('actual Next middleware disables rewrite caching for backend and authenticated Studio without leaking ingress to the UI zone', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
   const {NextRequest} = require('next/server');
@@ -607,11 +607,11 @@ test('actual Next middleware disables rewrite caching for backend and authentica
   Object.assign(process.env, env);
   try {
     for (const path of ['/api/table', '/studio/api/project', '/studio/activity', '/api/presentation/select']) {
-      const lab = path.startsWith('/studio/');
+      const studio = path.startsWith('/studio/');
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path));
       assert.equal(response.headers.get('x-vercel-enable-rewrite-caching'), '0', path);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store', path);
-      if (lab) {
+      if (studio) {
         assert.ok(response.headers.get('x-middleware-rewrite').startsWith(config.labUiOrigin + '/'));
         assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), null);
       } else assert.equal(response.headers.get('x-middleware-request-x-croupier-vercel-secret'), config.secret);

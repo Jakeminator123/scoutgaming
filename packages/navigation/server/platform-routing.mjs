@@ -104,7 +104,7 @@ export function platformRoute(url, config, request) {
   // Next encodes the literal catch-all folder in the remaining Partner chunk.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.
   if (/^\/studio\/_next\/static\/chunks\/app\/partner\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {
-    return { kind: 'lab', destination: `${config.labUiOrigin}${url.pathname}${url.search}` };
+    return { kind: 'studio', destination: `${config.labUiOrigin}${url.pathname}${url.search}` };
   }
   const path = canonicalPlatformPath(url.pathname);
   if (!path) return { kind: 'reject' };
@@ -114,7 +114,7 @@ export function platformRoute(url, config, request) {
   if (legacyAuth) {
     if (request && (!['GET','HEAD'].includes(request.method) || request.body || request.headers.has('next-action'))) return {kind:'reject'};
     const mounted = path.startsWith('/studio/') ? path : '/studio'+path;
-    return {kind:'lab',destination:config.labUiOrigin+mounted+url.search};
+    return {kind:'studio',destination:config.labUiOrigin+mounted+url.search};
   }
   if (retiredDocument) return {kind:'reject'};
   if(config.unifiedUi && ['/administration','/administration/'].includes(path) && (!request || ['GET','HEAD'].includes(request.method) && !request.body && !request.headers.has('next-action'))){
@@ -167,17 +167,17 @@ export function platformRoute(url, config, request) {
     return {kind:'redirect',destination:`${config.publicOrigin}${workspace.canonicalPath}${url.search}`};
   }
   if (path === '/admin' || path.startsWith('/admin/') || path === '/lobby' || path.startsWith('/lobby/')) {
-    return { kind: 'lab', destination: `${config.labUiOrigin}/studio${path}${url.search}` };
+    return { kind: 'studio', destination: `${config.labUiOrigin}/studio${path}${url.search}` };
   }
   if (workspace && (path === '/partner' || path.startsWith('/partner/'))) {
-    return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
+    return { kind: 'studio', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
     || /^\/studio\/api\/(?:videos|dealers|layer-assets|replies)(?:\/|$)/.test(path))) {
-    return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
+    return { kind: 'studio', destination: `${config.labUiOrigin}${path}${url.search}` };
   }
   if (backendPlatformPath(path)) return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };
-  if (path === '/studio' || path.startsWith('/studio/')) return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
+  if (path === '/studio' || path.startsWith('/studio/')) return { kind: 'studio', destination: `${config.labUiOrigin}${path}${url.search}` };
   return { kind: 'frontend' };
 }
 

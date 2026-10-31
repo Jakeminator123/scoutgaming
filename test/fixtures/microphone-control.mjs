@@ -16,7 +16,8 @@ class Element {
     this.tag = tag; this.children = []; this.hidden = false; this.textContent = '';
     this.attributes = {}; this.listeners = new Map(); this.style = {};
   }
-  append(...nodes) { this.children.push(...nodes); }
+  append(...nodes) { for (const node of nodes) node.parent = this; this.children.push(...nodes); }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter(node => node !== this); }
   setAttribute(name, value) { this.attributes[name] = value; }
   addEventListener(name, listener) { this.listeners.set(name, listener); }
   pause() {}
@@ -32,8 +33,10 @@ export function microphoneControl({ identity, fetchImpl, send, presentationConte
   const previous = Object.fromEntries(['document', 'window'].map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   const listeners = new Map();
   globalThis.document = { hidden: false, createElement: tag => new Element(tag),
-    addEventListener: (name, listener) => listeners.set(name, listener) };
-  globalThis.window = { addEventListener: (name, listener) => listeners.set(name, listener) };
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: (name, listener) => { if (listeners.get(name) === listener) listeners.delete(name); } };
+  globalThis.window = { addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: (name, listener) => { if (listeners.get(name) === listener) listeners.delete(name); } };
   const root = new Element('div'), tracks = [], recorders = [], sent = [];
   let playback = false;
   const control = createAstridCameraControl({ container: root, identity, dealerName: 'Dragan', wakeNames: ['Dragan'],
@@ -59,11 +62,12 @@ export function microphoneControl({ identity, fetchImpl, send, presentationConte
   });
   const find = text => nodes(root).find(node => node.textContent === text);
   const click = node => { assert.ok(node, 'expected microphone control'); node.onclick({ preventDefault() {} }); };
-  const record = nodes(root).find(node => node.tag === 'button' && node.attributes['aria-label'] === 'Mikrofon');
   const status = () => nodes(root).find(node => node.attributes.role === 'status').textContent;
   return {
     control, tracks, sent,
     async recordTurn() {
+      assert.equal(await control.ready, true, 'server enables microphone controls');
+      const record = nodes(root).find(node => node.tag === 'button' && node.attributes['aria-label'] === 'Mikrofon');
       await until(() => status().startsWith('Voice off.'));
       click(record); click(find('Record one message'));
       await until(() => recorders.at(-1)?.active && status().startsWith('Recording audio.'));
@@ -72,7 +76,7 @@ export function microphoneControl({ identity, fetchImpl, send, presentationConte
       }
     },
     restore() {
-      control.stop();
+      control.destroy();
       for (const [name, descriptor] of Object.entries(previous)) {
         if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete globalThis[name];
       }

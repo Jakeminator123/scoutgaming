@@ -39,14 +39,16 @@ test('Studio preview cannot expose chat through ordinary open or close controls'
   assert.equal(h.layouts,0);
 });
 
-test('every public dealer presentation mounts its own voice control; Studio stays isolated',()=>{
+test('public dealer presentations prepare voice controls and wait for server readiness before changing the shell',()=>{
   const start=app.indexOf('const astridCamera ='),end=app.indexOf(' : null;',start)+8;
   const setup=app.slice(start,end);
   for(const dealer of ['astrid','vera','amira','mei','paow','dragge'])for(const local of [false,true])for(const preview of [null,{sessionId:'preview'}]){
-    let mounted;
-    const context=vm.createContext({studioPreview:preview,localPresentationEnabled:local,DEALER:{key:dealer,name:dealer.toUpperCase()},$:(selector)=>({selector}),createAstridCameraControl:options=>{mounted=options;return {};}});
+    let mounted; const classes=[],styles=[],chatStates=[];
+    const context=vm.createContext({document:{body:{classList:{add:name=>classes.push(name)}},createElement:()=>({}),head:{append:node=>styles.push(node)}},setChatOpen:value=>chatStates.push(value),studioPreview:preview,localPresentationEnabled:local,DEALER:{key:dealer,name:dealer.toUpperCase()},$:(selector)=>({selector}),createAstridCameraControl:options=>{mounted=options;return {};}});
     vm.runInContext(setup,context);
     if(preview){assert.equal(mounted,undefined);continue;}
+    assert.deepEqual(classes,[]);assert.deepEqual(styles,[]);assert.deepEqual(chatStates,[]);
+    mounted.onReady();assert.deepEqual(classes,['astrid-voice-ui']);assert.equal(styles[0].href,'/astrid-voice-shell.css');assert.deepEqual(chatStates,[false]);
     assert.equal(mounted.dealerName,dealer.toUpperCase());assert.ok(mounted.wakeNames.includes(dealer));
     context.chatBusy=false;context.speaking=false;context.busy=true;assert.equal(mounted.canStart(),true);
     context.speaking=true;assert.equal(mounted.canStart(),false);

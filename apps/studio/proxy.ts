@@ -38,8 +38,8 @@ export function proxy(request: NextRequest) {
   if (legacyRedirect) return legacyRedirect;
 
   const headers = route.kind === 'backend' ? platformBackendHeaders(request.headers, config)
-    : route.kind === 'lab' ? studioDocumentNavigationHeaders(request) : new Headers(request.headers);
-  if (route.kind === 'lab') {
+    : route.kind === 'studio' ? studioDocumentNavigationHeaders(request) : new Headers(request.headers);
+  if (route.kind === 'studio') {
     for (const name of [...headers.keys()]) if (name.startsWith('x-croupier-') || name === 'forwarded') headers.delete(name);
     headers.set('x-forwarded-host', new URL(config.publicOrigin).host);
     headers.set('x-forwarded-proto', 'https');
