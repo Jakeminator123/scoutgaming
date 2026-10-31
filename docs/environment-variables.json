@@ -50,7 +50,8 @@
         "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER",
         "CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD"
       ],
-      "stillSpeechProviderNote": "CARTESIA_API_KEY, RUNPOD_API_KEY, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: villkorlig, alla tre eller ingen. Med strömmat tal och ingen av dem är stillbildsvägen (astrid-gpu-worker) av; rörligt tal går ändå och dealers med stillbildsprofil svarar med text (generated_speech_still_not_configured). Rörligt tal utan trion fungerar bara med ElevenLabs-röst; en Cartesia-röst kräver trion (annars generated_speech_voice_not_configured). Delvis satt stoppar starten. Helfilstal utan streaming kräver alla tre (ops/cloud/config.mjs).",
+      "speechStartupNote": "CROUPIER_SPEECH_STARTUP_DISABLED är intern status från supervisor till spelbarn (0/1), aldrig en panelinställning. Fel i valfritt tal nekar allt genererat tal; status visas i /__cloud/shared-room-health utan providerdata. Databas, schema och allmän spelkonfiguration fortsätter vara obligatoriska.",
+      "stillSpeechProviderNote": "CARTESIA_API_KEY, RUNPOD_API_KEY, CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: villkorlig, alla tre eller ingen. Med strömmat tal och ingen av dem är stillbildsvägen (astrid-gpu-worker) av; rörligt tal går ändå och dealers med stillbildsprofil svarar med text (generated_speech_still_not_configured). Rörligt tal utan trion fungerar bara med ElevenLabs-röst; en Cartesia-röst kräver trion (annars generated_speech_voice_not_configured). Delvis satt nekar allt genererat tal men tillåter spelstart efter separat spelvalidering. Helfilstal utan streaming kräver alla tre (ops/cloud/config.mjs).",
       "conditional": [
         "OPENCLAW_PRODUCT_SPEECH_URL",
         "OPENCLAW_PRODUCT_SPEECH_TOKEN",
@@ -106,6 +107,7 @@
         "GENERATIONS_READ_TOKENS"
       ],
       "managed": [
+        "CROUPIER_SPEECH_STARTUP_DISABLED",
         "HOST",
         "CROUPIER_CLOUD_RUNTIME",
         "PORT",

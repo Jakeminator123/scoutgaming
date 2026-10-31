@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { validateCloudConfig, childSpecifications } from '../ops/cloud/config.mjs';
+import { validateCloudConfig, resolveCloudConfig, inspectCloudBootstrap, childSpecifications } from '../ops/cloud/config.mjs';
 import { movingDriftConfiguration } from '../packages/presentation/contracts/moving-drift.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -183,15 +183,15 @@ test('bank and profile refusals name the dealer: wrong dealer, profile without a
   refuse({[profiles]:JSON.stringify([driftProfile,{...paowProfile,releaseDigest:hash('other release')}])},/CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
 });
 
-test('start.mjs --check accepts Dragan alone and Dragan with a second dealer, and refuses a profile without a bank',async t=>{
+test('start.mjs --check accepts Dragan alone and Dragan with a second dealer, and disables speech for a profile without a bank',async t=>{
   const {main}=await import('../ops/cloud/start.mjs');
   // Bootstrap credentials make the read-only preflight skip its database read; nothing starts.
   const bootstrap={CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixture-admin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:'fixture-password-'.repeat(2)};
   const logs=[];t.mock.method(console,'log',line=>logs.push(line));
   for(const env of [{...base(),...moving(),...bootstrap},{...base(),...twoDealers(),...bootstrap}])assert.equal(await main(['--check'],env),0);
   assert.equal(logs.length,2);assert.match(logs[0],/^Cloud configuration valid\./);
-  await assert.rejects(main(['--check'],{...base(),...twoDealers(),...bootstrap,CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
-    /profile without a bank for paow/);
+  assert.equal(await main(['--check'],{...base(),...twoDealers(),...bootstrap,CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),0);
+  assert.match(logs.at(-1),/^Game configuration valid; optional speech unavailable\./);
 });
 
 test('moving provider identity is immutable and ticket secrets cannot reuse Astrid or provider credentials',()=>{
@@ -253,10 +253,12 @@ test('today\'s production shape still starts: moving off, retired single-bank na
     assert.deepEqual(Object.keys(child).filter(name=>/MOVING/.test(name)),[],'the game child receives no moving keys');
   }
   assert.equal(logs.length,4);
-  // Turning moving speech on with that shape is refused until the map and dealerId are set.
-  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1'}),/Invalid or missing CROUPIER_MOVING_SPEECH_BANK_RECORDS\./);
-  await assert.rejects(main(['--check'],{...today,CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}),
-    /CROUPIER_STUDIO_MOVING_DRIFT_API\/PROFILES/);
+  // Turning moving speech on with that shape denies speech, without stopping the game.
+  for (const change of [{CROUPIER_MOVING_SPEECH_ENABLED:'1'},
+    {CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({dragan:privateManifest})}]) {
+    assert.equal(await main(['--check'],{...today,...change}),0);
+    assert.match(logs.at(-1),/^Game configuration valid; optional speech unavailable\./);
+  }
 });
 
 test('streamed still-image speech is optional as a group: none means off, one of three still fails',()=>{
@@ -274,4 +276,61 @@ test('streamed still-image speech is optional as a group: none means off, one of
   // Non-streamed generated speech has no moving path and still needs the provider.
   const fullfile={...without,CROUPIER_GENERATED_SPEECH_STREAMING:'0',CROUPIER_DEALER_SPEECH_PROFILES:'0',CROUPIER_MOVING_SPEECH_ENABLED:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'1'};
   assert.throws(()=>validateCloudConfig(fullfile),/CARTESIA_API_KEY\/RUNPOD_API_KEY\/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID/);
+});
+
+
+test('optional speech rejection stays coherent across supervisor, ingress and child',()=>{
+  const env={...base(),...moving(),CROUPIER_CLOUD_LAYOUT:'single-origin',
+    BO_URL:'https://game.example.test',LAB_PUBLIC_URL:'https://game.example.test',
+    CROUPIER_PUBLIC_ORIGIN:'https://game.example.test',
+    CROUPIER_VERCEL_TRANSPORT_ORIGIN:'https://fixture-game.onrender.com',
+    CROUPIER_VERCEL_INGRESS_SECRET:'fixture-ingress-'.repeat(4)};
+  for (const invalid of [
+    {CROUPIER_MOVING_SPEECH_BANK_RECORDS:''},
+    {CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:'https://wrong.example.test'},
+    {CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:'not-an-origin'},
+    {CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:privateManifest})},
+    {CROUPIER_STUDIO_MOVING_DRIFT_PROFILES:'[]'},
+    {CROUPIER_SPEECH_STREAM_WORKER_SECRET:''},
+    {CARTESIA_API_KEY:''},
+    {OPENCLAW_PRODUCT_SPEECH_URL:''},
+    {OPENCLAW_SPEECH_TIMEOUT_MS:'oops'},
+  ]) {
+    const input={...env,...invalid},config=resolveCloudConfig(input),web=childSpecifications(config,input).web.env;
+    assert.equal(config.speechUnavailable,true);
+    assert.equal(config.vercelIngress.movingWorkerOrigin,undefined);
+    assert.equal(config.vercelIngress.transportOrigin,env.RENDER_EXTERNAL_URL);
+    assert.equal(config.vercelIngress.publicOrigin,env.PUBLIC_URL);
+    assert.equal(web.CROUPIER_SPEECH_STARTUP_DISABLED,'1');
+    assert.equal(web.CROUPIER_GENERATED_SPEECH,'');
+    assert.equal(web.CROUPIER_GENERATED_SPEECH_STREAMING,'');
+    assert.equal(web.CROUPIER_MOVING_SPEECH_ENABLED,undefined);
+    assert.equal(web.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,undefined);
+    assert.equal(web.RUNPOD_API_KEY,undefined);
+    assert.equal(web.CROUPIER_GAME_DATABASE_URL,env.CROUPIER_GAME_DATABASE_URL);
+    assert.deepEqual(input,{...env,...invalid},'input environment is not mutated');
+  }
+  const valid=resolveCloudConfig(env);
+  assert.equal(valid.speechUnavailable,undefined);
+  assert.equal(valid.vercelIngress.movingWorkerOrigin,env.RENDER_EXTERNAL_URL);
+  assert.equal(childSpecifications(valid,env).web.env.CROUPIER_MOVING_SPEECH_ENABLED,'1');
+});
+
+test('speech rejection never hides mandatory game, database or ingress configuration',()=>{
+  const env={...base(),...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:''};
+  for (const invalid of [{PUBLIC_URL:'invalid'},{CROUPIER_GAME_DATABASE_URL:'invalid'},
+    {PORT:'bad'},{BLOB_READ_WRITE_TOKEN:''},{RENDER_EXTERNAL_URL:'invalid'},
+    {OPENCLAW_TIMEOUT_MS:'bad'}, {CROUPIER_PRESENTATION_DIRECTOR_URL:'invalid'},
+    {CROUPIER_VERCEL_TRANSPORT_ORIGIN:'invalid'}]) {
+    assert.throws(()=>resolveCloudConfig({...env,...invalid}));
+  }
+});
+
+test('database/schema bootstrap remains fatal after optional speech rejection',async()=>{
+  const config=resolveCloudConfig({...base(),...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:''});
+  const failure=Object.assign(Error('synthetic schema failure'),{code:'42P01'});let closed=0;
+  await assert.rejects(inspectCloudBootstrap(config,{openStore:()=>({
+    db:{assertInstalled:async()=>{throw failure;}},close:async()=>{closed++;},
+  })}),error=>error===failure);
+  assert.equal(closed,1);
 });
