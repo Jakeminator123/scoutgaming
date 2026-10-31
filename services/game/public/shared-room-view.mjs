@@ -253,7 +253,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       // A narrow phone clamps the status line to two lines (styles.css); its full text stays in the title.
       $(document,'banner').title=$(document,'banner').textContent;
       const selected=bettingSeat(s,value.betSeat);
-      picker.replaceChildren(...['Välj ruta',...s.owners.map((owner,i)=>`Ruta ${i+1} · ${['main','pp','tp'].some(field=>s.bets[i][field]>0)?owner===s.me.id?'din':'upptagen':availableBettingSeat(s,i)?'ledig':'upptagen'}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&!availableBettingSeat(s,i-1);return option;}));
+      picker.replaceChildren(...['Välj ruta',...s.owners.map((owner,i)=>`Ruta ${i+1} · ${['main','pp','tp'].some(field=>s.bets[i][field]>0)?owner===s.me.id?'din':'upptagen':s.phase==='bets'?'ledig':'utan insats'}`)].map((text,i)=>{const option=document.createElement('option');option.textContent=text;option.value=i===0?'':String(i-1);option.disabled=i>0&&!availableBettingSeat(s,i-1);return option;}));
       picker.value=selected===null?'':String(selected);picker.disabled=s.me.active?s.phase!=='bets':!can.join;focus.value=String(seatWindow(s,value.focusSeat).start);
       const key=JSON.stringify([s.me.currency,s.settings.chips]);
       // K6: a viewer without a seat at a full table waits for one (shared-room-waiting.mjs renews the wait). The
@@ -270,14 +270,14 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
       // The chips and table buttons belong to the betting window, as on the native table (body.in-round).
       scene.dataset.sharedPhase=s.phase;
       for(const [i,slot] of slots.entries()){
-        const own=s.owners[i]===s.me.id,occupied=!availableBettingSeat(s,i),freeBet=claimsByBet(i);
+        const own=s.owners[i]===s.me.id,occupied=Boolean(s.owners[i])&&!availableBettingSeat(s,i),freeBet=claimsByBet(i);
         slot.root.classList.toggle('active',own);slot.root.classList.toggle('occupied',occupied);
         // The amount is the chip's main label; its small box number is not a player identity.
         slot.join.textContent='';
         const amount=document.createElement('span');amount.className='seat-shared-amount';amount.textContent=own||occupied?number(s.bets[i].main):'+';
         const box=document.createElement('span');box.className='seat-shared-number';box.textContent=`Ruta ${i+1}`;slot.join.append(amount,box);
-        const label=own?`Välj satsningsruta ${i+1}, din ruta`:occupied?`Satsningsruta ${i+1} upptagen`:`Välj satsningsruta ${i+1}`;
-        slot.join.setAttribute('aria-label',label);slot.join.title=own||occupied?`Ruta ${i+1} · ${own?'Din insats':'Annans insats'} ${money(s.bets[i].main,betCurrency)}`:'Välj ruta, lägg sedan insats i panelen';
+        const label=own?`Välj satsningsruta ${i+1}, din ruta`:occupied?`Satsningsruta ${i+1} upptagen`:betting?`Välj satsningsruta ${i+1}`:`Satsningsruta ${i+1}, ingen insats`;
+        slot.join.setAttribute('aria-label',label);slot.join.title=own||occupied?`Ruta ${i+1} · ${own?'Din insats':'Annans insats'} ${money(s.bets[i].main,betCurrency)}`:betting?'Välj ruta, lägg sedan insats i panelen':'Insatser är stängda för den här rundan.';
         // Local selection never writes ownership or money, even while a command is pending.
         slot.join.disabled=own?false:occupied||!(freeBet||can.join);slot.join.setAttribute('aria-disabled',String(i===chosen));
         slot.join.setAttribute('aria-pressed',String(i===chosen));
