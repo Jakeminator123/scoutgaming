@@ -15,7 +15,9 @@ import {roomLimitProfiles} from '../../../../lib/room-limit-profiles.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {RegisteredStudio} from './registered-studio';
-import {WorkspaceTool} from './workspace-tools';
+import {CompanyCreate} from '../../../../components/company-create';
+import {CompanyTeam} from '../../../../components/company-team';
+import type {CompanyIdentity} from '../../../../components/company-form';
 import {ScenePreview} from './scene-preview';
 import {RoomPicture} from './room-picture';
 import {RoomSettingsWarning,RoomStateChip} from './room-settings-warning';
@@ -47,12 +49,11 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
   const query=useSearchParams();
   const [catalog,setCatalog]=useState<Catalog|null>(null),[error,setError]=useState(''),[refresh,setRefresh]=useState(0);
   const [roomStatus,setRoomStatus]=useState<AppearanceRoomStatus|null>(null);
-  // Embedded tools with their own drafts (Team) stay mounted once visited while this page is shown.
-  const tabKey=page+':'+id+':'+(query.get('flik')??'');
-  const [visited,setVisited]=useState<string[]>([]);
-  useEffect(()=>{if(active)setVisited(current=>current.includes(tabKey)?current:[...current,tabKey]);},[active,tabKey]);
+  const [teamIdentity,setTeamIdentity]=useState<{requestedId:string;operator:CompanyIdentity}|null>(null),[createBusy,setCreateBusy]=useState(false);
+  const teamTab=page==='company'&&adminTabId('company',query.get('flik'))==='team';
+  const createCompany=page==='companies'&&adminTabId('companies',query.get('tab'))==='bolag'&&query.get('view')==='create';
   useEffect(()=>{
-    if(!active)return;
+    if(!active||teamTab||createCompany)return;
     const controller=new AbortController();setError('');
     void (async()=>{try{
       const response=await fetch('/admin/_data/catalog',{credentials:'same-origin',cache:'no-store',redirect:'error',headers:{accept:'application/json'},signal:controller.signal});
@@ -62,7 +63,7 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       if(!controller.signal.aborted){setCatalog(value);shareWorkspace({catalog:value});}
     }catch(cause){if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:'Katalogen kunde inte läsas.');}})();
     return()=>controller.abort();
-  },[active,refresh,page,id]);
+  },[active,refresh,page,id,teamTab,createCompany]);
   useEffect(()=>{setRoomStatus(null);},[page,id]);
   const changed=()=>{setRefresh(value=>value+1);onChanged();};
   const operators=catalog?.administration.operators??[],compositions=catalog?.administration.compositions??[];
@@ -102,11 +103,11 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
       actions={tab==='bolag'?<Link className={buttonVariants({variant:'primary'})} href="/admin/companies?tab=bolag&view=create"><Plus aria-hidden="true"/>Nytt bolag</Link>:tab==='spelbord'?<Link className={buttonVariants({variant:'primary'})} href={'/admin/companies?tab=spelbord&view=create'+(filter?'&operator='+encodeURIComponent(filter):'')}><Plus aria-hidden="true"/>Nytt spelbord</Link>:undefined}
       tabs={<Tabs items={adminCompanyListTabs} active={tab} param="tab" counts={catalog?groups.counts:{}}/>}
       note={tab==='papperskorg'?'Arkiverat ligger kvar tills det återställs. Ett bolag återställs under bolagets Inställningar; ett spelbord kommer tillbaka pausat och öppnas under Tillgänglighet.':undefined}>
-      {status}
+      {!createCompany&&status}
       {tab==='bolag'&&<>
-        <Dialog open={create} size="lg" title="Nytt bolag" description="Skapa bolaget och bjud in dess första administratör. Sedan väljer du vad bolaget får använda under Tilldelning." onClose={()=>navigate('/admin/companies?tab=bolag')}
-          footer={<><Button onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>{operators[0]&&<Link className={buttonVariants({variant:'primary'})} href={companyHref(operators[operators.length-1],'tilldelning')}>Till bolagets tilldelning<ArrowRight aria-hidden="true"/></Link>}</>}>
-          <DialogSteps steps={['Namn och administratör','Tilldelning']} current={0}/>{create&&<WorkspaceTool section="companies"/>}
+        <Dialog open={create} busy={createBusy} title="Nytt bolag" description="Skapa bolaget och bjud sedan in dess första administratör." onClose={()=>navigate('/admin/companies?tab=bolag')}
+          footer={<Button disabled={createBusy} onClick={()=>navigate('/admin/companies?tab=bolag')}>Stäng</Button>}>
+          {create&&<CompanyCreate disabled={disabled} onBusyChange={setCreateBusy} onCreated={created=>{changed();navigate(companyHref(created,'team'));}}/>}
         </Dialog>
         {catalog&&<Card><DataTable label="Bolag" rows={liveOperators} rowKey={row=>row.id} filter={{placeholder:'Sök bolag',text:row=>row.name}} initialSort={{id:'name',dir:'asc'}} empty={archivedOperators.length?'Inga aktiva bolag. Arkiverade bolag finns under Papperskorg.':'Inga bolag i registret.'} columns={[
           {id:'name',header:'Bolag',sort:row=>row.name,cell:operator=><Link className={linkClass} href={companyHref(operator)}>{operator.name}</Link>},
@@ -148,11 +149,16 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
     const operator=operators.find(row=>row.id===id||row.slug===id);
     const tab=adminTabId('company',query.get('flik')),create=query.get('view')==='create';
     const own=operator?rooms.filter(room=>room.operatorId===operator.id):[];
-    return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies'},{label:operator?.name??'Bolag'}]}/>} title={operator?.name??'Bolag'} chip={operator?operatorChip(operator):undefined}
-      intro={operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?<span data-not-found="company">{`Bolaget ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
-      actions={operator&&<><Link className={buttonVariants()} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link><a className={buttonVariants()} href={'/partner/'+encodeURIComponent(operator.slug)}>Öppna Partnerportalen<ExternalLink aria-hidden="true"/></a></>}>
+    const company=teamTab?(teamIdentity?.requestedId===id?teamIdentity.operator:undefined):operator;
+    return <HubPage eyebrow={<Crumbs items={[{label:'Bolag och spelbord',href:'/admin/companies'},{label:company?.name??'Bolag'}]}/>} title={company?.name??'Bolag'} chip={!teamTab&&operator?operatorChip(operator):undefined}
+      intro={teamTab?'Team, roller och inbjudningar.':operator?`${operator.packageRevision===null?'Ingen publicerad tilldelning':`Tilldelning version ${operator.packageRevision}`} · ${plural(own.length,'spelbord','spelbord')}`:catalog?<span data-not-found="company">{`Bolaget ${id} finns inte i registret.`}</span>:'Läser katalogen…'}
+      actions={company&&<><Link className={buttonVariants()} href="/admin/demo"><Presentation aria-hidden="true"/>Skapa demo</Link><a className={buttonVariants()} href={'/partner/'+encodeURIComponent(company.slug)}>Öppna Partnerportalen<ExternalLink aria-hidden="true"/></a></>}>
       <Tabs items={adminCompanyTabs} active={tab} counts={operator?{spelbord:own.length}:{}}/>
-      {status}
+      {!teamTab&&status}
+      <div hidden={!teamTab}>
+        <Footnote className="mb-3 mt-0">Administratören utses bara av Admin; den sista administratören kan inte stängas av.</Footnote>
+        <CompanyTeam operatorId={id} active={active&&teamTab} disabled={disabled} onIdentity={(requestedId,value)=>setTeamIdentity({requestedId,operator:value})}/>
+      </div>
       {operator&&<>
         {tab==='tilldelning'&&<><Note tone="accent" className="mb-4">Bolaget får en uppsättning miljöer att välja bland. Dealers, bakgrunder och bordsgrafik följer med via miljöerna. Vad bolaget får ändra själv väljer du under Tilldelat bolaget.</Note><RegisteredStudio mode="package" operatorId={operator.id} assignment={operator.assignment} assignmentRevision={operator.packageRevision} disabled={disabled} onChanged={changed}/></>}
         {tab==='spelbord'&&<Card title="Bolagets spelbord" aside={<Link className={buttonVariants({variant:'primary',size:'sm'})} href={companyHref(operator,'spelbord')+'&view=create'}><Plus aria-hidden="true"/>Nytt spelbord</Link>}>
@@ -161,7 +167,6 @@ export function CompaniesPage({page,id,active,disabled,onChanged}:Props) {
         </Card>}
         {tab==='spelbord'&&<Card title="Startadresser" aside="Per spelbord" className="mt-4">{own.filter(room=>room.playUrl).length?<KV items={own.filter(room=>room.playUrl).map(room=>[room.name,<code key={room.id} className="break-all rounded bg-sg-surface-2 px-1.5 py-0.5 font-mono text-xs">{room.playUrl}</code>] as [string,ReactNode])}/>:<p className="m-0 text-[12.5px] text-sg-muted">Inget spelbart spelbord ännu.</p>}</Card>}
         {tab==='spelbord'&&<Card title="Papperskorg" aside={`${plural(archived.filter(room=>room.operatorId===operator.id).length,'arkiverat spelbord','arkiverade spelbord')} · återställs pausade`} className="mt-4"><RoomTrash operatorId={operator.id} disabled={disabled} onChanged={changed}/></Card>}
-        <div hidden={tab!=='team'}>{visited.includes('company:'+id+':team')&&<><Footnote className="mb-3 mt-0">Team, roller och inbjudningar. Administratören utses bara av Admin; den sista administratören kan inte stängas av.</Footnote><WorkspaceTool section="companies" overrides={{operator:operator.id}}/></>}</div>
         {tab==='installningar'&&<div className="grid gap-4 md:grid-cols-2">
           <Card title="Bolag"><KV items={[['Namn',operator.name],['Status',operatorChip(operator)],['Tilldelning',version(operator)]]}/><Footnote>Namnet ändras inte från Admin i dag.</Footnote></Card>
           <Card title="Livscykel" aside="Stäng av, papperskorg, återställ"><ControlResourceLifecycle operatorId={operator.id} kind="operator" available disabled={disabled} onChanged={changed}/></Card>

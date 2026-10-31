@@ -188,7 +188,8 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const media = createStudioMediaRuntime({ repository, scope: config.scope, env, repositoryRoot });
     const dealerIdle = createRegisteredDealerIdle({registryLoader:media.videoRegistry});
     const gamePolicy = policyFactory({ repository, scope: config.scope, dealerIdle });
-    await gamePolicy.readSaved();
+    // Project consumers validate/read the saved project when they use it. Team,
+    // company creation and authentication need the installed schema, not media.
     const mediaDeletion=createStudioMediaDeletion({repository,mutationTransaction,env,options:{repositoryRoot}});
     const signer = await store.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
     if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) unavailable();

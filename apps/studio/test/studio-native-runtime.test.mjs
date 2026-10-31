@@ -10,6 +10,9 @@ import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudio
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
 import {layerBlobFixture,layerVideo} from '../../../test/fixtures/layer-media.mjs';
+import {operatorMemoryPool} from './fixtures/operator-memory-pool.mjs';
+import {serveAdminWorkspaceData} from '../lib/admin-workspace-data.mjs';
+import {createStudioDocumentApi} from '../lib/studio-document-api.mjs';
 
 test('repository and app cwd reach real traced build roots and installed product SQL', () => {
   const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -105,6 +108,45 @@ test('request handler logs the failing method, pathname and redacted cause',asyn
 const env = { CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') };
+
+test('cold runtime serves a scoped team without reading a broken project or media; project consumers still fail',async()=>{
+  const config=nativeStudioAdminConfiguration(env),pool={...operatorMemoryPool(),end:async()=>{}},checks=[];
+  const runtimeEnv={...env,CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'fixture-ingress-'.repeat(4)};
+  pool.tables.operators.push({environment_id:config.scope.environment,workspace_id:config.scope.workspaceId,operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1});
+  let projectReads=0;
+  const readSaved=async()=>{projectReads++;throw new StudioStorageError('studio_corrupt_document',503);};
+  const empty=()=>({handlers:new Map(),gates:new Map()});
+  const native=await createStudioNativeRuntime(config,{
+    env:runtimeEnv,poolFactory:async()=>pool,storeFactory:()=>({db:{assertInstalled:async()=>{checks.push('db');}},boDb:{prepare:()=>({get:async()=>({v:'ab'.repeat(32)})}),transaction:work=>work()}}),
+    schemaCheck:async()=>{checks.push('schema');},authFactory:()=>async()=>({user:'fixture-admin',role:'admin',scope:config.scope}),
+    dataFactory:empty,accountsFactory:empty,authActionsFactory:()=>({handle:async()=>new Response(null),availableActions:[]}),
+    policyFactory:()=>({readSaved,projectStore:()=>({load:readSaved}),canAssignDealer:async()=>true}),
+    fetchImpl:()=>assert.fail('No media network request'),
+  });
+  assert.deepEqual(checks,['db','schema']);assert.equal(projectReads,0);
+  const response=await serveAdminWorkspaceData(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/studio/api/admin/workspace/company-team?operator=north'),{
+    authorize:native.authorize,runtime:async()=>({...native,videoRegistry:()=>assert.fail('No video read')}),
+  });
+  assert.equal(response.status,200);assert.equal((await response.json()).operator.id,'north');assert.equal(projectReads,0);
+  const documents=createStudioDocumentApi(native);
+  const project=await documents.handle(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/studio/api/project',{headers:{origin:env.CROUPIER_PUBLIC_ORIGIN,'sec-fetch-site':'same-origin'}}));
+  assert.equal(project.status,503);assert.equal((await project.json()).code,'studio_corrupt_document');assert.equal(projectReads,1);
+});
+
+test('cold team runtime keeps DB, Studio schema and signing identity failures fatal and closes the pool',async()=>{
+  for(const phase of ['db','schema','signer']){
+    let closed=0,authBuilt=0;
+    const pool={...operatorMemoryPool(),end:async()=>{closed++;}};
+    await assert.rejects(createStudioNativeRuntime(nativeStudioAdminConfiguration(env),{
+      env,poolFactory:async()=>pool,
+      storeFactory:()=>({db:{assertInstalled:async()=>{if(phase==='db')throw Error('fixture DB failure');}},boDb:{prepare:()=>({get:async()=>({v:'invalid signer'})})}}),
+      schemaCheck:async()=>{if(phase==='schema')throw Error('fixture schema failure');},
+      policyFactory:()=>({readSaved:()=>assert.fail('No project preflight')}),
+      authFactory:()=>{authBuilt++;assert.fail('No auth on failed readiness');},
+    }),error=>error.statusCode===503);
+    assert.equal(closed,1,phase);assert.equal(authBuilt,0,phase);
+  }
+});
 
 test('native runtime binds byte inspection to its own environment and preserves caller cancellation',async t=>{
   const blob=await layerBlobFixture(cleanup=>t.after(cleanup),layerVideo(),'video/mp4');

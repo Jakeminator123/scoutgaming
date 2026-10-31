@@ -143,12 +143,12 @@ function renderToStaticMarkupOf(h){const {renderToStaticMarkup}=reactDomServer;r
 
 // Bolag och spelbord (companies-page.tsx) resolves the company and the room's registered owner from the path and
 // mounts RegisteredStudio per tab. Its children with their own reads are stubbed with their props.
-async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=null,dialog=null,...overrides}){
+async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=null,dialog=null,capture={},...overrides}){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const componentRequire=createRequire(new URL('../components/studio/companies-page.tsx',import.meta.url));
   const path=page==='companies'?'/admin/companies':page==='company'?'/admin/companies/'+id:'/admin/rooms/'+id;
-  const navigation={__esModule:true,default:props=>React.createElement('a',props),usePathname:()=>path,useSearchParams:()=>new URLSearchParams(search)};
+  const navigation={__esModule:true,default:props=>React.createElement('a',props),usePathname:()=>path,useSearchParams:()=>new URLSearchParams(search),navigate:href=>{capture.href=href;}};
   const adminNavigation=await import('../../../../../packages/navigation/admin-navigation.mjs');
   const value=registry(overrides),hooks=fakeHooks(React);
   const compile=(file,resolve)=>{const module={exports:{}};runInNewContext(transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
@@ -160,7 +160,8 @@ async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=nul
   const preview=tag=>previews?props=>React.createElement('section',{[tag]:props.laneId??props.presentationLaneId,'data-revision':props.revision??'none'}):()=>null;
   const module=compile('../components/studio/companies-page.tsx',name=>name==='react'?hooks.react:name.endsWith('runtime/navigation')?navigation:name==='../ui/hub'?hub:name==='../../lib/admin-navigation'?adminNavigation
     :name==='./registered-studio'?{RegisteredStudio:props=>React.createElement('section',{'data-registered-studio':[props.mode,props.operatorId,props.roomId??'',props.section??''].join(':'),'data-assignment-revision':String(props.assignmentRevision??'none')},props.navigation,props.children)}
-    :name==='./workspace-tools'?{WorkspaceTool:stub('data-workspace-tool',props=>props.section)}:name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
+    :name.endsWith('/company-create')?{CompanyCreate:props=>{capture.create=props;return React.createElement('section',{'data-company-create':true});}}:name.endsWith('/company-team')?{CompanyTeam:props=>props.active?React.createElement('section',{'data-company-team':props.operatorId}):null}
+    :name==='./saved-scene-preview'?{SavedScenePreview:preview('data-saved-scene')}:name==='./scene-preview'?{ScenePreview:preview('data-scene-preview')}
     :name.endsWith('control-resource-lifecycle')?{ControlResourceLifecycle:stub('data-lifecycle',props=>props.kind)}:name.endsWith('partner-journal-loader.mjs')?{PartnerJournal:stub('data-journal',props=>props.operatorId)}
     :name==='./dealer-identity-portrait'?portraitStubs(React):name==='./room-picture'?{RoomPicture:()=>null}:name==='./permanent-delete'?{TrashPermanentDelete:()=>null}
     :name==='./room-settings-warning'?compile('../components/studio/room-settings-warning.tsx',dep=>dep.endsWith('runtime/navigation')?navigation:dep.startsWith('../ui/')?uiRequire('./'+dep.slice('../ui/'.length)):require(dep))
@@ -172,6 +173,15 @@ async function companiesPageHtml({page,id,search='',previews=false,fetchImpl=nul
   if(fetchImpl)for(let round=0;round<3;round++){render();await settle(6);}
   return renderToStaticMarkup(render());
 }
+
+test('company Team and creation do not depend on the broad project catalogue',async()=>{
+  const reads=[];const fetchImpl=async path=>{reads.push(path);throw Error('project unavailable');};
+  const team=await companiesPageHtml({page:'company',id:'route-company',search:'?flik=team&operator=foreign',fetchImpl});
+  assert.match(team,/data-company-team="route-company"/);assert.doesNotMatch(team,/Katalogen kunde inte läsas|data-registered-studio=/);
+  const capture={};const create=await companiesPageHtml({page:'companies',search:'?tab=bolag&view=create',fetchImpl,capture});assert.match(create,/data-company-create="true"/);
+  capture.create.onCreated({id:'api-returned-id',slug:'requested-slug',name:'New company'});assert.equal(capture.href,'/admin/companies/api-returned-id?flik=team');
+  assert.deepEqual(reads,[]);
+});
 
 test('the room nav mounts the exact scoped editor per tab; the company nav owns the assignment and room creation',async()=>{
   const appearance=await registeredStudioHtml({operatorId:'a',roomId:'roulette',mode:'room',section:'appearance'},{compositions});
