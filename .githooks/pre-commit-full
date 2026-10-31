@@ -87,6 +87,7 @@ run_node_tests access check-environment-variables test/check-environment-variabl
 run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
 run_check access player-auth 180 node test/player-auth.mjs
+run_node_tests access preview-session-cookie test/preview-session-cookie.mjs
 run_node_tests access player-accounts test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs apps/web/test/player-ui-build.mjs
 run_node_tests access runtime test/vercel-presentation-video-origin.mjs
 run_check access craig-login 180 node test/craig-login.mjs

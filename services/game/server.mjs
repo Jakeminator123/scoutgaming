@@ -7,6 +7,7 @@ import { sharedRoomOrigins } from './shared-room-origins.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../../packages/navigation/operator-entry.mjs';
 import { partnerLaunchOperator, partnerRefusalHtml, partnerRoomRefusal } from './partner-operator.mjs';
 import {currentBackofficeAccount} from './bo-player-session.mjs';
+import { createPreviewPlayer } from './preview-session.mjs';
 import { isAdministratorRole } from '../../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
@@ -495,17 +496,7 @@ const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrig
   partnerAuthority: async partnerKeyId => boDb.prepare("SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=?").get(partnerKeyId)}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const playerSession = async req => (await auth.session(req));
-async function previewPlayer(req,res) {
-  const token=(req.headers.cookie??'').match(/(?:^|;\s*)preview_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-  const digest=t=>createHash('sha256').update(t).digest('hex');
-  const existing=token && (await db.prepare('SELECT player_id FROM preview_sessions WHERE digest=? AND expires>?').get(digest(token),Date.now()));
-  if(existing && (await getPlayer(existing.player_id)))return existing.player_id;
-  const p=await apiPlayer({name:'Product preview'}), fresh=randomBytes(32).toString('hex');
-  (await db.prepare('DELETE FROM preview_sessions WHERE expires<=?').run(Date.now()));
-  (await db.prepare('INSERT INTO preview_sessions VALUES (?,?,?)').run(digest(fresh),p.id,Date.now()+7*86400000));
-  res.setHeader('Set-Cookie',`preview_session=${fresh}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`);
-  return p.id;
-}
+const previewPlayer = createPreviewPlayer({ db, createPlayer: apiPlayer, getPlayer });
 async function chatSessionOwner(req, playerId) {
   const playerToken = (req.headers.cookie ?? '').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
   if (playerToken && (await auth.session(req))?.playerId === playerId) return `player-${createHash('sha256').update(playerToken).digest('hex')}`;
