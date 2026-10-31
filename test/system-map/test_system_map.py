@@ -61,6 +61,10 @@ class Fixture(unittest.TestCase):
             status = system_map.main(list(args), root=self.root)
         return status, out.getvalue(), error.getvalue()
 
+    def artifact_data(self):
+        html = (self.root / ".cache/system-map/index.html").read_text(encoding="utf-8")
+        return json.loads(html.split('<script id="atlas-data" type="application/json">', 1)[1].split('</script>', 1)[0])
+
     def write_relations(self, data):
         file = self.root / "tools/system-map/relations.json"
         file.parent.mkdir(parents=True, exist_ok=True)
@@ -80,11 +84,12 @@ class SystemMapTests(Fixture):
         artifact = self.root / ".cache/system-map/index.html"
         original = artifact.read_bytes()
         (self.root / "tools/system-map/relations.json").unlink()
-        status, _, error = self.invoke()
-        self.assertEqual(status, 2)
-        self.assertIn("relations.json saknas", error)
-        self.assertIn("Ingen karta skrevs", error)
-        self.assertEqual(artifact.read_bytes(), original)
+        for args in [(), ("--strict-anchors",)]:
+            status, _, error = self.invoke(*args)
+            self.assertEqual(status, 2)
+            self.assertIn("relations.json saknas", error)
+            self.assertIn("Ingen karta skrevs", error)
+            self.assertEqual(artifact.read_bytes(), original)
 
     def test_invalid_relation_schema_returns_input_error_without_a_new_artifact(self):
         base = self.relation_fixture()
@@ -108,12 +113,17 @@ class SystemMapTests(Fixture):
         for data, location in cases:
             with self.subTest(location=location, data=data):
                 self.write_relations(data)
-                status, _, error = self.invoke()
-                self.assertEqual(status, 2)
-                self.assertIn("relations.json:", error)
-                self.assertIn(location, error)
-                self.assertIn("Ingen karta skrevs", error)
-                self.assertFalse((self.root / ".cache/system-map/index.html").exists())
+                for args in [(), ("--strict-anchors",)]:
+                    status, _, error = self.invoke(*args)
+                    self.assertEqual(status, 2)
+                    self.assertIn("relations.json:", error)
+                    self.assertIn(location, error)
+                    self.assertIn("Ingen karta skrevs", error)
+                    self.assertFalse((self.root / ".cache/system-map/index.html").exists())
+        for args in [(), ("--strict-anchors",)]:
+            (self.root / "tools/system-map/relations.json").write_text('{"version":', encoding="utf-8")
+            self.assertEqual(self.invoke(*args)[0], 2)
+            self.assertFalse((self.root / ".cache/system-map/index.html").exists())
 
     def test_real_git_files_directories_literal_brackets_and_encoded_spaces(self):
         self.write_table(code="[Fil](src/main.py), [mapp](src), [route](apps/admin/[[...path]]/route.ts), [guide](docs/with%20space.md)")
@@ -295,19 +305,54 @@ await import(`./${choice}.mjs`);
         self.assertFalse(graph.safe_path(self.root, "apps/ui/link.mjs"))
         self.assertNotIn("apps/ui/link.mjs", {n["id"] for n in self.build()["nodes"]})
 
-    def test_semantic_anchors_relocate_and_fail_on_missing_or_ambiguous_match(self):
+    def test_semantic_anchors_relocate_and_warn_or_fail_by_mode(self):
         manifest = self.relation_fixture()
         self.add({"apps/ui/main.mjs": "// moved\n\nrun();\n", "tools/system-map/relations.json": json.dumps(manifest)})
         data = self.build();edge = data["graphs"][0]["edges"][0]
         self.assertEqual(edge["status"], "anchored")
         self.assertEqual(edge["evidence"][0]["line"], 3)
         self.assertIsNone(edge["evidence"][0]["url"], "dirty source must not claim an exact HEAD link")
+        for args in [(), ("--strict-anchors",)]:
+            self.assertEqual(self.invoke(*args)[0], 0)
+            self.assertEqual(self.artifact_data()["graphs"][0]["edges"][0]["evidence"][0]["line"], 3)
         for text, status in [("different();", "missing"), ("run();\nrun();", "ambiguous")]:
             (self.root / "apps/ui/main.mjs").write_text(text, encoding="utf-8")
             data = self.build();proof = data["graphs"][0]["edges"][0]["evidence"][0]
             self.assertEqual(proof["status"], status)
             self.assertIsNone(proof["line"])
             self.assertEqual(len(data["issues"]), 1)
+            for args, expected in [((), 0), (("--strict-anchors",), 1)]:
+                with self.subTest(status=status, args=args):
+                    code, out, error = self.invoke(*args)
+                    self.assertEqual(code, expected)
+                    self.assertIn("VARNING:" if not args else "FEL:", error)
+                    self.assertIn("behöver översyn", error)
+                    self.assertIn("1 varningar" if not args else "1 fel", out)
+                    artifact = self.artifact_data()
+                    edge = artifact["graphs"][0]["edges"][0]
+                    self.assertEqual(edge["status"], "needs-review")
+                    self.assertEqual(edge["evidence"][0]["status"], status)
+                    for field in ["line", "url", "local"]:
+                        self.assertIsNone(edge["evidence"][0][field])
+                    self.assertEqual(len(artifact["referenceWarnings"]), 0 if args else 1)
+                    self.assertEqual(len(artifact["referenceErrors"]), 1 if args else 0)
+                    html = (self.root / ".cache/system-map/index.html").read_text(encoding="utf-8")
+                    fallback = html.split("<noscript>", 1)[1].split("</noscript>", 1)[0]
+                    self.assertIn("Handgranskat kodankare behöver översyn", "".join(Elements(fallback).text))
+
+    def test_quote_only_anchor_change_warns_and_does_not_hide_reference_errors(self):
+        manifest = self.relation_fixture()
+        manifest["graphs"][0]["edges"][0]["evidence"][0]["match"] = "run('value');"
+        self.add({"apps/ui/main.mjs": 'run("value");', "tools/system-map/relations.json": json.dumps(manifest)})
+        self.assertEqual(self.invoke()[0], 0)
+        self.assertEqual(self.artifact_data()["stats"]["stale"], 1)
+        self.assertEqual(self.invoke("--strict-anchors")[0], 1)
+        self.write_table(code="[Saknad](missing.py)")
+        for args in [(), ("--strict-anchors",)]:
+            code, _, error = self.invoke(*args)
+            self.assertEqual(code, 1)
+            self.assertIn("FEL: START-HERE.md:", error)
+            self.assertIn("missing.py — Saknas i Git-revisionen", error)
 
     def test_obsolete_relations_can_be_removed_without_preserving_counts_or_names(self):
         manifest = self.relation_fixture()

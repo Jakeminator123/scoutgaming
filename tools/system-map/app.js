@@ -58,7 +58,7 @@
       const a=el('a','',proof.path+':'+proof.line);a.href=proof.url||proof.local;a.target='_blank';a.rel='noopener noreferrer';p.append(a);
       p.append(el('small','',proof.dirty?'Ändrad arbetskopia · lokal fil, raden anges ovan':'GitHub på visad SHA · kräver nät när länken öppnas'));
       if(proof.local&&proof.url){const local=el('a','','Öppna lokal fil');local.href=proof.local;local.target='_blank';local.rel='noopener';p.append(local);}
-    }else p.append(el('span','',proof.path),el('small','','Kodankaret måste granskas igen; ingen rad hävdas.'));
+    }else p.append(el('span','',proof.path),el('small','','Kodankaret behöver översyn; ingen rad eller aktuellt bevis hävdas.'));
     return p;
   }
   function proofFor(path,line){return {path,line,dirty:nodes.get(path)?.dirty,local:data.root+'/'+path.split('/').map(encodeURIComponent).join('/'),url:nodes.get(path)?.dirty?null:'https://github.com/Jakeminator123/scoutgaming/blob/'+data.revision+'/'+path.split('/').map(encodeURIComponent).join('/')+'#L'+line};}
@@ -186,7 +186,7 @@
     if(edge.status==='needs-review')d.append(note('Minst ett kodankare saknas eller är tvetydigt. Relationen måste granskas igen.','warn'));
     else if(edge.level==='semantic')d.append(note('Kodankaren matchar entydigt i aktuell arbetskopia. Detta verifierar ankaren, inte att sambandet körs.'));
     if(edge.level==='static')d.append(note('En import visar en källkodsreferens. Typimport, dynamisk import och require visas separat; körning och bindning har inte bevisats.'));
-    if(edge.evidence){d.append(el('h3','','Källbevis · '+edge.evidence.length));for(const p of edge.evidence)d.append(proofBox(p));}
+    if(edge.evidence){d.append(el('h3','','Kodankare · '+edge.evidence.length));for(const p of edge.evidence)d.append(proofBox(p));}
     if(edge.references){d.append(el('h3','','Filreferenser · '+edge.references.length));pagedList(d,edge.references,e=>{const block=el('div','detail-block');block.append(button(e.source+' → '+e.target,()=>openFile(e.source),e.mode+' · rad '+e.line),proofBox(proofFor(e.source,e.line)));return block;},10);}
     if(edge.line){d.append(proofBox(proofFor(edge.source,edge.line)),button('Öppna konsumenten',()=>openFile(edge.source)),button('Öppna beroendet',()=>openFile(edge.target)));}
   }
@@ -314,7 +314,7 @@
   }
   function openUnparsed(file){const d=showDetail(file.id,'INVENTERAD SÖKVÄG / '+file.extension,'Denna filtyp är med i filinventeringen. Importer, anrop och testkopplingar har inte analyserats.');d.append(badge('Samband ej analyserade','warn'),note('Frånvaro av kanter säger ingenting om användning eller provtäckning.','warn'));const a=el('a','','Öppna lokal fil');a.href=data.root+'/'+file.id.split('/').map(encodeURIComponent).join('/');a.target='_blank';a.rel='noopener';d.append(a);}
   for(const [number,label,warn] of [[data.stats.scanned,'inventerade JS/TS-filer'],[data.stats.edges,'statiska referenser'],[data.stats.semantic,'handgranskade samband'],[data.stats.unknown,'olösta referenser',true]]){const m=el('div','metric'+(warn?' warn':''));m.append(el('strong','',number.toLocaleString('sv')),el('span','',label));$('#metrics').append(m);}
-  $('#status').textContent=data.generated+' · '+data.stats.tracked+' spårade filer · '+data.stats.excluded+' undantagna · '+data.stats.dirty+' ändrade kodfiler';
+  $('#status').textContent=(data.issues.length?data.issues.length+' kodankare behöver översyn · ':'')+data.generated+' · '+data.stats.tracked+' spårade filer · '+data.stats.excluded+' undantagna · '+data.stats.dirty+' ändrade kodfiler';
   new ResizeObserver(()=>fit()).observe($('#canvas-wrap'));
   document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeDetail();$('#search-results').hidden=true;}});
   setView('overview');

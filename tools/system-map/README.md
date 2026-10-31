@@ -4,6 +4,7 @@ Kör från repot med Python 3.10+ och Git:
 
 ```text
 python tools/system-map.py
+python tools/system-map.py --strict-anchors
 python -m unittest discover -s test/system-map -v
 ```
 
@@ -13,12 +14,14 @@ nätanrop först när du öppnar dem. Lokala länkar öppnar arbetskopian.
 Utdata är privat arbetsmaterial och ska inte publiceras som produktvy.
 
 Alternativ utdata måste ligga under repots `.cache/` och sluta med `.html`.
-Exit 0 betyder att referenser och handgranskade kodankare kunde kontrolleras;
-1 betyder att kartan skrevs med fel; 2 betyder ogiltiga indata och ingen ny karta.
+Exit 0 betyder att kartan skrevs utan blockerande fel; varningar kan finnas.
+1 betyder att kartan skrevs med referensfel, eller ankare som behöver översyn
+i läget `--strict-anchors`; 2 betyder ogiltiga indata och ingen ny karta.
 Olösta automatiska referenser redovisas i kartan och är inte i sig ett exitfel.
 
 De befintliga kontrakts- och dokumentationsjobben i CI kör Pythonproven och
-generatorn. Ändrade ansvar eller kodankare uppdateras i samma PR som koden;
+generatorn i vanligt läge. Använd `--strict-anchors` vid explicit kartgranskning;
+inaktuella ankare ska inte blockera vanlig CI. Ändrade ansvar eller kodankare uppdateras i samma PR som koden;
 förbrukade samband tas bort. Kontrollen låser inga produkter, filnamn eller
 antal samband och kräver inte att pensionerad implementation återinförs.
 
@@ -36,7 +39,10 @@ antal samband och kräver inte att pensionerad implementation återinförs.
   `match` är en granskad kodrad. Generatorn söker exakt efter den med yttre
   blanksteg borttagna; en enda träff krävs. Raden flyttas automatiskt när kod
   läggs före den. Noll eller flera träffar ger **behöver översyn**, inget
-  påhittat radnummer och exit 1. Granska innebörden innan ankaret uppdateras.
+  påhittat radnummer, commitlänk eller aktuellt bevis. Vanlig generering ger en
+  tydlig varning och exit 0 om inga andra fel finns; `--strict-anchors` ger exit 1.
+  Även beteendeneutrala citatteckensändringar kan bryta den exakta matchningen.
+  Granska innebörden innan ankaret uppdateras.
   Nod- och kant-id är unika inom grafen; kanter måste peka på dess noder.
   `col` och `row` är heltal och `conditional` en boolesk flagga. Tomma eller
   saknade `evidence` godtas inte. Förbrukade samband och grafer får tas bort;

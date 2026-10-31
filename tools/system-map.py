@@ -4,7 +4,8 @@
 Run: python tools/system-map.py [--output .cache/system-map/index.html]
 Requires Python 3.10+ and Git. Input keeps the four existing table columns;
 only relative Markdown links without query/fragment are file-verified.
-Exit 0: rendered, 1: rendered with broken references, 2: invalid input/no output.
+Exit 0: rendered (warnings allowed), 1: rendered with broken references or strict
+anchor failures, 2: invalid input/no output. Use --strict-anchors for map review.
 Semantic relations are re-anchored; static references do not prove runtime use or test coverage.
 """
 from __future__ import annotations
@@ -125,7 +126,7 @@ def inline(text: str, references: dict) -> str:
     return "".join(output)
 
 
-def render(root: Path) -> tuple[str, list[str], list[str]]:
+def render(root: Path, *, strict_anchors: bool = False) -> tuple[str, list[str], list[str]]:
     rows = read_rows(root)
     revision = git(root, "rev-parse", "--verify", "HEAD").stdout.decode().strip()
     dirty = git(root, "diff", "--no-ext-diff", "--no-textconv", "--quiet", "HEAD", "--", SOURCE, codes=(0, 1)).returncode == 1
@@ -147,8 +148,6 @@ def render(root: Path) -> tuple[str, list[str], list[str]]:
         content = "".join(f'<section class="{kind}"><h3>{title}</h3><p>{inline(cell, references)}</p></section>' for kind, title, cell in zip(("code", "data", "checks"), HEADERS[1:], cells[1:]))
         note = '<p class="unverified">Olänkad kodtext är inte filverifierad.</p>' if plain_code else ""
         cards.append(f'<details class="branch" open><summary><span class="number">{index:02}</span><span>{inline(name, references)}</span><span class="fold" aria-hidden="true">⌄</span></summary><div class="branch-body"><p class="responsibility">{inline(description.strip() if separator else cells[0], references)}</p>{content}{note}<footer>Dokumenterat på rad {line} i <a href="{(root / SOURCE).as_uri()}">{SOURCE}</a></footer></div></details>')
-    issues = "".join(f"<li>{escape(issue)}</li>" for issue in [*errors, *warnings])
-    issue_box = f'<details class="issues" {"open" if errors else ""}><summary>{len(errors)} fel · {len(warnings)} varningar i underlaget</summary><ul>{issues}</ul></details>' if issues else ""
     verified = sum(href is not None for _, href in references.values())
     source_state = "Arbetskopian av källan är ändrad efter denna revision." if dirty else "Källan motsvarar Git-revisionen."
     support = Path(__file__).resolve().parent / "system-map"
@@ -157,7 +156,9 @@ def render(root: Path) -> tuple[str, list[str], list[str]]:
     spec.loader.exec_module(graph_module)
     data = graph_module.build_graph(root, revision, root / "tools/system-map/relations.json")
     for issue in data["issues"]:
-        errors.append(f"Handgranskat kodankare behöver översyn: {issue['graph']}/{issue['edge']} — {issue['path']} ({issue['reason']}).")
+        (errors if strict_anchors else warnings).append(f"Handgranskat kodankare behöver översyn: {issue['graph']}/{issue['edge']} — {issue['path']} ({issue['reason']}).")
+    issues = "".join(f"<li>{escape(issue)}</li>" for issue in [*errors, *warnings])
+    issue_box = f'<details class="issues" {"open" if errors or warnings else ""}><summary>{len(errors)} fel · {len(warnings)} varningar i underlaget</summary><ul>{issues}</ul></details>' if issues else ""
     data["contracts"] = [{"id": f"contract-{i}", "name": cells[0].partition(":")[0], "responsibility": cells[0],
                           "line": line, "code": inline(cells[1], references), "data": inline(cells[2], references),
                           "checks": inline(cells[3], references),
@@ -181,18 +182,20 @@ def render(root: Path) -> tuple[str, list[str], list[str]]:
 def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path(".cache/system-map/index.html"), help="Fristående HTML-fil (relativt repot).")
+    parser.add_argument("--strict-anchors", action="store_true", help="Ge exit 1 även för kodankare som behöver översyn (kartgranskning).")
     args = parser.parse_args(argv)
     root = (root or Path(__file__).resolve().parent.parent).resolve()
     try:
-        html, errors, warnings = render(root)
+        html, errors, warnings = render(root, strict_anchors=args.strict_anchors)
         output = (root / args.output).resolve()
         if output.suffix.lower() != ".html" or not output.is_relative_to(root / ".cache"):
             raise ValueError("Utdata måste vara en .html-fil under repots .cache/; produktfiler får inte skrivas över.")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(html, encoding="utf-8")
         print(f"Skapade {output} ({len(errors)} fel, {len(warnings)} varningar).")
-        for issue in errors + warnings:
-            print(issue, file=sys.stderr)
+        for label, items in (("FEL", errors), ("VARNING", warnings)):
+            for issue in items:
+                print(f"{label}: {issue}", file=sys.stderr)
         return 1 if errors else 0
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(f"Systemkarta: {error} Ingen karta skrevs.", file=sys.stderr)
