@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -126,11 +126,30 @@ test('history pagehide stops playback and pageshow rechecks current media before
 });
 
 
-test('animated dealer card enters the new public lobby', () => {
-  for (const [file,name] of [['hero-card','HeroCard']]) {
-    const Component = load(resolve(root, 'components/landing/' + file + '.tsx'))[name];
-    const html = renderToStaticMarkup(React.createElement(Component));
-    assert.match(html, /href="\/lobby"/);
-    assert.doesNotMatch(html, /href="\/play"/);
-  }
+test('hydrated landing actions enter the public lobby', { skip: !process.env.CROUPIER_BROWSER_FIXTURE_MODULE }, async () => {
+  const { build } = createRequire(new URL('../../studio/package.json', import.meta.url))('esbuild');
+  const { outputFiles } = await build({ stdin: { resolveDir: root, loader: 'tsx', contents: `
+    import {createRoot} from 'react-dom/client';import Home from './app/page';
+    createRoot(document.getElementById('root')).render(<Home/>);
+  ` }, bundle: true, write: false, jsx: 'automatic', format: 'iife', platform: 'browser',
+    alias: { '@': root }, define: { 'process.env.NODE_ENV': '"production"', 'process.env': '{}' }, logLevel: 'silent' });
+  const { chromium } = await import(pathToFileURL(process.env.CROUPIER_BROWSER_FIXTURE_MODULE).href);
+  const browser = await chromium.launch({ headless: true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? { channel: process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL } : {}) });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1080 }, reducedMotion: 'no-preference' }), errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/fixture.js') return route.fulfill({ contentType: 'text/javascript', body: outputFiles[0].text });
+      if (url.pathname !== '/') return route.fulfill({ status: 404, body: '' });
+      return route.fulfill({ contentType: 'text/html', body: '<!doctype html><meta charset="utf-8"><div id="root"></div><script src="/fixture.js"></script>' });
+    });
+    await page.goto('https://landing.fixture.invalid/');
+    // Wait for the animated CTA itself, rather than another decoration's video.
+    const animatedActions = page.locator('a').filter({ has: page.locator('video') });
+    await animatedActions.first().waitFor({ state: 'attached', timeout: 10000 });
+    for (const action of await animatedActions.all()) assert.equal(await action.getAttribute('href'), '/lobby');
+    assert.deepEqual(errors, []);
+    assert.equal(await page.locator('a[href="/play"]').count(), 0);
+  } finally { await browser.close(); }
 });

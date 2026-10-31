@@ -64,6 +64,39 @@ test('selected Admin and partner menu entries retain keyboard focus contrast in 
       await page.emulateMedia({ forcedColors });
       await page.goto('https://menu-focus.fixture.invalid/?surface=' + surface + '&mode=' + mode);
       const selected = page.locator('nav a[aria-current="page"]').first(), label = [surface, mode, forcedColors].join('/');
+      const textSamples = await page.locator('aside').evaluateAll(sidebars => {
+        const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+        const rgba = color => {
+          context.clearRect(0, 0, 1, 1); context.fillStyle = color; context.fillRect(0, 0, 1, 1);
+          const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+          return [r, g, b, a / 255];
+        };
+        const over = (fg, bg) => {
+          const alpha = fg[3] + bg[3] * (1 - fg[3]);
+          return alpha ? [...fg.slice(0, 3).map((value, index) => (value * fg[3] + bg[index] * bg[3] * (1 - fg[3])) / alpha), alpha] : [0, 0, 0, 0];
+        };
+        const samples = [];
+        for (const sidebar of sidebars) {
+          const walker = document.createTreeWalker(sidebar, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+            const node = walker.currentNode, element = node.parentElement, text = node.textContent.trim();
+            if (!text || !element.checkVisibility() || element.closest('[aria-hidden="true"],svg')) continue;
+            let foreground = rgba(getComputedStyle(element).color), background = [0, 0, 0, 0];
+            for (let parent = element; parent; parent = parent.parentElement) {
+              const css = getComputedStyle(parent), fill = rgba(css.backgroundColor);
+              foreground = over(foreground, fill); background = over(background, fill);
+              foreground[3] *= Number(css.opacity); background[3] *= Number(css.opacity);
+            }
+            foreground = over(foreground, [255, 255, 255, 1]).slice(0, 3);
+            background = over(background, [255, 255, 255, 1]).slice(0, 3);
+            samples.push({ text, color: `rgb(${foreground.join(',')})`, background: `rgb(${background.join(',')})` });
+          }
+        }
+        return samples;
+      });
+      assert.ok(textSamples.length > 0, label + ': sidebar text was measured');
+      for (const sample of textSamples) assert.ok(contrast(sample.color, sample.background) >= 4.5, label + ': ' + sample.text + ' reaches 4.5:1');
+
       await selected.focus();
       await page.keyboard.press('Shift+Tab');
       const style = () => selected.evaluate(node => {

@@ -41,7 +41,7 @@ test('public admin documents and assets route to Studio without changing control
     CROUPIER_VERCEL_INGRESS_SECRET: 'a'.repeat(40) });
   assert.ok(config);
   for (const path of ['/admin','/admin/lobby','/admin/_assets/admin/app.js']) {
-    assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'lab', destination: config.labUiOrigin + '/studio' + path });
+    assert.deepEqual(platformRoute(new URL(path, config.publicOrigin), config), { kind: 'studio', destination: config.labUiOrigin + '/studio' + path });
   }
 });
 

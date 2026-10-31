@@ -37,5 +37,5 @@ test('native reply normalization preserves forwarded identity and adds only the 
 test('native frontend routes replies only to the configured Studio service',()=>{
   const config={publicOrigin:origin,labUiOrigin:labOrigin,backendOrigin:'https://game.example.invalid',nativeStudio:true};
   const route=platformRoute(url('/studio/api/replies?dealer=vera&cursor=abc'),config);
-  assert.equal(route.kind,'lab');assert.equal(route.destination,labOrigin+'/studio/api/replies?dealer=vera&cursor=abc');
+  assert.equal(route.kind,'studio');assert.equal(route.destination,labOrigin+'/studio/api/replies?dealer=vera&cursor=abc');
 });
