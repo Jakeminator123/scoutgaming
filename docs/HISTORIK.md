@@ -2,9 +2,18 @@
 
 En rad per dokument som raderats ur `main` efter att dess uppgift var klar. Innehållet finns bara i Git; läs det med `git show <sha>:<sökväg>` (sha är den sista main-commit där filen fanns). Det här är en lista, inget arkiv: inga kopior av innehållet, ingen historikmapp. Ett dokument som raderas senare får en rad här i samma PR.
 
-Hänvisningar i `migrering/status.json` (fältet `evidence`) och i kodkommentarer till sökvägar nedan gäller fortfarande; de pekar på Git-versionen.
+Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökvägar nedan pekar på Git-versionen.
 
 ## Raderade 31 oktober 2026
+
+Migreringen avslutades 28 oktober: 20/20 aktiviteter verifierade, O03 via [PR #527](https://github.com/Jakeminator123/scoutgaming/pull/527). Den återstående projektadministrationen och dess statuskontroller avvecklades på Jakobs begäran. Aktuella driftkontrakt finns i START-HERE, CLOUD-MIGRATION och ENVIRONMENT-RESTORATION; SQL och readiness i `ops/neon-*` och `tools/check-migration-readiness.mjs` består. Sista main-version före avvecklingen: `86913d79cdf5643070decbc3e604c7aaee5c6819`.
+
+| Fil | Vad det var; originalet läses med `git show 86913d79cdf5643070decbc3e604c7aaee5c6819:<fil>` |
+| --- | --- |
+| `migrering/MASTERPLAN.md` | Ingång till den avslutade planen; dess enda återstående konsumenter var statuskontrollerna. |
+| `migrering/STATUS.md` | Genererad aktivitetsrapport, 20/20 verifierade. |
+| `migrering/status.json` | Migrationsaktiviteter och daterade leveransbevis; inget produktregister. |
+| `migrering/status.mjs` | Generator och strukturkontroll för den avslutade rapporten. |
 
 Dokumentgranskningen efter systemkartorna utgår från main
 `c0150add62fd9e4b39fd31a7e0127406ca860007`. Kodkommentarer med äldre avsnittsnummer
@@ -52,7 +61,7 @@ Alla fanns i `main` på `a05917c3a05f23963006fc4e778f9c4ac8bbadcf` (läs: `git s
 
 ## Raderade 29 oktober 2026: `migrering/` efter avslutet
 
-Alla fanns i `main` på `6f2d8236` (läs: `git show 6f2d8236:<sökväg>`). Ingen kod, CI, hook eller allowlist läste dem; proven som nämner sökvägarna (`test/ci-changes.mjs`, `test/precommit-checks.mjs`, `test/check-no-sqlite.mjs`) använder bara strängarna som fixturer. [MASTERPLAN](../migrering/MASTERPLAN.md) kortades samtidigt till en pekare; hela planen läses med `git show 6f2d8236:migrering/MASTERPLAN.md`.
+Alla fanns i `main` på `6f2d8236` (läs: `git show 6f2d8236:<sökväg>`). Ingen kod, CI, hook eller allowlist läste dem; äldre tester använde bara sökvägarna som fixturer. `migrering/MASTERPLAN.md` kortades samtidigt till en pekare; hela planen läses med `git show 6f2d8236:migrering/MASTERPLAN.md`.
 
 | Datum | Fil | Vad det var | PR |
 | --- | --- | --- | --- |

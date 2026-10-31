@@ -1,9 +1,5 @@
 // Reviewed documentation paths shared by local checks and CI. Markdown outside the listed guides and
-// prose folders (runtime bundles, package docs, new folder READMEs) stays strict, as does JSON other
-// than the migration report, which is validated separately.
-const migrationReports = new Set([
-  "migrering/status.json",
-]);
+// prose folders (runtime bundles, package docs, new folder READMEs) stays strict, as does JSON.
 const guides = new Set([
   ".cursor/rules/scoutgaming.mdc",
   ".github/copilot-instructions.md",
@@ -30,15 +26,15 @@ const guides = new Set([
   "services/openclaw/lab/README.md",
   "tools/media/README.md"
 ]);
-// Prose folders: every Markdown file under docs/, apps/studio/docs/ and migrering/, and the cloud
+// Prose folders: every Markdown file under docs/ and apps/studio/docs/, and the cloud
 // runbooks directly in ops/cloud/; scripts or other files placed there stay strict.
 const proseFolders = [
-  /^(?:docs|apps\/studio\/docs|migrering)\/.+\.md$/,
+  /^(?:docs|apps\/studio\/docs)\/.+\.md$/,
   /^ops\/cloud\/[^/]+\.md$/,
 ];
 
 export function isDocumentationPath(path) {
   return typeof path === 'string' && !path.includes('\\')
     && !path.split('/').some(part => ['', '.', '..'].includes(part))
-    && (guides.has(path) || migrationReports.has(path) || proseFolders.some(pattern => pattern.test(path)));
+    && (guides.has(path) || proseFolders.some(pattern => pattern.test(path)));
 }

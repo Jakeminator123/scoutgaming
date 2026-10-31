@@ -8,7 +8,6 @@ Börja i [START-HERE](../START-HERE.md); arbetsreglerna står i [AGENTS](../AGEN
 | --- | --- | --- |
 | Vad händer nu? | [NEXT-AGENT](NEXT-AGENT.md) | Vid överlämning |
 | Organisationsarbete och verifiering | [KORPLAN-v2](plans/organisation/KORPLAN-v2.md), [beslutslogg](plans/organisation/BESLUTSLOGG.md) | Vid ny tilldelning, beslut eller verifiering |
-| Migrationsstatus | [STATUS](../migrering/STATUS.md), genererad från `migrering/status.json`; [MASTERPLAN](../migrering/MASTERPLAN.md) är ingången till den avslutade migreringen | Bara vid konkret återöppnat migrationsfel |
 | Var finns borttagen text? | [HISTORIK](HISTORIK.md) anger fil och Git-version | När dokument raderas |
 
 ## Produkt och kontrakt

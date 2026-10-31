@@ -79,9 +79,6 @@ jobs:
             tools/check-repo-limits.mjs
             tools/repo-limits-allowlist.json
             test/check-repo-limits.mjs
-            migrering/status.mjs
-            migrering/status.json
-            migrering/STATUS.md
       - name: Verify preinstalled Node 24
         run: node -e "if (process.versions.node.split('.')[0] !== '24') throw new Error('Preinstalled Node 24 is required')"
       - name: Verify CI selection and final gate
@@ -114,7 +111,6 @@ jobs:
           node tools/check-documentation.mjs
           python -m unittest discover -s test/system-map -v
           python tools/system-map.py
-          node migrering/status.mjs --check
           node --test --test-concurrency=2 test/check-environment-variables.mjs test/check-documentation.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
           git diff --check HEAD^1 HEAD
       # PR caches are scoped to their own merge ref; only main-scoped entries are shared by

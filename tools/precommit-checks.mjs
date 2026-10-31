@@ -371,9 +371,6 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
     if (/\.json$/.test(path)) commands.push([process.execPath, '-e',
       "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))", path]);
   }
-  if (changes.some(({path}) => ['migrering/status.json', 'migrering/status.mjs', 'migrering/STATUS.md'].includes(path))) {
-    commands.push([process.execPath, 'migrering/status.mjs', '--check']);
-  }
   // The environment guard (registry reads and hard-coded names) runs for the registry and
   // its tool, and in focused mode for every changed non-documentation file: any of them
   // can reintroduce a read of a fixed name.

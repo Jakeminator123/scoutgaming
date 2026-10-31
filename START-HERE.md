@@ -6,7 +6,6 @@ Läsordning:
 
 1. **START-HERE** (den här filen): produktväg, identiteter, publiceringsordning, hur man kör, testar och levererar.
 2. **[docs/NEXT-AGENT.md](docs/NEXT-AGENT.md)**: aktuellt läge, återstående aktiviteter och vem som agerar.
-3. **[migrering/STATUS.md](migrering/STATUS.md)**: aktivitetsstatus, genererad från [status.json](migrering/status.json), som är enda statuskällan.
 
 Reglerna står i [AGENTS.md](AGENTS.md). [Ordlistan](apps/studio/docs/TERMINOLOGI.md) förklarar produktens identiteter och deras kodnamn. Dokument och historiska planer beskriver arbetet; de fryser inte UX, mappar eller implementationer.
 
@@ -111,7 +110,6 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 | Fråga | Dokument |
 | --- | --- |
 | Läge, återstående arbete, kända fällor | [NEXT-AGENT](docs/NEXT-AGENT.md) |
-| Aktivitetsstatus (migreringen är avslutad) | [STATUS](migrering/STATUS.md) |
 | Regler för agenter | [AGENTS](AGENTS.md) |
 | Vad orden betyder | [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` |
 | Arbetssteg i Admin | [användarguiden](apps/studio/docs/README.md) |

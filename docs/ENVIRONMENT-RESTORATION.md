@@ -232,19 +232,3 @@ Inventeringen den 29 oktober identifierade följande kandidater. Detta är under
 Den avsiktliga rollen `kevin_migration_readonly` ingår inte i städlistan. Radera ingen gren som fortfarande är enda återställningsunderlaget.
 
 **Avslutskontroll 31 oktober:** appdatabaserna mätte 23,58 MiB i produktion och 20,70 MiB i preview; ingen akut lagringsrensning rekommenderades. Restore-databaserna ovan fanns kvar. De två nya `backup-l3-rooms-20261030` har automatiskt utgångsdatum 7 november 00:59 svensk tid; sex övriga backup-/restoregrenar saknade TTL. Inga databasresurser raderades eller ändrades. [Incidentrapportens Neon-avsnitt](incidents/2026-10-31-repository-history.md) skiljer befintlig anropsstyrd gallring från dokument-/spelhistorik som fortsatt kan växa. `tools/retention-policy.json` gäller lokala filer, inte Neons tabeller.
-
-## Daterade kvitton
-
-Rubrikerna finns kvar för länkar från [migrering/](../migrering/STATUS.md). Äldre kvitton raderades ur `main` 28 oktober 2026 och läses med `git show 29ed6626bf:docs/history/ENVIRONMENT-RESTORATION-2026-10.md`. Nya kvitton skrivs som `docs/<datum>-…-ACCEPTANCE.json` och raderas med en rad i [HISTORIK](HISTORIK.md) när aktiviteten är verifierad.
-
-### O03: release och restoreprov mot produktionens schema — 28 oktober
-
-`docs/2026-10-28-O03-RELEASE-ACCEPTANCE.json` (raderat, läses ur Git enligt [HISTORIK](HISTORIK.md)): backupgren, dump och restore (S0 = S1), 011, flaggan, deployer och verifiering i produktionen.
-
-### J05: verifierad runtime och sparat spel — 26 oktober
-
-Omstart i staging och återläst sparat spel.
-
-### Molnsamprov 25 oktober kväll
-
-Admin, publicering, spel, backup och restore i staging.

@@ -1,6 +1,6 @@
 # Drift och leverans
 
-Var produkten kör, hur en ändring når produktionen och hur man kontrollerar den. Identiteter och publiceringsordning står i [START-HERE](../START-HERE.md), migreringens status bara i [migrering/STATUS.md](../migrering/STATUS.md) och överlämningen i [NEXT-AGENT](NEXT-AGENT.md).
+Var produkten kör, hur en ändring når produktionen och hur man kontrollerar den. Identiteter och publiceringsordning står i [START-HERE](../START-HERE.md) och överlämningen i [NEXT-AGENT](NEXT-AGENT.md).
 
 ## Ytor och datalagring
 
