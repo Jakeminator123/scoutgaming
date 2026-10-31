@@ -1,3 +1,6 @@
 #!/bin/sh
 set -eu
-node tools/check-push-target.mjs "$@"
+# Git supplies all ref updates on stdin. Both guards must receive the same batch.
+updates=$(cat)
+printf '%s\n' "$updates" | node tools/check-push-target.mjs "$@"
+printf '%s\n' "$updates" | node tools/check-repo-limits.mjs --push "$@"

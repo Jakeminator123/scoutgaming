@@ -35,10 +35,6 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   assert.deepEqual(await idle('paow',project),{dealerId:'paow',mediaId:id,sha256,available:true});
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
-  const legacy=await media.legacyControls(project);
-  for(const dealer of ['astrid'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
-  for(const dealer of ['vera','amira','mei'])assert.equal(legacy.clips.some(row=>row.dealerId===dealer),false);
-  assert.equal(legacy.clips.some(row=>row.dealerId==='paow'),false);
 });
 
 test('deployment catalog rebuilds from the layout alone and matches the committed documents',async t=>{

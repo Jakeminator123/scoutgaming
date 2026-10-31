@@ -75,7 +75,6 @@ async function openFixture(browser,start=dialog(),ready=f=>dialogReady(f,'elin')
     const gate=held.get(method+' '+url.pathname);if(gate){held.delete(method+' '+url.pathname);gate.started();await gate.promise;}
     // Röst och tal läser arbetsytan för både Svarsbibliotek (stubbat) och Dialogtest.
     if(['/api/admin/workspace/dealer-agent','/api/admin/workspace/replies'].includes(url.pathname))return route.fulfill({json:{project,videos:{videos:[]},status:{configured:true,provider:'fixture'},connectedLane:false,operators:[],directory:null,storeAvailable:true}});
-    if(url.pathname==='/api/clip-controls')return route.fulfill({status:503,json:{error:'isolated_no_media'}});
     if(url.pathname==='/api/chat'){
       assert.equal(method,'POST');assert.deepEqual(Object.keys(entry.body).sort(),['conversationId','dealerId','message']);assert.ok(['elin','lina'].includes(entry.body.dealerId));
       return route.fulfill({json:{reply:'Svar för '+entry.body.dealerId+': '+entry.body.message}});

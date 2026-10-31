@@ -27,7 +27,6 @@ export interface NativeStudioRuntime {
   validateProjectBindings?: (project: any) => Promise<void>;
   videoRegistry?: () => Promise<any>;
   videoResponse?: (id: string, request: Request) => Promise<Response>;
-  legacyControls?: (project: any) => Promise<any>;
   uploads?: { prepare(body: any, context: any): Promise<any>; commit(body: any, context: any): Promise<any> };
   layerUploads?: NativeStudioRuntime['uploads'];
   inspectMediaTiming(record: any, options?: {signal?: AbortSignal}): Promise<MediaTiming>;
