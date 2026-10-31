@@ -8,7 +8,7 @@ Läsordning:
 2. **[docs/NEXT-AGENT.md](docs/NEXT-AGENT.md)**: aktuellt läge, återstående aktiviteter och vem som agerar.
 3. **[migrering/STATUS.md](migrering/STATUS.md)**: aktivitetsstatus, genererad från [status.json](migrering/status.json), som är enda statuskällan.
 
-Reglerna står i [AGENTS.md](AGENTS.md). Orden står i [TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) (kort ordlista med gamla namn → nya).
+Reglerna står i [AGENTS.md](AGENTS.md). [Ordlistan](apps/studio/docs/TERMINOLOGI.md) förklarar produktens identiteter och deras kodnamn. Dokument och historiska planer beskriver arbetet; de fryser inte UX, mappar eller implementationer.
 
 ## En produktväg
 
@@ -47,7 +47,7 @@ Andra tjänster i samma Render-workspace och Neon-orgen `org-lucky-cake-48388035
 
 ## Publiceringsordning
 
-Allt som är grönt går direkt till produktion, i denna ordning:
+En godkänd leverans når produktion i denna ordning. Grön CI visar kodkontroller; ändringens uppdrag och relevanta driftvillkor avgör release:
 
 1. Schemamigrering före kravhöjning: Jakob applicerar SQL i `ops/neon-*` (`node tools/check-migration-readiness.mjs --apply`) innan kod som kräver schemat mergas. CI läser produktionens migreringsledger.
 2. Merge till `main` efter grön full CI. Vercel deployar `main` automatiskt.
@@ -66,7 +66,7 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 2. `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns adress och startar inga lokala servrar.
 3. Riktade prov: `node --test --test-concurrency=4 <filer>`. Sviter: `sh .githooks/pre-commit-full <svit>` med `studio`, `admin`, `contracts`, `database`, `presentation`, `access`, `speech`, `gameplay` eller `engine`. PGlite-proven (`test/fixtures/pglite-pool.mjs`) kör utan Postgres-installation; motorn över HTTP mot riktig Postgres körs med `node tools/run-engine-qa.mjs --postgres-bin <bin>`.
 4. Pre-commit (`.githooks/pre-commit`) kör riktade kontroller på ändrade filer; `node tools/precommit-checks.mjs --plan` visar urvalet. Full regression och isolerad Postgres körs i CI (`.github/workflows/croupier.yml`) på PR:er som är klara för granskning, vid push till `preview`, nattligen på `main` (02:00 UTC) och manuellt, eller lokalt med `sh .githooks/pre-commit --full`. Push till `main` kör bara dokumentationskontroller, migreringsberedskap och Gateway-containern när dess indata ändrats; PR:ens egen CI har redan kört regressionen. Chrome-jobbet `Regression (browser)` körs på PR och krävs för `CI` när PR:en ändrar `services/game/public/**`, `apps/studio/client/**` eller `apps/studio/components/**` (`browserAcceptanceRequired` i `tools/ci-changes.mjs`); på andra PR:er blockerar det inte `CI`. Nattkörningen och push till `preview` kräver det alltid. En utkast-PR (draft) kör bara klassificering och `node tools/precommit-checks.mjs --pr-diff` (samma riktade kontroller på merge-diffen) och får ingen kontroll med namnet `CI` förrän den markeras klar; CI väljer dessutom regressionsben efter ändringens omfång (matrisen står i `tools/ci-changes.mjs`).
-5. Riktig acceptans görs i preview: Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Ljud och läppsynk bedöms av Jakob.
+5. Prova det ändrade beteendet i preview när det behövs. För ett ändrat publicerings-/spelflöde följs Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Dokumentstädning kräver länkkontroll och dokumenthook. Ändrade talmedier behöver Jakobs ljud-/läppsynkacceptans; orelaterade godkända medier spelas inte om som generell grind.
 
 ## Leverera
 
@@ -91,4 +91,5 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 | Lagrings- och uppspelningskontrakt | [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md) |
 | AI-verktyg och OpenClaw | [docs/AI](docs/AI/README.md) |
 | Alla dokument: vad, för vem, när de uppdateras | [docs/README](docs/README.md) |
-| Daterade kvitton (bevis, inte läge) och raderade dokument | `docs/<datum>-*-ACCEPTANCE.json`; raderade står i [HISTORIK](docs/HISTORIK.md) |
+| Aktuell organisationskörning och releasebevis | [KORPLAN-v2](docs/plans/organisation/KORPLAN-v2.md), [F11-DRIFTKVITTO](docs/plans/organisation/F11-DRIFTKVITTO.md) |
+| Raderade dokument (historiken läses i Git) | [HISTORIK](docs/HISTORIK.md) |

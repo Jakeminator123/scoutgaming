@@ -1,130 +1,55 @@
 # Dokument
 
-En rad per dokument: vad det är, för vem och när det uppdateras. Ingången är [START-HERE](../START-HERE.md) och reglerna står i [AGENTS](../AGENTS.md). Ett nytt dokument får en rad här i samma PR; ett dokument som ingen levande text eller kod pekar på raderas i stället för att arkiveras, med en rad i [HISTORIK](HISTORIK.md) som säger vad det var och var det läses i Git.
+Börja i [START-HERE](../START-HERE.md); arbetsreglerna står i [AGENTS](../AGENTS.md). Välj sakguide efter frågan. Planer beskriver kvarvarande uppdrag, inte frysta mappar eller UI-layouter.
 
-Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100 kB och [NEXT-AGENT](NEXT-AGENT.md) högst 150 rader.
+## Läge och arbete
 
-## Läge och status
-
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [NEXT-AGENT](NEXT-AGENT.md) | Aktuellt läge, återstående arbete, kända fällor | Agent som börjar kallt | Vid varje överlämning (status-PR:n) |
-| [migrering/STATUS](../migrering/STATUS.md) och [MASTERPLAN](../migrering/MASTERPLAN.md) | Aktivitetsstatus, genererad från `status.json`; migreringen är avslutad (20/20). MASTERPLAN är en pekare: nästa arbete står i NEXT-AGENT, hela planen i Git, och den listar det som är kvar i `migrering/` och varför | Alla | Bara om en aktivitet återöppnas |
-| [HISTORIK](HISTORIK.md) | En rad per raderat dokument: vad det var och var det läses i Git | Den som letar efter ett gammalt kvitto, en granskning eller en plan | I samma PR som ett dokument raderas |
-
-## Drift och miljö
-
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [CLOUD-MIGRATION](CLOUD-MIGRATION.md) | Ytor, datalagring, väg från merge till produktion, deploykontroll | Den som levererar | När driftvägen ändras |
-| [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | Backup, restore (`tools/db-snapshot.mjs` jämför källa och mål), Node-versioner, renklonprov | Den som återställer eller provar | När backup- eller restorevägen ändras |
-| [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) och [environment-variables.json](environment-variables.json) | Alla miljövariabler per tjänst, aldrig värden; JSON:en läses av `tools/check-environment-variables.mjs` | Alla som rör env | I samma PR som variabeln ändras |
-| [PAOW-BANK-KORNING](PAOW-BANK-KORNING.md) och [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) | Steg för steg för Paows rörliga bank: källor, pool, GPU-förberedelse, Blob, image, RunPod-endpoint och aktivering i preview (T4–T5) | Jakob eller agent med nycklar | När bankverktyget eller endpointens mall ändras; mallen fylls och döps om vid körningen |
-| [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering, manuell export till `media/blob-index.json`; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
-| [ops/cloud/RENDER-V3](../ops/cloud/RENDER-V3.md), [README](../ops/cloud/README.md), [CONTAINER-CONTEXT](../ops/cloud/CONTAINER-CONTEXT.md) | Spelmotorn på Render: tjänst, deploy, återgång, byggkontext | Den som deployar motorn | När tjänsten eller imagen ändras |
-
-## Incidentutredningar
-
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [incidents/2026-10-31-repository-history](incidents/2026-10-31-repository-history.md) | Beställd utredning av Git-storlek: backup, gamla media/dokument, exakt kandidatlista och skyddade tester/kollegor | Jakob och repoansvarig | Fryst mätning; kompletteras med tydligt daterade rättelser, inte löpande produktstatus |
-| [incidents/2026-10-31-clean-repository-plan](incidents/2026-10-31-clean-repository-plan.md) | Konsekvenser och ordning för en möjlig ny produktrepo på cirka 65 MiB; testbevarande, GitLab och återgång | Jakob och den som genomför ett eventuellt byte | Vid beslut eller verifiering av övergången; rapportleveransen utför inte bytet |
+| Fråga | Dokument | Uppdateras |
+| --- | --- | --- |
+| Vad händer nu? | [NEXT-AGENT](NEXT-AGENT.md) | Vid överlämning |
+| Organisationsarbete och verifiering | [KORPLAN-v2](plans/organisation/KORPLAN-v2.md), [beslutslogg](plans/organisation/BESLUTSLOGG.md) | Vid ny tilldelning, beslut eller verifiering |
+| Migrationsstatus | [STATUS](../migrering/STATUS.md), genererad från `migrering/status.json`; [MASTERPLAN](../migrering/MASTERPLAN.md) är ingången till den avslutade migreringen | Bara vid konkret återöppnat migrationsfel |
+| Var finns borttagen text? | [HISTORIK](HISTORIK.md) anger fil och Git-version | När dokument raderas |
 
 ## Produkt och kontrakt
 
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [apps/studio/docs/README](../apps/studio/docs/README.md) | Användarguide för Admin (länkas från Admins hjälp) | Admin-användare | När ett arbetssteg i Admin ändras |
-| [apps/studio/docs/TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) | Kort ordlista: tre nivåer, kärnord, gamla namn → nya, tre regler (länkas från Admins hjälp) | Den som är ny i produkten | När ett ord byter betydelse i produkten |
-| [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md) | Tekniskt kontrakt för lagring, frysning och uppspelning av dealermedia | Den som rör presentation | När kontraktet i koden ändras |
-| [games/](games/README.md) | Blackjack, roulette, klipp och format, Partner-API v1 | Den som rör spel eller integration | När regler, format eller API ändras |
-| [AI/](AI/README.md) och [AI/openclaw/](AI/openclaw/README.md) | Vem anropar vilken modell, OpenClaw-källor, produkttal, Director- och Gateway-drift, dashboard, Astrids labbchatt (avvecklas) | Den som rör tal eller OpenClaw | När Director, Gateway eller modellflöden ändras |
+| Fråga | Dokument | Uppdateras |
+| --- | --- | --- |
+| Arbetssteg i Admin | [användarguiden](../apps/studio/docs/README.md), [ordlistan](../apps/studio/docs/TERMINOLOGI.md) och Admins Hjälp `/admin/guide` | När flöde eller betydelse ändras |
+| Lagring och uppspelning av dealermedia | [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md) | När kodens kontrakt ändras |
+| Blackjack, roulette och Partner-API | [games/](games/README.md) | När regler, format eller API ändras |
+| Dealer och bordsgrafik | [DEALER-TABLE-TEMPLATE](design/DEALER-TABLE-TEMPLATE.md) | När kompositionskontraktet ändras |
+| AI och OpenClaw | [AI/](AI/README.md), [OpenClaw](AI/openclaw/README.md) med källindex, dashboard, deployment och produkttal | När modellflöde eller tjänst ändras |
 
-## Planer
+## Drift och miljö
 
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [plans/NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md) | Nyckel → bolag: `api_keys.operator_id`, migrering 012, motorns kontroll, prov och PR-sekvens | Orkestreraren och den som bygger bindningen | Tills bindningen är verifierad i drift, sedan raderas det |
-| [plans/STEG-F](plans/STEG-F.md) | Steg F, spelare knyts till bolag: inventering, `players.operator_id`, migrering game-014 med backfill, PR-ordning, risker och Jakobs tre beslut | Orkestreraren och den som bygger steg F | Tills steget är verifierat i drift, sedan raderas det |
-| [plans/PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md) | Paow: röst-, bank- och RunPod-underlag samt planen för den dealer-generiska talkedjan efter O03 | Orkestreraren och den som bygger talkedjan | Tills aktiviteten är verifierad, sedan raderas det |
-| [plans/TALKEDJA](plans/TALKEDJA.md) | Genomförandeplan för den dealer-generiska talkedjan, Paow först: hinder med fil och rad, PR-sekvens T1–T8, Jakobs beslut, vad som raderas | Orkestreraren och den som bygger talkedjan | Per PR i sekvensen, raderas när kedjan är verifierad |
-| [TALKEDJA-RUNPOD](TALKEDJA-RUNPOD.md) | Kevins RunPod- och ElevenLabs-uppsättning 28 oktober, vår talkedja med fil och rad, jämförelse Kevins prod/vår prod/preview, kända felkonfigurationer och aktivering mot Kevins konto (preview först) | Jakob och den som slår på talet | När en endpoint, nyckel eller talvariabel ändras; raderas med TALKEDJA |
-| [plans/KEVIN-PORT](plans/KEVIN-PORT.md) | Selektiv överföring av Kevins och Emils presentationsförbättringar: läget för P1–P14, kandidater med fil och rad, PR-ordning, vad som inte tas, Jakobs beslut | Orkestreraren och den som bygger varje PR | Per PR i ordningen, raderas när den sista är verifierad |
-| [plans/PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md) | Partnerportalen från kevin-bo till mains mönster: inventering fil för fil, Kevin-beteenden som behålls, målstruktur, PR-sekvens och skydd | Orkestreraren och den som bygger varje PR | Per PR i sekvensen, raderas när den sista är verifierad |
-| [plans/REN-START](plans/REN-START.md) | Ren start: ordning, backup och go-punkter för att radera Astrid, testrum och operatörer | Orkestreraren och Jakob | Tills ren start är utförd |
-| [plans/ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) | Admin efter enkel väg: beslut, flödet Nytt spelbord, flikarna i dag och det som är kvar | Admin-arkitekten | Av Admin-arkitekten |
-| [plans/VISUELL-RIKTNING](plans/VISUELL-RIKTNING.md) | Visuell riktning (Johns palett översatt): skal, sidmall, typsnitt, färg via `--sg-*`, statusar och komponenter | Den som bygger skalet och sidorna | När skalet är byggt eller Jakob ändrar riktningen |
-| [plans/DESIGNSYSTEM](plans/DESIGNSYSTEM.md) | Kitet för Admin och Partnerportalen (shadcn-stil på Radix och `--sg-*`): komponenter, hur en vy konverteras, piloten och vyerna på tur | Den som bygger eller konverterar en vy | När alla vyer är konverterade |
-| [plans/VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) | Steg H: Admin-SPA:ns och lobbyns verktygskedja, alternativ A (behåll SPA:n med en Tailwind, en tokenfil och ett mörkt läge) och B (Admin som Next-sidor), rekommendation och PR-sekvens | Den som bygger steg H | Raderas när det valda alternativet är byggt och verifierat i drift |
+| Fråga | Dokument | Uppdateras |
+| --- | --- | --- |
+| Molnväg, merge och release | [CLOUD-MIGRATION](CLOUD-MIGRATION.md), [Render V3](../ops/cloud/RENDER-V3.md), [molnindex](../ops/cloud/README.md), [byggkontext](../ops/cloud/CONTAINER-CONTEXT.md) | När driftvägen ändras |
+| Backup och återställning | [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) | När återställningsvägen ändras |
+| Miljövariabler, aldrig värden | [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md), [maskinläsbart register](environment-variables.json) | I samma leverans som en variabel ändras |
+| Neon och Blob | [BLOB-NEON](storage/BLOB-NEON.md) | När schema eller lagringskontrakt ändras |
+| Paows bank och GPU-körning | [PAOW-BANK-KORNING](PAOW-BANK-KORNING.md), [kvittomall](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) | När verktyg eller endpointmall ändras; mallen är inget genomfört prov |
+| F11: överlapp, återanslutning och releasevillkor | [F11-DRIFTKVITTO](plans/organisation/F11-DRIFTKVITTO.md) | Vid nytt relevant prov; behåll medan releasebeslutet använder bevisen |
 
-## Organisationsplan och daterat underlag
+## Sakplaner
 
-Beställd sammanställning av systemgranskningen. KORPLAN-v2 är enda aktiva körplan och statuskälla; äldre områdes- och aktivitetsfiler är daterat inventeringsunderlag.
+Kontrollera kvarvarande delar mot aktuell kod före start. Genomförda steg och daterade filhänvisningar beställer inget nytt arbete. Bevara kontrakt i sakguiden och radera planen när dess återstående syfte är uppfyllt.
 
-| Dokument | Vad | För vem | Uppdateras |
-| --- | --- | --- | --- |
-| [plans/organisation/ARBETSSATT.md](plans/organisation/ARBETSSATT.md) | Arbetssätt: aktiviteter, agenter och nya fynd | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/BESLUTSLOGG.md](plans/organisation/BESLUTSLOGG.md) | Beslutslogg och nya fynd | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/F11-DRIFTKVITTO.md](plans/organisation/F11-DRIFTKVITTO.md) | Verkligt tvåinstansprov, pengar och avgränsat deploybeslut | Drift / MERGEAGENTEN | Vid nytt relevant driftprov |
-| [plans/organisation/gemensamt/aktiviteter/GEM-01.md](plans/organisation/gemensamt/aktiviteter/GEM-01.md) | GEM-01: Förstädning med bevis för varje kandidat | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/gemensamt/aktiviteter/GEM-02.md](plans/organisation/gemensamt/aktiviteter/GEM-02.md) | GEM-02: Miljöinventering utan att läsa eller ändra hemligheter | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/gemensamt/aktiviteter/GEM-03.md](plans/organisation/gemensamt/aktiviteter/GEM-03.md) | GEM-03: Beslutsspår för Git-historik och eventuell ny produktrepo | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/gemensamt/OMRADESPLAN.md](plans/organisation/gemensamt/OMRADESPLAN.md) | Gemensamt: tvärgående förarbete och beslut | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/KORPLAN-v2.md](plans/organisation/KORPLAN-v2.md) | Aktiv gemensam körplan, första vågens briefs, mandat och etapplogg | MERGEAGENTEN och utförande agenter | Vid verifierad etapp eller ändrat beslut |
-| [plans/organisation/MASTERPLAN.md](plans/organisation/MASTERPLAN.md) | Ingång till körplanen och fryst områdesunderlag från inventeringen | Alla | När ingångar ändras |
-| [plans/organisation/NULAGE.md](plans/organisation/NULAGE.md) | Nuläge: inventeringsbas 31 oktober 2026 | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-01.md](plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-01.md) | DOC-01: Rätta dokumentdrift från aktuell kod | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-02.md](plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-02.md) | DOC-02: Förtydliga ord och levande tekniska namn | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-03.md](plans/organisation/omraden/01-repo-och-dokument/aktiviteter/DOC-03.md) | DOC-03: Härled en liten system- och ansvarskarta | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/01-repo-och-dokument/OMRADESPLAN.md](plans/organisation/omraden/01-repo-och-dokument/OMRADESPLAN.md) | Områdesplan: Repo och dokument | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-01.md](plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-01.md) | REL-01: Läsande releasekvitto med resurs och kodomfång | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-02.md](plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-02.md) | REL-02: Återställningsbevis för Neon och Render-state | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-03.md](plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-03.md) | REL-03: Besluta om begränsad releaseautomation | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-04.md](plans/organisation/omraden/02-release-och-drift/aktiviteter/REL-04.md) | REL-04: Kontrollerad synk av preview inför nästa acceptansprov | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/02-release-och-drift/OMRADESPLAN.md](plans/organisation/omraden/02-release-och-drift/OMRADESPLAN.md) | Områdesplan: Release och drift | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-01.md](plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-01.md) | SEC-01: Säkra preview-sessionens cookie | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-02.md](plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-02.md) | SEC-02: Dela cookiepolicy utan att blanda sessioner | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-03.md](plans/organisation/omraden/03-auth-och-sakerhet/aktiviteter/SEC-03.md) | SEC-03: Verifiera säkerhetstäckning och historikgap | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/03-auth-och-sakerhet/OMRADESPLAN.md](plans/organisation/omraden/03-auth-och-sakerhet/OMRADESPLAN.md) | Områdesplan: Auth och säkerhet | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-01.md](plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-01.md) | GAM-01: F11: verifiera restart och återanslutning i drift | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-02.md](plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-02.md) | GAM-02: Konsolidera levande speladaptrar stegvis | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-03.md](plans/organisation/omraden/04-spel-och-adaptrar/aktiviteter/GAM-03.md) | GAM-03: Fastställ processlokalt tillstånd och idempotensbehov | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/04-spel-och-adaptrar/OMRADESPLAN.md](plans/organisation/omraden/04-spel-och-adaptrar/OMRADESPLAN.md) | Områdesplan: Spel och adaptrar | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-01.md](plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-01.md) | TAL-01: Generated speech vid delat bord med aktuellhetskontroll | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-02.md](plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-02.md) | TAL-02: Isolera talfel från spelstart utan öppen fallback | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-03.md](plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-03.md) | TAL-03: Verifiera röst-, bank- och miljöidentiteter | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-04.md](plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-04.md) | TAL-04: Besluta om tal utanför spelprocessen | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-05.md](plans/organisation/omraden/05-tal-och-ai/aktiviteter/TAL-05.md) | TAL-05: Avgränsa Slack-restpunkt och verifiera minsta åtkomst | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/05-tal-och-ai/OMRADESPLAN.md](plans/organisation/omraden/05-tal-och-ai/OMRADESPLAN.md) | Områdesplan: Tal och AI | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-01.md](plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-01.md) | ADM-01: Samla kvarvarande publiceringskontrakt efter L3 | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-02.md](plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-02.md) | ADM-02: Välj nästa avgränsade UX-/partnersteg | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-03.md](plans/organisation/omraden/06-admin-och-produkt/aktiviteter/ADM-03.md) | ADM-03: Verifiera partnerwalletens gräns och bolagssteg | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/06-admin-och-produkt/OMRADESPLAN.md](plans/organisation/omraden/06-admin-och-produkt/OMRADESPLAN.md) | Områdesplan: Admin och produkt | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-01.md](plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-01.md) | DAT-01: Fastställ schemaledger och läsroller per miljö | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-02.md](plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-02.md) | DAT-02: Materialbyte med atomisk påverkan per rum och bolag | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-03.md](plans/organisation/omraden/07-data-och-media/aktiviteter/DAT-03.md) | DAT-03: Referensbaserad gallring med liten revisionskedja | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/07-data-och-media/OMRADESPLAN.md](plans/organisation/omraden/07-data-och-media/OMRADESPLAN.md) | Områdesplan: Data och media | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-01.md](plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-01.md) | CI-01: Rätta runtime- och typmismatchar avgränsat | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-02.md](plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-02.md) | CI-02: Välj och inför en versions-/testpolicy stegvis | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-03.md](plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-03.md) | CI-03: Besluta om workspace och större byggförenkling | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-04.md](plans/organisation/omraden/08-toolchain-och-ci/aktiviteter/CI-04.md) | CI-04: Granska mellanliggande Git-objekt före push | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/omraden/08-toolchain-och-ci/OMRADESPLAN.md](plans/organisation/omraden/08-toolchain-och-ci/OMRADESPLAN.md) | Områdesplan: Toolchain och CI | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-| [plans/organisation/UNDERLAG.md](plans/organisation/UNDERLAG.md) | Underlag: källor, rättelser och spårbarhet | MERGEAGENTEN / områdesagent | Vid tilldelning, beslut eller verifiering |
-
-## Ingångar för agenter och IDE:er
-
-Korta filer som pekar på [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md). Utöver verktygets branchprefix upprepar de bara de viktigaste reglerna; en regeländring görs i AGENTS, inte i ingångsfilerna.
-
-| Fil | Verktyg |
+| Område | Dokument |
 | --- | --- |
-| [CLAUDE.md](../CLAUDE.md) | Claude Code |
-| [GEMINI.md](../GEMINI.md) | Gemini CLI och Antigravity |
-| [.github/copilot-instructions.md](../.github/copilot-instructions.md) | GitHub Copilot |
-| [.windsurf/rules/scoutgaming.md](../.windsurf/rules/scoutgaming.md) | Windsurf |
-| [.cursor/rules/scoutgaming.mdc](../.cursor/rules/scoutgaming.mdc) | Cursor |
+| Bolagsbindning för nycklar och spelare | [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), [STEG-F](plans/STEG-F.md) |
+| Tal, röst och läppsynk | [TALKEDJA](plans/TALKEDJA.md), [PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md), [RunPod-underlag](TALKEDJA-RUNPOD.md) |
+| Selektiva presentationsförbättringar | [KEVIN-PORT](plans/KEVIN-PORT.md) |
+| Admin, partner och design | [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md), [DESIGNSYSTEM](plans/DESIGNSYSTEM.md), [VISUELL-RIKTNING](plans/VISUELL-RIKTNING.md), [VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) |
+| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md); konkreta backup-, referens- och återgångsvillkor gäller före dataåtgärd |
+| Beställd Git-utredning och möjligt repo-byte | [historikmätning](incidents/2026-10-31-repository-history.md), [övergångsplan](incidents/2026-10-31-clean-repository-plan.md); daterade beslutsunderlag, ingen utförd flytt |
 
-## Kvitton
+## Underhåll
 
-Daterade bevis (`<datum>-<aktivitet>-…-ACCEPTANCE.json`), skrivna en gång. De beskriver inte läget. När aktiviteten är verifierad raderas kvittot med en rad i [HISTORIK](HISTORIK.md). Migreringens kvitton är raderade (alla 20 aktiviteter VERIFIED); `migrering/status.json` pekar på Git-versionerna, se [HISTORIK](HISTORIK.md). Kvar är [kvittomallen](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) för Paows bank. Miljöinventeringen är införlivad i miljö- och återställningsguiderna.
+- Uppdatera befintlig sakguide. Nya dokument får en tydlig ingång här eller i ett områdesindex.
+- Radera förbrukade planer, dubbletter och kvitton med uppdaterade länkar och en Git-hänvisning i [HISTORIK](HISTORIK.md). Skapa ingen historikmapp.
+- Ett aktivt kontrakt eller releasebeslut får behålla sitt nödvändiga bevis. En gammal länk ensam motiverar ingen dokumentdubblett.
+- Dokument under `docs/` får vara högst 100 kB; NEXT-AGENT högst 150 rader (`tools/check-repo-limits.mjs`).
 
-Det finns ingen historikmapp. docs/history raderades 28 oktober 2026; äldre text läses ur Git ([HISTORIK](HISTORIK.md)).
+Verktygsingångarna [CLAUDE](../CLAUDE.md), [GEMINI](../GEMINI.md), [Copilot](../.github/copilot-instructions.md), [Windsurf](../.windsurf/rules/scoutgaming.md) och [Cursor](../.cursor/rules/scoutgaming.mdc) pekar på START-HERE och AGENTS. Ändra arbetsreglerna i AGENTS.
