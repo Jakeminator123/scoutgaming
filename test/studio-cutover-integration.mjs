@@ -137,7 +137,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       const id = randomUUID();
       await store.db.prepare('INSERT INTO players(id,name,created_at) VALUES (?,?,?)').run(id, name, new Date().toISOString());
       return { id };
-    }, identity, { authEpoch });
+    }, identity);
     runtime = { store, repository, gamePolicy, authorize, admin, auth, document, command, identity, authEpoch, gameAuth };
   }
   server = createServer(tls, async (incoming, outgoing) => {

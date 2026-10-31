@@ -108,10 +108,9 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
       [actorId, 'Synthetic shared-command player', 1000, '2026-10-22T00:00:00.000Z']);
     const userId = String((await pool.query(`INSERT INTO croupier_auth.users(username,salt,hash,created_at)
       VALUES($1,$2,$3,$4) RETURNING id`, [`command-${id}`, salt, hash, '2026-10-22T00:00:00.000Z'])).rows[0].id);
-    await pool.query('INSERT INTO croupier_auth.bo_auth_epochs(user_id,epoch) VALUES($1,0)', [userId]);
     await pool.query('INSERT INTO croupier_game.craig_player_links(craig_user_id,player_id) VALUES($1,$2)', [userId, actorId]);
     await pool.query(`INSERT INTO croupier_game.player_sessions(digest,player_id,expires,source_stamp,display_name)
-      VALUES($1,$2,$3,$4,$5)`, [digest, actorId, expires, `bo:0:${fingerprint}`, 'Synthetic player']);
+      VALUES($1,$2,$3,$4,$5)`, [digest, actorId, expires, `credential:${fingerprint}`, 'Synthetic player']);
     const traced = tracedPool(pool), storage = createPostgresStore({ pool: traced.adapter });
     // Construction and sharedTransaction take only G/S; no Studio table is read.
     const repository = createStudioRepository({ pool: traced.adapter, scope });
@@ -260,7 +259,20 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
     }
   });
 
-  for (const revoke of ['credential', 'epoch', 'status']) {
+  await check('shared-command-real-pg-retired-bo-handoff-cannot-replay-a-current-credential-receipt', async () => {
+    const h = await fixture(); await h.join();
+    const command = h.input('refill'); await h.invoke(command);
+    const before = await h.durable();
+    await pool.query("UPDATE croupier_game.player_sessions SET source_stamp='bo:0:' || substr(source_stamp,12) WHERE digest=$1", [h.digest]);
+    await assert.rejects(h.invoke(command), error => {
+      assert.equal(error.code, 'AUTHORITY_REJECTED');
+      assertSingleTransaction(error.commandTrace, { committed: false, admitted: false });
+      return true;
+    });
+    assert.deepEqual(await h.durable(), before, 'retired authority cannot read its former receipt or change wallet/state');
+  });
+
+  for (const revoke of ['credential', 'link', 'status']) {
     await check(`shared-command-real-pg-${revoke}-revocation-while-command-waits-rejects-before-receipt`, async () => {
       const h = await fixture(); await h.join();
       const before = await h.durable(), writer = await secondPool.connect(), started = deferred();
@@ -269,14 +281,14 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
         await writer.query('BEGIN'); active = true;
         await writer.query("SET LOCAL lock_timeout='8000ms'; SET LOCAL statement_timeout='12000ms'");
         if (revoke === 'credential') await writer.query('UPDATE croupier_auth.users SET hash=$2 WHERE id=$1', [h.userId, `rotated-${randomUUID()}`]);
-        else if (revoke === 'epoch') await writer.query('UPDATE croupier_auth.bo_auth_epochs SET epoch=epoch+1 WHERE user_id=$1', [h.userId]);
+        else if (revoke === 'link') await writer.query('DELETE FROM croupier_game.craig_player_links WHERE player_id=$1', [h.actorId]);
         else await writer.query("UPDATE croupier_game.players SET status='blocked' WHERE id=$1", [h.actorId]);
         // The uncommitted revocation owns the row. The command must wait, then
         // validate the committed value rather than reuse its initial identity.
         pending = observe(h.invoke(h.input('refill'), { onStarted: transaction => started.resolve(transaction) }));
         const transaction = await bounded(Promise.race([started.promise, pending.then(() => assert.fail('transaction did not start'))]), 'command start timeout');
         const waitingQuery = revoke === 'credential' ? /FROM croupier_auth\.users\b.*FOR SHARE/
-          : revoke === 'epoch' ? /FROM croupier_auth\.bo_auth_epochs\b.*FOR SHARE/
+          : revoke === 'link' ? /FROM croupier_game\.craig_player_links\b.*FOR SHARE/
             : /FROM croupier_game\.players\b.*FOR UPDATE/;
         await blockedBy(pool, transaction.pid, writer.processID, waitingQuery);
         await writer.query('COMMIT'); active = false;
@@ -430,7 +442,6 @@ export async function runPostgresSharedCommandChecks({ pool, createPool }) {
           ['SELECT id FROM croupier_game.players WHERE id=$1 FOR UPDATE NOWAIT', [h.actorId]],
           ['SELECT player_id FROM croupier_game.craig_player_links WHERE player_id=$1 FOR UPDATE NOWAIT', [h.actorId]],
           ['SELECT id FROM croupier_auth.users WHERE id=$1 FOR UPDATE NOWAIT', [h.userId]],
-          ['SELECT user_id FROM croupier_auth.bo_auth_epochs WHERE user_id=$1 FOR UPDATE NOWAIT', [h.userId]],
           ['SELECT digest FROM croupier_game.player_sessions WHERE digest=$1 FOR UPDATE NOWAIT', [h.digest]],
           ['SELECT room_id FROM croupier_game.shared_table_presentation_receiver WHERE room_id=$1 FOR UPDATE NOWAIT', [h.roomId]],
         ]) assert.equal((await writer.query(sql, values)).rowCount, 1);
