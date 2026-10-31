@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {build} from 'esbuild';
 import vm from 'node:vm';
 import React from 'react';
 import {addDealer,createSeedProject,defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
@@ -45,7 +46,27 @@ test('the actual dealer canvas keys legacy and classified frames and clears fail
     broken=false;video.src='/recovered.mp4';events.get('loadstart')();paint();assert.equal(pixels[3],0);assert.equal(pixels[7],255);
     h.unmount();assert.equal(frames.size,0);assert.equal(events.size,0);
   }
-  const css=readFileSync(new URL('../components/dealer-video-surface.module.css',import.meta.url),'utf8');assert.match(css,/video\{visibility:hidden/);
+});
+
+const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
+test('the rendered dealer surface hides the raw video while its canvas remains visible',{skip:!browserModule},async()=>{
+  const {outputFiles}=await build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
+    import {DealerVideoSurface} from './components/dealer-video-surface';
+    createRoot(document.getElementById('root')).render(<DealerVideoSurface><video aria-label="Raw dealer"/></DealerVideoSurface>);`,
+    resolveDir:fileURLToPath(new URL('../',import.meta.url)),loader:'tsx'},bundle:true,write:false,outfile:'fixture.js',platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent'});
+  const {chromium}=await import(pathToFileURL(browserModule).href);
+  const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
+  try{
+    const page=await browser.newPage(),failures=[];
+    page.on('pageerror',error=>failures.push(error));
+    await page.route('**/*',route=>route.abort());
+    await page.setContent('<!doctype html><div id="root"></div>');
+    await page.addStyleTag({content:outputFiles.find(file=>file.path.endsWith('.css')).text});
+    await page.addScriptTag({content:outputFiles.find(file=>file.path.endsWith('.js')).text});
+    await page.locator('canvas').waitFor({state:'visible'});
+    assert.equal(await page.getByLabel('Raw dealer').isVisible(),false,'only the keyed canvas is painted');
+    assert.deepEqual(failures,[]);
+  }finally{await browser.close();}
 });
 
 test('dealer PNG canvas preserves alpha and green pixels without depending on DOM constructors',()=>{

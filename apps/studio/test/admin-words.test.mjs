@@ -6,13 +6,12 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Ordvakt för Admin: legacy-ord får inte stå i text som en administratör kan se.
-// Rätt ord: miljö (inte sammansättning, scenmall), spelbord (inte rum, rummet, spelrum, Rumsnamn),
+// Rätt ord: miljö (inte sammansättning, scenmall), spelbord (inte spelrum, Rumsnamn),
 // Scoutgaming (inte Croupier); Astrid är raderad. Se apps/studio/docs/TERMINOLOGI.md.
-// "rum" är ett helt ord eller ett förled (rummet, rummens, rumsregistret), aldrig en del av datarum eller utrymme.
 const require = createRequire(import.meta.url);
 const studio = fileURLToPath(new URL('..', import.meta.url));
 const repo = join(studio, '..', '..');
-export const LEGACY_WORDS = /sammansättning|scenmall|spelrum|Rumsnamn|Astrid|Croupier|(?<!\p{L})rum(?:met|men|mets|mens|s\p{L}*)?(?!\p{L})/iu;
+export const LEGACY_WORDS = /sammansättning|scenmall|spelrum|Rumsnamn|Astrid|Croupier/iu;
 
 // Filer som ändras i en öppen PR: byt orden där och ta bort raden när PR:en är mergad.
 const PENDING = new Set([]);
@@ -96,10 +95,10 @@ export function A(){ const id='croupier-director'; const url='/admin/spelrum?dea
   assert.deepEqual(texts.map(row => row.line), [4, 4, 4, 4, 5, 5]);
   assert.deepEqual(texts.filter(row => legacyWord(row.text)).map(row => row.text), ['Spelrummet öppnas', 'Rumsnamn', 'Välj i Croupier', 'Schemat croupier_auth.users läses, inte Croupier.', 'Astrid']);
   const words = ['Rum', 'rummet', 'Rummens arkiv', 'rumsregistret', 'Rum: Norr', 'Rumba', 'datarum', 'utrymme', 'spelbordet', 'room-id'];
-  assert.deepEqual(words.filter(legacyWord), ['Rum', 'rummet', 'Rummens arkiv', 'rumsregistret', 'Rum: Norr']);
+  assert.deepEqual(words.filter(legacyWord), [], 'ordinary room terminology is editable product copy');
 });
 
-test('Admin shows no legacy words: sammansättning, scenmall, rum, spelrum, Rumsnamn, Astrid or Croupier', async () => {
+test('Admin shows no legacy words: sammansättning, scenmall, spelrum, Rumsnamn, Astrid or Croupier', async () => {
   for (const path of PENDING) assert.ok(files.includes(path), `${path} finns inte; ta bort raden ur PENDING`);
   const found = await hits(files.filter(path => !PENDING.has(path)));
   assert.deepEqual(found, [], 'byt till miljö, spelbord, spelbordets namn eller Scoutgaming:\n' + found.join('\n'));

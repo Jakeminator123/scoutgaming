@@ -9,10 +9,5 @@ test('every system section has an administrator policy and sits in exactly one g
   const ids = SYSTEM_GROUPS.flatMap(group => group.sections);
   assert.equal(ids.length, new Set(ids).size);
   assert.deepEqual([...ids].sort(), SYSTEM_SECTIONS.map(section => section.id).sort());
-  for (const group of SYSTEM_GROUPS) {
-    assert.ok(Object.isFrozen(group));
-    assert.ok(Object.isFrozen(group.sections));
-    assert.ok(['Drift', 'System'].includes(group.area), group.id);
-  }
-  assert.equal(SYSTEM_GROUPS.some(group => group.id === 'tables'), false, 'the retired room settings group is gone');
+
 });

@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
+import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 // The form renders in Admin with Admin's kit, so React, the kit and its packages all come from client/.
 const client=createRequire(new URL('../client/package.json',import.meta.url)),React=client('react'),{renderToStaticMarkup}=client('react-dom/server');
@@ -21,7 +22,7 @@ function render({dirty=false,stale=false,ready=true,reason,materialReason,dealer
 }
 test('room form presents fixed demo timers and selected saved fields',()=>{
  const html=render();assert.match(html,/Kvällsbord/);assert.match(html,/<option value="sv" selected="">Svenska/);assert.match(html,/<input type="radio"[^>]*name="limit-preset-room" checked="" value="high"/);
- assert.equal((html.match(/type="radio"/g)??[]).length,3);assert.doesNotMatch(html,/<option value="(casual|prive|high)"|>casual<|>prive<|>high</);
+ assert.deepEqual([...html.matchAll(/<input\b[^>]*>/g)].map(([tag])=>tag).filter(tag=>/\btype="radio"/.test(tag)).map(tag=>tag.match(/\bvalue="([^"]+)"/)[1]).sort(),Object.keys(ROOM_LIMIT_PRESETS).sort());assert.doesNotMatch(html,/<option value="(casual|prive|high)"|>casual<|>prive<|>high</);
  assert.match(html,/Insatstid: 20 sekunder/);assert.match(html,/Beslutstid: 15 sekunder/);assert.doesNotMatch(html,/<input(?![^>]*type="radio")|workerURL/);
  assert.match(html,/>Spara spelinställningar/);assert.match(html,/config-1/);
 });
