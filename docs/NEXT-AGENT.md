@@ -33,6 +33,8 @@ Kvar för senare taluppdrag: delat bords `generated-speech-stream` behöver komp
 
 Miljöinventeringen från 29 oktober är borttagen; aktuella kontrakt och återstående kontroller finns i [miljöguiden](ENVIRONMENT-VARIABLES.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md#kvar-att-bedöma-för-gallring). Dokumentstädningen ändrar inga molnresurser eller prototypers arbetsfiler.
 
+**AGENT 1, repo-utredning 31 oktober:** full Git-backup och de två lokala testernas snapshots är verifierade. [Incidentrapporten](incidents/2026-10-31-repository-history.md) innehåller de frysta mätningarna; [övergångsplanen](incidents/2026-10-31-clean-repository-plan.md) beskriver alternativet på cirka 65 MiB. Ingen historik har skrivits om och inget repo-/driftbyte är utfört. Nästa genomförande måste skydda senare commits/utkast och behålla testernas nuvarande Git-lager; den gamla snapshoten är inte senaste main.
+
 ## Arbetsgräns och avslut
 
 Regler, slump, sko, kort och spelutfall är spelkärnan. Hela `services/game` är inte orörbar kod: klient, sessioner, rum, presentation och taladaptrar får förenklas och flyttas med bibehållen behörighet, serverauktoritet och atomiska pengatransaktioner. Läs [ansvarsgränsen](../services/game/README.md#vad-som-får-ändras).
