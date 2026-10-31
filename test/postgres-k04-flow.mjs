@@ -81,7 +81,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
   // K04 planning gate first: the config carries leadMs/cardMs only from a verified binding.
   const catalogue = loadCatalogue();
   const observed = new Map(catalogue.filter(r => !isDeferred(r)).map(r => [r.path, r.sha256]));
-  const documents = new Map([[timingSourceOf(DEALER), readFileSync(new URL(`./fixtures/kevin-5aa7ed1/public/${timingSourceOf(DEALER)}`, import.meta.url))]]);
+  const documents = new Map([[timingSourceOf(DEALER), readFileSync(new URL(`./fixtures/blackjack-media-timing/${DEALER}.json`, import.meta.url))]]);
   const binding = planningRevision({ catalogue, dealer: DEALER, language: LANGUAGE, observed, documents });
   const planned = new Set(binding.media.map(([path]) => path));
   const config = { ...structuredClone(DEFAULT_CONFIG), language: LANGUAGE, leadMs: binding.leadMs, cardMs: binding.cardMs };

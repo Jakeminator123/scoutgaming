@@ -7,5 +7,5 @@
 media/** -text
 media/layout.json text eol=lf
 
-# Frozen migration fixtures are checked against the original Git blob bytes.
-test/fixtures/kevin-5aa7ed1/** text eol=lf
+# Timing fixtures are hashed by the publication contract.
+test/fixtures/blackjack-media-timing/** text eol=lf

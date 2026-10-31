@@ -58,3 +58,13 @@ soft hands as `7/17` and completed 21 as `21`. Labels only use presented cards;
 hidden hole cards remain excluded. Wider badges preserve the dealer fan's
 clearance. Card coordinates, measured contact frames and media are unchanged.
 `test/local-card-overlay.mjs` covers these display and hidden-card boundaries.
+
+## Regression coverage
+
+`test/blackjack-presentation.mjs` checks presentation order against committed
+server draws and preserves hidden-card boundaries across 300 deterministic rounds.
+`test/blackjack-core.mjs` compares fixed cards, outcomes, money and proof signatures
+captured from the independent migration engine over two complete shoes. The small
+reference is `test/fixtures/blackjack-regression.json`; duplicate executable engine
+and browser snapshots have been removed. Hash-bound timing documents remain in
+`test/fixtures/blackjack-media-timing/` as publication-gate inputs.

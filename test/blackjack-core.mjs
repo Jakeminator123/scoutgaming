@@ -7,8 +7,6 @@ import { handValue } from '../services/game/games/blackjack/round.mjs';
 import { digest, verifyShoe } from '../services/game/games/blackjack/shoe-proof.mjs';
 import { secureRandom } from '../services/game/games/blackjack/secure-random.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
-import * as kevinGame from './fixtures/kevin-5aa7ed1/shoe-game.mjs';
-import * as kevinProof from './fixtures/kevin-5aa7ed1/shoe-proof.mjs';
 
 const EMPTY = { main: 0, pp: 0, tp: 0 };
 const ONE_BOX = [{ main: 5, pp: 0, tp: 0 }, ...Array.from({ length: 6 }, () => ({ ...EMPTY }))];
@@ -60,16 +58,6 @@ function stack(t, cards) {
   s.shoe.cards.splice(-cards.length, cards.length, ...cards.map(([r, suit]) => ({ r, s: suit })).reverse());
   t.state = s;
 }
-
-test('frozen Kevin fixtures are byte-identical to 5aa7ed1', () => {
-  const blob = path => {
-    const bytes = readFileSync(new URL(`./fixtures/kevin-5aa7ed1/${path}`, import.meta.url));
-    return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
-  };
-  assert.equal(blob('shoe-game.mjs'), 'b59177421de2a6fe203e4e0bdf0676a4bb9b25ef');
-  assert.equal(blob('shoe-proof.mjs'), '54e9737a3d89fe763d907f20282bd298480b7f35');
-  assert.equal(blob('public/blackjack.mjs'), '5ce0fe431186bd11c2a893766a2ce6c63b1cc6dc');
-});
 
 test('new game commits the shoe before the first draw and exposes only the commitment', () => {
   const t = table();
@@ -258,7 +246,6 @@ test('shoe transition: no mid-round shuffle, closed proof only after cut, new co
   assert.equal(JSON.stringify(closed.payload.proof.rules), '{"decks":8,"cutAfter":312,"total":416,"burn":1}');
   const proof = { ...closed.payload.proof, commandDraws: t.commandDraws(first) };
   assert.equal(verifyShoe(proof, t.log[0].payload.commitment).status, 'verified');
-  assert.equal(kevinProof.verifyShoe(structuredClone(proof), t.log[0].payload.commitment).status, 'verified', "Kevin's verifier accepts the core proof");
 });
 
 test('tampered nonce, draw, remaining shoe or action log fail verification', () => {
@@ -273,7 +260,6 @@ test('tampered nonce, draw, remaining shoe or action log fail verification', () 
     const result = verifyShoe(copy, commitment);
     assert.equal(result.status, 'failed');
     assert.equal(result.checks.find(c => c.name === check)?.pass, false, check);
-    assert.equal(kevinProof.verifyShoe(copy, commitment).status, 'failed');
   };
   failed(p => { p.nonce = p.nonce.slice(0, -1) + (p.nonce.endsWith('0') ? '1' : '0'); }, 'Opening commitment');
   failed(p => { p.samples[0] = (p.samples[0] + 1) % 0x100000000; }, 'Opening commitment');
@@ -324,7 +310,7 @@ test('randomness, ids and nonce come only from explicit inputs; production adapt
   assert.equal(one.state.shoe.cards.length, 415);
 });
 
-test('split, double and insurance effects match Kevin engine amounts', () => {
+test('split, double and insurance consume the exact stake and settle once', () => {
   const t = table('stacked');
   stack(t, [['8','♠'],['6','♦'],['8','♥'],['10','♣'],['3','♦'],['2','♣'],['9','♦'],['K','♥'],['5','♠']]);
   t.send({ op: 'start', bets: ONE_BOX });
@@ -354,75 +340,52 @@ test('shoe exhaustion fails without a quiet replacement', () => {
   assert.equal(publicView(t.state).shoe.remaining, 0);
 });
 
-// Kevin's frozen engine and the core, fed the same random samples, shoe id and nonce,
-// must produce byte-identical shoes, rounds, proofs and amounts through two cut cards.
-test("compatibility: Kevin's frozen engine and the core stay byte-identical; proofs cross-verify", t => {
-  // Kevin's engine draws from global crypto; seed it so the covered rounds are fixed.
-  // (Its nonce still comes from node:crypto randomBytes and only affects the commitment.)
-  const seeded = deterministicRandom('kevin-compat');
-  t.mock.method(globalThis.crypto, 'getRandomValues', buf => { buf[0] = seeded.uint32(); return buf; });
-  t.mock.method(globalThis.crypto, 'randomUUID', () => seeded.uuid());
-  let g = kevinGame.newGame(), kevinVersion = 0;
-  const kevinEngine = [], kevinClosed = [];
-  const kevin = (op, extra = {}) => {
-    const next = JSON.parse(JSON.stringify(g)), prior = next.shoe?.id, drawn = next.shoe?.dealt ?? 1;
-    const out = kevinGame.command(next, { op, version: next.version, requestId: `r${kevinVersion++}`, ...extra }, Number.MAX_SAFE_INTEGER);
-    kevinClosed.push(...(next.closedShoes ?? [])); delete next.closedShoes;
-    if (op !== 'state') kevinEngine.push({ shoeId: next.shoe.id, draws: next.shoe.proof.draws.filter(d => d.position > (prior === next.shoe.id ? drawn : 1)) });
-    g = JSON.parse(JSON.stringify(next));
-    return out;
+// The fixed signatures were captured from the independently frozen migration engine,
+// not from the core under test. They cover every round/card/effect through two cut cards.
+test('fixed migration vectors preserve cards, outcomes, money and closed proofs across two shoes', () => {
+  const expected = JSON.parse(readFileSync(new URL('./fixtures/blackjack-regression.json', import.meta.url)));
+  const samples = deterministicRandom(expected.seed);
+  let shuffling = true, shoes = 0, roundIds = 0;
+  const random = {
+    uint32: samples.uint32,
+    nonce: () => expected.nonce,
+    uuid: () => shuffling
+      ? (shuffling = false, `00000000-0000-4000-8000-${String(++shoes).padStart(12, '0')}`)
+      : `10000000-0000-4000-8000-${String(++roundIds).padStart(12, '0')}`,
   };
-  // Replays exactly the samples, shoe id and nonce that Kevin's engine drew for its current shoe.
-  let roundIds = 0;
-  const mirror = (shuffling) => {
-    let cursor = 0; const ids = shuffling ? [g.shoe.id] : [];
-    return { uint32: () => g.shoe.proof.samples[cursor++], nonce: () => g.shoe.proof.nonce,
-      uuid: () => ids.shift() ?? `00000000-0000-4000-8000-${String(roundIds++).padStart(12, '0')}` };
+  const opened = newGame({ random });
+  let state = opened.state, rounds = 0, steps = 0, offers = 0, net = 0;
+  const trace = createHash('sha256'), log = [...opened.events], proofs = [], actions = new Set();
+  const send = command => {
+    shuffling = command.op === 'start' && state.shoe.cutReached;
+    const out = step(state, command, {}, { random, funding: { available: 1e9, reserved: reservationsFor(state, command) } });
+    state = out.state; log.push(...out.events); steps++;
+    const delta = out.effects.reduce((sum, e) => sum + (e.direction === 'debit' ? -e.amount : e.amount), 0);
+    net += delta;
+    trace.update(JSON.stringify({ round: state.round, paid: state.paid, shoe: state.shoe.cards, dealt: state.shoe.dealt, delta }) + '\n');
+    for (const event of out.events.filter(e => e.type === 'shoe.closed')) {
+      const p = event.payload.proof;
+      const commandDraws = log.filter(e => e.type.startsWith('engine.') && e.payload.shoeId === p.shoeId).flatMap(e => e.payload.draws);
+      const proof = { ...p, commandDraws };
+      assert.equal(verifyShoe(proof).status, 'verified');
+      proofs.push({ commitment: p.commitment, digest: digest(proof), draws: p.draws.length });
+    }
   };
-  kevin('state');
-  let core = newGame({ random: mirror(true) });
-  let state = core.state; const log = [...core.events], closed = [];
-  const send = (command, shuffling = false) => {
-    // Exact reservations for start/insurance, unlimited available for double/split (Kevin's engine ran with MAX_SAFE_INTEGER).
-    const out = step(state, command, {}, { random: mirror(shuffling), funding: { available: Number.MAX_SAFE_INTEGER, reserved: reservationsFor(state, command) } });
-    state = out.state; log.push(...out.events); closed.push(...out.events.filter(e => e.type === 'shoe.closed').map(e => e.payload.proof));
-    return out;
-  };
-  const same = (kevinOut, coreOut) => {
-    const { contract, roundId, turnSeq, ...rest } = state;
-    assert.equal(JSON.stringify({ ...rest, last: null }), JSON.stringify({ ...g, last: null }), 'state matches Kevin byte for byte');
-    assert.equal(coreOut.effects.reduce((n, e) => n + (e.direction === 'debit' ? -e.amount : e.amount), 0) + 0, kevinOut.delta + 0);
-  };
-  assert.equal(JSON.stringify(state.shoe), JSON.stringify(g.shoe));
-  let rounds = 0, offers = 0; const seen = new Set();
-  while (kevinClosed.length < 2) {
-    const shuffling = g.shoe.cutReached;
-    same(kevin('start', { bets: TWO_BOXES }), send({ op: 'start', bets: TWO_BOXES }, shuffling));
-    for (let guard = 0; g.round.phase !== 'settled' && guard < 20; guard++) {
-      if (g.round.phase === 'insurance') {
-        const takeBoxes = offers++ % 2 ? [] : [0, 3];
-        same(kevin('insurance', { takeBoxes }), send({ op: 'insurance', takeBoxes, roundId: state.roundId }));
+  while (proofs.length < 2) {
+    send({ op: 'start', bets: TWO_BOXES });
+    for (let guard = 0; state.round.phase !== 'settled' && guard < 30; guard++) {
+      if (state.round.phase === 'insurance') {
+        send({ op: 'insurance', takeBoxes: offers++ % 2 ? [] : [0, 3], roundId: state.roundId });
         continue;
       }
-      const r = g.round, hand = r.hands[r.active], legal = kevinGame.gameView(g).round.legalActions, total = handValue(hand.cards).total;
+      const r = state.round, h = r.hands[r.active], legal = publicView(state).round.legalActions, total = handValue(h.cards).total;
       const action = legal.includes('split') ? 'split' : legal.includes('double') && total >= 9 && total <= 11 ? 'double' : total < 17 ? 'hit' : 'stand';
-      seen.add(action);
-      same(kevin('act', { action }), send({ op: 'act', action, roundId: state.roundId, turnSeq: state.turnSeq, handIndex: r.active, box: hand.box }));
+      actions.add(action);
+      send({ op: 'act', action, roundId: state.roundId, turnSeq: state.turnSeq, handIndex: r.active, box: h.box });
     }
-    same(kevin('collect'), send({ op: 'collect', roundId: state.roundId }));
-    rounds++;
+    send({ op: 'collect', roundId: state.roundId }); rounds++;
+    assert.ok(rounds <= expected.rounds, 'the second cut card must be reached');
   }
-  assert.equal(closed.length, 2);
-  assert.deepEqual([...seen].sort(), ['double', 'hit', 'split', 'stand']);
-  assert.ok(log.some(e => e.type === 'engine.insurance' && e.payload.takeBoxes.length) && log.some(e => e.type === 'engine.insurance' && !e.payload.takeBoxes.length), 'insurance taken and declined');
-  for (const [i, proof] of kevinClosed.entries()) {
-    assert.equal(JSON.stringify(closed[i]), JSON.stringify(proof), 'closed proof is byte-identical');
-    const commandDraws = kevinEngine.filter(e => e.shoeId === proof.shoeId).flatMap(e => e.draws);
-    const coreDraws = log.filter(e => e.type.startsWith('engine.') && e.payload.shoeId === proof.shoeId).flatMap(e => e.payload.draws);
-    assert.equal(JSON.stringify(coreDraws), JSON.stringify(commandDraws), 'engine event draws match the audit draws');
-    const kevinMade = JSON.parse(JSON.stringify({ ...proof, commandDraws }));
-    assert.equal(verifyShoe(kevinMade, proof.commitment).status, 'verified', 'Kevin-produced proof verifies with the core');
-    assert.equal(kevinProof.verifyShoe({ ...closed[i], commandDraws: coreDraws }, proof.commitment).status, 'verified');
-    assert.equal(kevinProof.digest(kevinMade), digest(kevinMade));
-  }
+  assert.deepEqual({ rounds, steps, net, actions: [...actions].sort(), insuranceOffers: offers, trace: trace.digest('hex'), proofs },
+    { rounds: expected.rounds, steps: expected.steps, net: expected.net, actions: expected.actions, insuranceOffers: expected.insuranceOffers, trace: expected.trace, proofs: expected.proofs });
 });
