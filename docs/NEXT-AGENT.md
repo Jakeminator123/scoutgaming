@@ -13,23 +13,30 @@ Slutliga PR-, CI-, deploy- och städkvitton samlas privat i `.cache/l3-closeout-
 
 ## Jakob-2 och tal: fortsatt pausat
 
-OpenClaw-trimning (AGENT TVÅ, 31 oktober): featurebranch
-`jakob/codex-openclaw-model-tuning-1031` lägger till native resonemangsstandarder,
-Sol 6.1 som djupmodell och bildmodell samt svensk Jakob-2-persona. Sparade
-rollmodeller ändras separat via Admin; kod och Blueprint ersätter dem inte.
-Luna kan eskalera högst en gång för alla dealerprofiler inom samma deadline.
-PR #717 är mergad som `eb41edc03378789a371be8f22965e7ca06f3ddcd` efter
-grön full CI på `7ce113597e383e8aec9254c8502c64cea6390a97`. Vercel, Gateway,
-Director och spelbackend har den SHA:n; rollmodellerna är sparade och tillämpade.
-Det verkliga textprovet hittade därefter ett JSON-transportfel (HTTP 400):
-Gatewayen flyttar systemtext till `instructions`, medan API:t kräver ordet
-JSON även i indata. Rättningsbranchen `jakob/codex-openclaw-json-transport-1031`
-lägger till en fast applikationsägd indata-instruktion och ett regressionsprov.
-56 riktade prov passerar. Återställning till `fixed` väntar på separat
-produktionsgodkännande; värdet är fortfarande `adaptive`.
-AGENT TVÅ håller ihop leveransen; AGENT ETT gör ingen parallell merge/deploy.
+OpenClaw-trimning (AGENT TVÅ, 31 oktober): #717 och JSON-rättningen #720 är
+mergade efter buggranskning och grön full CI. Gateway kör `eb41edc03378789a371be8f22965e7ca06f3ddcd`;
+Director, spelbackend och Vercel kör `c5cc98d68b219a77d728813f233e27e32a3b54a2`.
+Gatewaykoden är oförändrad mellan dessa revisioner; imagen är fortsatt pinnad till 2026.9.5.
+Sparade Admin-val är tillämpade: Director/social/tal använder Luna, chatt/operator
+Sol 6.1. Native standarder är low för Director/social, medium för chatt, high
+för operator och modellbundna low/high för tal. Alla fem agenter har deny-all
+för verktyg och avstängda elevated-rättigheter, verifierat i Gatewayens driftkonfiguration.
+
+Director är åter i `adaptive` efter en godkänd tillfällig återställning till `fixed`.
+Luna kan eskalera högst en gång till Sol 6.1 inom samma deadline. #720 lägger en
+fast applikationsägd JSON-instruktion även bland indata, eftersom Gatewayen flyttar
+systemtext till `instructions`. Båda passeringarna täcks av regressionsprovet.
+Tio driftkontroller passerade efter deploy: tokenisolering, tillämpade modellval,
+syntetiska svenska svar/offentlig handbeskrivning/nekad kort- och saldoändring samt
+backendens hälsa och exakta revision. Spelbackend deployades efter en läsande
+kontroll med noll aktiva medlemmar, aktuell närvaro och pågående händer.
+
+Chattkontraktet beskriver tillåtna offentliga fakta och egna sparade demoresultat;
+en Slack-koppling till samtliga spelares namn och utbetalningar är inte verifierad.
 Slack `files:read` och ominstallation är godkända av Jakob men inte utförda;
-datorverktygets URL-kontroll stoppade browserarbetet. Ingen tal-/GPU-aktivering ingår.
+webbläsarstyrningen blockerades och kunde därefter inte ansluta till sidan.
+AGENT TVÅ:s privata kvitton finns i `.cache/agent-tva-openclaw/REPORT.md`.
+Ingen tal-/GPU-aktivering ingår.
 
 Ingen ny bank, GPU-körning eller talaktivering ingår. Jakob-2 har en registrerad ElevenLabs-röst och previewmaterial, men saknar en verifierad egen GPU-bank och godkänd nygenererad läppsynk i spelet. Förinspelade godkända repliker är inte samma sak som genererat livetal.
 
