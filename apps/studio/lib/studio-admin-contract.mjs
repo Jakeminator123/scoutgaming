@@ -63,6 +63,13 @@ export function studioAuthEndpoint(method, pathname) {
 
 // A narrowly read-only preparation query. Other endpoints keep exact paths
 // and no query parameters; this helper grants no role or Origin exception.
+export function isCompanyTeamReadQuery(method, url) {
+  const keys=[...url.searchParams.keys()];
+  return method==='GET' && /^\/(?:studio\/)?api\/admin\/workspace\/company-team$/.test(url.pathname)
+    && keys.length===1 && keys[0]==='operator'
+    && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(url.searchParams.get('operator')??'');
+}
+
 export function isPresentationRoomReadQuery(method, url) {
   if (isRoomGameConfigReadQuery(method,url) || isRoomReleaseReadQuery(method,url) || isSharedTableProofReadQuery(method,url) || isMovingDriftReadQuery(method,url)) return true;
   if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;

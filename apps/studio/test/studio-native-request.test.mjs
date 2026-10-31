@@ -7,6 +7,7 @@ import { nativeStudioAdminConfiguration, assertNativeStudioRequest } from '../li
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createDealerForgeApi } from '../lib/dealer-forge-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
+import { serveAdminWorkspaceData } from '../lib/admin-workspace-data.mjs';
 
 const publicOrigin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
 const environment={
@@ -23,6 +24,40 @@ const config=Object.freeze(Object.fromEntries(Object.entries({...unifiedConfig()
 const scope={environment:'fixture',workspaceId:'croupier'};
 const forwarded={host:new URL(publicOrigin).host,'x-forwarded-host':new URL(publicOrigin).host,
   'x-forwarded-proto':'https',origin:publicOrigin,'sec-fetch-site':'same-origin',cookie:'bo_jwt=private-fixture-cookie'};
+
+test('company team read crosses both native transport guards before scoped authorization and lookup',async()=>{
+  const config=unifiedConfig();
+  for(const prefix of ['/api','/studio/api']){
+    const request=new NextRequest(publicOrigin+prefix+'/admin/workspace/company-team?operator=north.id',{headers:forwarded});
+    const normalized=normalizeNativeStudioRequest(request,config);
+    assertNativeStudioRequest(normalized,config);
+    const calls=[];
+    const response=await serveAdminWorkspaceData(normalized,{
+      authorize:async current=>{assertNativeStudioRequest(current,config);calls.push('authorize');},
+      runtime:async()=>({listOperatorDirectory:async id=>{calls.push(id);return [{id,name:'North'}];}}),
+    });
+    assert.equal(response.status,200);assert.deepEqual(calls,['authorize','north.id']);
+    assert.equal((await response.json()).operator.id,'north.id');
+    await assert.rejects(serveAdminWorkspaceData(normalized,{authorize:async()=>{throw Object.assign(Error('denied'),{statusCode:401});},runtime:async()=>assert.fail('unauthorized runtime')}),error=>error.statusCode===401);
+  }
+});
+
+test('company team query exception rejects other methods, paths, query shapes and foreign callers',()=>{
+  const config=unifiedConfig(),path='/studio/api/admin/workspace/company-team';
+  for(const [suffix,method,headers] of [
+    [path+'?operator=north','POST',forwarded],
+    ['/studio/api/admin/workspace/companies?operator=north','GET',forwarded],
+    [path+'?operator=','GET',forwarded],[path+'?operator=../north','GET',forwarded],
+    [path+'?operator=north&operator=south','GET',forwarded],[path+'?operator=north&extra=1','GET',forwarded],
+    [path+'?operator=north','GET',{...forwarded,origin:'https://foreign.invalid'}],
+    [path+'?operator=north','GET',{...forwarded,'sec-fetch-site':'cross-site'}],
+    [path+'?operator=north','GET',{...forwarded,'next-action':'fixture'}],
+  ]){
+    const request=new NextRequest(publicOrigin+suffix,{method,headers});
+    assert.throws(()=>normalizeNativeStudioRequest(request,config),error=>error.statusCode===403);
+    assert.throws(()=>assertNativeStudioRequest(request,config),error=>error.statusCode===403);
+  }
+});
 
 test('unified Next requests preserve the one origin, basePath, credentials and mutation body',async()=>{
   const unified=unifiedConfig();

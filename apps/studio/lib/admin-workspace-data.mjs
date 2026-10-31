@@ -1,5 +1,6 @@
 import {ADMIN_WORKSPACE_TOOLS} from '../../../packages/navigation/admin-workspace-routes.mjs';
 import {STANDARD_OPERATOR_ROLES} from './operator-admin-api.mjs';
+import {isCompanyTeamReadQuery} from './studio-admin-contract.mjs';
 
 // Preserve the deployed read contract while old document editors are retired.
 const workspaceReadSections=new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'compositions','videos','rehearsal','probe','company-team']);
@@ -13,7 +14,7 @@ export async function serveAdminWorkspaceData(request,{authorize,runtime,connect
   if(request.method!=='GET'||!workspaceReadSections.has(section))return new Response(null,{status:400});
   const operatorId=url.searchParams.get('operator');
   if(section==='company-team'){
-    if([...url.searchParams].length!==1||!operatorId||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(operatorId))return new Response(null,{status:400});
+    if(!isCompanyTeamReadQuery(request.method,url))return new Response(null,{status:400});
     const native=await runtime();
     const [operator]=await native.listOperatorDirectory(operatorId);
     if(!operator)return new Response(null,{status:404,headers});

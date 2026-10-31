@@ -36,7 +36,7 @@ import { resolveNativeRoomGameMaterial } from '../../../packages/presentation/se
 import { createSharedTableProofReadout } from './shared-table-proof-readout.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
-import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
+import { isCompanyTeamReadQuery, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
@@ -91,7 +91,7 @@ export function assertNativeStudioRequest(request, config) {
   request = normalizeNativeStudioRequest(request, config);
   const url = new URL(request.url);
   if (!config.allowedOrigins.includes(url.origin) || !config.publicHosts.includes(url.host)
-    || url.username || url.password || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) || url.hash) denied();
+    || url.username || url.password || url.pathname.includes('%') || url.search && !isPresentationRoomReadQuery(request.method, url) && !isStudioRepliesReadQuery(request.method, url) && !isCompanyTeamReadQuery(request.method, url) || url.hash) denied();
   for (const header of ['host','x-forwarded-host']) {
     const host = request.headers.get(header); if (host !== null && host !== url.host) denied();
   }
