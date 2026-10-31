@@ -54,7 +54,7 @@ function baseConfig(env) {
   if (baseUrl.protocol !== 'https:' || baseUrl.username || baseUrl.password || baseUrl.search || baseUrl.hash) {
     throw new Error('OPENCLAW_MODEL_BASE_URL must be an HTTPS API base URL without credentials, query, or fragment.');
   }
-  const modelId = env.OPENCLAW_MODEL_ID || 'gpt-5.6-terra';
+  const modelId = env.OPENCLAW_MODEL_ID || 'gpt-6.1-sol';
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$/.test(modelId)) throw new Error('Invalid OPENCLAW_MODEL_ID.');
   const api = env.OPENCLAW_MODEL_API || 'openai-responses';
   if (!PROVIDER_APIS.has(api)) throw new Error('Unsupported OPENCLAW_MODEL_API.');
@@ -154,7 +154,7 @@ export function gatewayConfig(env) {
   operator.workspace = path.join(stateDir, 'workspaces', 'croupier-operator');
   operator.agentDir = path.join(stateDir, 'agents', 'croupier-operator', 'agent');
   config.agents.entries['croupier-operator'] = operator;
-  const configured = applySpeechRole(applySocialRole(applyOwnershipDefaults(applyDashboardPolicy(config, env)), env), env);
+  const configured = applyModelDefaults(applySpeechRole(applySocialRole(applyOwnershipDefaults(applyDashboardPolicy(config, env)), env), env));
   configured.gateway.auth.rateLimit = {
     maxAttempts: 10, windowMs: 60000, lockoutMs: 300000, exemptLoopback: false,
   };
@@ -240,7 +240,8 @@ export function applySpeechRole(config, env) {
     };
   }
   const speech = entries['croupier-speech'];
-  if (!isObject(speech) || speech.model?.primary !== primary || !Array.isArray(speech.model?.fallbacks) || speech.model.fallbacks.length !== 0
+  if (!isObject(speech) || typeof speech.model?.primary !== 'string' || !speech.model.primary.trim()
+    || !Array.isArray(speech.model?.fallbacks) || speech.model.fallbacks.length !== 0
     || !Array.isArray(speech.tools?.deny) || !speech.tools.deny.includes('*') || speech.tools.elevated?.enabled !== false
     || speech.memory?.search?.enabled !== false || speech.heartbeat?.every !== '0m'
     || !Array.isArray(speech.skills) || speech.skills.length !== 0) {
@@ -265,13 +266,51 @@ export function applySpeechRole(config, env) {
   if(provider?.baseUrl==='https://api.openai.com/v1' && ['openai-responses','openai-completions'].includes(provider.api) && Array.isArray(provider.models)){
     for(const modelId of ['gpt-5.4-mini','gpt-6-luna','gpt-5.6-terra','gpt-6-sol','gpt-6.1-sol'])
       if(!provider.models.some(model=>model.id===modelId))provider.models.push({id:modelId,name:modelId,input:['text']});
-    // An explicit, separately deployed vision gate updates Luna, Terra and Sol. The
+    // An explicit, separately deployed vision gate updates the supported models. The
     // camera UI remains off until an image turn and retention are checked.
     if(env.CROUPIER_SPEECH_VISION==='1'){
-      for(const modelId of ['gpt-6-luna','gpt-5.6-terra','gpt-6-sol']){
+      for(const modelId of ['gpt-6-luna','gpt-5.6-terra','gpt-6-sol','gpt-6.1-sol']){
         const model=provider.models.find(candidate=>candidate.id===modelId);
         if(model)model.input=[...new Set([...(Array.isArray(model.input)?model.input:[]),'text','image'])];
       }
+    }
+  }
+  return next;
+}
+
+// Native thinking defaults work on the pinned Gateway even though its HTTP
+// compatibility endpoint strips reasoning_effort. Fill only absent settings:
+// a saved operator/session choice remains authoritative after redeployment.
+export function applyModelDefaults(config) {
+  const next = structuredClone(config);
+  const provider = next.models?.providers?.['lab-provider'];
+  if (provider?.baseUrl !== 'https://api.openai.com/v1' || provider.api !== 'openai-responses') return next;
+  const efforts = ['low', 'medium', 'high', 'xhigh', 'max'];
+  const hasThinking = value => value?.thinkingDefault !== undefined || value?.params?.thinking !== undefined
+    || Object.values(value?.models ?? {}).some(model => model?.params?.thinking !== undefined);
+  const supported = new Set();
+  for (const model of provider.models ?? []) {
+    if (!['gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol', 'gpt-6.1-sol'].includes(model.id)) continue;
+    model.reasoning ??= true;
+    if (model.reasoning === true) supported.add(`lab-provider/${model.id}`);
+    model.compat ??= {};
+    if (['gpt-6-luna', 'gpt-6.1-sol'].includes(model.id)) {
+      model.compat.supportedReasoningEfforts ??= model.id === 'gpt-6-luna' ? ['none', ...efforts] : [...efforts];
+    }
+  }
+  const supportedAgent = agent => supported.has(typeof agent?.model === 'string' ? agent.model : agent?.model?.primary);
+  for (const [id, effort] of Object.entries({ 'croupier-director': 'low', 'croupier-chat': 'medium',
+    'croupier-operator': 'high', 'croupier-social': 'low' })) {
+    const agent = next.agents?.entries?.[id];
+    if (supportedAgent(agent) && !hasThinking(agent) && !hasThinking(next.agents.defaults)) agent.thinkingDefault = effort;
+  }
+  const speech = next.agents?.entries?.['croupier-speech'];
+  if (supportedAgent(speech) && !hasThinking(speech) && !hasThinking(next.agents.defaults)) {
+    speech.models ??= {};
+    for (const model of ['gpt-5.4-mini', 'gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol', 'gpt-6.1-sol']) {
+      const entry = speech.models[`lab-provider/${model}`] ??= {};
+      entry.params ??= {};
+      entry.params.thinking ??= ['gpt-6-sol', 'gpt-6.1-sol'].includes(model) ? 'high' : 'low';
     }
   }
   return next;
@@ -311,11 +350,13 @@ export function planGatewayConfig(existing, env) {
   const ingress = applyDashboardPolicy(existing, env);
   const ownership = applyOwnershipDefaults(ingress);
   const social = applySocialRole(ownership, env);
-  const config = applySpeechRole(social, env);
+  const speech = applySpeechRole(social, env);
+  const config = applyModelDefaults(speech);
   const action = isDeepStrictEqual(config, existing) ? 'reuse'
-    : !isDeepStrictEqual(social, ownership) && !isDeepStrictEqual(config, social) ? 'reconcile-roles'
+    : !isDeepStrictEqual(social, ownership) && !isDeepStrictEqual(speech, social) ? 'reconcile-roles'
     : !isDeepStrictEqual(social, ownership) ? 'reconcile-social'
-    : !isDeepStrictEqual(config, social) ? 'reconcile-speech'
+    : !isDeepStrictEqual(speech, social) ? 'reconcile-speech'
+    : !isDeepStrictEqual(config, speech) ? 'reconcile-models'
     : isDeepStrictEqual(ingress, existing) ? 'reconcile-ownership' : 'reconcile-ingress';
   return { action, config };
 }

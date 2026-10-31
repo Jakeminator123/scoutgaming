@@ -32,17 +32,17 @@ function fixture({ config, reply, now } = {}) {
   return { service, calls };
 }
 
-test('ordinary answer uses one Terra call; fixed and other dealers never enable escalation', async () => {
+test('ordinary answer uses one Luna call; fixed routing never enables escalation', async () => {
   const input = envelope();
   const f = fixture({ reply: () => response(choice(input)) });
   assert.deepEqual(await f.service.handle(input), choice(input));
   assert.equal(f.calls.length, 1);
-  assert.equal(f.calls[0].headers['x-openclaw-model'], 'lab-provider/gpt-5.6-terra');
+  assert.equal(f.calls[0].headers['x-openclaw-model'], 'lab-provider/gpt-6-luna');
   assert.equal(f.calls[0].body.model, 'openclaw/croupier-speech');
   assert.equal(f.calls[0].body.tool_choice, 'none');
   assert.equal(f.calls[0].body.max_completion_tokens, SPEECH_PASS_TOKENS);
   assert.deepEqual(f.calls[0].body.response_format, { type: 'json_object' });
-  for (const [config, dealer] of [[{ speechRouting: 'fixed' }, 'astrid'], [{}, 'vera']]) {
+  for (const [config, dealer] of [[{ speechRouting: 'fixed' }, 'astrid'], [{ speechRouting: 'fixed' }, 'vera']]) {
     const data = envelope(); data.status.dealerId = dealer;
     const fixed = fixture({ config, reply: () => response(escalation(data)) });
     await assert.rejects(fixed.service.handle(data), { code: 'invalid_openclaw_speech_choice' });
@@ -60,7 +60,7 @@ test('one valid escalation preserves explicit pins, original context and separat
     assert.deepEqual(await f.service.handle(input), choice(input));
     assert.equal(f.calls.length, 2);
     const [first, second] = f.calls;
-    assert.equal(first.headers['x-openclaw-model'], `lab-provider/${model ?? 'gpt-5.6-terra'}`);
+    assert.equal(first.headers['x-openclaw-model'], `lab-provider/${model ?? 'gpt-6-luna'}`);
     assert.equal(second.headers['x-openclaw-model'], 'lab-provider/gpt-6-sol');
     assert.equal(first.body.user, 'croupier-product-speech:adaptive-1:attempt-0');
     assert.equal(second.body.user, 'croupier-product-speech:adaptive-1:attempt-1');
@@ -232,13 +232,25 @@ test('routing telemetry contains only closed stages, requested models, attempt a
   });
   assert.deepEqual(await service.handle(input), choice(input));
   assert.deepEqual(entries, [
-    { stage: 'start', attempt: 1, requestedModel: 'gpt-5.6-terra', elapsedMs: 0 },
-    { stage: 'escalate', attempt: 1, requestedModel: 'gpt-5.6-terra', elapsedMs: 200 },
+    { stage: 'start', attempt: 1, requestedModel: 'gpt-6-luna', elapsedMs: 0 },
+    { stage: 'escalate', attempt: 1, requestedModel: 'gpt-6-luna', elapsedMs: 200 },
     { stage: 'start', attempt: 2, requestedModel: 'gpt-6-sol', elapsedMs: 200 },
     { stage: 'complete', attempt: 2, requestedModel: 'gpt-6-sol', elapsedMs: 400 },
   ]);
   assert.equal(JSON.stringify(entries).includes(input.request.requestId), false);
   assert.equal(JSON.stringify(entries).includes(input.request.message), false);
+});
+
+test('active dealer profiles share bounded Luna to Sol 6.1 escalation without changing fixed pins', async () => {
+  for (const dealerId of ['paow', 'dragan', 'jakob-2']) {
+    const input = envelope(); input.status.dealerId = dealerId;
+    const f = fixture({ config: { speechDeepModel: 'gpt-6.1-sol' },
+      reply: (_call, number) => response(number === 1 ? escalation(input) : choice(input)) });
+    assert.deepEqual(await f.service.handle(input), choice(input));
+    assert.deepEqual(f.calls.map(call => call.headers['x-openclaw-model']),
+      ['lab-provider/gpt-6-luna', 'lab-provider/gpt-6.1-sol']);
+    assert.equal(f.calls[1].body.messages[0].content.includes('escalation control object'), false);
+  }
 });
 
 test('concurrent duplicates share both passes and changed input still conflicts', async () => {

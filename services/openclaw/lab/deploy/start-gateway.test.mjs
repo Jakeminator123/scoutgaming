@@ -52,6 +52,27 @@ test('startup normalizes either credential name and drops the legacy child crede
   assert.equal(await readFile(first.configPath, 'utf8'), bytes);
 });
 
+test('adding native model defaults backs up the exact previous config and preserves role choices', async (t) => {
+  const env = await fixture(t);
+  const existing = gatewayConfig(env);
+  for (const agent of Object.values(existing.agents.entries)) delete agent.thinkingDefault;
+  delete existing.agents.entries['croupier-speech'].models;
+  for (const model of existing.models.providers['lab-provider'].models) {
+    delete model.reasoning; delete model.compat;
+  }
+  const original = JSON.stringify(existing);
+  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
+  const result = await prepareGatewayConfig(env, { validateConfig: validateFixture });
+  assert.equal(result.action, 'reconcile-models');
+  assert.ok(result.backupPath.endsWith('.pre-model-migration.bak'));
+  assert.equal(await readFile(result.backupPath, 'utf8'), original);
+  for (const [id, agent] of Object.entries(existing.agents.entries)) {
+    assert.deepEqual(result.config.agents.entries[id].model, agent.model);
+    assert.deepEqual(result.config.agents.entries[id].tools, agent.tools);
+  }
+  assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
+});
+
 test('startup reports validation phase without replacing the config on CLI failure', async (t) => {
   const env=await fixture(t);
   const phases=[];
@@ -92,6 +113,9 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   delete old.talk;
   old.tools.deny = ['*'];
   old.models.providers['lab-provider'].models=old.models.providers['lab-provider'].models.slice(0,1);
+  for (const agent of Object.values(old.agents.entries)) delete agent.thinkingDefault;
+  delete old.models.providers['lab-provider'].models[0].reasoning;
+  delete old.models.providers['lab-provider'].models[0].compat;
   const original = `${JSON.stringify(old, null, 2)}\n`;
   await writeFile(env.OPENCLAW_CONFIG_PATH, original);
   const retainedDir = path.join(env.OPENCLAW_STATE_DIR, 'agents', 'croupier-chat', 'sessions');

@@ -13,6 +13,19 @@ Slutliga PR-, CI-, deploy- och städkvitton samlas privat i `.cache/l3-closeout-
 
 ## Jakob-2 och tal: fortsatt pausat
 
+OpenClaw-trimning (AGENT TVÅ, 31 oktober): featurebranch
+`jakob/codex-openclaw-model-tuning-1031` lägger till native resonemangsstandarder,
+Sol 6.1 som djupmodell och bildmodell samt svensk Jakob-2-persona. Sparade
+rollmodeller ändras separat via Admin; kod och Blueprint ersätter dem inte.
+Luna kan eskalera högst en gång för alla dealerprofiler inom samma deadline.
+PR #717 hade grön full CI på `6edfe27bc68d8c1f875bbf7fa9051fc256005cb6`;
+231 lokala OpenClaw-prov, 58 riktade slutprov och pre-commit 164/164 passerade.
+Efter AGENT ETT:s #718 synkas main in och CI krävs på den nya headen.
+AGENT TVÅ äger #717 och dess senare deploy; AGENT ETT gör ingen parallell
+merge/deploy. Produktionspåverkan väntar på Jakobs uttryckliga klartecken.
+Slack `files:read` och ominstallation är godkända av Jakob men inte utförda;
+datorverktygets URL-kontroll stoppade browserarbetet. Ingen tal-/GPU-aktivering ingår.
+
 Ingen ny bank, GPU-körning eller talaktivering ingår. Jakob-2 har en registrerad ElevenLabs-röst och previewmaterial, men saknar en verifierad egen GPU-bank och godkänd nygenererad läppsynk i spelet. Förinspelade godkända repliker är inte samma sak som genererat livetal.
 
 - LIPSNK: `.cache/jakob2-moving-probe-20261030/PAUSED-HANDOFF.md`. Offlinekontrakt, 39 originalrutor, ljud och runner/transport finns; egna tillfälliga GPU-poddar är borttagna. Senaste stoppet var container-/proxy-readiness HTTP 404, skilt från tidigare IMAGE_AUTH_ERROR.
