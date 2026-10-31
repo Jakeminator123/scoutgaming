@@ -111,7 +111,9 @@ test('team read loads only the selected company in the server workspace and acce
   assert.deepEqual(await foreign.listOperatorDirectory('north-casino'),[]);
   context.pool.tables.operators.find(row=>row.operator_id==='north-casino').slug='north-alias';
   assert.equal((await context.operatorApi.listOperatorDirectory('north-alias'))[0].id,'north-casino');
-  assert.deepEqual(await context.operatorApi.listOperatorDirectory('missing'),[]);
+  for(const missing of ['missing','missing.id','NORTH','id:missing','x'.repeat(100)]) {
+    assert.deepEqual(await context.operatorApi.listOperatorDirectory(missing),[],missing);
+  }
   for(const value of [undefined,'','../north-casino'])await assert.rejects(context.operatorApi.listOperatorDirectory(value),error=>error.statusCode===400);
 });
 
