@@ -3,10 +3,9 @@
 // its company, room, dealer, revision and fragment kept. Two pseudo-targets resolve
 // against the query: `dealer:<flik>` opens the dealer's nav, `rooms` the room list or editor.
 // The Studio tools embedded in the navs, and the sections GET /api/admin/workspace/<section>
-// serves for them (apps/studio/lib/admin-workspace-data.mjs): Team under Bolag, Svarsbibliotek
+// serves for them (apps/studio/lib/admin-workspace-data.mjs): Svarsbibliotek
 // and Dialogtest under Dealers › Röst och tal. They have no pages of their own.
 export const ADMIN_WORKSPACE_TOOLS = Object.freeze({
-  companies: Object.freeze({label:'Bolag'}),
   replies: Object.freeze({label:'Svarsbibliotek'}),
   'dealer-agent': Object.freeze({label:'Dialogtest'}),
 });

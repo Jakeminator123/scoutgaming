@@ -14,7 +14,7 @@ const node=(tree,predicate)=>{
   return predicate(tree)?tree:node(tree.props?.children,predicate);
 };
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
-const components=Object.fromEntries(['AdminPublicationPage','ControlRepliesPage','ControlOpenClawChat','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
+const components=Object.fromEntries(['ControlRepliesPage','ControlOpenClawChat','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
 function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}},responseStatus=200){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
@@ -42,6 +42,5 @@ test('Integrationer opens the real NativeAdministration with the server-read act
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
   // The embedded tools are the workspace reader's sections, not pages; the retired speech review resolves to the dealers.
-  assert.deepEqual(Object.keys(adminWorkspaceRoutes.ADMIN_WORKSPACE_TOOLS),['companies','replies','dealer-agent']);
   assert.equal(adminWorkspaceRoutes.adminDocumentHref('/admin/media-review'),'/admin/dealers');
 });

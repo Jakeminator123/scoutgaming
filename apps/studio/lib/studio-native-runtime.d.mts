@@ -31,7 +31,7 @@ export interface NativeStudioRuntime {
   inspectMediaTiming(record: any, options?: {signal?: AbortSignal}): Promise<MediaTiming>;
   authActions: {handle(request: Request): Promise<Response>; availableActions: readonly string[]};
   listLaneOperators?: () => Promise<Array<{ id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null }>>;
-  listOperatorDirectory?: () => Promise<OperatorDirectoryEntry[]>;
+  listOperatorDirectory?: (operatorId: string) => Promise<OperatorDirectoryEntry[]>;
 }
 export interface OperatorDirectoryRole { id: string; label: string; permissions: string[]; delegable: boolean }
 export interface OperatorDirectoryMember { userId: string; username: string | null; roleId: string; status: string; revision: number }
