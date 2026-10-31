@@ -118,7 +118,7 @@ test('native password page binds the player entrance to configured game origin a
     const gameOrigin='https://game.fixture.invalid',page={exports:{}};
     const overrides={
       '@/components/studio-login':{StudioLogin:()=>null},
-      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
+      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
       '@/lib/studio-login-client.mjs':loginClient,
       'next/headers':{headers:async()=>new Headers({host:'game.fixture.invalid'})},
       '@/lib/next-page-navigation.mjs':{nextStudioAuthEntryRedirect:()=>null},
@@ -138,7 +138,7 @@ test('native login page binds the configured game origin and never keeps a retir
     const gameOrigin='https://game.fixture.invalid',page={exports:{}};
     const overrides={
       '@/components/studio-login':{StudioLogin:()=>null},
-      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
+      '@/lib/studio-native-runtime.mjs':{nativeStudioAdminConfiguration:()=>({authBase,allowedOrigins:[gameOrigin,'https://studio.fixture.invalid']})},
       '@/lib/studio-login-client.mjs':loginClient,
       'next/headers':{headers:async()=>new Headers({host:'game.fixture.invalid'})},
       '@/lib/next-page-navigation.mjs':{nextStudioAuthEntryRedirect:()=>null},

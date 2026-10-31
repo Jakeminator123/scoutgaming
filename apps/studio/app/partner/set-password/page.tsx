@@ -1,5 +1,5 @@
 import { StudioLogin } from '@/components/studio-login';
-import { nativeStudioAdminConfiguration, nativeStudioAdminEnabled } from '@/lib/studio-native-runtime.mjs';
+import { nativeStudioAdminConfiguration } from '@/lib/studio-native-runtime.mjs';
 import { studioPasswordToken } from '@/lib/studio-login-client.mjs';
 import { notFound } from 'next/navigation';
 
@@ -11,7 +11,6 @@ export const metadata = {
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!nativeStudioAdminEnabled()) notFound();
   const config = nativeStudioAdminConfiguration();
   if (!config) notFound();
   const query = await searchParams;
