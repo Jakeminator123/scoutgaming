@@ -5,10 +5,13 @@
 import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 
-const target = Object.freeze({ origin: 'https://preview.scoutgaming.tech',
+export const F11_TARGET = Object.freeze({ origin: 'https://preview.scoutgaming.tech',
   engineOrigin: 'https://croupier-k06-k07-staging.onrender.com', serviceId: 'srv-dbf61l0m7kps73ft7mk0',
   projectId: 'prj_7dgyvW5zakx1qJ8YaH5pueVTVi14', neonProjectId: 'red-violet-36066351',
-  branchId: 'br-plain-voice-b9yu49xi', database: 'croupier_staging', environment: 'staging_k06_k07', workspaceId: 'croupier' });
+  branchId: 'br-plain-voice-b9yu49xi', endpointId: 'ep-billowing-surf-b93x7p3c',
+  databaseHost: 'ep-billowing-surf-b93x7p3c.c-7.eu-central-1.aws.neon.tech',
+  database: 'croupier_staging', environment: 'staging_k06_k07', workspaceId: 'croupier' });
+const target = F11_TARGET;
 const fail = code => { throw Object.assign(Error(`f11_${code}`), { code: `f11_${code}` }); };
 const need = (yes, code) => { if (!yes) fail(code); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -19,17 +22,51 @@ const sha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const eventTypes = new Set(['speak', 'idle', 'deal', 'reveal', 'settle', 'turn']);
+const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
+
+// This receipt is evidence for independent review, not authenticated authority.
+// The live driver must establish absence BEFORE its API writes and read back the
+// exact newly created identities through the pinned preview database connection.
+export function validateF11Ownership(value, manifest) {
+  const only = (row, keys) => object(row) && Object.keys(row).length === keys.length && keys.every(key => Object.hasOwn(row,key));
+  need(only(value,['schemaVersion','source','runId','operatorId','roomId','checkedAt','verifiedAt','absent','readback','accounts','digest'])
+    && only(value.absent,['operators','accounts','rooms','packages'])
+    && only(value.readback,[...Object.keys(target),'operatorId','roomId','configVersion','packageRevision','roomCount','accountCount']), 'ownership_receipt_required');
+  need(object(value) && value.schemaVersion === 1 && value.source === 'preview-api-created'
+    && value.runId === manifest.runId && value.operatorId === manifest.runId
+    && value.roomId === manifest.roomId && /^room-/.test(value.roomId) && uuid(value.roomId.slice(5))
+    && integer(value.checkedAt) && integer(value.verifiedAt) && value.checkedAt <= value.verifiedAt
+    && value.verifiedAt <= manifest.startedAt, 'ownership_receipt_required');
+  need(object(value.absent) && ['operators','accounts','rooms','packages'].every(key => value.absent[key] === 0), 'fixture_already_exists');
+  const readback = value.readback;
+  need(object(readback) && Object.keys(target)
+    .every(key => readback[key] === target[key]) && readback.roomId === manifest.roomId
+    && readback.operatorId === value.operatorId && id(readback.configVersion)
+    && readback.packageRevision === 1 && readback.roomCount === 1 && readback.accountCount === 2, 'ownership_readback_invalid');
+  need(Array.isArray(value.accounts) && value.accounts.length === 2
+    && value.accounts.every((account,i) => only(account,['actorId','username','createdAt','openingId','openingCents','currency','openingAt']) && uuid(account.actorId)
+      && account.actorId === manifest.actors[i] && account.username === `${manifest.runId}-${i ? 'b' : 'a'}`
+      && integer(account.createdAt) && account.createdAt >= value.checkedAt && account.createdAt <= value.verifiedAt
+      && id(account.openingId) && account.openingCents === 100000 && account.currency === 'USD'
+      && typeof account.openingAt === 'string' && Date.parse(account.openingAt) >= account.createdAt
+      && Date.parse(account.openingAt) <= value.verifiedAt)
+    && new Set(value.accounts.map(account => account.actorId)).size === 2, 'ownership_accounts_invalid');
+  const { digest, ...receipt } = value;
+  need(typeof digest === 'string' && digest === hash(receipt), 'ownership_digest_invalid');
+  return structuredClone(value);
+}
 
 export function validateF11Manifest(value) {
   need(object(value) && value.schemaVersion === 1 && sha(value.sha), 'manifest_invalid');
   need(Object.entries(target).every(([key, expected]) => value[key] === expected), 'target_mismatch');
-  need(synthetic(value.runId) && synthetic(value.roomId) && Array.isArray(value.actors)
-    && value.actors.length === 2 && value.actors.every(synthetic) && new Set(value.actors).size === 2
+  need(synthetic(value.runId) && value.runId.length <= 28 && typeof value.roomId === 'string' && Array.isArray(value.actors)
+    && value.actors.length === 2 && value.actors.every(uuid) && new Set(value.actors).size === 2
     && value.syntheticOnly === true, 'synthetic_scope_required');
   need(integer(value.startedAt) && integer(value.endedAt) && value.endedAt - value.startedAt >= 120000
     && value.endedAt - value.startedAt <= 900000, 'observation_window_invalid');
   // Only fixed/validated fields survive: credentials, unknown paths and URLs are never echoed.
-  return Object.freeze({ ...target, schemaVersion: 1, sha: value.sha, runId: value.runId, roomId: value.roomId,
+  const ownership = validateF11Ownership(value.ownership, value);
+  return Object.freeze({ ...target, schemaVersion: 1, sha: value.sha, runId: value.runId, roomId: value.roomId, ownership,
     actors: Object.freeze([...value.actors]), syntheticOnly: true, startedAt: value.startedAt, endedAt: value.endedAt });
 }
 
@@ -43,7 +80,7 @@ export const F11_MONEY_SQL = `SELECT current_database() AS database,
     FROM croupier_game.shared_wallet_reservations WHERE room_id=$1 AND player_id=ANY($2::text[])), '[]'::jsonb) AS reservations,
   (SELECT count(*)::int FROM croupier_game.shared_wallet_hands WHERE room_id=$1 AND player_id=ANY($2::text[])) AS hands,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id::text,'actorId',player_id,'amountCents',(amount*100)::bigint,
-      'sourceKey',source_key,'fingerprint',source_fingerprint,'type',type,
+      'sourceKey',source_key,'fingerprint',source_fingerprint,'type',type,'currency',currency,'at',at,
       'roundId',(SELECT min(a.body::jsonb->>'round_id') FROM croupier_game.shared_table_audit a
         WHERE a.room_id=$1 AND a.body::jsonb->>'type' LIKE 'engine.%'
           AND (a.body::jsonb->>'payload')::jsonb->'ledgerIds' ? t.id::text
@@ -71,6 +108,14 @@ function money(row, manifest) {
   need(Array.isArray(row.ledger) && row.ledger.length <= 10000, 'ledger_invalid');
   const keys = new Set(), ids = new Set();
   for (const entry of row.ledger) {
+    need(id(entry.id) && !ids.has(entry.id), 'duplicate_wallet_effect'); ids.add(entry.id);
+    if (entry.type === 'open') {
+      const account = manifest.ownership.accounts.find(account => account.actorId === entry.actorId);
+      need(account && entry.id === account.openingId && entry.amountCents === account.openingCents
+        && entry.currency === account.currency && entry.at === account.openingAt
+        && entry.roundId === null && entry.sourceKey === null && entry.fingerprint === null, 'opening_ledger_invalid');
+      continue;
+    }
     need(id(entry.id) && id(entry.roundId) && manifest.actors.includes(entry.actorId) && Number.isSafeInteger(entry.amountCents)
       && /^[a-f0-9]{64}$/.test(entry.fingerprint) && ['consume:stake', 'consume:insurance', 'double', 'split', 'payout'].includes(entry.type)
       && (entry.type === 'payout' ? entry.amountCents > 0 : entry.amountCents < 0), 'ledger_invalid');
@@ -78,9 +123,15 @@ function money(row, manifest) {
     need(Array.isArray(key) && key.length === 6 && key.every(x => typeof x === 'string')
       && ['command', 'tick'].includes(key[0]) && key[1] === manifest.roomId && key[4] === entry.actorId
       && JSON.stringify(key) === entry.sourceKey, 'ledger_scope_invalid');
-    need(!keys.has(entry.sourceKey) && !ids.has(entry.id), 'duplicate_wallet_effect');
-    keys.add(entry.sourceKey); ids.add(entry.id);
+    need(!keys.has(entry.sourceKey), 'duplicate_wallet_effect');
+    keys.add(entry.sourceKey);
   }
+  need(manifest.ownership.accounts.every(account => row.ledger.filter(entry => entry.type === 'open'
+    && entry.actorId === account.actorId).length === 1), 'opening_ledger_required');
+  if (row.stage === 'before') need(row.ledger.length === 2 && row.balances.every(balance =>
+    balance.balanceCents === manifest.ownership.accounts.find(account => account.actorId === balance.actorId).openingCents), 'fixture_not_fresh');
+  for (const balance of row.balances) need(BigInt(balance.balanceCents) === row.ledger
+    .filter(entry => entry.actorId === balance.actorId).reduce((sum,entry)=>sum+BigInt(entry.amountCents),0n), 'balance_mismatch');
   need(Array.isArray(row.settlements) && row.settlements.length <= 10000, 'settlements_required');
   const settled = new Set();
   for (const entry of row.settlements) {
@@ -96,7 +147,7 @@ function money(row, manifest) {
     settlements: row.settlements.map(x => ({ roundId: x.roundId, actorId: x.actorId, ledgerId: x.ledgerId, returnedCents: x.returnedCents })),
     balances: row.balances.map(x => ({ actorId: x.actorId, balanceCents: x.balanceCents })),
     ledger: row.ledger.map(x => ({ id: x.id, roundId: x.roundId, actorId: x.actorId, amountCents: x.amountCents,
-      sourceKey: x.sourceKey, fingerprint: x.fingerprint, type: x.type })) };
+      sourceKey: x.sourceKey, fingerprint: x.fingerprint, type: x.type, currency: x.currency ?? null, at: x.at ?? null })) };
 }
 
 /** Consume captures in chronological order. Ports/callers may feed real WS frames
@@ -196,7 +247,15 @@ export function createF11Observer(input) {
         && ['bets','round'].every(phase => frames.some(f => f.phase === phase));
       if (!progressing(a) || !progressing(b)) continue;
       let consistent = true;
-      for (const [left, right] of [[a,b],[b,a]]) for (const frame of left) {
+      // A new socket initially receives the state already held by the old one.
+      // Its matching presentation may have arrived just before overlap began.
+      // This seed is only correlation evidence: advancing overlap still requires
+      // the actual in-window frames above, on BOTH connections.
+      const seeded = (connection, frames) => {
+        const seed=connection.frames.filter(frame=>frame.at<start&&frame.at>=start-20000).at(-1);
+        return seed?[seed,...frames]:frames;
+      };
+      for (const [left, right] of [[a,seeded(fresh,b)],[b,seeded(old,a)]]) for (const frame of left) {
         if (frame.at > end - 2000) continue;
         const peer = right.find(other => other.at <= frame.at + 2000 && other.version >= frame.version);
         if (!peer || peer.version === frame.version && peer.stateHash !== frame.stateHash) consistent = false;
@@ -250,7 +309,8 @@ export const F11_HELP = `F11 evidence review (offline; no sockets, games, accoun
   node tools/run-shared-table-qa.mjs --f11 --run --manifest <private.json> --events <private.ndjson>
 Required manifest: schemaVersion=1, sha=<full lowercase SHA>, syntheticOnly=true,
   ${Object.entries(target).map(([key,value]) => `${key}=${value}`).join(', ')}
-  runId=f11-..., roomId=f11-..., actors=[f11-...,f11-...], startedAt/endedAt=epoch-ms (2-15 minutes).
+  runId=f11-..., API-generated roomId/actor UUIDs, ownership=<creation/absence/SQL-readback receipt>,
+  startedAt/endedAt=epoch-ms (2-15 minutes). Opening demo transactions are retained and verified.
 Input: chronological event objects with type + at. target at both bookends contains
   the manifest target/scope, source=provider-api, engineSha/vercelSha, healthStatus=200,
   ready=true, suspended=false, syntheticOnly=true. Obtain from fresh provider metadata.
@@ -269,9 +329,8 @@ Preparation after human approval: bind saved synthetic publication/accounts to s
   observe reservations, consumption and a payout; retain 1012 + same-hand reconnect;
   run wrong-room/revoked-session probes; finish all hands and take final SQL snapshot.
   Revisions may advance. Never pause clocks or change rules to manufacture overlap.
-Missing runtime prerequisite: shared-room-upgrade.mjs emits no socket/instance proof;
-  server-transport/node-server.mjs does not relay upstream identity headers. Coordinate
-  a minimal reviewed correlation mechanism before attempting this live protocol.
+Live collection: node tools/run-f11-preview.mjs --help (explicit --run only).
+  Requires reviewed socket identity headers and correlated Render app logs at the frozen SHA.
 Output is projected/hashes only, never headers, cookies, tokens, raw text or exceptions.
 Exit 0 means evidence complete for HUMAN REVIEW, never production acceptance.
 Exit 1 means unverifiable/invalid evidence. Instance IDs in operator input are claims,
