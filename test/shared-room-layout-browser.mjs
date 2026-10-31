@@ -93,7 +93,7 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
       await show(snapshot);
       assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}x${viewport.height}, ${label}`);
       const state = await page.evaluate(() => ({
-        leave: [...document.querySelectorAll('#shared-room-controls button')].find(node => node.textContent === 'Lämna platser')?.checkVisibility() ?? false,
+        leave: [...document.querySelectorAll('#shared-room-controls button')].find(node => node.textContent === 'Sluta spela')?.checkVisibility() ?? false,
         windows: document.getElementById('shared-room-window').checkVisibility(),
         windowText: document.getElementById('shared-room-window').selectedOptions[0]?.textContent,
         decisionBars: [...document.querySelectorAll('[data-act="hit"]')].filter(node => node.checkVisibility()).length,
@@ -104,10 +104,10 @@ test('Chrome shared-table layout: no control covers another at 1440, 1920, 390 a
       }));
       // The folded chat is one of the seat controls, so measureLayout above proves it covers nothing (PR 4a fix).
       assert.equal(state.chat, true, `${viewport.width}, ${label}: Chatt sits with the seat controls`);
-      // "Visa platser" only where the table shows three boxes; "Lämna platser" only for a seated player.
+      // "Bordsvy" only where the table shows three boxes; "Sluta spela" only for a seated player.
       assert.equal(state.windows, phone, `${viewport.width}: seat window chooser`);
-      if (phone) assert.match(state.windowText, /^Visa platser \d–\d$/);
-      assert.equal(state.leave, snapshot.me.seats.length > 0, `${viewport.width}, ${label}: Lämna platser`);
+      if (phone) assert.match(state.windowText, /^Bordsvy \d–\d$/);
+      assert.equal(state.leave, snapshot.me.seats.length > 0, `${viewport.width}, ${label}: Sluta spela`);
       assert.equal(state.pause, true, `${viewport.width}, ${label}: Ta paus is reachable in every phase`);
       assert.equal(state.heading, 'Privé Blackjack');
       // K04 F15: one decision panel, never the native mini bar beside it.
@@ -159,12 +159,12 @@ test('Chrome shared-table play path: every phase\'s controls take a real click a
       await page.getByRole('button', { name: /^Chatt/ }).click(); await page.keyboard.press('Escape');
       await page.locator('#shared-room-chat-body').waitFor({ state: 'hidden' });
       assert.equal(await page.evaluate(() => document.activeElement?.className), 'room-chat-toggle', `${where}: focus returns to Chatt`);
-      await button('Välj plats 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
+      await button('Välj satsningsruta 4').click(); assert.deepEqual((await last()).seats, [3], `${where}: join`);
       await show(tableSnapshot({ version: 2, own: [3] }));
-      await button('Plats 4, huvudinsats, 0 USD').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
+      await button('Satsningsruta 4, huvudinsats, 0 USD').click(); assert.deepEqual(await last(), { op: 'bet', windowId: 'window-a', seat: 3, field: 'main', chip: 5 });
       await pauses('betting');
       await show(tableSnapshot({ version: 3, own: [3], bets: { 3: { main: 5 } } }));
-      await button('Plats 4, par, 0 USD').click(); assert.equal((await last()).field, 'pp');
+      await button('Satsningsruta 4, par, 0 USD').click(); assert.equal((await last()).field, 'pp');
       await button('Redo').click(); assert.equal((await last()).op, 'ready', `${where}: ready`);
       const transform = () => page.evaluate(() => document.getElementById('local-card-plane').getAttribute('transform'));
       await show(decision([3], 4));
@@ -192,18 +192,74 @@ test('Chrome shared-table focus: choosing another own seat and a round that empt
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     const { page, context, show } = await fixture.open(viewport);
     await show(tableSnapshot({ version: 1, own: [2, 3], bets: { 2: { main: 10 } } }));
-    const other = page.getByRole('button', { name: 'Plats 4, din plats', exact: true });
+    const other = page.getByRole('button', { name: 'Välj satsningsruta 4, din ruta', exact: true });
     await other.focus(); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('.seat[data-seat="3"]').classList.contains('primary'));
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), 'Plats 4, din plats', `${viewport.width}: circle keeps focus`);
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), 'Välj satsningsruta 4, din ruta', `${viewport.width}: circle keeps focus`);
     assert.equal(await other.getAttribute('aria-disabled'), 'true');
     if (viewport.width < 860) {
-      await page.getByRole('button', { name: 'Plats 4, huvudinsats, 0 USD', exact: true }).focus();
+      await page.getByRole('button', { name: 'Satsningsruta 4, huvudinsats, 0 USD', exact: true }).focus();
       await show(decision([2, 3], 2));
       assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), 'BODY', 'the emptied dock hands focus on');
     }
     await context.close();
   }
+});
+
+test('Chrome betting boxes: selection never bets or moves the view; the dock bets on every available box and respects a competing owner', { skip, timeout: 120000 }, async t => {
+  const fixture = await openLayoutFixture(browserModule, { channel });
+  t.after(() => fixture.close());
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }]) {
+    const { page, context, show } = await fixture.open(viewport, { plane: 'table' });
+    let version = 1; const own = [3], bets = {};
+    await show(tableSnapshot({ version, own, bets }));
+    const picker = page.getByLabel('Välj satsningsruta', { exact: true });
+    const state = () => page.evaluate(() => ({
+      sent: window.fixture.sent.length, focus: window.fixture.app.controller.state.focusSeat,
+      selected: window.fixture.app.controller.state.betSeat,
+      own: window.fixture.app.controller.state.snapshot.me.seats,
+      visible: [...document.querySelectorAll('.seat:not([hidden])')].map(node => Number(node.dataset.seat)),
+    }));
+    const initial = await state();
+    for (const seat of [3, 0, 1, 2, 4, 5, 6]) {
+      const before = await state();
+      await picker.selectOption(String(seat));
+      assert.deepEqual(await state(), { ...before, selected: seat }, `${viewport.width}: selection changes no ownership, bet or view`);
+      assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}: free or owned box ${seat + 1} dock`);
+      await page.getByRole('button', { name: `Satsningsruta ${seat + 1}, huvudinsats, 0 USD`, exact: true }).click();
+      assert.deepEqual(await page.evaluate(() => window.fixture.sent.at(-1)), { op: 'bet', windowId: 'window-a', seat, field: 'main', chip: 5 });
+      assert.deepEqual((await state()).own, before.own, 'the command reply cannot claim a box locally');
+      if (!own.includes(seat)) own.push(seat); own.sort((a, b) => a - b); bets[seat] = { main: 5 };
+      await show(tableSnapshot({ version: ++version, own, bets }));
+      const after = await state();
+      assert.deepEqual(after.visible, initial.visible); assert.equal(after.focus, initial.focus);
+      assert.equal(after.selected, seat, 'the dock stays on the chosen box after authoritative ownership');
+    }
+    assert.deepEqual((await state()).own, [0, 1, 2, 3, 4, 5, 6], 'one player can bet all seven boxes');
+    // A freshly free selection can be taken by another player before a bet.
+    await show(tableSnapshot({ version: ++version, own: [3], bets: { 3: { main: 5 }, 6: { main: 5 } }, others: { 6: 'bob' } }));
+    await picker.selectOption('5');
+    const beforeRace = await state();
+    await show(tableSnapshot({ version: ++version, own: [3], bets: { 3: { main: 5 }, 5: { main: 10 }, 6: { main: 5 } }, others: { 5: 'carol', 6: 'bob' } }));
+    assert.equal((await state()).selected, 3, 'a competing authoritative owner closes the selected free dock');
+    assert.equal(await picker.locator('option[value="5"]').isDisabled(), true);
+    assert.equal(await picker.locator('option[value="6"]').isDisabled(), true);
+    await page.evaluate(() => window.fixture.app.controller.dispatch('bet', { seat: 5, field: 'main' }));
+    assert.equal((await state()).sent, beforeRace.sent, 'no command can target another player');
+    assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}: ownership changed`);
+    // Losing the last unbet choice leaves membership and the viewing position intact.
+    await show(tableSnapshot({ version: ++version, own: [], active: true, bets: { 3: { main: 5 } }, others: { 3: 'bob', 5: 'carol' } }));
+    await picker.selectOption('5');
+    assert.equal((await state()).sent, beforeRace.sent, 'choosing another member\'s empty box sends nothing');
+    assert.equal((await state()).focus, initial.focus);
+    await page.getByRole('button', { name: 'Satsningsruta 6, huvudinsats, 0 USD', exact: true }).click();
+    assert.deepEqual(await page.evaluate(() => window.fixture.sent.at(-1)), { op: 'bet', windowId: 'window-a', seat: 5, field: 'main', chip: 5 });
+    assert.deepEqual((await state()).own, [], 'the lost last box does not require another join');
+    assert.equal(await page.getByRole('button', { name: 'Sluta spela', exact: true }).isEnabled(), true);
+    assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}: active member without boxes`);
+    await context.close();
+  }
+  assert.deepEqual(fixture.unexpected, []); assert.deepEqual(fixture.pageErrors, []);
 });
 
 // Platsbrickorna (2026-10-29): on a table with published geometry the seat circle stands centred under the box where
@@ -240,9 +296,9 @@ test('Chrome shared-table dock: labelled bets, split clearance and stable pendin
     const { page, context, show, delay } = await fixture.open(viewport, { plane: 'table' });
     await show(tableSnapshot({ own: [3, 4], bets: { 3: { main: 5 }, 4: { main: 10 } } }));
     assert.deepEqual(await page.evaluate(measureLayout), [], `${viewport.width}: betting controls`);
-    assert.match(await page.locator('#shared-room-dock').textContent(), /Plats 4/);
-    await page.getByRole('button', { name: 'Plats 5, din plats', exact: true }).click();
-    assert.match(await page.locator('#shared-room-dock').textContent(), /Plats 5/);
+    assert.match(await page.locator('#shared-room-dock').textContent(), /Ruta 4/);
+    await page.getByRole('button', { name: 'Välj satsningsruta 5, din ruta', exact: true }).click();
+    assert.match(await page.locator('#shared-room-dock').textContent(), /Ruta 5/);
     await context.close();
     // Restore an authoritative mid-round snapshot, including a split at box 4.
     const game = await fixture.open(viewport, { plane: 'table' });

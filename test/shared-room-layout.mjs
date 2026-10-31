@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { calibration } from '../packages/presentation/contracts/calibration.mjs';
 import { ROOM_LIMIT_PRESETS } from '../packages/presentation/contracts/room-game-config.mjs';
 import { PAOW_KEVIN_PROFILE as paow } from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
-import { SEAT_HALF_PX, fallbackSeatLayout, primarySeat, seatWindow, tableProfileName, windowLabel } from '../services/game/public/shared-room-layout.mjs';
+import { SEAT_HALF_PX, bettingSeat, fallbackSeatLayout, primarySeat, seatWindow, tableProfileName, windowLabel } from '../services/game/public/shared-room-layout.mjs';
 import { compositionAnchorFrames, projectAnchorRects } from '../packages/presentation/runtime/composition-anchors.mjs';
 import { projectTableGamePlane } from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import { defaultBlackjackAutoScale, defaultBlackjackTableGeometry, defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
@@ -46,7 +46,7 @@ test('a seat window shows three boxes around the active hand, the chosen seat or
   assert.deepEqual(seatWindow(seatedAt([0, 6]), 0).boxes, [0, 1, 2]);
   assert.deepEqual(seatWindow(seatedAt([0, 6], { round: { active: 0, hands: [{ box: 3 }] } }), 0).boxes, [2, 3, 4], 'the active hand wins');
   assert.deepEqual(seatWindow(snapshot(), null).boxes, [2, 3, 4]);
-  assert.equal(windowLabel(2), 'Visa platser 3–5');
+  assert.equal(windowLabel(2), 'Bordsvy 3–5');
   assert.equal(primarySeat(seatedAt([1, 5]), 5), 5);
   assert.equal(primarySeat(seatedAt([1, 5]), 3, [2, 3, 4, 5]), 5, 'the first own seat on screen when the chosen seat is not own');
   assert.equal(primarySeat(snapshot(), 2), null);
@@ -210,14 +210,14 @@ test('a shared table has one decision panel: the native mini bar stays hidden, i
   view.close();
 });
 
-test('the seat controls are labelled for a phone, Lämna platser shows only when seated, and the heading names the stake profile', () => {
+test('the seat controls are labelled for a phone, Sluta spela shows only when seated, and the heading names the stake profile', () => {
   const { document, nodes } = viewDocument(), calls = [];
-  const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args), focusSeat: seat => calls.push(['focus', seat]) });
+  const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args), focusSeat: seat => calls.push(['focus', seat]), selectBetSeat: seat => calls.push(['select', seat]) });
   const controls = nodes.get('top-right').children.find(node => node.id === 'shared-room-controls');
   const [picker, windows] = controls.children.filter(node => node.tagName === 'SELECT');
-  const leave = controls.children.find(node => node.textContent === 'Lämna platser');
-  assert.deepEqual(windows.children.map(option => option.textContent), ['Visa platser 1–3', 'Visa platser 2–4', 'Visa platser 3–5', 'Visa platser 4–6', 'Visa platser 5–7']);
-  assert.equal(windows.attributes['aria-label'], 'Visa platser på bordet');
+  const leave = controls.children.find(node => node.textContent === 'Sluta spela');
+  assert.deepEqual(windows.children.map(option => option.textContent), ['Bordsvy 1–3', 'Bordsvy 2–4', 'Bordsvy 3–5', 'Bordsvy 4–6', 'Bordsvy 5–7']);
+  assert.equal(windows.attributes['aria-label'], 'Bordsvy, visa satsningsrutor');
   assert.equal(nodes.get('table-profile').textContent, 'Blackjack', 'no stake profile is named before the first snapshot');
   view.render({ snapshot: snapshot(), can: everything, notice: '', connected: true });
   assert.equal(leave.hidden, true, 'nothing to leave');
@@ -227,7 +227,7 @@ test('the seat controls are labelled for a phone, Lämna platser shows only when
   assert.equal(leave.hidden, false); assert.equal(windows.value, '4');
   assert.equal(nodes.get('table-profile').textContent, 'Casual Blackjack');
   windows.value = '0'; windows.dispatchEvent(new Event('change')); assert.deepEqual(calls.at(-1), ['focus', 1]);
-  picker.value = '2'; picker.dispatchEvent(new Event('change')); assert.deepEqual(calls.at(-1), ['join', { seat: 2 }]);
+  picker.value = '2'; picker.dispatchEvent(new Event('change')); assert.deepEqual(calls.at(-1), ['select', 2], 'choosing a betting box sends no join or bet');
   assert.equal(controls.children.includes(nodes.get('sound-btn')), true, 'the sound button wraps with the seat controls');
   view.close();
   assert.equal(tableProfileName(snapshot().settings), 'Privé Blackjack');
@@ -239,16 +239,40 @@ test('the seat controls are labelled for a phone, Lämna platser shows only when
 
 test('several own seats: the chosen one shows its side bets and Lämna, another own circle chooses without a server write', () => {
   const { document, nodes } = viewDocument(), calls = [];
-  const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args), focusSeat: seat => calls.push(['focus', seat]) });
+  const view = createSharedRoomView({ document }); view.bind({ dispatch: (...args) => calls.push(args), selectBetSeat: seat => calls.push(['select', seat]) });
   view.render({ snapshot: seatedAt([2, 3]), focusSeat: null, can: everything, notice: '', connected: true });
   const [two, three] = [2, 3].map(i => nodes.get('seats').children[i].children[0].children[0]);
   // The chosen circle stays focusable: aria-disabled, never disabled, so choosing a seat keeps the focus on it.
   assert.deepEqual([two.disabled, two.attributes['aria-disabled'], two.attributes['aria-pressed']], [false, 'true', 'true'], 'the first own seat is the chosen one');
   assert.deepEqual([three.disabled, three.attributes['aria-disabled']], [false, 'false']);
-  three.click(); assert.deepEqual(calls, [['focus', 3]]);
+  three.click(); assert.deepEqual(calls, [['select', 3]]);
   view.render({ snapshot: seatedAt([2, 3], { phase: 'round', roundId: 'r1' }), focusSeat: 3, can: { ...everything, bet: false, join: false }, notice: '', connected: true });
   const own = nodes.get('seats').children[3].children[0], [pp, main, tp] = own.children[1].children;
   assert.deepEqual([pp.hidden, main.hidden, tp.hidden, own.children[2].hidden], [true, false, true, true], 'a round keeps the main stake only');
+  view.close();
+});
+
+test('selecting a free betting box opens the dock without ownership, money or a camera change', () => {
+  const { document, nodes } = viewDocument(), calls = [];
+  const view = createSharedRoomView({ document });
+  view.bind({ dispatch: (...args) => calls.push(args), selectBetSeat: seat => calls.push(['select', seat]) });
+  const s = seatedAt([3]); s.bets[3].main = 25;
+  view.render({ snapshot: s, focusSeat: 3, betSeat: 4, chip: 5, can: everything, notice: '', connected: true });
+  assert.equal(bettingSeat(s, 4), 4);
+  const free = nodes.get('seats').children[4].children[0].children[0];
+  free.click(); assert.deepEqual(calls, [['select', 4]], 'selection alone sends no bet');
+  const dock = nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock');
+  const [pp, main, tp] = dock.children.find(node => node.className === 'seat-shared-bets').children;
+  assert.deepEqual([pp.disabled, main.disabled, tp.disabled], [true, false, true]);
+  assert.equal(dock.children.find(node => node.className === 'seat-shared-leave').hidden, true, 'a free box is not claimed locally');
+  main.click(); assert.deepEqual(calls.at(-1), ['bet', { seat: 4, field: 'main' }]);
+  assert.deepEqual(s.me.seats, [3]); assert.equal(s.bets[4].main, 0);
+  const own = nodes.get('seats').children[3].children[0].children[0];
+  assert.equal(own.children[0].textContent, '25'); assert.equal(own.children[1].textContent, 'Ruta 4');
+  s.owners[4] = 'bob'; s.bets[4].main = 5;
+  view.render({ snapshot: s, focusSeat: 3, betSeat: 4, chip: 5, can: everything, notice: '', connected: true });
+  assert.equal(bettingSeat(s, 4), 3, 'an authoritative competing owner removes the selected free box');
+  assert.equal(free.disabled, true);
   view.close();
 });
 
@@ -354,7 +378,7 @@ test('settled own stakes keep their receipt currency after a wallet change and r
     assert.equal(nodes.get('total-bet').textContent, `25 ${currency}`);
     const fields = (nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock').children.find(node => node.className === 'seat-shared-bets') ?? nodes.get('seats').children[3].children[0].children[1]).children;
     assert.deepEqual(fields.map(node => node.getAttribute('aria-label')), [
-      `Plats 4, par, 2 ${currency}`, `Plats 4, huvudinsats, 20 ${currency}`, `Plats 4, 21 plus 3, 3 ${currency}`,
+      `Satsningsruta 4, par, 2 ${currency}`, `Satsningsruta 4, huvudinsats, 20 ${currency}`, `Satsningsruta 4, 21 plus 3, 3 ${currency}`,
     ]);
   };
   render(); stakes('USD');
@@ -383,7 +407,7 @@ test('settled stakes with an old receipt without currency never borrow the curre
   assert.equal(nodes.get('total-bet').textContent, '25 · valuta saknas');
   assert.equal(nodes.get('last-win').textContent, '50 · valuta saknas');
   const main = (nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-dock').children.find(node => node.className === 'seat-shared-bets') ?? nodes.get('seats').children[3].children[0].children[1]).children[1];
-  assert.equal(main.getAttribute('aria-label'), 'Plats 4, huvudinsats, 25 · valuta saknas');
+  assert.equal(main.getAttribute('aria-label'), 'Satsningsruta 4, huvudinsats, 25 · valuta saknas');
   assert.equal(nodes.get('balance').textContent.replace(/\s+/g, ' '), '1 000 EUR demo');
   view.close();
 });
@@ -397,11 +421,11 @@ test('the decision panel shows server time and remains present while commands ar
   const render = serverNow => view.render({ snapshot: s, can: everything, notice: '', connected: true, serverNow });
   const zone = nodes.get('hud-bottom').children.find(node => node.id === 'shared-room-actions');
   const timer = zone.children.find(node => node.id === 'shared-room-timer');
-  render(1000);assert.equal(timer.textContent, 'Plats 5 · Beslut om 1 s');
+  render(1000);assert.equal(timer.textContent, 'Ruta 5 · Beslut om 1 s');
   assert.equal(nodes.get('actions-top').hidden, false, 'a future decision is visible but disabled');
-  render(2500);assert.equal(timer.textContent, 'Plats 5 · 15 s kvar');
+  render(2500);assert.equal(timer.textContent, 'Ruta 5 · 15 s kvar');
   assert.ok(nodes.get('actions-top').children.every(node => node.disabled), 'only can.act may enable a decision');
-  render(17000);assert.equal(timer.textContent, 'Plats 5 · Tiden är slut');
+  render(17000);assert.equal(timer.textContent, 'Ruta 5 · Tiden är slut');
   s.round.active = 1;s.round.hands.push({ box: 2, cards: [] });
   render(18000);assert.equal(timer.hidden, true);assert.equal(nodes.get('actions-top').hidden, true, 'another player owns the next decision');
   view.close();
