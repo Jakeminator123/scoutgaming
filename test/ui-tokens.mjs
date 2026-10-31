@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -9,13 +10,17 @@ import { applyThemeMode, readThemeMode, themeModeBootstrap } from '../apps/studi
 // Source tests need no build: contrast, saved mode and blocked storage.
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tokensPath = resolve(repo, 'packages/ui/tokens.css'), tokensCss = readFileSync(tokensPath, 'utf8');
-const block = selector => {
-  const start = tokensCss.indexOf(`\n${selector} {`);
-  assert.ok(start >= 0, `${selector} finns i tokenfilen`);
-  return tokensCss.slice(start, tokensCss.indexOf('\n}', start));
+const { parse } = createRequire(new URL('../apps/studio/client/package.json', import.meta.url))('postcss');
+const tokens = parse(tokensCss);
+const declarations = selector => {
+  const values = [];
+  tokens.walkRules(rule => {
+    if (!rule.selectors.includes(selector)) return;
+    rule.each(node => { if (node.type === 'decl' && node.prop.startsWith('--sg-')) values.push([node.prop, node.value]); });
+  });
+  return values;
 };
-const declarations = css => [...css.matchAll(/(--sg-[\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()]);
-const dark = declarations(block(':root')), light = declarations(block(':root.light'));
+const dark = declarations(':root'), light = declarations(':root.light');
 const palette = mode => new Map([...dark, ...(mode === 'light' ? light : [])]);
 
 function luminance(hex) {
