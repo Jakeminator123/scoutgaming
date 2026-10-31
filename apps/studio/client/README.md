@@ -8,9 +8,7 @@ React, react-dom, deras `@types`, esbuild och TypeScript har exakt samma
 versioner här som i `apps/studio/package.json`, eftersom de delade
 komponenterna i `apps/studio/components` byggs av båda. Uppgradera dem i båda
 paketen i samma PR; `apps/studio/test/client-version-sync.test.mjs` kontrollerar
-det. Planen för resten av verktygskedjan (en Tailwind, en
-tokenfil, ett mörkt läge) står i
-[VERKTYGSKEDJA](../../../docs/plans/VERKTYGSKEDJA.md).
+det. Aktuella versioner läses ur paketmanifesten, inte ur äldre införandeplaner.
 
 | Del | Ansvar |
 | --- | --- |
@@ -25,6 +23,36 @@ npm-beroenden vid behov och bygger klienten i Studios `dev` och `build`.
 `app/lobby/[[...path]]/route.ts` serverar det publika lobbybygget utan
 Admin-paketet. Den publika lobbyn läser bara publicerad katalogdata via
 `runtime/public-lobby-catalog.mjs` och `packages/player-catalog`.
+
+## UI, tema och kontrakt
+
+Admin och lobbyn byggs med Tailwind 4. Delade färger och typsnitt definieras i
+[tokens.css](../../../packages/ui/tokens.css). Studios Next-layout och klientbygget
+använder samma [temastart](../lib/theme-mode.mjs): sparat `sg-theme`, annars mörkt
+läge. Partnerportalens CSS mappar sina befintliga namn till samma `--sg-*`-tokens.
+Äldre alternativ om Tailwind 3 eller en framtida tokenflytt är inte återstående
+införandearbete.
+
+Återanvänd [Admin-kitet](admin/components/ui/kit.tsx), [sidhuvudet](admin/components/ui/page-header.tsx)
+och befintliga formulär-, tabell- och dialogkomponenter. Partnerportalens egna
+adaptrar beskrivs i [dess guide](../components/partner/README.md). De har levande
+konsumenter och kan förenklas tillsammans med dem. Historiska pixelmått, menyantal
+och komponentnamn är inte låsningar av nästa design.
+
+Behåll tangentbordsåtkomst, synligt fokus, kontrast och begripliga tom-/feltillstånd.
+Status ska kunna förstås utan enbart färg. Relevanta prov är
+[kitets beteenden](../test/admin-ui-kit.test.mjs), [fokus](../test/css-focus-ring.test.mjs)
+och [tokens](../../../test/ui-tokens.mjs). Ett provkvitto gäller den provade versionen;
+en dokumentlänk är inget nytt godkännande av layout eller produktbeteende.
+
+Publicering, bolagsisolering, revisioner och sparade utkast är serverkontrakt.
+Följ [användarguiden](../docs/README.md), [publiceringsmodulen](../lib/room-release.mjs)
+och dess [beteendeprov](../test/room-release.test.mjs). Kvarvarande produktarbete
+samlas i [körplanen](../../../docs/plans/organisation/KORPLAN-v2.md).
+
+Den som ändrar bygget, temat eller dessa kontrakt uppdaterar denna guide i samma
+PR. Kontrollera manifest, konsument och berörda beteendeprov; en ny datumstämpel
+ersätter inte den kontrollen.
 
 ## Bygga
 

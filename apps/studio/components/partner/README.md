@@ -1,9 +1,11 @@
 # Partnerportalen (nivå 2)
 
 Bolagets egen yta på `/partner/<bolag>`, renderad av Next (inte Admin-SPA:n), så att
-servern fattar 403-beslutet innan något skickas. Konverteringen till Admins mönster
-(meny i `packages/navigation`, samma kit och tokens som Admin, TSX) följer
-[PARTNERPORTAL-KONVERTERING](../../../../docs/plans/PARTNERPORTAL-KONVERTERING.md).
+servern fattar 403-beslutet innan något skickas. Mappen är redan flyttad från `kevin-bo`; färgerna använder de gemensamma
+`--sg-*`-tokensen. Egna vyer och UI-adaptrar finns fortfarande. Samordna dem
+med [Admin-klienten](../../client/README.md#ui-tema-och-kontrakt) när ett konkret
+beteende förenklas; den äldre konverteringsplanen är ersatt av denna guide och
+[aktuell körplan](../../../../docs/plans/organisation/KORPLAN-v2.md).
 
 Kedjan: `app/partner/[[...path]]/page.tsx` → `components/workspace-surface-page.tsx`
 → `packages/navigation/workspace-surfaces.mjs` (`PARTNER_VIEWS`, Kevins gamla

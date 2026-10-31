@@ -1,6 +1,8 @@
 # Nyckel → bolag
 
-Plan för bindningen nyckel → bolag under [Efter O03](../NEXT-AGENT.md#efter-o03): partnernyckeln binds till ett bolag och motorn kontrollerar bindningen. Skriven 28 oktober 2026 mot `main` d3bab9b970. Raderas när punkten är verifierad i drift. Radnumren gäller den SHA:n.
+**Kodavstämning 31 oktober 2026:** `ops/neon-game/migrations.mjs` anger fortfarande game-012 som `deploymentOptional`; partner-API:t har toleranta läsvägar. Detta motiverar kvarvarande underlag, men bevisar inte databasens liveversion. Kontrollera readiness och negativa bolagsprov före kravhöjning. De ursprungliga radnumren och datamängderna nedan är daterade.
+
+Plan för bindningen nyckel → bolag under [kvarvarande bolagsarbete](organisation/KORPLAN-v2.md#återstående-områden-och-tydliga-gränser): partnernyckeln binds till ett bolag och motorn kontrollerar bindningen. Skriven 28 oktober 2026 mot `main` d3bab9b970. Raderas när punkten är verifierad i drift. Radnumren gäller den SHA:n.
 
 ## 1. Mål
 

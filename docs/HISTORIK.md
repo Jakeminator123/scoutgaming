@@ -6,6 +6,19 @@ Hänvisningar i `migrering/status.json` (fältet `evidence`) och i kodkommentare
 
 ## Raderade 31 oktober 2026
 
+Dokumentgranskningen efter systemkartorna utgår från main
+`c0150add62fd9e4b39fd31a7e0127406ca860007`. Kodkommentarer med äldre avsnittsnummer
+är historiska hänvisningar, inte beroenden på att planen finns kvar på disk.
+
+| Fil | Ersättning och skäl; originalet läses med `git show c0150add62fd9e4b39fd31a7e0127406ca860007:<fil>` |
+| --- | --- |
+| `docs/plans/ADMIN-FORENKLING.md` | Användarguiden, klientguiden och körplanen. Den gamla nav-/landningsinventeringen var en daterad parallell lägesbild. |
+| `docs/plans/DESIGNSYSTEM.md` | Klientguidens UI-/temakontrakt och levande kit. Planens Team-väg hade redan ersatts. |
+| `docs/plans/VISUELL-RIKTNING.md` | Klientguiden och `packages/ui/tokens.css`. Införandeordning och pixelmått ska inte bli nya ändringsspärrar. |
+| `docs/plans/VERKTYGSKEDJA.md` | Klientguiden och paketmanifesten. Planen beskrev samtidigt Tailwind 3 och redan genomförd Tailwind 4-/tokenflytt. |
+| `docs/plans/PARTNERPORTAL-KONVERTERING.md` | Partnerguiden och körplanen. Flytten från `kevin-bo` och gemensamma färgtokens är genomförda; aktiva adaptrar och behörighetsprov består. |
+| `docs/plans/PAOW-LIPSYNC.md` | TALKEDJA och TALKEDJA-RUNPOD innehåller senare daterad verifiering och kvarvarande arbete. Rapportens äldre röstkonto-/driftuppgifter är inte nuläge. |
+
 | Fil | Vad det var och var det läses |
 | --- | --- |
 | `docs/2026-10-29-ENV-INVENTORY.md` | Daterad miljöinventering, ersatt av ENVIRONMENT-VARIABLES och ENVIRONMENT-RESTORATION. Kvarvarande gallringsfrågor är överförda. Sista main-version: `git show 6a3f976e4428627b135664ba7d13ae24593567c4:docs/2026-10-29-ENV-INVENTORY.md` |
@@ -92,7 +105,7 @@ O02 är VERIFIED och frysningen hävd. `tools/merge-pr.mjs` hade `--freeze` och 
 
 ## Raderade 29 oktober 2026: Admin-kartan och skissen efter enkel väg
 
-Båda fanns i `main` på `989609e9b` (efter enkel väg PR 1–8). De beskrev Admin före förenklingen; [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md) kortades samtidigt till läget på `main`, och hela målbilden läses med `git show 989609e9b:docs/plans/ADMIN-FORENKLING.md`.
+Båda fanns i `main` på `989609e9b` (efter enkel väg PR 1–8). De beskrev Admin före förenklingen; `ADMIN-FORENKLING` (nu raderad) kortades samtidigt till läget på `main`, och hela målbilden läses med `git show 989609e9b:docs/plans/ADMIN-FORENKLING.md`.
 
 | Datum | Fil | Vad det var | Läses med |
 | --- | --- | --- | --- |
