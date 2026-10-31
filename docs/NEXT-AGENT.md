@@ -18,8 +18,13 @@ OpenClaw-trimning (AGENT TVÅ, 31 oktober): featurebranch
 Sol 6.1 som djupmodell och bildmodell samt svensk Jakob-2-persona. Sparade
 rollmodeller ändras separat via Admin; kod och Blueprint ersätter dem inte.
 Luna kan eskalera högst en gång för alla dealerprofiler inom samma deadline.
-231 lokala OpenClaw-prov passerade före den sista granskningsrättningen;
-CI och driftsättning återstår. Ingen tal-/GPU-aktivering ingår.
+PR #717 hade grön full CI på `6edfe27bc68d8c1f875bbf7fa9051fc256005cb6`;
+231 lokala OpenClaw-prov, 58 riktade slutprov och pre-commit 164/164 passerade.
+Efter AGENT ETT:s #718 synkas main in och CI krävs på den nya headen.
+AGENT TVÅ äger #717 och dess senare deploy; AGENT ETT gör ingen parallell
+merge/deploy. Produktionspåverkan väntar på Jakobs uttryckliga klartecken.
+Slack `files:read` och ominstallation är godkända av Jakob men inte utförda;
+datorverktygets URL-kontroll stoppade browserarbetet. Ingen tal-/GPU-aktivering ingår.
 
 Ingen ny bank, GPU-körning eller talaktivering ingår. Jakob-2 har en registrerad ElevenLabs-röst och previewmaterial, men saknar en verifierad egen GPU-bank och godkänd nygenererad läppsynk i spelet. Förinspelade godkända repliker är inte samma sak som genererat livetal.
 
@@ -40,6 +45,8 @@ Kvar för senare taluppdrag: delat bords `generated-speech-stream` behöver komp
 5. **Säkerhet:** GitGuardian återlästes 31 oktober: noll öppna incidenter, 25 ignorerade. Incidenterna 39166318 och 39166319 är ignorerade som `test_credential`: påhittade Postgres-uppgifter i Studios tester av loggmaskering. Monitoreringen är aktiv. Den historiska skanningen från 2 oktober står däremot kvar som `too_large` med noll skannade commits; noll öppna incidenter bevisar därför inte full historisk täckning.
 
 Miljöinventeringen från 29 oktober är borttagen; aktuella kontrakt och återstående kontroller finns i [miljöguiden](ENVIRONMENT-VARIABLES.md) och [återställningsguiden](ENVIRONMENT-RESTORATION.md#kvar-att-bedöma-för-gallring). Dokumentstädningen ändrar inga molnresurser eller prototypers arbetsfiler.
+
+**AGENT 1, repo-utredning 31 oktober:** full Git-backup och de två lokala testernas snapshots är verifierade. [Incidentrapporten](incidents/2026-10-31-repository-history.md) innehåller de frysta mätningarna; [övergångsplanen](incidents/2026-10-31-clean-repository-plan.md) beskriver alternativet på cirka 65 MiB. Ingen historik har skrivits om och inget repo-/driftbyte är utfört. Nästa genomförande måste skydda senare commits/utkast och behålla testernas nuvarande Git-lager; den gamla snapshoten är inte senaste main.
 
 ## Arbetsgräns och avslut
 
