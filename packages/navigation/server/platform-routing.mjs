@@ -35,7 +35,7 @@ const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile'
 // /game?game=roulette sends the player to the engine's /play/roulette document; these are that document, its exact browser assets and API.
 const ROULETTE_ROOM = new Set(['/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config']);
-const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
+const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
 // Public dealer media follows the dealer identity syntax, never a list of names.
 // The engine still serves only cataloged public files and refuses retired routes.
 const DEALER_SEGMENT = '[a-z][a-z0-9]*(?:-[a-z0-9]+)*';
@@ -173,7 +173,7 @@ export function platformRoute(url, config, request) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
   if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
-    || /^\/studio\/api\/(?:videos|dealers|clip-controls|layer-assets|replies)(?:\/|$)/.test(path))) {
+    || /^\/studio\/api\/(?:videos|dealers|layer-assets|replies)(?:\/|$)/.test(path))) {
     return { kind: 'lab', destination: `${config.labUiOrigin}${path}${url.search}` };
   }
   if (backendPlatformPath(path)) return { kind: 'backend', destination: `${config.backendOrigin}${path}${url.search}` };

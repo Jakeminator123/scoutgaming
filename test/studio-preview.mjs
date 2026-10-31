@@ -27,12 +27,12 @@ function fixture(t,options={}){
   lane.layers.table={...lane.layers.table,default:layerId,allowed:[layerId]};
   const snapshot={scope,projectDocument:{kind:'project',revision:project.revision,value:project},administrationDocument:{kind:'administration',revision:'admin.1',value:{}},mediaRows:[row]};
   const inventory={videos:[{id:row.id,sha256:row.sha256,bytes:row.size,available:true,source:'upload',dealer:'linnea',fileName:'idle.mp4',classification:structuredClone(row.classification)}],families:[]};
-  const state={actor:'admin-one',role:'admin',revoked:false,time:2000000,reads:0,registryReads:0,legacyReads:0,tables:[],media:[],bank:[],mediaHash:null,authCalls:0};
+  const state={actor:'admin-one',role:'admin',revoked:false,time:2000000,reads:0,registryReads:0,tables:[],media:[],bank:[],mediaHash:null,authCalls:0};
   const request=(path,method='GET',body,extra={})=>new Request(origin+path,{method,headers:{cookie:'lab_session=fixture',...(!['GET','HEAD'].includes(method)?{origin,'content-type':'application/json'}:{}),...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const api=createStudioPreview({scope,origin,now:()=>state.time,ttlMs:2000,maxSessions:4,maxSessionsPerAdmin:2,
     repository:{scope,readPresentationSnapshot:async()=>{state.reads++;return snapshot;}},
     authorize:async()=>{state.authCalls++;if(state.revoked)throw Object.assign(Error('revoked'),{code:'studio_login_required',statusCode:401});return{user:state.actor,role:state.role,scope};},
-    registryLoader:async()=>{state.registryReads++;await options.onRegistryLoad?.();return inventory;},legacyControlsCaptured:async(s,p)=>{state.legacyReads++;assert.equal(s.projectDocument.revision,p.revision);return{runtime:{revision:p.revision,saved:true}};},
+    registryLoader:async()=>{state.registryReads++;await options.onRegistryLoad?.();return inventory;},
     privateMedia:async(record,req)=>{state.media.push({record:structuredClone(record),method:req.method,range:req.headers.get('range')});return new Response(req.method==='HEAD'?null:'abcdefgh',{status:req.headers.has('range')?206:200,headers:{ETag:`"sha256-${state.mediaHash??record.sha256}"`,'Content-Type':record.contentType}});},
     bankVideoResponse:async(id,req)=>{state.bank.push(id);return new Response(req.method==='HEAD'?null:'bank',{headers:{ETag:`"sha256-${state.mediaHash??'c'.repeat(64)}"`}});},
     readHtml:async()=>'<html lang="sv"><body>Preview</body></html>',
@@ -110,7 +110,7 @@ test('preview captures saved project and media once without consulting legacy po
   const config=await f.api.handle(f.request(base+'/presentation/config?dealerId=linnea'));
   assert.equal(config.status,200);const body=await config.json();assert.equal(body.projectRevision,session.projectRevision);
   assert.equal(body.dealerIdle.linnea.src,base+'/videos/'+videoId);assert.equal(body.inventory.videos[0].previewUrl,base+'/videos/'+videoId);
-  assert.equal(body.inventory.videos[0].sha256,'a'.repeat(64));assert.deepEqual([f.state.reads,f.state.registryReads,f.state.legacyReads],[1,1,0]);
+  assert.equal(body.inventory.videos[0].sha256,'a'.repeat(64));assert.deepEqual([f.state.reads,f.state.registryReads],[1,1]);
   const player=await f.api.handle(f.request(base+'/player','POST',{id:'real-player'}));assert.equal(player.status,200);
   const value=await player.json();assert.equal(value.id,'studio-preview:'+session.sessionId);assert.equal(value.balance,10000);assert.equal(player.headers.get('set-cookie'),null);
 });

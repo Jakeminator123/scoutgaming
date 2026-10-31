@@ -12,7 +12,6 @@ import {createStudioRepository} from '../packages/studio-registry/server/documen
 import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
 import {createStudioMediaRuntime} from '../services/game/storage/studio-media-runtime.mjs';
 import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
-import {legacyClipControls} from '../services/game/storage/legacy-clip-inventory.mjs';
 import {createPresentationApi} from '../services/game/presentation-api.mjs';
 import {createNativeObservation} from '../services/game/public/native-observation.mjs';
 import {createHash} from 'node:crypto';
@@ -51,7 +50,7 @@ test('retired legacy HTTP returns 410 while cloud configuration preserves saved 
   const next=structuredClone(original.value);next.lines[0].label='Second saved revision';
   const saved=await f.repository.saveDocument('project',{value:next,expectedRevision:original.revision,actor:'fixture-admin'});
   assert.notEqual(saved.revision,original.revision);
-  const api=createPresentationApi({store:f.policy.projectStore(),legacyControls:f.media.legacyControls,
+  const api=createPresentationApi({store:f.policy.projectStore(),
     registryLoader:async()=>({videos:[],families:[]}),savedDealerConfiguration:true});
   const server=createServer((req,res)=>{api(req,res,new URL(req.url,'http://metadata.qa.invalid').pathname,'isolated-qa-player').catch(()=>{res.writeHead(503);res.end();});});
   try{
@@ -71,14 +70,6 @@ test('retired legacy HTTP returns 410 while cloud configuration preserves saved 
     assert.equal((await f.repository.readDocument('project')).revision,saved.revision);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
-test('ordinary flag-off legacy resolver still attributes disk project and native missing administration fails closed',async()=>{
-  const f=await fixture(),project=(await f.policy.projectStore().load());
-  const legacy=await legacyClipControls(project,{repository:repositoryRoot,administration:{neverAgain:{}}});
-  assert.equal(legacy.runtime.source,'lab/project.json');assert.equal(legacy.runtime.projectRevision,project.revision);
-  const absent=createStudioMediaRuntime({repository:{scope,listMedia:()=>f.repository.listMedia(),readRuntimeCatalog:()=>f.repository.readRuntimeCatalog(),readDocument:async()=>null},scope,env,repositoryRoot});
-  await assert.rejects(absent.legacyControls(project),error=>error.code==='studio_document_missing');
-});
-
 test('ordinary pages and renderer code never read Neon; every imported public media alias still reaches it',async()=>{
   let reads=0;
   const unavailable=Object.assign(Error('catalog unavailable'),{code:'catalog_unavailable'});
@@ -161,7 +152,6 @@ import {createNeonVideoRegistry as createRegistryReader} from '../packages/studi
 import {createMediaRuntimeServices} from '../packages/studio-registry/server/media-runtime.mjs';
 import {createMediaBlobIndex} from '../packages/studio-registry/server/media-blob-index.mjs';
 import {createMediaLayout} from '../packages/studio-registry/server/media-layout.mjs';
-import {createRuntimeMetadataReader} from '../tools/runtime-media-catalog.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 
@@ -189,9 +179,9 @@ async function neutralMediaFixture(){
     const reader=createVideoRegistry({repositoryRoot,previewUrl:id=>'/api/videos/'+id,uploadDirectory:()=>null,
       readUploads:async()=>{throw Error('SQL uploads required');},readClassifications:async()=>[],getPrivateMedia,mediaBlobIndex:index,...port});
     const registry=createRegistryReader({repository,scope:localScope,env:{},reader,getPrivateMedia,...port});
-    const services=createMediaRuntimeServices({repositoryRoot,createNeonVideoRegistry:()=>registry,legacyClipControls,
+    const services=createMediaRuntimeServices({repositoryRoot,createNeonVideoRegistry:()=>registry,
       verifiedMediaBlobStorage:index.verifiedMediaBlobStorage,getPublicMediaBlobResponse:async()=>assert.fail('No provider access'),
-      resolvePublicMedia:layout.resolvePublicMedia,createRuntimeMetadataReader,configurationSource:STUDIO_GAME_CONFIGURATION_SOURCE,...port});
+      resolvePublicMedia:layout.resolvePublicMedia,...port});
     return {reader,registry,media:services.createStudioMediaRuntime({repository,scope:localScope,env:{},repositoryRoot}),services};
   };
   return {pool,repository,scope:localScope,catalog,record,bytes,build,get privateReads(){return privateReads;}};

@@ -383,11 +383,35 @@ test('a fresh installation has no dealer, composition or borrowed idle and can r
   registered.lanes=[defaultPresentationLane('linnea')];assert.equal(validateProject(registered),registered);
   assert.deepEqual(project.dealers,[]);assert.deepEqual(createEmptyProject().lanes,[]);
 });
-test('normalization preserves historical policy and explicit bindings without expanding legacy situations',()=>{
+test('retired policy rejects populated or malformed data without modifying the saved project',()=>{
+  const project = createSeedProject();
+  for (const legacyClipPolicy of [null,{},'',[{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}]]) {
+    const value = {...structuredClone(project),legacyClipPolicy}, before = structuredClone(value);
+    assert.throws(() => validateProject(value),/legacyClipPolicy/);
+    assert.throws(() => normalizeProject(value),/legacyClipPolicy/);
+    assert.deepEqual(value,before);
+  }
+  assert.equal(validateProject(project),project);
+});
+
+test('dealer trash accepts an empty retired field but cannot restore a hidden retired binding',async()=>{
+  const {lifecycleProject} = await import('../lib/dealer-lifecycle.mjs');
+  const project = addDealer(createStudioSeed(),'nora','Nora');
+  const archived = lifecycleProject(project,{dealerId:'nora',archived:true,records:[]});
+  archived.dealerTrash[0].legacyClipPolicy = [];
+  assert.equal(validateProject(archived),archived);
+  const before = structuredClone(archived);
+  const restored = lifecycleProject(archived,{dealerId:'nora',archived:false,records:[]});
+  assert.ok(restored.dealers.some(row => row.id === 'nora'));
+  assert.deepEqual(archived,before);
+  archived.dealerTrash[0].legacyClipPolicy = [{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}];
+  assert.throws(() => validateProject(archived),/dealersnapshot/);
+  assert.throws(() => lifecycleProject(archived,{dealerId:'nora',archived:false,records:[]}),/dealersnapshot/);
+});
+
+test('normalization preserves an empty retired policy and explicit video bindings',()=>{
   const project=normalizeProject(createSeedProject());
-  project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:legacy/idle'},
-    {dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'},
-    {dealerId:'amira',part:'think',clipId:'amira:legacy/think'}];
+  project.legacyClipPolicy=[];
   project.lines.find(row=>row.dealerId==='amira'&&row.eventId==='idle.ready').variants[0].videoGenerationId='11111111-1111-4111-8111-111111111111';
   const before=structuredClone(project);
   assert.equal(normalizeProject(project),project);assert.deepEqual(project,before);

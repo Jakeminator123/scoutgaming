@@ -50,11 +50,11 @@ test('a published cloud lane is independent of a historical active indexed lane'
 });
 
 test('historical box variants remain stored without automatically becoming the standard',async()=>{
- const {applyLegacyStandardVariants}=await import('../packages/presentation/runtime/legacy-standard-variants.mjs');
  const {selectPresentation}=await import('../services/game/presentation-selection.mjs');
  const project=historicalDealerProject('vera');
- project.legacyClipPolicy=[{dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'}];
- applyLegacyStandardVariants(project); // Explicit historical fixture, never a runtime import.
+ const line=project.lines.find(row=>row.dealerId==='vera'&&row.eventId==='deal.player.centre');
+ project.triggers.push({id:'legacy.box.3',label:'Plats 4',category:'deterministic',path:'event.box',op:'eq',value:3});
+ line.variants.push({...structuredClone(line.variants[0]),id:'vera.deal.player.centre.legacy-box3',priority:10,triggerIds:['legacy.box.3'],videoGenerationId:'vera:legacy/box3',selection:{rules:true,model:true,random:false}});
  assert.ok(project.lines.find(line=>line.dealerId==='vera'&&line.eventId==='deal.player.centre').variants.some(variant=>variant.videoGenerationId==='vera:legacy/box3'));
  const original=structuredClone(project);
  const result=await selectPresentation({project,dealerId:'vera',eventId:'deal.player.centre',mode:'off',sourceEvent:project.events.find(e=>e.id==='deal.player.centre').exampleEvent},{videoRegistry:{videos:[],families:[]}});
@@ -63,17 +63,6 @@ test('historical box variants remain stored without automatically becoming the s
  assert.deepEqual(project,original);
 });
 
-test('reading historical clip metadata never creates new active bindings',async()=>{
- const {createSeedProject,normalizeProject}=await import('../packages/presentation/contracts/studio-model.mjs');
- const project=createSeedProject();
- project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:legacy/idle'}];
- const before=structuredClone(project);
- const result=normalizeProject(project);
- assert.deepEqual(result.lines,before.lines);
- assert.deepEqual(result.triggers,before.triggers);
- assert.deepEqual(result.legacyClipPolicy,before.legacyClipPolicy);
- assert.deepEqual(project,before);
-});
 test('retired dealers cannot be registered again while other named cloud dealers can',async()=>{
  const {createEmptyProject,addDealer}=await import('../packages/presentation/contracts/studio-model.mjs');
  for(const id of ['vera','mei','amira','johanna'])assert.throws(()=>addDealer(createEmptyProject(),id,id));

@@ -13,6 +13,7 @@ export interface StudioEvent { id: string; label: string; description: string; s
 export interface StudioAsset { id: string; label: string; kind: 'animation'; animation: string; color: string; durationMs: number }
 export interface MediaVariantPolicy { videoId: string; selection: VariantSelection; priority: number; triggerIds: string[]; frequencyPercent?: number }
 export interface MediaFamilyPolicy { familyId: string; variants: MediaVariantPolicy[] }
+// Shape for inspecting unvalidated old drafts/trash; project validation accepts only an empty policy.
 export interface LegacyClipBinding { dealerId: DealerId; part: string; clipId: string }
 export type OpenClawMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';
 export type LaneBackgroundMode = 'baked' | 'image' | 'video';

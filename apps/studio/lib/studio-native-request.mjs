@@ -93,7 +93,7 @@ export function normalizeNativeStudioRequest(request, config) {
   // their path and remain subject to their own exact routing checks.
   if (config.apiBase === '/studio/api/admin' && config.authBase === '/studio/api/auth'
     && (/^\/api\/(?:admin|auth|videos|dealers|layer-assets|replies|forge)(?:\/|$)/.test(url.pathname)
-      || /^\/api\/(?:project|social|clip-controls)$/.test(url.pathname))) {
+      || /^\/api\/(?:project|social)$/.test(url.pathname))) {
     url.pathname = '/studio' + url.pathname;
   }
   if (url.href === request.url && !rewrite) return request;
