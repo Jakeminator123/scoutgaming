@@ -16,6 +16,8 @@ PR #740 samlar #738 (exakt talfri native-v2-filmlängd), #739 (förbrukad satsni
 
 Det isolerade previewrummet `room-3fdcf4e9-bcba-ab49-779a-2293853001ef` har dessutom publicerats via Admin som version 2 med korrigerad bordplacering. Djupjämförelse bekräftade oförändrade mediebytes och filmkontrakt; andra publicerade rum ändrades inte. Slutliga runtimebevis och skärmbilder samlas privat i `.cache/ui-review-1031/REPORT.md`. Detta är en avgränsad spelrättning, inte acceptans av all teknisk skuld eller hela talprodukten.
 
+Uppföljningen #741 integrerar #742: återhämtad idle/ljudgest lämnar inte kvar en gammal generell varning i tillgänglighetsvyn, och kortens extra 220 ms-layoutanimation tas bort. Animationen blandade gamla lokala koordinater med det nya föräldraplanets skala; slutankaret var rätt men övergången hoppade. Verkliga Chrome-bbox-prov reproducerade felet före rättningen och höll spelar-/dealerkortens skärmcentrum inom 0,01 px efteråt, i båda riktningar genom koordinatbytet. Bildrutestyrd filmrörelse och handfläkt bevaras. Den stabila bordkalibreringen flyttas inte igen.
+
 ## Leveransen som avslutas
 
 - **L3 steg 5–6:** Studio 023 är installerad i båda miljöerna. Nya paketrevisioner bär produktionens fyra och previews sex befintliga rum (nio respektive fyra bolagspaket). Den gamla dokumentlistan avvecklas med vanlig CAS-sparning efter kodens driftsättning, utan att skriva om material eller låsta spelkonfigurationer. Paketens `rooms` är enda aktiva rumsregistret; Admins `administration.rooms` är en härledd svarsvy. `gameLanes` är kvarvarande uppspelningskonfiguration, inte en andra rumslista; dess avveckling var L3 steg 7, inte någon av de två beställda delarna.

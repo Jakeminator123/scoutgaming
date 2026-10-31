@@ -72,15 +72,9 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
           incomingIndex: deal ? (incoming < 0 ? count - 1 : incoming) : -1,
           time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat, depth:cardViewDepth(cardView),fanSpread });
         const entry = nodes.get(card.shoeDraw);
-        const layoutKey = `${anchor.cx}:${anchor.cy}:${hand.splitCount}`;
-        if (entry.pose && entry.layoutKey !== layoutKey) {
-          entry.shift?.cancel();
-          entry.shift = entry.group.animate?.([
-            {transform:`translate(${entry.pose.x}px, ${entry.pose.y}px)`},
-            {transform:`translate(${pose.x}px, ${pose.y}px)`},
-          ], {duration:220,easing:'ease-out'});
-        }
-        entry.pose = pose; entry.layoutKey = layoutKey;
+        // Layout anchors belong to the current parent plane. Interpolating an
+        // old local pose after that plane changes moves a settled card away
+        // from its screen anchor. Film contact and fan motion stay in cardPose.
 
         // The prop is stationary once the fingers release it. Stop thresholding
         // its paper then: the dealer clip's neutral final frame has a broken
