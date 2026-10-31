@@ -5,50 +5,32 @@ import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 
-// Admins diagram har accessibilityLayer, så diagramytan (svg.recharts-surface) tas emot av
-// tangentbordet. Ytan ska då visa samma fokusring som Admins övriga kontroller (focusRing i kit.tsx).
+// Measure keyboard focus in the rendered Admin controls, including forced colours.
+// Class names, colour tokens, outline widths and corner radii are implementation choices.
 const admin=fileURLToPath(new URL('../client/admin/',import.meta.url));
 const browserModule=process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const alias={react:fileURLToPath(new URL('../client/node_modules/react',import.meta.url)),'react-dom':fileURLToPath(new URL('../client/node_modules/react-dom',import.meta.url))};
-const fixture=`import {ChartContainer} from './components/ui/chart';import {BarChart,Bar,XAxis} from 'recharts';
+const fixture=`import {ChartContainer} from './components/ui/chart';import {Button} from './components/ui/kit';import {BarChart,Bar,XAxis} from 'recharts';
 const data=[{day:'mån',value:3},{day:'tis',value:5}];
 export const Chart=()=><ChartContainer config={{value:{label:'Värde',color:'var(--sg-lime)'}}} style={{width:320,height:180}}>
   <BarChart accessibilityLayer data={data} width={320} height={180}><XAxis dataKey="day"/><Bar dataKey="value" fill="var(--color-value)"/></BarChart>
 </ChartContainer>;`;
 const bundle=(entry,options)=>build({stdin:{contents:entry,resolveDir:admin,loader:'tsx'},bundle:true,write:false,jsx:'automatic',alias,
   define:{'process.env.NODE_ENV':'"production"'},logLevel:'silent',...options}).then(result=>result.outputFiles[0].text);
-// Samma fokusring som kit.tsx: varje focus-visible-klass utom outline-none, riktad mot diagramytan.
-async function expectedRing(){
-  const source=await readFile(new URL('../client/admin/components/ui/kit.tsx',import.meta.url),'utf8');
-  const ring=source.match(/export const focusRing='([^']+)'/)?.[1];
-  assert.ok(ring,'kit.tsx exporterar focusRing');
-  return ring.split(' ').filter(name=>name!=='focus-visible:outline-none').map(name=>name.replace(/^focus-visible:/,'[&_.recharts-surface:focus-visible]:'));
-}
-
 // Kontrast enligt WCAG 2.x utifrån webbläsarens beräknade rgb()-färger.
 function contrast(a,b){
-  const luminance=color=>{const [r,g,bl]=color.match(/[\d.]+/g).slice(0,3).map(Number).map(value=>{const c=value/255;return c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4;});return 0.2126*r+0.7152*g+0.0722*bl;};
-  const [light,dark]=[luminance(a),luminance(b)].sort((x,y)=>y-x);
+  const rgba=color=>color.match(/[\d.]+/g).map(Number);
+  const bg=rgba(b),fg=rgba(a),alpha=fg[3]??1;
+  const luminance=rgb=>{const [r,g,bl]=rgb.slice(0,3).map(value=>{const c=value/255;return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4;});return 0.2126*r+0.7152*g+0.0722*bl;};
+  const [light,dark]=[luminance(fg.map((value,index)=>value*alpha+bg[index]*(1-alpha))),luminance(bg)].sort((x,y)=>y-x);
   return (light+0.05)/(dark+0.05);
 }
 
-test('diagramytan får Admins fokusring vid focus-visible', async () => {
-  const code=await bundle(fixture+`\nimport {renderToStaticMarkup} from 'react-dom/server';export const html=()=>renderToStaticMarkup(<Chart/>);`,{platform:'node',format:'cjs'});
-  const module={exports:{}};new Function('module','exports','require',code)(module,module.exports,createRequire(admin));
-  const html=module.exports.html();
-  const classes=html.match(/data-slot="chart"[^>]*class="([^"]+)"|class="([^"]+)"[^>]*data-slot="chart"/);
-  assert.ok(classes,'diagrammet renderas med data-slot="chart"');
-  const names=new Set((classes[1]??classes[2]).replaceAll('&amp;','&').split(/\s+/));
-  for(const name of await expectedRing())assert.ok(names.has(name),'saknar '+name);
-  assert.ok(names.has('[&_.recharts-surface]:outline-hidden'),'webbläsarens egen kontur ersätts av ringen');
-  assert.ok(!names.has('[&_.recharts-surface]:rounded-sm'),'svg-hörnen klipps inte utan fokus');
-});
-
-test('fokusringen syns i en riktig webbläsare när diagrammet nås med Tab',{skip:!browserModule},async () => {
+test('Admin button and chart retain visible keyboard focus and contrast in both themes and forced colours',{skip:!browserModule},async () => {
   const [{default:postcss},{default:tailwind}]=await Promise.all([import(pathToFileURL(createRequire(admin).resolve('postcss')).href),import(pathToFileURL(createRequire(admin).resolve('@tailwindcss/postcss')).href)]);
   const globals=new URL('../client/admin/app/globals.css',import.meta.url);
   const css=(await postcss([tailwind({base:admin})]).process(await readFile(globals,'utf8'),{from:fileURLToPath(globals)})).css;
-  const script=await bundle(fixture+`\nimport {createRoot} from 'react-dom/client';createRoot(document.getElementById('root')).render(<><button id="before">Före</button><Chart/></>);`,{platform:'browser',format:'iife'});
+  const script=await bundle(fixture+`\nimport {createRoot} from 'react-dom/client';createRoot(document.getElementById('root')).render(<><button id="before">Före</button><div id="surface" style={{background:'var(--sg-surface)',padding:20}}><Button id="control">Åtgärd</Button><Chart/></div></>);`,{platform:'browser',format:'iife'});
   const {chromium}=await import(pathToFileURL(browserModule).href);
   const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try{
@@ -57,26 +39,28 @@ test('fokusringen syns i en riktig webbläsare när diagrammet nås med Tab',{sk
       if(path==='/theme.css')return route.fulfill({contentType:'text/css',body:css});
       if(path==='/fixture.js')return route.fulfill({contentType:'text/javascript',body:script});
       return route.fulfill({contentType:'text/html',body:'<!doctype html><html class="'+new URL(route.request().url()).searchParams.get('mode')+'"><head><link rel="stylesheet" href="/theme.css"></head><body class="preview-admin"><div id="root"></div><script src="/fixture.js"></script></body></html>'});});
-    for(const mode of ['dark','light']){
+    for(const forcedColors of ['none','active'])for(const mode of ['dark','light']){
+      await page.emulateMedia({forcedColors});
       await page.goto('https://admin-chart.fixture.invalid/?mode='+mode);
-      const surface=page.locator('svg.recharts-surface[tabindex="0"]');await surface.waitFor();
-      const style=()=>surface.evaluate(node=>{const computed=getComputedStyle(node);return {shadow:computed.boxShadow,radius:computed.borderTopLeftRadius};});
-      const idle=await style();
-      assert.equal(idle.shadow,'none',mode+': ingen ring utan fokus');
-      assert.equal(idle.radius,'0px',mode+': svg-hörnen rundas bara vid fokus');
-      await page.locator('#before').focus();await page.keyboard.press('Tab');
-      assert.equal(await surface.evaluate(node=>document.activeElement===node),true,mode+': diagramytan tar emot fokus från tangentbordet');
-      const focused=await style();
-      assert.notEqual(focused.shadow,'none',mode+': fokusringen syns');
-      assert.notEqual(focused.radius,'0px',mode+': ytan rundas vid fokus');
-      // Tailwind ritar offset och ring som box-shadow-lager med spridning (offset 2px, ring 4px);
-      // tomma lager (0px) hoppas över. Den yttre ringen ligger mot offseten i ytans färg.
-      const colors=[...focused.shadow.matchAll(/(rgba?\([^)]+\)) 0px 0px 0px ([\d.]+)px/g)].filter(match=>Number(match[2])>0).map(match=>match[1]);
-      assert.equal(colors.length,2,mode+': ring och offset: '+focused.shadow);
-      const surfaceColor=await page.evaluate(()=>{const probe=document.createElement('div');probe.className='bg-sg-surface';document.body.append(probe);const color=getComputedStyle(probe).backgroundColor;probe.remove();return color;});
-      assert.equal(colors[0],surfaceColor,mode+': offseten har ytans färg (--sg-surface)');
-      const ratio=contrast(colors[1],surfaceColor);
-      assert.ok(ratio>=3,mode+': ringen '+colors[1]+' mot ytan '+surfaceColor+' har kontrast '+ratio.toFixed(2)+':1, WCAG 1.4.11 kräver 3:1');
+      await page.locator('svg[tabindex="0"]').waitFor();
+      await page.locator('#before').focus();
+      for(const selector of ['#control','svg[tabindex="0"]']){
+        const control=page.locator(selector),label=`${mode}/${forcedColors}/${selector}`;
+        const style=()=>control.evaluate(node=>{const css=getComputedStyle(node);return {shadow:css.boxShadow,outline:css.outline,outlineStyle:css.outlineStyle,outlineWidth:parseFloat(css.outlineWidth),outlineColor:css.outlineColor};});
+        const idle=await style();
+        await page.keyboard.press('Tab');
+        assert.equal(await control.evaluate(node=>document.activeElement===node),true,label+': Tab reaches the control');
+        await control.evaluate(async node=>{await Promise.all(node.getAnimations().map(animation=>animation.finished));});
+        const focused=await style(),colors=[];
+        if(focused.outline!==idle.outline&&focused.outlineWidth>0&&!['none','hidden'].includes(focused.outlineStyle))colors.push(focused.outlineColor);
+        if(focused.shadow!==idle.shadow)for(const match of focused.shadow.matchAll(/(rgba?\([^)]+\)) ([^,]+)/g)){
+          if(idle.shadow.includes(match[0]))continue;
+          const lengths=match[2].match(/-?[\d.]+px/g)?.map(parseFloat)??[];
+          if(!match[2].includes('inset')&&lengths.some(value=>value>0))colors.push(match[1]);
+        }
+        const surfaceColor=await page.locator('#surface').evaluate(node=>getComputedStyle(node).backgroundColor);
+        assert.ok(colors.some(color=>contrast(color,surfaceColor)>=3),label+': focus indicator reaches 3:1 against its surface: '+JSON.stringify({focused,surfaceColor}));
+      }
     }
     assert.deepEqual(failures,[]);
   }finally{await browser.close();}
