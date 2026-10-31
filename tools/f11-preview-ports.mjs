@@ -208,7 +208,7 @@ export async function createF11LivePorts({run=false,plan,credentials,outputDirec
       need(false,'socket_provenance_missing');
     },
     async save(name,value) {
-      need(['creation.json','ownership.json','manifest.json','capture.ndjson','review.json'].includes(name),'artifact_name_invalid');
+      need(['creation.json','ownership.json','connections.json','manifest.json','capture.ndjson','review.json'].includes(name),'artifact_name_invalid');
       const data=name.endsWith('.ndjson')?value.map(row=>JSON.stringify(row)).join('\n')+'\n':JSON.stringify(value,null,2)+'\n';
       await writeFile(join(directory,name),data,{mode:0o600,flag:saved.has(name)?'w':'wx'});saved.add(name);
     },

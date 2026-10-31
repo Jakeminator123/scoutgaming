@@ -330,6 +330,7 @@ test('F11 a mid-run read failure stops betting, drains only its fixture and sani
   const result=await runF11Preview(f.plan,f.ports,{run:true});
   assert.equal(result.status,'unverifiable');assert.equal(result.acceptance,false);assert.equal(result.obligationsCleared,true);
   assert.equal(closed,1);assert.ok(f.sockets.every(c=>c.closed));
+  assert.ok(f.files.get('connections.json').every(row=>row.processId&&row.connectionNonce&&row.closedAt!==null));
   assert.equal(JSON.stringify([...f.files]).includes('private-connection-secret'),false);
 });
 

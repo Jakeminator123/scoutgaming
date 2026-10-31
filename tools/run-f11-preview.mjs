@@ -160,6 +160,8 @@ export async function runF11Preview(input, ports, {run=false}={}) {
     f11Need(events.length<99000 && stateBytes<28*1024*1024,'capture_limit');events.push(event);};
   const sample=async stage=>{const money=await ports.money(fixture.identity.roomId,fixture.actors);
     add('money',ports.now(),{...F11_TARGET,...money,source:'preview-sql',stage,roomId:fixture.identity.roomId,actors:fixture.actors});return money;};
+  const saveConnections=()=>ports.save('connections.json',connections.map(c=>({connectionId:c.id,actorId:c.actorId,
+    at:c.at,processId:c.processId??null,connectionNonce:c.nonce??null,closedAt:c.closedAt??null,closeCode:c.closeCode??null})));
   async function connect(index) {
     const c={id:randomUUID(),index,actorId:fixture.actors[index],at:ports.now(),closed:false,frame:null};
     connections.push(c);
@@ -172,9 +174,10 @@ export async function runF11Preview(input, ports, {run=false}={}) {
         frame={type:frame.type,roomId:frame.roomId,snapshot:projectSharedRoomSnapshot(frame.snapshot,{roomId:fixture.identity.roomId,actorId:c.actorId}),presentation:frame.presentation};
         c.frame=frame;if(!latest[index] || frame.snapshot.version>=latest[index].version) {latest[index]=frame.snapshot;receivedAt[index]=ports.now();}
         add('frame',ports.now(),{connectionId:c.id,frame});}catch(error){failure=error;}},
-      close(code){if(c.closed)return;c.closed=true;try{add('close',ports.now(),{connectionId:c.id,code});}catch(error){failure=error;}if(code===1012)c.restarted=true;},
+      close(code){if(c.closed)return;c.closed=true;c.closedAt=ports.now();c.closeCode=code;
+        try{add('close',c.closedAt,{connectionId:c.id,code});}catch(error){failure=error;}if(code===1012)c.restarted=true;},
     });
-    f11Need(c.processId && c.nonce,'runtime_identity_required');current[index]=c;return c;
+    f11Need(c.processId && c.nonce,'runtime_identity_required');current[index]=c;await saveConnections();return c;
   }
   async function command(index,draining) {
     const s=latest[index];if(!s || current[index]?.closed)return;
@@ -237,6 +240,7 @@ export async function runF11Preview(input, ports, {run=false}={}) {
     f11Need(finalSocket.frame,'final_snapshot_required');
     for(const c of connections)if(c.socket)await c.socket.close();
     await sample('after');
+    await saveConnections();
     endedAt=ports.now();add('target',endedAt,{...provider,roomId:fixture.identity.roomId,actors:fixture.actors,syntheticOnly:true});
     for(const c of connections)if(c.processId) {
       const receipt=await ports.provenance(c,plan);
@@ -251,6 +255,8 @@ export async function runF11Preview(input, ports, {run=false}={}) {
   } catch(error) {
     let obligationsCleared=false;
     if(fixture && !stopping)try {obligationsCleared=await drain();}catch{}
+    for(const c of connections)try{await c.socket?.close();}catch{}
+    if(connections.length)await saveConnections();
     const review={status:'unverifiable',acceptance:false,code:safeCode(error),runHash:f11Hash(plan.runId),
       fixtureCreated:Boolean(fixture),obligationsCleared,requiresOwnFixtureReview:true};
     await ports.save('review.json',review);
@@ -284,6 +290,7 @@ The private provenance NDJSON file is appended by the operator; every line must 
 message must be the real shared_room_socket_identity app log matching the SAME socket header.
 Retain Render API captures for independent review. Manual IDs alone are not provenance.
 Outputs contain synthetic captures/ownership and acceptance:false; keep the directory private.
+connections.json exposes only correlation IDs/close codes, including partial failed runs.
 No account/package/media deletion, no GPU/speech/chat/payment call. New own fixtures remain for review.
 On failure stop new bets, inspect the own fixture for outstanding hands; never delete evidence.
 `;
