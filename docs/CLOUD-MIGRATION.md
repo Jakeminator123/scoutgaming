@@ -48,14 +48,11 @@ Neon som produktregister och privat Blob som mediekälla är införda och drifts
 
 ## Separat produktarbete och öppna driftansvar
 
-Inventering från oktober 2026, utanför masterplanen. Kontrollera mot koden innan arbete börjar; Jakob beslutar omfattningen.
+Aktuellt återstående arbete finns i [körplanen](plans/organisation/KORPLAN-v2.md#återstående-områden-och-tydliga-gränser)
+och [överlämningen](NEXT-AGENT.md#organisationsarbete). Den här driftguiden håller
+inte en parallell backlog över gamla Admin-, tal- eller backupstatusar.
 
-| Område | Öppet |
-| --- | --- |
-| Admin-förenkling | `/admin` ska bli enkel (en publiceringsknapp per rum). Underlag i [NEXT-AGENT](NEXT-AGENT.md#separata-spår) |
-| Bolagsdata | Spelare, transaktioner och rapporter ur motorns ledger, bolagsbunden identitet, valuta och exportisolering. Ingen andra plånbok i Admin |
-| Konto och integration | Lösenordsåterställning för bolag, riktig 2FA, API-nycklar med rotation, wallet- och webhookprov |
-| Inbjudan och återställning | Resend mot sandbox är verifierad; en riktig mottagares hela kedja saknar kvitto |
-| Tal och läppsynk | Rörligt tal är av. Automatisk lagring av resultat, riktig mikrofon och bild hela vägen samt kostnadsavstämning återstår; bara Jakob godkänner AV |
-| Backup | Extern fullbackup av Director- och Gateway-diskarna saknas |
-| Radering | Permanent klippradering med beroendespärr; äldre bankindexreferenser behöver konsumentkontroll |
+Backupmetoder och villkor står i [återställningsguiden](ENVIRONMENT-RESTORATION.md).
+Ett existerande backupskript, en PITR-inställning eller ett gammalt driftkvitto är
+inte ett genomfört isolerat återställningsprov. Läs aktuellt underlag före en
+återställning eller annan dataåtgärd.

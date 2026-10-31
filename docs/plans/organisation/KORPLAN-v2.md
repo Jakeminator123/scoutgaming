@@ -83,6 +83,16 @@ Den gamla inventeringen, områdesplanerna och deras tomma aktiviteter är ersatt
 
 ## Nya fynd och överlämning
 
+Dokumentgranskning 31 oktober efter systemkartorna: sex ersatta planer avvecklas
+med Git-hänvisningar i [HISTORIK](../../HISTORIK.md). Saktext om UI/bygg/partner
+samlas i befintliga guider. Att bolagsplanerna står kvar har konkret kodstöd:
+012/014 är `deploymentOptional`, och spelaradministrationens skapväg saknar
+bolagsfält. Detta är kvarvarande arbete, inte återöppnad migreringsacceptans.
+Dokumentindexet förklarar vilka underlag som är guider, pausade planer, daterade
+beslutsunderlag och provmallar. Kontroll av länkar och rubriker kompletterar
+granskning av sakuppgifter; den bevisar inte att ett moln- eller produktpåstående
+fortfarande stämmer.
+
 Skriv en kort rad i [BESLUTSLOGG](BESLUTSLOGG.md): reproduktion + full SHA/resurs + berörd aktivitet + beslut. Skilj produktval från fel och osäkerhet. Ändra berörd rad här; skapa ingen konkurrerande tracker eller rapporthierarki.
 
 Underagenter får tom kontext, egna filer och konkreta prov; högst tre samtidigt. De öppnar granskbara PR:er och väntar inte på CI. Orkestratorn granskar, integrerar och verifierar leveransen. Rapport högst 200 ord med faktisk verifiering och kvarstående begränsning. Avslutade agenter återupptas inte.

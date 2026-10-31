@@ -19,6 +19,7 @@ Börja i [START-HERE](../START-HERE.md); arbetsreglerna står i [AGENTS](../AGEN
 | Lagring och uppspelning av dealermedia | [LOCAL-PRESENTATION-RUNTIME](LOCAL-PRESENTATION-RUNTIME.md) | När kodens kontrakt ändras |
 | Blackjack, roulette och Partner-API | [games/](games/README.md) | När regler, format eller API ändras |
 | Dealer och bordsgrafik | [DEALER-TABLE-TEMPLATE](design/DEALER-TABLE-TEMPLATE.md) | När kompositionskontraktet ändras |
+| Admins klientbygge, UI-kit och tema | [klientguiden](../apps/studio/client/README.md#ui-tema-och-kontrakt), [partnerguiden](../apps/studio/components/partner/README.md) | I samma PR som implementationen ändras |
 | AI och OpenClaw | [AI/](AI/README.md), [OpenClaw](AI/openclaw/README.md) med källindex, dashboard, deployment och produkttal | När modellflöde eller tjänst ändras |
 
 ## Drift och miljö
@@ -36,20 +37,28 @@ Börja i [START-HERE](../START-HERE.md); arbetsreglerna står i [AGENTS](../AGEN
 
 Kontrollera kvarvarande delar mot aktuell kod före start. Genomförda steg och daterade filhänvisningar beställer inget nytt arbete. Bevara kontrakt i sakguiden och radera planen när dess återstående syfte är uppfyllt.
 
-| Område | Dokument |
-| --- | --- |
-| Bolagsbindning för nycklar och spelare | [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), [STEG-F](plans/STEG-F.md) |
-| Tal, röst och läppsynk | [TALKEDJA](plans/TALKEDJA.md), [PAOW-LIPSYNC](plans/PAOW-LIPSYNC.md), [RunPod-underlag](TALKEDJA-RUNPOD.md) |
-| Selektiva presentationsförbättringar | [KEVIN-PORT](plans/KEVIN-PORT.md) |
-| Admin, partner och design | [ADMIN-FORENKLING](plans/ADMIN-FORENKLING.md), [PARTNERPORTAL-KONVERTERING](plans/PARTNERPORTAL-KONVERTERING.md), [DESIGNSYSTEM](plans/DESIGNSYSTEM.md), [VISUELL-RIKTNING](plans/VISUELL-RIKTNING.md), [VERKTYGSKEDJA](plans/VERKTYGSKEDJA.md) |
-| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md); konkreta backup-, referens- och återgångsvillkor gäller före dataåtgärd |
-| Beställd Git-utredning och möjligt repo-byte | [historikmätning](incidents/2026-10-31-repository-history.md), [övergångsplan](incidents/2026-10-31-clean-repository-plan.md); daterade beslutsunderlag, ingen utförd flytt |
+| Område | Dokument | Varför det finns kvar |
+| --- | --- | --- |
+| Bolagsbindning för nycklar och spelare | [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), [STEG-F](plans/STEG-F.md) | Koden har fortfarande toleranta läsvägar. Full kravhöjning och driftacceptans är inte verifierade av dokumentgranskningen. |
+| Tal, röst och läppsynk | [TALKEDJA](plans/TALKEDJA.md), [RunPod-underlag](TALKEDJA-RUNPOD.md) | Pausat uppdrag. Daterade prov är underlag, inte aktuell molnstatus eller godkänd läppsynk. |
+| Selektiva presentationsförslag | [KEVIN-PORT](plans/KEVIN-PORT.md) | Daterat jämförelseunderlag med kvarvarande förslag. Kontrollera varje förslag mot aktuell main före nytt arbete. |
+| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md) | Återgångs- och referensvillkor inför eventuell dataåtgärd. Den gamla objektlistan är ingen aktuell raderingslista. |
+| Beställd Git-utredning och möjligt repo-byte | [historikmätning](incidents/2026-10-31-repository-history.md), [övergångsplan](incidents/2026-10-31-clean-repository-plan.md) | Beslutsunderlag för ett fortfarande separat repo-byte, inte en utförd flytt. |
+
+Granskning 31 oktober 2026 mot `c0150add62fd9e4b39fd31a7e0127406ca860007`:
+sex ersatta Admin-/design-/verktygs-/partner-/läppsynkplaner är borttagna.
+Användbar vägledning finns i sakguiderna ovan och återstående arbete i körplanen.
+[HISTORIK](HISTORIK.md) anger Git-versionerna. Detta är en kontroll av dokumentens
+syfte och kodreferenser, inte en ny moln- eller AV-acceptans.
 
 ## Underhåll
 
+- Kör `node tools/check-documentation.mjs` för relativa länkar till Git-spårade mål och Markdownankare (`--json` ger feldata). Dokumentations-CI och kontraktssviten kör kontrollen; pre-commit använder `--cached` för commitens eget index. Kontrollen bedömer inte saktextens aktualitet.
 - Uppdatera befintlig sakguide. Nya dokument får en tydlig ingång här eller i ett områdesindex.
 - Radera förbrukade planer, dubbletter och kvitton med uppdaterade länkar och en Git-hänvisning i [HISTORIK](HISTORIK.md). Skapa ingen historikmapp.
 - Ett aktivt kontrakt eller releasebeslut får behålla sitt nödvändiga bevis. En gammal länk ensam motiverar ingen dokumentdubblett.
 - Dokument under `docs/` får vara högst 100 kB; NEXT-AGENT högst 150 rader (`tools/check-repo-limits.mjs`).
+- Den som ändrar ett kontrakt ansvarar för dess sakguide i samma PR. Granskaren kontrollerar konsument, beteendeprov och kvarvarande påståenden; ingen fast personägare här ersätter uppdragets tilldelning.
+- Datum, gröna länkar och godkända storleksgränser bevisar inte att textens sakuppgifter stämmer. Daterade mätningar behåller datum och version; förnya underlaget före ett beslut som använder det.
 
 Verktygsingångarna [CLAUDE](../CLAUDE.md), [GEMINI](../GEMINI.md), [Copilot](../.github/copilot-instructions.md), [Windsurf](../.windsurf/rules/scoutgaming.md) och [Cursor](../.cursor/rules/scoutgaming.mdc) pekar på START-HERE och AGENTS. Ändra arbetsreglerna i AGENTS.

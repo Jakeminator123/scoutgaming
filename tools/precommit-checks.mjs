@@ -337,6 +337,7 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
+    if (path === '.githooks/pre-commit-full') add('test/regression-group.mjs');
     // The merge guard reads the branch policy.
     if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
     if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
@@ -359,6 +360,10 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
   }
   if (mode === 'focused' && addsTestFile(changes) && existsSync(resolve(root, 'tools/check-orphan-tests.mjs'))) {
     commands.push([process.execPath, 'tools/check-orphan-tests.mjs']);
+  }
+  // A deleted code target or renamed heading can break an otherwise unchanged guide.
+  if (changes.length && existsSync(resolve(root, 'tools/check-documentation.mjs'))) {
+    commands.push([process.execPath, 'tools/check-documentation.mjs', ...(committed ? [] : ['--cached'])]);
   }
   for (const { status, path } of changes) {
     if (status === 'D' || !existsSync(resolve(root, path))) continue;
@@ -389,7 +394,7 @@ export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = 
   for (const [command, ...args] of commands) {
     const env = isolatedGitEnvironment();
     // Index readers keep the commit's own index (for example git commit --only); other checks stay isolated.
-    const readsIndex = args.includes('--cached') && (command === 'git' || args[0] === 'tools/check-repo-limits.mjs');
+    const readsIndex = args.includes('--cached') && (command === 'git' || ['tools/check-repo-limits.mjs', 'tools/check-documentation.mjs'].includes(args[0]));
     if (readsIndex && process.env.GIT_INDEX_FILE) env.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
     const result = run(command, args, { cwd, stdio: 'inherit', env });
     if (result.error) {
