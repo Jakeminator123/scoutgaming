@@ -2,7 +2,7 @@
 
 **Aktiv genomförandeplan: [KORPLAN-v2](KORPLAN-v2.md).** Den ersätter körordningen i inventeringen #722 och Fables alternativ. Läs den för aktuell tilldelning, vågstatus, mandat och nästa steg.
 
-[NULAGE](NULAGE.md) och [UNDERLAG](UNDERLAG.md) är daterade bevis. [ARBETSSATT](ARBETSSATT.md) beskriver rapportering/nya fynd; [BESLUTSLOGG](BESLUTSLOGG.md) innehåller motiven. Inga historiska aktivitetsstatusar nedan är en parallell aktiv kö. Migreringens 20/20-status ändras inte.
+[NULAGE](NULAGE.md) och [UNDERLAG](UNDERLAG.md) är daterade bevis. [ARBETSSATT](ARBETSSATT.md) beskriver rapportering/nya fynd; [BESLUTSLOGG](BESLUTSLOGG.md) innehåller motiven. Inga historiska aktivitetsstatusar nedan är en parallell aktiv kö. Migreringens 20/20-status ändras inte. [F11-DRIFTKVITTO](F11-DRIFTKVITTO.md) innehåller det verifierade tvåinstansprovet och deploybeslutets gränser.
 
 ## Områdesunderlag från inventeringen
 

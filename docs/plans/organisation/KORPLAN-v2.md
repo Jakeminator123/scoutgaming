@@ -76,13 +76,15 @@ Prov på verklig produktlogik, inte en kopierad sträng: production bakom TLS-te
 
 Godkänt vid denna stoppunkt: diff och prov granskade, exakt PR-head med grön CI. Runtimekvittot tas efter godkänd release; en lokal testsvit är inte bevis för Secure i produktion.
 
-### K1-02: verifierad dokumentdrift
+### K1-02: dokumentdrift (avslutad startbrief)
+
+Genomförd i #724. Uppdraget nedan beskriver läget före det verkliga F11-provet; aktuellt deploybeslut finns i B-015 och [F11-DRIFTKVITTO](F11-DRIFTKVITTO.md).
 
 Ägda filer: `START-HERE.md`, `docs/ENVIRONMENT-RESTORATION.md`, `docs/ENVIRONMENT-VARIABLES.md`, `apps/web/README.md`, `apps/studio/docs/TERMINOLOGI.md`, `docs/plans/TALKEDJA.md`. Bara sakdokument; ingen UI-kod/ordbyteskampanj. Orkestratorn äger NEXT-AGENT, docs/README och organisationsplanen.
 
-Rätta Fables verifierade radlista: aktivt preview-ruleset (39), F11-koden mergad men driftacceptans återstår (57 / restoration 30 / env 183), datera äldre Director/Gateway-SHA (restoration 181), nuvarande preview-namn (env 17), Node-pin för speech och separat preview (web README 60/68), pensionerade UI-exempel i terminologi 50/52/56. Bekräfta påståendena i kod innan text ändras. Talkedjans callbackkvittens får bara beskrivas som daterat redan befintligt bevis; ingen RunPod-läsning eller ändring.
+Rätta Fables verifierade radlista: aktivt preview-ruleset (39), F11-koden mergad men då ännu inte driftaccepterad (57 / restoration 30 / env 183), datera äldre Director/Gateway-SHA (restoration 181), nuvarande preview-namn (env 17), Node-pin för speech och separat preview (web README 60/68), pensionerade UI-exempel i terminologi 50/52/56. Bekräfta påståendena i kod innan text ändras. Talkedjans callbackkvittens får bara beskrivas som daterat redan befintligt bevis; ingen RunPod-läsning eller ändring.
 
-Behåll tomt-bord-regeln i sak. Att byta ”F11 är rättad” till ”F11:s driftacceptans är kvitterad” är en korrekt precisering, inte ett godkännande. Ändra inga envvärden eller envkontrakt; rättelse av namn/text kontrolleras mot befintlig JSON-förteckning. Inget datum konstrueras för när rulesetet aktiverades.
+Vid K1-02 behölls tomt-bord-regeln: en dokumenträttning innebar inget driftgodkännande. Inga envvärden eller envkontrakt ändrades; rättelser av namn/text kontrollerades mot befintlig JSON-förteckning. Inget datum konstruerades för när rulesetet aktiverades. Det senare verkliga driftprovet och B-015 ersätter nu den dåvarande F11-spärren.
 
 Prov: länkar, träfflista för de ändrade felpåståendena, dokumenthookens urval och env-kontrollen där den berörs. Inga nya tester för ordalydelse. Egen buggranskning, hookar och färdig docs-PR; ingen CI-väntan eller merge i agenten.
 
@@ -148,7 +150,7 @@ Kvitto skiljer lokala prov, CI, merge, deploy och driftacceptans. Status anger a
 | 31 oktober, start | Båda planerna lästa, färsk main och mandat kontrollerade. | Startbas |
 | Etapp 1 | #723–725 mergade, F11-beredskapsunderlag verifierat. | 4/4, 100 % |
 | Etapp 2 | #726–728 mergade efter oberoende granskning, rättningar och grön CI. | 3/3, 100 % |
-| Fortsättning | K2-04 talstart och K3-02 verkligt F11-prov; separata kriterier nedan. | Pågår, ingen driftacceptans påstås |
+| Fortsättning | K2-04 talstart levererad; K3-02 verkligt F11-prov godkänt efter oberoende logg-/evidensgranskning och SQL-efterkontroll. | 2/2, 100 % av vald fortsättningsvåg |
 
 ### Första etappens verifierade läge
 
@@ -165,7 +167,7 @@ Omplanering 31 oktober: de två färdiga agentchattarna får nedanstående separ
 | --- | --- | --- | --- |
 | K2-01 | REPOAGENTEN / jakob/codex-org-v2-push-1031 | MERGAD | #727 head 5e56b2ad910c16428829671aabe6068838fb892b: OID-luckan rättad och verifierad, CI 11 godkända/0 fel, mergegrinden godkänd. |
 | K2-01 scope | REPOAGENTEN | AVGRANSNING | .githooks/pre-push, check-repo-limits och avgränsad helper samt befintligt test/check-repo-limits.mjs. Nya mellanliggande stora objekt nekas, inga tysta luckor vid första push/shallow-bas eller flera refs. Ingen bred historikscan. Granskad PR + relevanta gröna prov/CI. |
-| K2-02 | DRIFTAGENTEN / jakob/codex-org-v2-f11-qa-1031 | MERGAD | #726 head d510ba62f11cefa2ee6d9cd9afe9d9a8e0b1c070: oberoende fynd och auditens SQL-format rättade, CI 10 godkända/0 fel. Main d5006a58902e5cf6f27d81a20da6d0441615b4a0. Offlinevalidering är inte driftacceptans; ID-kontraktet anpassas i K3-02. |
+| K2-02 | DRIFTAGENTEN / jakob/codex-org-v2-f11-qa-1031 | MERGAD | #726 head d510ba62f11cefa2ee6d9cd9afe9d9a8e0b1c070: oberoende fynd och auditens SQL-format rättade, CI 10 godkända/0 fel. Main d5006a58902e5cf6f27d81a20da6d0441615b4a0. Offlinevalidering är inte driftacceptans; ID-kontraktet anpassades i K3-02. |
 | K2-02 scope | DRIFTAGENTEN | AVGRANSNING | Befintlig QA-runner, liten F11-observer och redan registrerade QA-/överlappstester. Endast lokala syntetiska fixtures. Preview/instans/scope/revisions-/betalningsbevis måste vara uttryckliga; inga deployer eller spelhandlingar som bieffekt. Granskad PR och konkret kvarvarande runtimegodkännande. |
 
 ### Legacy och synlighetsbeslut: nytt underlag
@@ -177,8 +179,8 @@ För FA-06 visar aktuell GitHub-dokumentation att privata repositories kan få a
 
 | ID | Ägare | Status / kriterium |
 | --- | --- | --- |
-| K3-01 | MERGEAGENTEN | Release e8d0b935fd33b7e625f157788033359085d16f96 verifierad: Render prod dep-dbinukgae00c73c7eapg och preview dep-dbinum6417fc73a59h40 live; båda versioner/health200. Vercel prod dpl_4dyyzwFHPLT4CVHbYF4xxhWDnuEh och preview dpl_9iiTaeuJ9PkfohHD3bdujhksX4Ua READY på samma SHA; previewdomänen verifierad. Denna runtime fryses för nästa F11-prov. |
-| K3-02 | ARKITEKTEN + MERGEAGENTEN | #729, #732 och #733 mergade. Första riktiga provet är genomfört men uttryckligen unverifiable: socketloggar filtrerades bort. Loggningen är rättad och driftsatt. ARKITEKTEN rättar evidensgränsen mot verklig gateway-drain och normal leave i org-v2-f11-evidence-1031; orkestratorn äger nytt liveprov och oberoende granskning. F11 är inte accepterad; tomt-bord-regeln kvarstår. |
+| K3-01 | MERGEAGENTEN | Release e8d0b935fd33b7e625f157788033359085d16f96 verifierad: Render prod dep-dbinukgae00c73c7eapg och preview dep-dbinum6417fc73a59h40 live; båda versioner/health200. Vercel prod dpl_4dyyzwFHPLT4CVHbYF4xxhWDnuEh och preview dpl_9iiTaeuJ9PkfohHD3bdujhksX4Ua READY på samma SHA; previewdomänen verifierad. F11-provet kördes på denna frysta runtime; preview fick därefter en ny deploy på samma SHA, dep-dbiob649v7es7385p7u0. Se [driftkvittot](F11-DRIFTKVITTO.md). |
+| K3-02 | ARKITEKTEN + MERGEAGENTEN | KLAR: #729/#732/#733/#735 levererar identitet, driver, loggning och granskad evidens. Andra verkliga provet gav 169 s tvåinstansöverlapp, korrekta pengar, återanslutning och negativa prov. Kall Astra/high återläste faktiska Render-loggar; inga blockerande fynd. Egen Neon-efterkontroll gav noll aktiva medlemmar/närvaro/reservationer/händer. [F11-DRIFTKVITTO](F11-DRIFTKVITTO.md) kvitterar den testade runtimen och avgränsar deploybeslutet. Första provet förblir underkänt. Direkt CLI-importcykel är rättad och mergad i #736 på 03de02d219cf4a50b11a061ff660617f22010d2b. |
 | K2-04 / TAL-02 | REPOAGENTEN + MERGEAGENTEN | Klar: #731 mergad på 9832cf21dbb47ad88c4ef2e0ac95067b335a69bd efter grön CI och oberoende timeout-/resursgranskning. Gemensam aborterbar bankdeadline på 5 s; obligatoriska DB-/readinessfel förblir fatala. Sju riktade omprov hos orkestratorn passerade, inklusive verklig supervisorstart efter 5,195 s. Driftsatt i båda miljöerna; inga providerjobb kördes. |
 
 Vercel-pluginens previewläsning gav 403/404. Befintlig lokal CLI med uttrycklig global config och scope verifierade därefter projectId, deploymentId, branch, SHA och domänalias. Ingen ny app, åtkomst eller projektinställning lades till. Gästläget i preview är av; ingen env ändrades för att få fram en cookie i testet.
