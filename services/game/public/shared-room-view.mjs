@@ -279,7 +279,7 @@ export function createSharedRoomView({ document, onLayout = () => {}, signInHref
         const label=own?`Välj satsningsruta ${i+1}, din ruta`:occupied?`Satsningsruta ${i+1} upptagen`:betting?`Välj satsningsruta ${i+1}`:`Satsningsruta ${i+1}, ingen insats`;
         slot.join.setAttribute('aria-label',label);slot.join.title=own||occupied?`Ruta ${i+1} · ${own?'Din insats':'Annans insats'} ${money(s.bets[i].main,betCurrency)}`:betting?'Välj ruta, lägg sedan insats i panelen':'Insatser är stängda för den här rundan.';
         // Local selection never writes ownership or money, even while a command is pending.
-        slot.join.disabled=own?false:occupied||!(freeBet||can.join);slot.join.setAttribute('aria-disabled',String(i===chosen));
+        slot.join.disabled=own?false:!availableBettingSeat(s,i)||!(freeBet||can.join);slot.join.setAttribute('aria-disabled',String(i===chosen));
         slot.join.setAttribute('aria-pressed',String(i===chosen));
         slot.leaveSeat.hidden=!own||!betting;slot.leaveSeat.style.display=own&&betting?'':'none';slot.leaveSeat.disabled=!can.join;slot.leaveSeat.setAttribute('aria-label',`Släpp satsningsruta ${i+1}`);
         const showBets=own||freeBet&&i===selected;
