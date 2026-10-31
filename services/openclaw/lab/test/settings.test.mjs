@@ -10,14 +10,14 @@ import { join, resolve } from 'node:path';
 
 test('adaptive speech settings are opt-in and do not change other role deadlines', () => {
   const fixed = readSettings({ env: { OPENCLAW_TIMEOUT_MS: '8000' }, envFiles: [] });
-  assert.equal(fixed.speechRouting, 'fixed'); assert.equal(fixed.speechDeepModel, 'gpt-6-sol');
+  assert.equal(fixed.speechRouting, 'fixed'); assert.equal(fixed.speechDeepModel, 'gpt-6.1-sol');
   assert.equal(fixed.speechTimeoutMs, undefined); assert.equal(fixed.adviceTimeoutMs, 8000);
   assert.equal(speechRoutingConfiguration(fixed, 'astrid').adaptive, false);
   const adaptive = readSettings({ env: { OPENCLAW_TIMEOUT_MS: '8000', OPENCLAW_SPEECH_ROUTING: 'adaptive',
     OPENCLAW_SPEECH_DEEP_MODEL: 'gpt-6-sol', OPENCLAW_SPEECH_TIMEOUT_MS: '20000' }, envFiles: [] });
   assert.equal(adaptive.adviceTimeoutMs, 8000); assert.equal(adaptive.speechTimeoutMs, 20000);
   assert.equal(speechRoutingConfiguration(adaptive, 'astrid').adaptive, true);
-  assert.equal(speechRoutingConfiguration(adaptive, 'vera').adaptive, false);
+  assert.equal(speechRoutingConfiguration(adaptive, 'vera').adaptive, true);
 });
 
 test('invalid speech timeout or routing never silently widens or enables provider calls', () => {
@@ -62,7 +62,7 @@ test('app-owned settings keep ordered file/env precedence, empty aliases and the
     assert.equal(defaults.dataDir, resolve(establishedRoot, 'data'));
     assert.equal(defaults.host, '127.0.0.1'); assert.equal(defaults.port, 4188);
     assert.equal(defaults.adviceTimeoutMs, 2500); assert.equal(defaults.speechTimeoutMs, undefined);
-    assert.equal(defaults.speechRouting, 'fixed'); assert.equal(defaults.speechDeepModel, 'gpt-6-sol');
+    assert.equal(defaults.speechRouting, 'fixed'); assert.equal(defaults.speechDeepModel, 'gpt-6.1-sol');
     assert.throws(() => read({env:{}, envFiles:[directory]}), /Could not parse lab environment file/);
   }
   // Default reads use the unchanged ordered local files, not the new source root.

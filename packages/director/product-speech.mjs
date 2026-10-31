@@ -233,7 +233,7 @@ export async function decideProductSpeech(envelopeValue, settings, fetchImpl = f
       ] : [{ role: 'user', content: dealerContent }])],
   };
   for (let attempt = 0; attempt < (routing.adaptive ? 2 : 1); attempt++) {
-    const model = attempt ? routing.deepModel : envelope.model ?? (routing.adaptive ? 'gpt-5.6-terra' : undefined);
+    const model = attempt ? routing.deepModel : envelope.model ?? (routing.adaptive ? 'gpt-6-luna' : undefined);
     const report = stage => {
       // Telemetry is a closed projection, never text, request IDs or provider errors.
       try { operation.onRouting?.({ stage, attempt: attempt + 1, requestedModel: model ?? 'gateway-default', elapsedMs: budget.elapsed() }); } catch {}

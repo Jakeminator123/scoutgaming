@@ -54,3 +54,39 @@ Gatewayn kör som uid 1000 under `tini`. OpenClaw håller sin owner-lease upp
 till fem minuter efter senaste förnyelse; radera eller kringgå aldrig leasen.
 Om en deploy fastnar på leasen: utred loggarna innan nästa deploy och rör inte
 state eller lås.
+
+## Modeller och resonemang
+
+Rollens modell och resonemang i den beständiga `openclaw.json` är driftens
+källa. `OPENCLAW_MODEL_ID` är bara ett startvärde för en ny fil; dess värde
+bevisar inte vilka modeller befintliga roller använder. Admin läser och
+byter rollmodeller med revisionskontroll.
+
+| Roll | Avsedd modell | Native resonemang |
+| --- | --- | --- |
+| `croupier-operator` | `gpt-6.1-sol` | `thinkingDefault: high` |
+| `croupier-chat` | `gpt-6.1-sol` | `thinkingDefault: medium` |
+| `croupier-director`, `croupier-social` | `gpt-6-luna` | `thinkingDefault: low` |
+| `croupier-speech` | Luna, högst en Sol 6.1-fördjupning | `models[ref].params.thinking`: `low` respektive `high` |
+
+Gateway 2026.9.5 tar inte emot `reasoning_effort` i sitt kompatibla HTTP-API.
+De native inställningarna ovan fungerar utan ett versionsbyte. OpenAI-
+leverantören måste använda `openai-responses` för Sol 6.1 med verktyg;
+modellkatalogen deklarerar resonemang och stödda nivåer. `reasoningDefault`
+styr synlighet och ska inte förväxlas med `thinkingDefault`.
+
+Startkoden fyller bara saknade native inställningar och sparar en privat
+`pre-model-migration`-backup före ändring. Befintliga modellval, egna nivåer,
+andra leverantörer, verktyg och agenttillstånd bevaras. Ett nytt önskat
+modellval görs separat i Admin. Speech får välja en annan modell än chatten;
+dess hårda verktygsförbud och isolerade state gäller fortfarande.
+
+Sol 6.1 får bildstöd med den befintliga `CROUPIER_SPEECH_VISION`-grinden.
+Det aktiverar ingen kamera. Slack-bilder kräver dessutom Slacks medieåtkomst.
+OpenAI stöder inte `adaptive` som Sol 6.1-effort; högre nivå väljs uttryckligt
+eller via Directors begränsade eskalering.
+
+Källor: [OpenClaw 2026.9.5 thinking](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/tools/thinking.md),
+[HTTP-schema](https://github.com/openclaw/openclaw/blob/v2026.9.5/src/gateway/openai-http.ts),
+[OpenAI Sol 6.1](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+[Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).

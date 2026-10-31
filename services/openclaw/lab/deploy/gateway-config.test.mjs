@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { gatewayConfig, dashboardOrigin, planGatewayConfig } from './gateway-config.mjs';
+import { gatewayConfig, dashboardOrigin, planGatewayConfig, applyModelDefaults } from './gateway-config.mjs';
 
 const example = {
   OPENCLAW_API_KEY: 'test-only-gateway-secret',
   OPENCLAW_MODEL_API_KEY: 'test-only-provider-secret',
+  OPENCLAW_MODEL_ID: 'gpt-5.6-terra',
 };
 
 test('canonical Gateway auth has precedence, legacy compatibility and explicit disablement', () => {
-  const legacy = { OPENCLAWAPI_KEY: example.OPENCLAW_API_KEY, OPENCLAW_MODEL_API_KEY: example.OPENCLAW_MODEL_API_KEY };
+  const legacy = { OPENCLAWAPI_KEY: example.OPENCLAW_API_KEY, OPENCLAW_MODEL_API_KEY: example.OPENCLAW_MODEL_API_KEY, OPENCLAW_MODEL_ID: example.OPENCLAW_MODEL_ID };
   assert.deepEqual(gatewayConfig(legacy), gatewayConfig(example));
   assert.deepEqual(gatewayConfig({ ...example, OPENCLAWAPI_KEY: example.OPENCLAW_MODEL_API_KEY }), gatewayConfig(example));
   for (const key of ['', ' ', 'invalid\ncredential']) {
@@ -18,11 +19,11 @@ test('canonical Gateway auth has precedence, legacy compatibility and explicit d
   assert.throws(() => gatewayConfig({ ...legacy, OPENCLAW_API_KEY: example.OPENCLAW_MODEL_API_KEY }), /different/);
 });
 
-test('Render blueprint and local env example explicitly seed Terra', async () => {
+test('Render blueprint and local env example explicitly seed Sol 6.1', async () => {
   const blueprint = await readFile(new URL('../render.yaml', import.meta.url), 'utf8');
   const template = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
-  assert.match(blueprint, /key: OPENCLAW_MODEL_ID\s+value: gpt-5\.6-terra\b/);
-  assert.match(template, /^OPENCLAW_MODEL_ID=gpt-5\.6-terra\r?$/m);
+  assert.match(blueprint, /key: OPENCLAW_MODEL_ID\s+value: gpt-6\.1-sol\b/);
+  assert.match(template, /^OPENCLAW_MODEL_ID=gpt-6\.1-sol\r?$/m);
   assert.equal([...blueprint.matchAll(/- key: OPENCLAW_API_KEY\b/g)].length, 2);
   assert.match(blueprint, /envVarKey: OPENCLAW_API_KEY\b/);
   assert.doesNotMatch(blueprint, /OPENCLAWAPI_KEY/);
@@ -66,7 +67,7 @@ test('Astrid vision metadata requires an explicit gate and changes only Luna, Te
   }
   const planned = planGatewayConfig(config, { ...example, CROUPIER_SPEECH_VISION: '1' });
   const expected = structuredClone(config);
-  for (const id of ['gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
+  for (const id of ['gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol', 'gpt-6.1-sol']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
   assert.deepEqual(planned, { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
     [['text'], ['text'], ['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
@@ -87,6 +88,7 @@ test('vision opt-in preserves human model metadata, other providers and role con
   const expected = structuredClone(config);
   expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-5.6-terra').input = ['text', 'image'];
   expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-6-sol').input = ['text', 'image'];
+  expected.models.providers['lab-provider'].models.find(model => model.id === 'gpt-6.1-sol').input = ['text', 'image'];
   assert.deepEqual(planGatewayConfig(config, env), { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config, before);
 });
@@ -179,6 +181,9 @@ function legacyConfig(env = example) {
   delete config.talk;
   config.tools.deny = ['*'];
   config.models.providers['lab-provider'].models=config.models.providers['lab-provider'].models.slice(0,1);
+  for (const agent of Object.values(config.agents.entries)) delete agent.thinkingDefault;
+  delete config.models.providers['lab-provider'].models[0].reasoning;
+  delete config.models.providers['lab-provider'].models[0].compat;
   return config;
 }
 
@@ -244,7 +249,7 @@ test('speech role reconciliation is additive, isolated, tool-denied and preserve
 
 test('speech role rejects model, tool or state-sharing drift without rewriting it', () => {
   for (const edit of [
-    config => { config.agents.entries['croupier-speech'].model.primary = 'other/provider'; },
+    config => { config.agents.entries['croupier-speech'].model.primary = ''; },
     config => { config.agents.entries['croupier-speech'].model.fallbacks = ['other/fallback']; },
     config => { config.agents.entries['croupier-speech'].tools.deny = []; },
     config => { config.agents.entries['croupier-speech'].workspace = config.agents.entries['croupier-chat'].workspace; },
@@ -343,9 +348,38 @@ test('Sol 6.1 catalog reconciliation is additive and leaves all role choices and
   assert.equal(planned.action,'reconcile-speech');assert.deepEqual(config,before);
   assert.deepEqual(planned.config.agents,before.agents);assert.deepEqual(planned.config.gateway,before.gateway);
   assert.deepEqual(planned.config.models.providers['lab-provider'].models.slice(0,-1),before.models.providers['lab-provider'].models);
-  assert.deepEqual(planned.config.models.providers['lab-provider'].models.at(-1),{id:'gpt-6.1-sol',name:'gpt-6.1-sol',input:['text']});
+  const added=planned.config.models.providers['lab-provider'].models.at(-1);
+  assert.equal(added.id,'gpt-6.1-sol'); assert.deepEqual(added.input,['text']);
+  if(api==='openai-responses') assert.equal(added.reasoning,true);
   assert.deepEqual(planGatewayConfig(planned.config,example),{action:'reuse',config:planned.config});
  }
+});
+
+test('native reasoning defaults are bounded by role and preserve explicit inherited choices', () => {
+  const config = gatewayConfig(example);
+  assert.equal(config.agents.entries['croupier-operator'].thinkingDefault, 'high');
+  assert.equal(config.agents.entries['croupier-chat'].thinkingDefault, 'medium');
+  assert.equal(config.agents.entries['croupier-director'].thinkingDefault, 'low');
+  const speech = config.agents.entries['croupier-speech'];
+  assert.equal(speech.models['lab-provider/gpt-6-luna'].params.thinking, 'low');
+  assert.equal(speech.models['lab-provider/gpt-6.1-sol'].params.thinking, 'high');
+  speech.model.primary = 'lab-provider/gpt-6-luna';
+  config.agents.entries['croupier-chat'].model.primary = 'lab-provider/gpt-6.1-sol';
+  assert.deepEqual(planGatewayConfig(config, example), { action: 'reuse', config });
+  for (const agent of Object.values(config.agents.entries)) delete agent.thinkingDefault;
+  config.agents.defaults.thinkingDefault = 'xhigh';
+  const before = structuredClone(config);
+  assert.deepEqual(applyModelDefaults(config), before);
+  delete config.agents.defaults.thinkingDefault;
+  config.agents.entries['croupier-chat'].params = { thinking: 'high' };
+  assert.equal(applyModelDefaults(config).agents.entries['croupier-chat'].thinkingDefault, undefined);
+  assert.deepEqual(config.agents.entries['croupier-chat'].params, { thinking: 'high' });
+  config.agents.entries['croupier-operator'].model.primary = 'human-provider/custom-model';
+  config.agents.entries['croupier-speech'].model.primary = 'human-provider/custom-model';
+  delete config.agents.entries['croupier-speech'].models;
+  const custom = applyModelDefaults(config);
+  assert.equal(custom.agents.entries['croupier-operator'].thinkingDefault, undefined);
+  assert.equal(custom.agents.entries['croupier-speech'].models, undefined);
 });
 test('Sol 6.1 preserves custom metadata and does not add candidates to unrelated providers',()=>{
  const config=gatewayConfig(example),model=config.models.providers['lab-provider'].models.find(m=>m.id==='gpt-6.1-sol');

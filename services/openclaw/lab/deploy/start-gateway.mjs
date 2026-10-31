@@ -145,9 +145,10 @@ export async function prepareGatewayConfig(env, {
       if (await readExistingConfig(configPath) !== original) {
         throw new Error('OpenClaw configuration changed during startup; refusing to overwrite it. Restart after the other writer finishes.');
       }
-      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social', 'reconcile-speech', 'reconcile-roles'].includes(plan.action)) {
+      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social', 'reconcile-speech', 'reconcile-roles', 'reconcile-models'].includes(plan.action)) {
         const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration',
-          'reconcile-social': 'pre-social-migration', 'reconcile-speech': 'pre-speech-migration', 'reconcile-roles': 'pre-role-migration' }[plan.action];
+          'reconcile-social': 'pre-social-migration', 'reconcile-speech': 'pre-speech-migration', 'reconcile-roles': 'pre-role-migration',
+          'reconcile-models': 'pre-model-migration' }[plan.action];
         backupPath = `${configPath}.${suffix}.bak`;
         try { backupPath = await preserveConfigBackup(backupPath, original); } catch {
           throw new Error('Could not safely preserve the Gateway configuration backup. No configuration was replaced.');

@@ -77,11 +77,17 @@ dealer-id → `displayName`, `language` (`sv`/`en`), kort `persona` och
 `replyStyle` (högst två meningar, 220 tecken). `packages/director/product-speech.mjs`
 lägger persona, språkregel och den gemensamma gränsen (inga spelråd,
 oddslöften eller uppmaningar att spela) efter adapterns spel-, integritets-
-och JSON-regler. Paow och Dragan svarar på svenska, Astrid på engelska, och en
+och JSON-regler. Paow, Dragan och Jakob-2 svarar på svenska, Astrid på engelska, och en
 oregistrerad dealer får den generiska prompten. Svarsbiblioteket sparar
 dealerns registrerade språk (annars `en`). Ny dealer: lägg en post i registret
 och ett fall i `services/openclaw/lab/test/dealer-chat-persona.test.mjs`.
 Prompten byggs i Director, så ändringen når spelet först efter Director-deploy.
+
+`adaptive` gäller alla dealerprofiler: en första Luna-passering på låg
+resonemangsnivå kan begära en enda Sol 6.1-passering på hög nivå inom samma
+deadline. Explicit mini-val och `fixed` behåller en enda passering. Det är
+Directors modellrouting, inte OpenAI-parametern `reasoning.effort: adaptive`.
+Personan aktiverar inte tal, GPU, mikrofon eller en dealerprofil i ett rum.
 
 ## Tester
 

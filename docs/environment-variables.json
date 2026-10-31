@@ -327,8 +327,8 @@
       "sources": [
         "services/openclaw/lab/deploy/gateway-config.mjs"
       ],
-      "defaultModel": "gpt-5.6-terra",
-      "defaultModelScope": "New configurations; existing persistent role models require an explicit operator update",
+      "defaultModel": "gpt-6.1-sol",
+      "defaultModelScope": "New configurations; existing persistent role models require an explicit operator update. Missing native thinking settings are filled per role; explicit inherited or agent settings are preserved",
       "blueprint": {
         "path": "services/openclaw/lab/render.yaml",
         "service": "croupier-lab-openclaw"

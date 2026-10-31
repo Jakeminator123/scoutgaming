@@ -203,7 +203,7 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `HOST`, `PORT`, `LAB_DATA_DIR` | valfri | `0.0.0.0`, `4188`, `/data/catalog` |
 | `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_SPEECH_AGENT` | valfri | OpenClaw-rollerna `openclaw/croupier-director`, `openclaw/croupier-chat`, `openclaw/croupier-speech` (Blueprint och kodens standard) |
 | `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_SPEECH_TIMEOUT_MS` | valfri | Råd 8000 ms; tal 20000 ms tillsammans med spelmotorn |
-| `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_DEEP_MODEL` | valfri | `adaptive` tillåter en fördjupning med `gpt-6-sol` (Blueprint); kodens standard är `fixed` |
+| `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_DEEP_MODEL` | valfri | `adaptive` använder Luna för första svaret och tillåter högst en fördjupning med `gpt-6.1-sol` för alla dealerprofiler. Äldre uttryckliga `gpt-6-sol`-val stöds; kodens standard för routing är `fixed` |
 | `OPENCLAW_DASHBOARD_ENABLED` | valfri | Gatewayns inloggning via Director |
 | `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` | valfri, hemlig | Ed25519-nyckel (base64 PKCS8) för Admins modellval; bara på Director |
 | `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Utan origin används `RENDER_EXTERNAL_URL` (värdhanterad) när `OPENCLAW_DASHBOARD_ENABLED=true`; loopback bara lokalt |
@@ -221,7 +221,7 @@ Privat tjänst; registerposten är `render-openclaw-gateway`.
 | --- | --- | --- |
 | `OPENCLAW_API_KEY` (alias `OPENCLAWAPI_KEY`) | krävs, sätts privat | Gatewayns lösenord; samma som Director och Studio |
 | `OPENCLAW_MODEL_API_KEY` | krävs, sätts privat | Modelleverantörens nyckel |
-| `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API` | valfri | `https://api.openai.com/v1`, `gpt-5.6-terra`, `openai-responses`. Gäller nya konfigurationer; en sparad `openclaw.json` behåller sina rollmodeller tills de byts i Admin |
+| `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API` | valfri | `https://api.openai.com/v1`, `gpt-6.1-sol`, `openai-responses`. Gäller nya konfigurationer; en sparad `openclaw.json` behåller sina rollmodeller tills de byts i Admin. Resonemang ställs i den sparade agentkonfigurationen, se [OpenClaw-drift](AI/openclaw/DEPLOYMENT.md#modeller-och-resonemang) |
 | `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH` | valfri | `18789`, `/data/openclaw`, `/data/openclaw/openclaw.json` |
 | `OPENCLAW_DASHBOARD_ORIGIN` | valfri | Directors exakta HTTPS-origin utan `/openclaw` |
 | `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Bara lokalt |

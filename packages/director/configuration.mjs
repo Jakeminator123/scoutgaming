@@ -26,7 +26,7 @@ export function projectDirectorSettings(values) {
     speechAgent: values.OPENCLAW_SPEECH_AGENT || 'openclaw/croupier-speech',
     speechUrl: values.OPENCLAW_PRODUCT_SPEECH_URL || '', speechToken: values.OPENCLAW_PRODUCT_SPEECH_TOKEN || '',
     speechRouting: values.OPENCLAW_SPEECH_ROUTING ?? 'fixed',
-    speechDeepModel: values.OPENCLAW_SPEECH_DEEP_MODEL ?? 'gpt-6-sol',
+    speechDeepModel: values.OPENCLAW_SPEECH_DEEP_MODEL ?? 'gpt-6.1-sol',
     ...(values.OPENCLAW_SPEECH_TIMEOUT_MS === undefined ? {} : { speechTimeoutMs: Number(values.OPENCLAW_SPEECH_TIMEOUT_MS) }),
     companionEnabled: values.LAB_COMPANION_ENABLED !== 'false',
     companionFunEnabled: values.LAB_COMPANION_FUN_ENABLED !== 'false',
