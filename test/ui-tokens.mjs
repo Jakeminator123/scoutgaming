@@ -1,59 +1,95 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { applyThemeMode, readThemeMode, themeModeBootstrap } from '../apps/studio/lib/theme-mode.mjs';
 
-// Source tests need no build: contrast, saved mode and blocked storage.
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const tokensPath = resolve(repo, 'packages/ui/tokens.css'), tokensCss = readFileSync(tokensPath, 'utf8');
-const { parse } = createRequire(new URL('../apps/studio/client/package.json', import.meta.url))('postcss');
-const tokens = parse(tokensCss);
-const declarations = selector => {
-  const values = [];
-  tokens.walkRules(rule => {
-    if (!rule.selectors.includes(selector)) return;
-    rule.each(node => { if (node.type === 'decl' && node.prop.startsWith('--sg-')) values.push([node.prop, node.value]); });
-  });
-  return values;
-};
-const dark = declarations(':root'), light = declarations(':root.light');
-const palette = mode => new Map([...dark, ...(mode === 'light' ? light : [])]);
+// Measure real kit components after the production CSS cascade; token names and
+// colour syntax are implementation details. Keyboard focus is covered by the
+// existing css-focus-ring and admin-chart-focus browser suites.
+const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
+const admin = fileURLToPath(new URL('../apps/studio/client/admin/', import.meta.url));
+const require = createRequire(new URL('../apps/studio/client/package.json', import.meta.url));
 
-function luminance(hex) {
-  assert.match(hex, /^#[0-9a-f]{6}$/i, `${hex} is an opaque colour`);
-  const [r, g, b] = hex.slice(1).match(/../g).map(value => parseInt(value, 16) / 255)
-    .map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-  return r * .2126 + g * .7152 + b * .0722;
-}
-const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
-
-test('text keeps WCAG AA contrast (4.5:1) on every surface in both modes', () => {
-  for (const mode of ['dark', 'light']) {
-    const colours = palette(mode);
-    const pairs = [
-      ...['--sg-text', '--sg-muted', '--sg-accent-text', '--sg-danger-text']
-        .flatMap(text => ['--sg-bg', '--sg-surface', '--sg-surface-2', '--sg-field'].map(surface => [text, surface])),
-      ['--sg-side-text', '--sg-side'], ['--sg-side-muted', '--sg-side'], ['--sg-on-accent', '--sg-lime'],
-    ];
-    for (const [text, surface] of pairs) {
-      const ratio = contrast(colours.get(text), colours.get(surface));
-      assert.ok(ratio >= 4.5, `${mode}: ${text} on ${surface} is ${ratio.toFixed(2)}:1`);
+test('rendered Admin text keeps WCAG AA contrast (4.5:1) on its actual surfaces in both themes', { skip: !browserModule }, async () => {
+  const { build } = require('esbuild'), postcss = require('postcss'), tailwind = require('@tailwindcss/postcss');
+  const globals = resolve(admin, 'app/globals.css');
+  const css = (await postcss([tailwind({ base: admin })]).process(await readFile(globals, 'utf8'), { from: globals })).css;
+  const { outputFiles } = await build({ stdin: { resolveDir: admin, loader: 'tsx', contents: `
+    import {createRoot} from 'react-dom/client';
+    import {Card,CardDescription,Button,Kbd,Badge} from './components/ui/kit';
+    import {Field,Input} from './components/ui/form';
+    import {Table,TableHeader,TableBody,TableRow,TableHead,TableCell} from './components/ui/table';
+    createRoot(document.getElementById('root')).render(<Card title="Material" aside="Senast sparat">
+      <CardDescription>Välj material för ditt bord.</CardDescription>
+      <Field label="Namn" hint="Visas i Admin" error="Ange ett unikt namn"><Input defaultValue="Bord ett"/></Field>
+      <Kbd>Enter</Kbd>
+      {['primary','secondary','ghost','danger','link'].map(variant=><Button key={variant} variant={variant}>{variant}</Button>)}
+      {['live','warn','info','danger'].map(tone=><Badge key={tone} tone={tone}>{tone}</Badge>)}
+      <Table label="Material"><TableHeader><TableRow><TableHead>Namn</TableHead></TableRow></TableHeader>
+        <TableBody><TableRow data-state="selected"><TableCell>Valt material</TableCell></TableRow></TableBody></Table>
+    </Card>);
+  ` }, bundle: true, write: false, jsx: 'automatic', format: 'iife', platform: 'browser',
+    alias: { react: resolve(admin, '../node_modules/react'), 'react-dom': resolve(admin, '../node_modules/react-dom') },
+    define: { 'process.env.NODE_ENV': '"production"' }, logLevel: 'silent' });
+  const { chromium } = await import(pathToFileURL(browserModule).href);
+  const browser = await chromium.launch({ headless: true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? { channel: process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL } : {}) });
+  try {
+    const page = await browser.newPage(), errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('**/*', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/theme.css') return route.fulfill({ contentType: 'text/css', body: css });
+      if (url.pathname === '/fixture.js') return route.fulfill({ contentType: 'text/javascript', body: outputFiles[0].text });
+      return route.fulfill({ contentType: 'text/html', body: '<!doctype html><meta charset="utf-8"><html class="' + url.searchParams.get('mode') + '"><head><link rel="stylesheet" href="/theme.css"></head><body class="preview-admin"><div id="root"></div><script src="/fixture.js"></script></body></html>' });
+    });
+    for (const mode of ['dark', 'light']) {
+      await page.goto('https://text-contrast.fixture.invalid/?mode=' + mode);
+      await page.getByRole('textbox', { name: 'Namn' }).waitFor();
+      const samples = await page.locator('#root').evaluate(root => {
+        // Canvas converts every supported CSS colour syntax to sRGB, including
+        // alpha. Composite translucent surfaces over their rendered ancestors.
+        const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+        const rgba = color => {
+          context.clearRect(0, 0, 1, 1); context.fillStyle = color; context.fillRect(0, 0, 1, 1);
+          const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+          return [r, g, b, a / 255];
+        };
+        const over = (fg, bg) => {
+          const alpha = fg[3] + bg[3] * (1 - fg[3]);
+          return alpha ? [...fg.slice(0, 3).map((value, index) => (value * fg[3] + bg[index] * bg[3] * (1 - fg[3])) / alpha), alpha] : [0, 0, 0, 0];
+        };
+        const luminance = rgb => rgb.map(value => {
+          const c = value / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+        }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+        const measure = (element, text) => {
+          let foreground = rgba(getComputedStyle(element).color), background = [0, 0, 0, 0];
+          for (let node = element; node; node = node.parentElement) {
+            const css = getComputedStyle(node), fill = rgba(css.backgroundColor);
+            foreground = over(foreground, fill); background = over(background, fill);
+            foreground[3] *= Number(css.opacity); background[3] *= Number(css.opacity);
+          }
+          foreground = over(foreground, [255, 255, 255, 1]).slice(0, 3);
+          background = over(background, [255, 255, 255, 1]).slice(0, 3);
+          const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+          return { text, ratio: (light + .05) / (dark + .05) };
+        };
+        const samples = [], walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          if (node.textContent.trim() && node.parentElement.checkVisibility()) samples.push(measure(node.parentElement, node.textContent.trim()));
+        }
+        for (const input of root.querySelectorAll('input')) samples.push(measure(input, input.value));
+        return samples;
+      });
+      assert.ok(samples.length > 0, mode + ': rendered text was measured');
+      for (const { text, ratio } of samples) assert.ok(ratio >= 4.5, `${mode}: ${text} is ${ratio.toFixed(2)}:1`);
     }
-  }
-});
-
-test('the mark (selected tab edge, focus ring) keeps 3:1 against every surface in both modes (WCAG 1.4.11)', () => {
-  for (const mode of ['dark', 'light']) {
-    const colours = palette(mode);
-    for (const surface of ['--sg-bg', '--sg-surface', '--sg-surface-2', '--sg-field', '--sg-hover']) {
-      const ratio = contrast(colours.get('--sg-mark'), colours.get(surface));
-      assert.ok(ratio >= 3, `${mode}: --sg-mark on ${surface} is ${ratio.toFixed(2)}:1`);
-    }
-  }
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
 });
 
 function fakeDocument(initial = []) {
