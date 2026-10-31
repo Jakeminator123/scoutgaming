@@ -48,25 +48,27 @@ export function checkAdminArtifacts({ html, theme, app, bootstrap, tokens }) {
 
   // outline:none loses keyboard focus in Windows forced-colours mode. Keep the
   // transparent outline override, including its extra specificity, for each
-  // generated outline-none utility. Formatting and cascade layers may change.
-  const outlines = new Map();
+  // generated outline-none utility. A compiler may preserve or flatten nesting.
+  const effectiveSelector = rule => {
+    let parent = rule.parent;
+    while (parent && parent.type !== 'rule') parent = parent.parent;
+    if (!parent) return rule.selector;
+    const outer = effectiveSelector(parent);
+    return rule.selector.includes('&') ? rule.selector.replaceAll('&', outer) : `${outer} ${rule.selector}`;
+  };
+  const outlines = [];
   css.walkRules(rule => {
-    if (!rule.selector.includes('outline-none')) return;
-    const protectedRule = [...(outlines.get(rule.selector) ?? []), rule];
-    outlines.set(rule.selector, protectedRule);
+    const selector = effectiveSelector(rule);
+    if (!selector.includes('outline-none')) return;
+    const values = new Map();
+    rule.each(node => { if (node.type === 'decl') values.set(node.prop, node.value); });
+    outlines.push({selector, values});
   });
-  assert.ok(outlines.has('.outline-none') && outlines.has('.focus-visible\\:outline-none'), 'focus utilities are delivered');
-  for (const [selector, rules] of outlines) {
-    assert.ok(rules.some(rule => {
-      let kept = false;
-      rule.walkRules(nested => {
-        if (!/^&:not\(\.[^)]+\)$/.test(nested.selector)) return;
-        const values = new Map();
-        nested.each(node => { if (node.type === 'decl') values.set(node.prop, node.value); });
-        if (values.get('outline') === '2px solid transparent' && values.get('outline-offset') === '2px') kept = true;
-      });
-      return kept;
-    }), `${selector} retains its forced-colours focus outline`);
+  for (const selector of ['.outline-none', '.focus-visible\\:outline-none']) {
+    assert.ok(outlines.some(rule => rule.selector.startsWith(selector)
+      && /^(?::focus-visible)?:not\(\.[^)]+\)(?::focus-visible)?$/.test(rule.selector.slice(selector.length))
+      && rule.values.get('outline') === '2px solid transparent' && rule.values.get('outline-offset') === '2px'),
+    `${selector} retains its forced-colours focus outline`);
   }
 }
 

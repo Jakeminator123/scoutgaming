@@ -20,6 +20,18 @@ test('compiled CSS remains valid after cosmetic formatting and layer changes', (
   checkAdminArtifacts(built);
 });
 
+test('flattened and nested focus selectors preserve the same accessible outline', () => {
+  const declarations = 'outline: 2px solid transparent; outline-offset: 2px;';
+  for (const variant of [':focus-visible', '']) {
+    const nested = `.outline-none { &:not(.\\#) { ${declarations} } }
+      .focus-visible\\:outline-none { &${variant} { &:not(.\\#) { ${declarations} } } }`;
+    const flat = `.outline-none:not(.\\#) { ${declarations} }
+      .focus-visible\\:outline-none${variant}:not(.\\#) { ${declarations} }`;
+    for (const theme of [nested, flat]) checkAdminArtifacts({ ...fixture(), theme: tokens + theme });
+    assert.throws(() => checkAdminArtifacts({ ...fixture(), theme: tokens + flat.replaceAll('2px solid transparent', 'none') }), /focus/);
+  }
+});
+
 test('missing, empty or uncompiled CSS fails build validation', () => {
   for (const key of ['theme', 'app']) for (const css of ['', undefined, '@import "missing.css";', '@apply flex;', '@tailwind utilities;']) {
     assert.throws(() => checkAdminArtifacts({ ...fixture(), [key]: css }));
