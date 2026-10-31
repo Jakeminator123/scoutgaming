@@ -5,6 +5,22 @@ import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, 
 import {platformSocketRequest, bridgePlatformSocket} from './socket-core.mjs';
 
 const BACKEND_FAILURES = new Set([400, 401, 403, 409, 429, 503, 504]);
+const ROOM_IDENTITY_HEADER = 'x-croupier-room-instance';
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+const ROOM_IDENTITY = new RegExp(`^v1\\.${UUID}\\.${UUID}$`);
+
+// Only the configured upstream's verified WebSocket 101 may supply this field.
+// An absent field supports reader-first rollout; partial/duplicate/malformed
+// metadata is rejected, never silently presented as trustworthy evidence.
+function roomIdentity(reply) {
+  const values=[];
+  for(let i=0;i<(reply.rawHeaders?.length??0);i+=2)
+    if(String(reply.rawHeaders[i]).toLowerCase()===ROOM_IDENTITY_HEADER)values.push(reply.rawHeaders[i+1]);
+  if(!values.length && reply.headers?.[ROOM_IDENTITY_HEADER]===undefined)return null;
+  if(reply.statusCode!==101 || values.length!==1 || typeof values[0]!=='string'
+    || !ROOM_IDENTITY.test(values[0]) || reply.headers?.[ROOM_IDENTITY_HEADER]!==values[0])throw Error('Invalid room identity');
+  return values[0];
+}
 
 function reject(socket, status) {
   if (!socket.destroyed) socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nCache-Control: private, no-store\r\nCDN-Cache-Control: no-store\r\nContent-Length: 0\r\n\r\n`);
@@ -41,6 +57,11 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
   const websocketServer = new WebSocketServerImpl({noServer: true, perMessageDeflate: false,
     maxPayload: room ? 1024 : moving ? 2 * 1024 * 1024 : worker ? 4 * 1024 * 1024 : 1024 * 1024,
     handleProtocols: protocols => !room && protocols.has(protocol) ? protocol : false});
+  const roomIdentities = new WeakMap();
+  websocketServer.on?.('headers',(headers,request)=>{
+    const identity=roomIdentities.get(request);
+    if(room && identity)headers.push(`${ROOM_IDENTITY_HEADER}: ${identity}`);
+  });
   const bridges = new Set();
   let closed = false;
   const configure = () => {
@@ -87,8 +108,14 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       bridge.done.then(() => bridges.delete(bridge));
       abort = () => bridge.cancel();
       socket.once('close', abort); socket.once('error', abort);
+      let identity=null, identityInvalid=false;
       const upstreamStatus = await new Promise(resolve => {
-        upstream.once('open', () => resolve(101));
+        // ws emits upgrade before checking Sec-WebSocket-Accept. Capture ONLY;
+        // do not publish anything until its subsequent open validates the handshake.
+        upstream.once('upgrade',reply=>{
+          if(room)try {identity=roomIdentity(reply);}catch {identityInvalid=true;}
+        });
+        upstream.once('open', () => resolve(identityInvalid?502:101));
         upstream.once('error', () => resolve(502));
         upstream.once('close', () => resolve(502));
         socket.once('close', () => resolve(499));
@@ -102,6 +129,7 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       if ((input.protocols.length && upstream.protocol !== input.protocols[0]) || (input.room && upstream.protocol)) {bridge.cancel(); reject(socket, 502); return;}
       // Only Render can accept the current owner/session, single-use ticket or
       // worker bearer/capability. Its authenticated 101 precedes public upgrade.
+      if(room && identity)roomIdentities.set(request,identity);
       websocketServer.handleUpgrade(request, socket, head, frontend => {
         socket.removeListener('close', abort); socket.removeListener('error', abort);
         bridge.attach(frontend);
@@ -113,6 +141,8 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       bridge?.cancel();
       if (abort) {socket.removeListener('close', abort); socket.removeListener('error', abort);}
       reject(socket, 502);
+    } finally {
+      roomIdentities.delete(request);
     }
   });
   return server;
