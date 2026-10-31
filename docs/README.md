@@ -23,6 +23,13 @@ Gränser (`tools/check-repo-limits.mjs`): inget dokument under `docs/` över 100
 | [storage/BLOB-NEON](storage/BLOB-NEON.md) | Klipp i Neon och Blob: sökvägar, import, radering, manuell export till `media/blob-index.json`; schemakartan (scheman, tabeller, vem som skriver vad, de två migreringsledgrarna) | Den som rör media eller databasen | När lagringskontraktet eller ett schema ändras |
 | [ops/cloud/RENDER-V3](../ops/cloud/RENDER-V3.md), [README](../ops/cloud/README.md), [CONTAINER-CONTEXT](../ops/cloud/CONTAINER-CONTEXT.md) | Spelmotorn på Render: tjänst, deploy, återgång, byggkontext | Den som deployar motorn | När tjänsten eller imagen ändras |
 
+## Incidentutredningar
+
+| Dokument | Vad | För vem | Uppdateras |
+| --- | --- | --- | --- |
+| [incidents/2026-10-31-repository-history](incidents/2026-10-31-repository-history.md) | Beställd utredning av Git-storlek: backup, gamla media/dokument, exakt kandidatlista och skyddade tester/kollegor | Jakob och repoansvarig | Fryst mätning; kompletteras med tydligt daterade rättelser, inte löpande produktstatus |
+| [incidents/2026-10-31-clean-repository-plan](incidents/2026-10-31-clean-repository-plan.md) | Konsekvenser och ordning för en möjlig ny produktrepo på cirka 65 MiB; testbevarande, GitLab och återgång | Jakob och den som genomför ett eventuellt byte | Vid beslut eller verifiering av övergången; rapportleveransen utför inte bytet |
+
 ## Produkt och kontrakt
 
 | Dokument | Vad | För vem | Uppdateras |
