@@ -337,6 +337,7 @@ export function focusedTests(changes, root = repositoryRoot) {
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
+    if (path === '.githooks/pre-commit-full') add('test/regression-group.mjs');
     // The merge guard reads the branch policy.
     if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
     if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
