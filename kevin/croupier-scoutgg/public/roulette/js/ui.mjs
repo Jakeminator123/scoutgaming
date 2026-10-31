@@ -334,21 +334,39 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
   }
   // ---------- pjäsen och vinsten ----------
   const scenSkala = () => { const s = rot.closest("#scen"); return { r: s.getBoundingClientRect(), k: s.getBoundingClientRect().width / 1920 }; };
+  // Pjäsen står i skärmens plan (utanför bordets perspektiv) och mäts mot numrets fält. Den sätts ut medan bordet kan vara
+  // på väg ut ur hjulvyn (fälls ut under 0,7 s), så platsen och storleken mäts om varje bildruta tills bordet stått still en
+  // stund; annars blir den kvar där numret låg mitt i rörelsen (Emil 31 okt: 15 vann, pjäsen hamnade vid 19–22).
   function stallPjas(n) {
-    const [x, y] = mitt(cell(n));
+    const [x, y] = mitt(cell(n)), c = cell(n);
     lager.insertAdjacentHTML("beforeend", `<span class="pjasskugga" style="left:${x + 34}px;top:${y + 30}px"></span>
       <span class="pjaskontakt" style="left:${x + 2}px;top:${y + 3}px"></span><span class="pjasfot" style="left:${x}px;top:${y}px"></span>`);
-    const fot = lager.querySelector(".pjasfot"), c = cell(n), { r, k } = scenSkala();
-    const s = c.getBoundingClientRect().width / k / c.offsetWidth, p = fot.getBoundingClientRect();
-    const px = (p.x - r.x) / k, py = (p.y - r.y) / k;
-    fot.remove();
-    if (pjasBild) {                                                    // guldpjäsen (js/pjas.mjs), foten på numret, lyft med markerns tjocklek
-      const h = Math.round(77 * s), w = Math.round(h * pjasBild.forhallande);
-      rot.insertAdjacentHTML("beforeend", `<div class="pjas guld" data-n="${n}" data-h="${h}" style="left:${px - w / 2}px;top:${py - h * pjasBild.fotY - 5 * s}px;width:${w}px;height:${h}px"><img src="${pjasBild.url}" alt="" draggable="false"></div>`);
-      return;
-    }
-    const h = Math.round(100 * s), w = Math.round(h * 64 / 100);
-    rot.insertAdjacentHTML("beforeend", `<div class="pjas" style="left:${px - w / 2}px;top:${py - h * 0.86 - 4 * s}px;width:${w}px;height:${h}px">${PJAS_SVG}</div>`);
+    const fot = lager.querySelector(".pjasfot");
+    const guld = !!pjasBild;
+    rot.insertAdjacentHTML("beforeend", guld
+      ? `<div class="pjas guld" data-n="${n}"><img src="${pjasBild.url}" alt="" draggable="false"></div>`
+      : `<div class="pjas">${PJAS_SVG}</div>`);
+    const pj = rot.lastElementChild;
+    // guldpjäsens transition på left (för lyftet) startar om varje bildruta och höll den kvar på fel ställe medan bordet
+    // fälldes ut: ingen transition så länge den följer fältet
+    pj.style.transition = "none";
+    const slapp = () => { fot.remove(); if (!pj.classList.contains("lyft")) pj.style.transition = ""; return true; };
+    const placera = () => {
+      const { r, k } = scenSkala(), s = c.getBoundingClientRect().width / k / c.offsetWidth, p = fot.getBoundingClientRect();
+      const px = (p.x - r.x) / k, py = (p.y - r.y) / k;
+      const h = Math.round((guld ? 77 : 100) * s), w = Math.round(h * (guld ? pjasBild.forhallande : 0.64));
+      const top = guld ? py - h * pjasBild.fotY - 5 * s : py - h * 0.86 - 4 * s;
+      Object.assign(pj.style, { left: `${px - w / 2}px`, top: `${top}px`, width: `${w}px`, height: `${h}px` });
+      if (guld) pj.dataset.h = h;
+      return `${px.toFixed(1)},${py.toFixed(1)},${h}`;
+    };
+    let forra = placera(), stilla = 0;
+    nar(() => {                                                        // klart när platsen stått still 10 bildrutor utanför hjulvyn
+      if (!pj.isConnected || pj.classList.contains("lyft")) return slapp();
+      const nu = placera(), hjulvy = rot.classList.contains("hjulvy");
+      stilla = nu === forra && !hjulvy ? stilla + 1 : 0; forra = nu;     // i hjulvyn står bordet stilla men ska snart fällas ut
+      return stilla < 10 ? false : slapp();
+    });
   }
   // utbetalningen: på varje vinnande fält läggs vinsten som marker ovanpå insatsen, så att stapeln visar totalen
   // (insats + vinst, motorns returned). Staplarna ritas i skärmens plan (som pjäsen) med markerna som ellipser, sedda
@@ -391,6 +409,7 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
     if (pj && rakt) {
       const h = +pj.dataset.h, startTop = parseFloat(pj.style.top), nyTop = rakt.topp - h * pjasBild.fotY - 4 * (rakt.d / 36);
       pj.style.setProperty("--lyft", `${(nyTop - startTop).toFixed(1)}px`);
+      pj.style.transition = "";                                       // lyftets transition (stallPjas stänger av den medan pjäsen följer fältet)
       pj.style.setProperty("--lyftDelay", `${rakt.sista + 150}ms`); pj.classList.add("lyft");
       pj.style.left = `${(rakt.x - parseFloat(pj.style.width) / 2).toFixed(1)}px`;                // pjäsen följer stapeln i sidled
     }
