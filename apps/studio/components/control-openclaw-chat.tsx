@@ -11,13 +11,12 @@ import { useStudioSession } from './studio-session';
 import { resolveStudioDealerId, type ConnectionStatus } from './studio-types';
 import type { VideoInventory } from '../../../packages/presentation/contracts/media-inventory.mjs';
 
-function SelectedControlOpenClawChat({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId, standaloneVoicePreviewAvailable }: {
+function SelectedControlOpenClawChat({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
   initialProject: StudioProject;
   initialVideos: VideoInventory;
   initialStatus: ConnectionStatus;
   initialDealerId?: string;
   initialEventId?: string;
-  standaloneVoicePreviewAvailable: boolean;
 }) {
   const { status, mode, changeMode, dealerId, dirty } = useStudioSession({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId });
   const query=new URLSearchParams(typeof window==='undefined'?'':window.location?.search);
@@ -30,7 +29,7 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
   >
     <div className="sg-page-body">
       <StudioNavigation dealerId={dealerId} dealerLabel={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label} active="speech"/>
-      <GatewayPanel standaloneVoicePreviewAvailable={standaloneVoicePreviewAvailable} status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
+      <GatewayPanel status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
     </div>
   </PageTemplate>;
 }

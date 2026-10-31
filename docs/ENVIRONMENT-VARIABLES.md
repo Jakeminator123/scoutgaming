@@ -48,7 +48,7 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 | `CROUPIER_AI_IMAGE_DAILY_LIMIT` | valfri, standard `20`. Satt `12` i Production, Preview och Development sedan 2026-10-29 (Jakobs beslut, paneländring) | studio | Högst så många AI-bildförslag per dygn (Stockholmstid), 0–1000; `0` stänger av. Räknas i minnet per Vercel-instans och nollställs vid kallstart, eftersom ingen databastabell finns för den. Det är därför ingen hård gräns: den hårda gränsen sätts som budget i OpenAI-projektet. Varje försök räknas, även misslyckade |
 | `OPENCLAW_API_KEY` (alias `OPENCLAWAPI_KEY`) | villkorlig, Sensitive | studio | Admins OpenClaw-flik mot Gateway; samma värde som Gatewayns nyckel, aldrig till webbläsaren |
 | `RUNWAY_API_KEY` | valfri | studio | "Skapa material" under Dealers & klipp |
-| `CARTESIA_API_KEY` | valfri | studio | Röstprov i Admin |
+| `CARTESIA_API_KEY` | valfri | studio | Röstverifiering för sparat tal via `studio-speech-build-service.mjs`; det fristående röstprovet är avvecklat |
 | `CROUPIER_STUDIO_MOVING_DRIFT_API`, `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` | villkorlig | web, studio | Driftväljaren för rörligt tal, se nedan |
 | `CROUPIER_VERCEL_FRONTEND_ORIGIN` | valfri | studio | Betrott proxyursprung för en separat förhandsfrontend; tom i produktionen |
 | `CROUPIER_GAME_ORIGIN` | sätts inte på Vercel | web (`vercel-entry`), studio | Behövs bara när `apps/web/tools/player-ui-build.mjs` körs fristående. Vercel-bygget (`prepare-platform-ui.mjs`) tar originen från `CROUPIER_BACKEND_ORIGIN`. Studio läser den bara i den lokala partnerreferensen (`partner-observer.mjs:41`, se nedan) |
@@ -94,7 +94,7 @@ Fem flaggor hade bara ett värde i produktionen och preview och är sedan Miljö
 | Tidigare variabel | Fast värde | Var det står i koden |
 | --- | --- | --- |
 | `CROUPIER_VERCEL_UNIFIED_UI` | `1`: en publik origin för spel och Admin | `packages/server-transport/configuration.mjs` (`unifiedUi`, `labUiOrigin` = den publika originen), `apps/studio/lib/studio-native-runtime.mjs`, `studio-native-request.mjs`, `apps/studio/proxy.ts` |
-| `CROUPIER_STUDIO_NATIVE_ADMIN` | `1`: Admin körs nativt på Vercel | `nativeStudioAdminEnabled()` i `studio-native-runtime.mjs`, `nativeStudio` i `configuration.mjs`, `voice-preview.mjs` |
+| `CROUPIER_STUDIO_NATIVE_ADMIN` | `1`: Admin körs nativt på Vercel | `nativeStudioAdminEnabled()` i `studio-native-runtime.mjs`, `nativeStudio` i `configuration.mjs` |
 | `CROUPIER_LAB_BASE_PATH` | `/studio` | `apps/studio/next.config.mjs` (`basePath`, `NEXT_PUBLIC_LAB_BASE_PATH`), `client/build.mjs`, `client/surface-bundle.mjs`, `app/layout.tsx`, `companion-server.mjs`, `proxy.ts` |
 | `CROUPIER_STUDIO_NEON_POLICY` | `1`: Neon är registret | `saved-game-policy.mjs`, `packages/navigation/game-entry.mjs` (`gameEntryEnabled`), `canonicalGame` i `configuration.mjs` och `ops/cloud/vercel-ingress.mjs`, `ops/cloud/config.mjs`, `container-entry.mjs`, `services/game/server.mjs` och talets journalkrav |
 | `CROUPIER_MEDIA_STORAGE` | `blob`: privat Blob | `ops/cloud/config.mjs`, `container-entry.mjs`, `private-media-contract.mjs` och `media-runtime.mjs` (Blob är konfigurerad när `BLOB_READ_WRITE_TOKEN` finns), `services/game/server.mjs` |

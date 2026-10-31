@@ -69,7 +69,7 @@ function visit(node, callback) {
   visit(node.props?.children, callback);
 }
 
-test('dealer dialog receives selected identity, draft state and voice availability', () => {
+test('dealer dialog receives selected identity and draft state', () => {
   const saved = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
   try {
     for (const basePath of ['', '/studio']) {
@@ -79,16 +79,13 @@ test('dealer dialog receives selected identity, draft state and voice availabili
         useEffect: () => {}, useRef: current => ({current}), useMemo: fn => fn(), useCallback: fn => fn};
       function GatewayPanel() { return null; }
       const {ControlOpenClawChat} = loadComponent('control-openclaw-chat.tsx', {react: hooks, './gateway-panel': {GatewayPanel}});
-      const props = {initialProject: project, initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true};
+      const props = {initialProject: project, initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}};
       const tree = mountSelectedPage(ControlOpenClawChat, props);
       let panel;
       visit(tree, node => {if (node.type === GatewayPanel) panel = node;});
       assert.ok(panel); assert.equal(panel.props.dealerId, 'astrid');
       assert.equal(panel.props.dirty, false); assert.equal(panel.props.status, props.initialStatus);
       assert.equal(typeof panel.props.onModeChange, 'function'); assert.equal(typeof panel.props.onPlayerChat, 'function');
-      assert.equal(panel.props.standaloneVoicePreviewAvailable, true);
-      visit(mountSelectedPage(ControlOpenClawChat, {...props, standaloneVoicePreviewAvailable: false}), node => {if (node.type === GatewayPanel) panel = node;});
-      assert.equal(panel.props.standaloneVoicePreviewAvailable, false);
     }
   } finally {
     if (saved === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
@@ -106,7 +103,7 @@ test('Öppna spelrum i Dialogtest följer single() för tvetydiga spelrum', () =
     const {ControlOpenClawChat} = loadComponent('control-openclaw-chat.tsx', {react: hooks, './gateway-panel': {GatewayPanel},
       '../lib/studio-history.mjs': {studioHistory: () => ({canNavigate: () => true})}}, browser);
     let panel;
-    visit(mountSelectedPage(ControlOpenClawChat, {initialProject: createSeedProject(), initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}, standaloneVoicePreviewAvailable: true}), node => {if (node.type === GatewayPanel) panel = node;});
+    visit(mountSelectedPage(ControlOpenClawChat, {initialProject: createSeedProject(), initialDealerId: 'astrid', initialVideos: {videos: []}, initialStatus: {configured: false}}), node => {if (node.type === GatewayPanel) panel = node;});
     panel.props.onPlayerChat();
     assert.equal(assigned.length, 1);
     return new URL(assigned[0], 'https://studio.invalid');
