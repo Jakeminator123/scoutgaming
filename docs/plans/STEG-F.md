@@ -1,6 +1,8 @@
 # Steg F: spelare knyts till bolag
 
-Plan för steg F i [ADMIN-FORENKLING](ADMIN-FORENKLING.md) §9, skriven 29 oktober 2026 mot `main` ffe6b4a6c i samma form som [NYCKEL-BOLAG](NYCKEL-BOLAG.md). Radnumren gäller grenen `jakob/claude-steg-f-1`. Raderas när steget är verifierat i drift.
+**Kodavstämning 31 oktober 2026:** game-014 är fortfarande `deploymentOptional`. `async-player-auth.mjs` läser bolag tolerant via `to_jsonb`, och `player-administration.mjs` skapar ännu spelare utan bolagsfält. Steget är därför inte färdigt. Denna granskning körde ingen DDL eller ny driftacceptans; använd de faktiska skapvägarna och negativa bolagsproven vid fortsatt arbete.
+
+Plan för steg F i den historiska Admin-planen (se [HISTORIK](../HISTORIK.md)), skriven 29 oktober 2026 mot `main` ffe6b4a6c i samma form som [NYCKEL-BOLAG](NYCKEL-BOLAG.md). Radnumren gäller grenen `jakob/claude-steg-f-1`. Raderas när steget är verifierat i drift.
 
 ## 1. Var spelare skapas och läses i dag
 
