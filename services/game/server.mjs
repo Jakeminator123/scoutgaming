@@ -36,7 +36,6 @@ import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
 import { createDealerSpeechReferenceService } from './dealer-speech-reference.mjs';
-import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
 import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createNativeObservationPublisher } from './native-observation-publisher.mjs';
@@ -381,22 +380,6 @@ function secretFromFiles(name) {
 }
 const BO_URL = process.env.BO_URL ?? 'https://backoffice.bettalotto.se';
 const BO_ORIGIN = new URL(BO_URL);
-function boPostOriginOk(req) {
-  const origin = req.headers.origin;
-  if (typeof origin !== 'string' || !URL.canParse(origin)) return false;
-  const parsed = new URL(origin);
-  if (parsed.origin !== origin) return false;
-  let expected = req.headers.host === BO_ORIGIN.host ? BO_ORIGIN.origin : null;
-  if (!expected && process.env.NODE_ENV !== 'production') {
-    // The local Lissabon launcher does not configure a public BO_URL.
-    try {
-      const local = new URL(`http://${req.headers.host}`);
-      if (['localhost', '127.0.0.1', '[::1]'].includes(local.hostname)) expected = local.origin;
-    } catch { /* Invalid Host cannot authorize a BO POST. */ }
-  }
-  const fetchSite = req.headers['sec-fetch-site'];
-  return origin === expected && (!fetchSite || fetchSite === 'same-origin');
-}
 const LEGACY_STUDIO_RETURNS = new Set(['/studio', '/studio/administration', '/control', '/control/administration']);
 const LEGACY_STUDIO_TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 function legacyBackofficeRedirect(req, pathname) {
@@ -499,20 +482,6 @@ async function chatSessionOwner(req, playerId) {
   }
   throw Object.assign(new Error('stale_chat_session'), { statusCode: 401 });
 }
-// Opt-in operator rehearsal shares the real relay and its budget, but never
-// calls player APIs or persists synthetic conversations in either database.
-const operatorSpeechQa = createOperatorSpeechQa({
-  gateStore: studioPolicyRuntime
-    ? (await import('./postgres-operator-speech-qa.mjs')).createPostgresOperatorSpeechQa({pool:storage.pool,scope:studioPolicyRuntime.scope})
-    : undefined,
-  origin: process.env.PUBLIC_URL ?? gameOrigin,
-  authenticate: boSessionOk,
-  service: () => typeof speechStreamService?.prepare === 'function' ? speechStreamService : null,
-  decide: (request, status, signal) => openClawChat(request, status, {
-    fetchImpl: ((url, options = {}) => fetch(url, { ...options,
-        signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
-  }),
-});
 // Every step runs even when another fails; the first failure is rethrown with
 // its step and player. Chunks of 4 bound the probe step's pooled transactions.
 const cancelPlayerRuntime=async (playerIds,reason)=>{
@@ -607,7 +576,7 @@ const server = createServer(async (req, res) => {
     const result = await studioGameCommand(request);
     res.writeHead(result.status, Object.fromEntries(result.headers)); res.end(await result.text()); return;
   }
-  if (isRetiredBackofficePost({ studioPolicyActive: Boolean(studioPolicyRuntime), method: req.method, pathname })) {
+  if (req.method === 'POST' && pathname.startsWith('/api/bo/')) {
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"legacy_administration_retired"}'); return;
   }
@@ -835,11 +804,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === 'POST' && pathname.startsWith('/api/bo/') && !boPostOriginOk(req)) {
-    res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-    res.end('{"error":"Invalid origin"}'); return;
-  }
-  if (await operatorSpeechQa.handle(req, res, pathname)) return;
   if (pathname.startsWith('/api/bo/')) {
     res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end('{"error":"not found"}'); return;
@@ -1167,8 +1131,7 @@ else if (!speechStartupDisabled && process.env.CROUPIER_GENERATED_SPEECH_STREAMI
       dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
       onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
       ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
-      resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
-        ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
+      resolveOwner: chatSessionOwner,
     });
     if (speechStreamService) speechStartupStatus.state='ready';
   }

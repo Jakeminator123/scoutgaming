@@ -124,7 +124,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
       'apps/studio/lib/voice-preview.mjs', 'apps/studio/lib/media-blob-index.mjs', 'services/game/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
       'services/game/postgres-speech-journal.mjs', 'services/game/speech-journal-runtime.mjs', 'packages/presentation/contracts/speech-journal-constants.mjs', 'services/game/generated-speech-session.mjs', 'services/game/generated-speech-stream.mjs', 'services/game/generated-speech-runtime.mjs',
-      'services/game/speech-blob-artifacts.mjs', 'services/game/postgres-operator-speech-qa.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
+      'services/game/speech-blob-artifacts.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
 
 export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {
   if (!Number.isInteger(pgPort) || pgPort < 1 || pgPort > 65535 || typeof adminPool?.query !== 'function'

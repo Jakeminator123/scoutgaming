@@ -33,20 +33,25 @@ function rejectedBoot(f, overrides = {}) {
 
 const start = (t, f, overrides = {}) => startEngine(t, { database: f.database, port: f.port, preload: f.preload, env: { ...f.env, ...overrides } });
 
-async function request(f, origin, path, body, cookie = '', method = 'POST') {
+async function request(f, origin, path, body, cookie = '', method = 'POST', { incompleteBody = false } = {}) {
   const target = new URL(origin);
   return new Promise((resolveRequest, rejectRequest) => {
     const req = httpRequest(`http://127.0.0.1:${f.port}${path}`, {
       method, headers: { Host: target.host, Origin: target.origin, Cookie: cookie,
-        'Content-Type': 'application/json' },
+        'Content-Type': 'application/json', ...(incompleteBody ? { 'Content-Length': '2' } : {}) },
     }, res => {
       const chunks = [];
       res.on('data', chunk => chunks.push(chunk));
-      res.on('end', () => resolveRequest({ status: res.statusCode, headers: res.headers,
-        body: Buffer.concat(chunks).toString('utf8') }));
+      res.on('end', () => {
+        resolveRequest({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') });
+        if (incompleteBody) req.destroy();
+      });
     });
     req.on('error', rejectRequest);
-    req.end(JSON.stringify(body));
+    if (incompleteBody) {
+      req.setTimeout(5000, () => req.destroy(new Error('route waited for the retired writer body')));
+      req.write('{'); // Leave the declared body unfinished until the server rejects it.
+    } else req.end(JSON.stringify(body));
   });
 }
 
@@ -88,8 +93,9 @@ test('cloud creates one operator without logging the secret and preserves CRAIG 
   const playerCookie = reader.headers['set-cookie']?.[0]?.split(';')[0];
   assert.match(playerCookie ?? '', /^player_session=/);
   const before = existsSync(calibration);
-  const refused = await request(f, game, '/calibration', {}, playerCookie);
+  const refused = await request(f, game, '/calibration', {}, playerCookie, 'POST', { incompleteBody: true });
   assert.equal(refused.status, 403);
+  assert.equal(refused.headers['cache-control'], 'no-store');
   assert.deepEqual(JSON.parse(refused.body), { error: 'calibration_unavailable' });
   assert.equal(existsSync(calibration), before, 'calibration never writes the served directory');
   await second.stop();

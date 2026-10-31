@@ -7,7 +7,6 @@ import { verifyCloudAccess, probeStatus } from '../access-check.mjs';
 import { createCloudGateway } from '../gateway.mjs';
 import { openCheckedGateway } from '../start.mjs';
 import { closeGateway } from '../process-group.mjs';
-import { createOperatorSpeechQa } from '../../../services/game/operator-speech-qa.mjs';
 
 const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
   labOrigin: 'https://lab.example.test', publicPort: 0, streaming: false };
@@ -25,11 +24,7 @@ async function close(server) {
 
 async function fixture(change = {}, layout = config) {
   // Fake game API only: no product process or real database.
-  const speechQa = createOperatorSpeechQa({ origin: layout.boOrigin, authenticate: async () => null,
-    gateStore: { state() { throw new Error('Anonymous probe must not read the QA journal.'); } } });
   const web = createServer(async (request, response) => {
-    if (!Object.hasOwn(change, request.url)
-      && await speechQa.handle(request, response, request.url)) return;
     response.writeHead(change[request.url] ?? 401);
     response.end();
   });
@@ -46,7 +41,7 @@ test('access probes pass with the real gateway and rejecting fixture children', 
   finally { await services.close(); }
 });
 
-test('access probes also enforce BO authentication and the closed Studio boundary on one origin', async () => {
+test('access probes also enforce session authentication and the closed Studio boundary on one origin', async () => {
   const layout = { ...config, singleOrigin: true, boOrigin: config.gameOrigin,
     labOrigin: config.gameOrigin };
   const services = await fixture({}, layout);
@@ -56,7 +51,6 @@ test('access probes also enforce BO authentication and the closed Studio boundar
 
 for (const [name, change] of [
   ['player authentication', { '/api/table': 200 }],
-  ['BO speech QA authentication', { '/api/bo/speech-qa': 200 }],
 ]) test(`access probes fail closed if ${name} is broken`, async () => {
   const services = await fixture(change);
   try { await assert.rejects(verifyCloudAccess(config, services), new RegExp(name)); }
