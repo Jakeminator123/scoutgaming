@@ -277,7 +277,26 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 .belopp{padding:3px 8px 4px;border-radius:7px;min-height:26px;justify-content:center}
 .belopp b{font:800 15px/1.1 "Segoe UI",sans-serif}
 /* chatten med dealern: uppe till höger under historiken, som blackjackens desktopläge */
-.chatt{right:32px;top:160px;width:500px;height:440px;display:flex;flex-direction:column;padding:12px 12px 10px;z-index:25;user-select:text;-webkit-user-select:text}
+.chatt{right:32px;top:160px;width:500px;height:440px;overflow:hidden;z-index:25;user-select:text;-webkit-user-select:text;
+  transition:width .42s cubic-bezier(.2,.8,.2,1),height .42s cubic-bezier(.2,.8,.2,1),border-radius .42s cubic-bezier(.2,.8,.2,1)}
+/* innehållet har fast storlek och sitter i övre högra hörnet: panelen krymper runt det i stället för att trycka ihop det */
+.chatt-inne{position:absolute;top:12px;right:12px;width:476px;height:418px;display:flex;flex-direction:column;transition:opacity .22s .14s}
+.chatt-min{position:absolute;top:8px;right:8px;width:32px;height:32px;display:grid;place-items:center;padding:0;border:1px solid var(--linje);border-radius:50%;
+  background:rgba(0,0,0,.45);cursor:pointer;z-index:1;transition:opacity .22s .14s,background .15s,border-color .15s}
+.chatt-min:hover,.chatt-min:focus-visible{background:rgba(0,0,0,.65);border-color:var(--guld);outline:none}
+.chatt-min svg{width:18px;height:18px;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;fill:none}
+/* ihopfälld: en flik på samma plats; "Chat with Astrid" och antal olästa svar */
+.chatt-flik{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 18px;border:0;background:none;color:var(--ink);
+  font:600 18px var(--sans);letter-spacing:.02em;white-space:nowrap;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .12s}
+.chatt-flik svg{flex:none;width:22px;height:22px;fill:none;stroke:var(--guld);stroke-width:1.9;stroke-linejoin:round}
+.chatt-flik:hover span,.chatt-flik:focus-visible span{color:var(--guld)}
+.chatt-flik:focus-visible{outline:none}
+.chatt-ny{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--guld);color:#1d140a;font:700 14px/24px var(--sans);text-align:center}
+.chatt.liten{width:250px;height:54px;border-radius:27px}
+.chatt.liten:has(.chatt-ny:not([hidden])){width:286px}
+.chatt.liten .chatt-inne,.chatt.liten .chatt-min{opacity:0;pointer-events:none;transition-delay:0s;transition-duration:.14s}
+.chatt.liten .chatt-flik{opacity:1;pointer-events:auto;transition:opacity .24s .2s}
+.chatt.liten:hover{border-color:var(--guld)}
 .chatt-rader{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding:2px 4px 8px;scrollbar-width:thin;scrollbar-color:var(--linje) transparent;
   mask-image:linear-gradient(to bottom,transparent 0,#000 28px);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 28px)}
 .chatt-msg{font:400 17px/1.4 var(--sans);color:var(--ink);overflow-wrap:anywhere}
@@ -289,7 +308,9 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 .chatt-rad input{flex:1 1 auto;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--linje);border-radius:10px;padding:10px 12px;font:400 17px var(--sans);color:var(--ink);outline:none}
 .chatt-rad input:focus{border-color:var(--guld)}
 .chatt-rad input::placeholder{color:var(--dov)}
-.chatt-rad button{width:46px;border:0;border-radius:10px;background:var(--guld);color:#1d140a;font-size:18px;cursor:pointer}
+.chatt-rad .chatt-skicka{flex:none;width:46px;display:grid;place-items:center;padding:0;border:0;border-radius:10px;background:var(--guld);color:#1d140a;cursor:pointer;transition:filter .15s}
+.chatt-skicka:hover,.chatt-skicka:focus-visible{filter:brightness(1.1);outline:none}
+.chatt-skicka svg{width:22px;height:22px;fill:currentColor;display:block}
 /* rundans vinnare till vänster (ATG/Evolution-standard): text direkt på bilden, ingen ruta */
 .rundvinnare{left:44px;top:470px;width:420px;height:596px;display:flex;flex-direction:column;z-index:24;color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 14px rgba(0,0,0,.55);animation:rundvinnareIn .45s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
 .rundvinnare .v-topp{display:flex;align-items:center;gap:8px;font:600 26px var(--sans);letter-spacing:.04em}
