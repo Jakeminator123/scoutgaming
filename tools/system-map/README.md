@@ -128,5 +128,7 @@ Lägg inte till tester enbart för att öka kartans referensantal.
 Kör Pythonproven ovan och generera mot aktuell arbetskopia. Öppna översikt,
 kodkedja, kodnät och prov/luckor; prova sök, filgranne, en riktad kant,
 relationstyp, zoom/pan och Anpassa. Kontrollera läsbarhet på smal skärm.
+Kontrollera även att SVG-ytan fyller kartans behållare: en sida utan
+horisontellt överflöde kan ändå få fel zoom om själva ritytan är för låg.
 Provsviten använder egna tillfälliga Git-repon under `.cache/system-map-tests`;
 den läser ingen produktdatabas och anropar inga externa tjänster.
