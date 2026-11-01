@@ -5,7 +5,7 @@ import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlot
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
 import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
-import { frozenKevinImportSource } from '../lib/dealer-import-plan.mjs';
+import { frozenImportSource } from '../lib/dealer-import-sources.mjs';
 import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
@@ -33,7 +33,7 @@ function fixture(options = {}) {
 }
 
 function repairFixture() {
-  const source=frozenKevinImportSource('paow'),project=addDealer(createSeedProject(),'paow','Paow'),catalog=dealerImportCatalog(project);
+  const source=frozenImportSource('paow'),project=addDealer(createSeedProject(),'paow','Paow'),catalog=dealerImportCatalog(project);
   function video(tail='repliker/en/bust_2.mp4',id='11111111-1111-4111-8111-111111111111'){
     const entry=source.files.find(row=>row.path.endsWith('/'+tail));
     const input={dealerId:'paow',files:[{id,name:tail.split('/').at(-1),size:entry.size,type:'video/mp4'}]};
@@ -530,7 +530,7 @@ test('request cancellation before or during either role never becomes a successf
 });
 
 test('frozen Paow files are recognised by exact name and size and placed from the source with chain, language, take and warnings', () => {
-  const source = frozenKevinImportSource('paow'), size = tail => source.files.find(row => row.path.endsWith('/' + tail)).size;
+  const source = frozenImportSource('paow'), size = tail => source.files.find(row => row.path.endsWith('/' + tail)).size;
   const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'paow', 'Paow'));
   const files = [['pos4-iv.mp4', 'v2/pos4-iv.mp4'], ['hole.mp4', 'v2/hole.mp4'], ['andas.mp4', 'v2/andas.mp4'], ['goodluck_1.mp4', 'repliker/sv/goodluck_1.mp4'],
     ['goodluck_1.mp4', 'repliker/en/goodluck_1.mp4'], ['twentyone_1.mp4', 'repliker/sv/twentyone_1.mp4'], ['peek_1.mp4', 'repliker/sv/peek_1.mp4'],
@@ -564,7 +564,7 @@ test('frozen Paow files are recognised by exact name and size and placed from th
 });
 
 test('frozen source evidence overrides model advice and the API reports recognised files without granting any assignment', async () => {
-  const entry = frozenKevinImportSource('paow').files.find(row => row.path.endsWith('/v2/pos4-iv.mp4'));
+  const entry = frozenImportSource('paow').files.find(row => row.path.endsWith('/v2/pos4-iv.mp4'));
   const body = { dealerId: 'paow', files: [{ id: 'known', name: 'pos4-iv.mp4', size: entry.size, type: 'video/mp4' }, { id: 'other', name: 'mystery.mp4', size: 1000, type: 'video/mp4' }], context: '' };
   for (const state of ['disabled', 'ai']) {
     const { api, setProject } = fixture({ env: state === 'ai' ? env : {}, fetchImpl: async () => modelResponse(validAdvice(body, ['idle.ready/', 'idle.ready/'])) });

@@ -92,9 +92,7 @@ dragan__speech__blackjack__sv__t01.mp4
 
 Varje importerad tillgång behöver validerad identitet, format, storlek och hash, dealer, spel, funktion, situation och källproveniens. Poseklipp behöver start- och slutpose och kalibreringsrevision; tal dessutom språk, exakt text, replik och tagning. Fält som saknas i schemat införs med en versionerad migrering, aldrig som ad hoc-fält i produktions-JSON.
 
-För större källor (till exempel en Kevin-revision) planeras importen offline med importplanen i `apps/studio/lib/dealer-import-plan.mjs`.
-
-Planen läser bara original, kontrollerar mot fryst Git-blob och storlek, beräknar SHA-256 och klassar varje rad som återanvänd, importera, korrigera bindning, behåll skyddad eller raderingskandidat. Alla rader har `applyAllowed: false`: planen laddar inte upp, registrerar inte och raderar inget. Genomförandet går genom Admins revisionsskyddade skrivare:
+Frysta importkällor i `apps/studio/lib/dealer-import-sources.mjs` används av Admins importassistent för kända filers placering, pose och inspelade text. Källmanifestens exakta identiteter och filmprofiler hör till den aktiva importen; de registrerar, publicerar eller godkänner inget själva. Även större importer går genom Admins revisionsskyddade skrivare:
 
 1. Frys källmanifest, mål-scope, projekt- och medierevisioner och spara ett privat återgångsunderlag.
 2. Ladda upp saknade bytes, läs tillbaka och verifiera hash och storlek innan registrering.

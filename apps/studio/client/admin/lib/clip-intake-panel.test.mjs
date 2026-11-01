@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 import {fileURLToPath} from 'node:url';
 import {addDealer,createSeedProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {dealerImportCatalog,validateDealerImportInput,filenameDealerImportRows,finishDealerImportRows} from '../../../lib/dealer-import-catalog.mjs';
-import {frozenKevinImportSource} from '../../../lib/dealer-import-plan.mjs';
+import {frozenImportSource} from '../../../lib/dealer-import-sources.mjs';
 const fileUrl=new URL('../components/studio/clip-intake-panel.tsx',import.meta.url),require=createRequire(fileUrl);
 const React=require('react'),{transformSync}=require('esbuild');
 const code=transformSync(readFileSync(fileUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
@@ -65,7 +65,7 @@ test('an active panel accepts a completed drop and requests placement once',asyn
 });
 
 test('approved intake preserves frozen Paow source, language, take and file label without approving speech',async()=>{
-  const source=frozenKevinImportSource('paow'),uploaded=[],proposals=[];
+  const source=frozenImportSource('paow'),uploaded=[],proposals=[];
   const importCatalog=dealerImportCatalog(addDealer(createSeedProject(),'paow','Paow'));
   const h=harness(async(file,classification)=>{uploaded.push({file,classification});return{id:`saved-${uploaded.length}`};},{importCatalog,review(input){
     const checked=validateDealerImportInput(input,importCatalog);
