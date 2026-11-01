@@ -8,8 +8,8 @@ import { createTableCoordinator } from '../services/game/games/blackjack/table/c
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createPostgresStore } from '../packages/storage/server/postgres-store.mjs';
 import { createPglitePool } from './fixtures/pglite-pool.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 // Transaction ledger fake: the query must keep its owner, game and money-type
 // predicates; the fake applies exactly those predicates to the stored rows.

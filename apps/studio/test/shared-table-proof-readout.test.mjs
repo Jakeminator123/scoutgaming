@@ -4,8 +4,8 @@ import { createSharedTableProofReadout } from '../lib/shared-table-proof-readout
 import { openProof, replayShuffle } from '../../../services/game/games/blackjack/shoe-proof.mjs';
 import { chainRow, GENESIS } from '../../../services/game/games/blackjack/table/audit-chain.mjs';
 import { createTableCoordinator } from '../../../services/game/games/blackjack/table/coordinator.mjs';
-import { createMemoryTableStore } from '../../../test/fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from '../../../test/fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from '../../../test/fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from '../../../test/fixtures/blackjack/deterministic-random.mjs';
 
 const scope = { environment: 'proof_fixture', workspaceId: 'croupier' };
 const room = { schemaVersion: 2, id: 'room-test', name: 'Test', operatorId: 'op-test', presentationLaneId: 'lane-test', gameLaneId: 'game-test', state: 'live' };

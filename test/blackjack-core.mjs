@@ -6,8 +6,8 @@ import { BlackjackCoreError, CONTRACT_VERSION, SHOE_RULES, newGame, publicView, 
 import { handValue } from '../services/game/games/blackjack/round.mjs';
 import { digest, verifyShoe } from '../services/game/games/blackjack/shoe-proof.mjs';
 import { secureRandom } from '../services/game/games/blackjack/secure-random.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
-import { behaviorObservation, moneyObservation } from './fixtures/blackjack-behavior.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
+import { behaviorObservation, moneyObservation } from './fixtures/blackjack/behavior.mjs';
 
 const EMPTY = { main: 0, pp: 0, tp: 0 };
 const ONE_BOX = [{ main: 5, pp: 0, tp: 0 }, ...Array.from({ length: 6 }, () => ({ ...EMPTY }))];
@@ -344,7 +344,7 @@ test('shoe exhaustion fails without a quiet replacement', () => {
 // These vectors come from the historical sourceBlobs in the fixture, not the
 // implementation under test. The old raw-state trace authenticated that capture;
 // only explicit behavioral observations constrain the current implementation.
-const migration = JSON.parse(readFileSync(new URL('./fixtures/blackjack-regression.json', import.meta.url)));
+const migration = JSON.parse(readFileSync(new URL('./fixtures/blackjack/regression.json', import.meta.url)));
 function migrationRun(decorate = () => {}) {
   const expected = migration;
   const samples = deterministicRandom(expected.seed);

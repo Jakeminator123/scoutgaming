@@ -12,7 +12,7 @@ import test from 'node:test';
 import { BlackjackCoreError, newGame, step } from '../services/game/games/blackjack/core.mjs';
 import { Round } from '../services/game/games/blackjack/round.mjs';
 import { ROOM_LIMIT_PRESETS } from '../packages/presentation/contracts/room-game-config.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const c = (r, s) => ({ r, s });
 const HOLE = c('10', '♣');

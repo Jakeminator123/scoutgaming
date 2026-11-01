@@ -7,7 +7,7 @@ import { createPglitePool } from './fixtures/pglite-pool.mjs';
 import { createSharedRoomService } from '../services/game/shared-room-service.mjs';
 import { installGracefulShutdown } from '../services/game/graceful-shutdown.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
 import { F11_MONEY_SQL } from '../tools/shared-room-f11-observer.mjs';
 import { chainRow, GENESIS } from '../services/game/games/blackjack/table/audit-chain.mjs';
 

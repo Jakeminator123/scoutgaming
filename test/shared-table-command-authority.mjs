@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { LockSetExceeded } from '../services/game/games/blackjack/table/ports.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const clock = { now: () => 100000 };
 const identity = Object.freeze({ actorId: 'alice', authority: Symbol('server-selected-authority') });
