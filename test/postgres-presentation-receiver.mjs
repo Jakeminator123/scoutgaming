@@ -5,8 +5,8 @@ import { createTableCoordinator } from '../services/game/games/blackjack/table/c
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createPostgresPresentationReceiver } from '../services/game/games/blackjack/presentation/postgres-receiver.mjs';
 import { reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 export async function checkPresentationReceiverGuard({ pool }) {
   await assert.rejects(createPostgresPresentationReceiver({ pool }).assertInstalled(), /receiver schema is not installed/);

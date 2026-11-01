@@ -10,8 +10,8 @@ import { createSharedRoomService } from '../services/game/shared-room-service.mj
 import { createSharedRoomCommand } from '../services/game/shared-room-command.mjs';
 import { createSharedRoomCommandClient } from '../services/game/public/shared-room-command-client.mjs';
 import { createSharedRoomWaiting, waitingForSeat } from '../services/game/public/shared-room-waiting.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 // K6 / P11 (docs/plans/KEVIN-PORT.md, P-C): a full table and a viewer waiting for a seat. Kevin's behaviour
 // (kevin-staging K/server/shared-table.mjs 7ddb7de4, K/test/ghost-seats.test.mjs), rewritten for main's coordinator

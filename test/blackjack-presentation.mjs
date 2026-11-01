@@ -22,10 +22,10 @@ import { activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, 
   from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
 import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
-const timingBytes = dealer => readFileSync(new URL(`./fixtures/blackjack-media-timing/${dealer}.json`, import.meta.url));
+const timingBytes = dealer => readFileSync(new URL(`./fixtures/blackjack/media-timing/${dealer}.json`, import.meta.url));
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const catalogue = loadCatalogue();
 const order = events => events.filter(e => ['deal', 'reveal'].includes(e.type)).map(e => `${e.type === 'reveal' ? 'reveal' : e.to === 'dealer' ? (e.faceDown ? 'hole' : 'dealer') : `box${e.box}`}#${e.shoeDraw}`);

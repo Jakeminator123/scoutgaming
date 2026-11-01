@@ -11,8 +11,8 @@ import { createPostgresPresentationReceiver } from '../services/game/games/black
 import { reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 import { bindDeal, bindLine, isDeferred, loadCatalogue } from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { PlanningRefused, assertPublishable, planningRevision, timingSourceOf } from '../services/game/games/blackjack/presentation/material-revision.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const ROOM = 'k04-flow', P1 = 'k04-flow-p1', P2 = 'k04-flow-p2', DEALER = 'dragge', LANGUAGE = 'sv';
 const RECEIVER = 'croupier_game.shared_table_presentation_receiver';
@@ -81,7 +81,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
   // K04 planning gate first: the config carries leadMs/cardMs only from a verified binding.
   const catalogue = loadCatalogue();
   const observed = new Map(catalogue.filter(r => !isDeferred(r)).map(r => [r.path, r.sha256]));
-  const documents = new Map([[timingSourceOf(DEALER), readFileSync(new URL(`./fixtures/blackjack-media-timing/${DEALER}.json`, import.meta.url))]]);
+  const documents = new Map([[timingSourceOf(DEALER), readFileSync(new URL(`./fixtures/blackjack/media-timing/${DEALER}.json`, import.meta.url))]]);
   const binding = planningRevision({ catalogue, dealer: DEALER, language: LANGUAGE, observed, documents });
   const planned = new Set(binding.media.map(([path]) => path));
   const config = { ...structuredClone(DEFAULT_CONFIG), language: LANGUAGE, leadMs: binding.leadMs, cardMs: binding.cardMs };

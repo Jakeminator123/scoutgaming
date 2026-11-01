@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { parseSharedRoomCommand, projectSharedRoomCommandResult } from '../services/game/shared-room-command-contract.mjs';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { fingerprint } from '../services/game/games/blackjack/table/ports.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const room = 'room-1';
 const commands = {

@@ -7,5 +7,5 @@
 media/** -text
 media/layout.json text eol=lf
 
-# Timing fixtures are hashed by the publication contract.
-test/fixtures/blackjack-media-timing/** text eol=lf
+# Historical timing fixtures retain the K04 contract's exact byte hashes.
+test/fixtures/blackjack/media-timing/** text eol=lf

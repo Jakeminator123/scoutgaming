@@ -65,6 +65,15 @@ clearance. Card coordinates, measured contact frames and media are unchanged.
 server draws and preserves hidden-card boundaries across 300 deterministic rounds.
 `test/blackjack-core.mjs` compares fixed cards, outcomes, money and proof signatures
 captured from the independent migration engine over two complete shoes. The small
-reference is `test/fixtures/blackjack-regression.json`; duplicate executable engine
-and browser snapshots have been removed. Hash-bound timing documents remain in
-`test/fixtures/blackjack-media-timing/` as publication-gate inputs.
+reference is `test/fixtures/blackjack/regression.json`; duplicate executable engine
+and browser snapshots have been removed. Its source blob IDs and cryptographic
+digests are historical evidence, not requirements on the current state layout.
+
+`test/fixtures/blackjack/media-timing/` contains byte-exact historical timing
+documents for dragge, marten and paow. Only `test/blackjack-presentation.mjs` and
+`test/postgres-k04-flow.mjs` read them, to exercise the historical K04 binding and
+planning contract against `k04-media.tsv`. Neither those fixtures nor the K04
+catalogue modules are loaded by today's publication path; they do not describe
+or verify every production clip. Current publication uses the frozen package's
+registered dealer, filmed profile and per-media `mediaTiming` through
+`packages/presentation/server/native-room-game-material.mjs`.

@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { ledgerKey, WalletDenied } from '../services/game/games/blackjack/table/ports.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 function worker(port, time) {
   const env = { ...process.env };

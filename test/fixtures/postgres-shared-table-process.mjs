@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { createTableCoordinator } from '../../services/game/games/blackjack/table/coordinator.mjs';
 import { createPostgresTableStore } from '../../services/game/games/blackjack/table/postgres-store.mjs';
 import { ledgerKey } from '../../services/game/games/blackjack/table/ports.mjs';
-import { deterministicRandom } from './blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './blackjack/deterministic-random.mjs';
 const { Pool } = createRequire(new URL('../../services/game/package.json', import.meta.url))('pg');
 let pool, store, table, time;
 async function handle(message) {
