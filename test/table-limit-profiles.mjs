@@ -5,9 +5,8 @@ import { createMemoryTableStore, DEFAULT_CONFIG } from './fixtures/blackjack/tab
 import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 // K07 port of Kevin's agent's test/table-limits-kevin.mjs from origin/codex/kevin-k07-tester @ c17cdba2 (stacked on his K04 branch).
-// Runs unchanged against main as it is: K02 core.mjs, the K03 coordinator.mjs/ports.mjs and the memory-store fixture
-// test/fixtures/blackjack/table-memory-store.mjs. Nothing here depends on K04-only code (outbox payload.presentation, media
-// catalogue, material-revision), so no assertion was dropped. Required by .githooks/pre-commit-full in gameplay/shared-blackjack. Kevin's original notes follow.
+// Runs against the current core, table coordinator/ports and the test-only memory store.
+// Registered by .githooks/pre-commit-full in gameplay/shared-blackjack. Historical test rationale follows.
 
 // K07 gap (K06-K07-forberedelse §2.1, table-limits): Kevin's limit presets (server/studio-tables.mjs:8-12 @ 5aa7ed10, the
 // same numbers O01's Admin matrix fixes for J08) enforced by the K03 coordinator from the frozen config, one case per

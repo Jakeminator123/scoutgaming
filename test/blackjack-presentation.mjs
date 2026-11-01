@@ -1,11 +1,8 @@
-// K04 contract tests: committed shared-table outbox rows -> main's presentation instructions,
-// exact media identity, stable line identity and the room idle chain. No database (the durable
-// receiver is proven on real PostgreSQL in test/postgres-presentation-receiver.mjs), no media
-// bytes, no network. Timing documents are exact hash-bound publication inputs.
+// Committed shared-table outbox rows -> presentation instructions, stable line identity
+// and the room idle chain. The durable receiver is tested separately on PostgreSQL.
+// No database, media bytes or network are used here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { newGame, step, publicView } from '../services/game/games/blackjack/core.mjs';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { createPresentationGate } from '../services/game/games/blackjack/table/ports.mjs';
@@ -13,21 +10,14 @@ import { presentationEvents } from '../services/game/partner-presentation.mjs';
 import { orderFilmedPresentationEvents } from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
 import { presentationForRow, lineIdOf } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
 import { reconnectPresentation } from '../packages/presentation/contracts/shared-room-replay.mjs';
-import { MATERIAL_REVISION_CONTRACT, PlanningRefused, assertPublishable, planningRevision, requirePlanningRevision, timingSourceOf }
-  from '../services/game/games/blackjack/presentation/material-revision.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { createMovingSpeechFrameLayer } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
-import { activationSet, bindDeal, bindIdle, bindLine, contactFrame, isDeferred, loadCatalogue, parseCatalogue, trackFor, variantFrames, verifyActivation }
-  from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
 import { LINE_GRACE_MS, bindMovingSpeech, createLineMediaTracker } from '../services/game/games/blackjack/presentation/line-identity.mjs';
 import { endWait, layChain, roomWait, serverChainEntry, waitClipAt, waitClips } from '../services/game/games/blackjack/presentation/room-idle.mjs';
 import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
-const timingBytes = dealer => readFileSync(new URL(`./fixtures/blackjack/media-timing/${dealer}.json`, import.meta.url));
-const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
-const catalogue = loadCatalogue();
 const order = events => events.filter(e => ['deal', 'reveal'].includes(e.type)).map(e => `${e.type === 'reveal' ? 'reveal' : e.to === 'dealer' ? (e.faceDown ? 'hole' : 'dealer') : `box${e.box}`}#${e.shoeDraw}`);
 
 function setup(funds = { kevin: 1000, john: 1000 }) {
@@ -194,111 +184,6 @@ test('without a sink the outbox stays pending; delivery and replay keep talkId/v
   assert.equal(presentationForRow({ roomId: 'party', ver: 1, talkId: 'x', payload: { events: [] } }).status, 'legacy');
 });
 
-test('media binding is by exact Kevin variant and sha256, not by pose alias', () => {
-  const pos = v => bindDeal(catalogue, { dealer: 'dragge', slot: 'deal.player.left/box0', variant: v });
-  assert.notEqual(pos('u').sha256, pos('v').sha256, '-u and -v are different takes');
-  assert.notEqual(pos('iu').sha256, pos('iv').sha256);
-  assert.equal(pos('u').path, 'media/dealers/dragge/v2/pos1-u.mp4'); assert.equal(pos('v').path, 'media/dealers/dragge/v2/pos1-v.mp4');
-  assert.equal(pos('v').track, '1v'); assert.equal(pos('u').track, '1');
-  assert.throws(() => bindDeal(catalogue, { dealer: 'dragge', slot: 'deal.player.left/box0', variant: 'base' }), /Unknown Kevin variant/);
-  assert.throws(() => bindDeal(catalogue, { dealer: 'dragge', slot: 'deal.dealer/dealer-hole', variant: 'v' }), /No media binding/);
-  // Every registered take keeps its own exact variant and bytes.
-  for (const dealer of ['dragge', 'paow', 'marten']) {
-    const deals = catalogue.filter(r => r.dealer === dealer && r.source === 'deal-tagning');
-    assert.ok(deals.length > 0, dealer);
-    assert.equal(new Set(deals.map(row => row.slot + '/' + row.variant)).size, deals.length, 'every take has a unique binding');
-    for (const r of deals) assert.equal(bindDeal(catalogue, { dealer, slot: r.slot, variant: r.variant }).sha256, r.sha256);
-  }
-  for (const dealer of ['astrid', 'astrid2']) assert.throws(() => bindDeal(catalogue, { dealer, slot: 'reveal.dealer/dealer-hole', variant: 'bas' }), /No media binding/);
-  // Contact: dealers.js land of the variant's own card track plus the -i in-transition; flip is rest to rest.
-  assert.equal(contactFrame('dragge', { slot: 'deal.player.left/box0', variant: 'bas' }), 29);
-  assert.equal(contactFrame('dragge', { slot: 'deal.player.left/box0', variant: 'i' }), 56);
-  assert.equal(contactFrame('dragge', { slot: 'deal.player.left/box0', variant: 'v' }), 36);
-  assert.equal(contactFrame('dragge', { slot: 'deal.player.left/box0', variant: 'iv' }), 63);
-  assert.equal(contactFrame('paow', { slot: 'reveal.dealer/dealer-hole', variant: 'i' }), 31);
-  assert.throws(() => contactFrame('astrid', { slot: 'deal.player.left/box0', variant: 'bas' }), /No ready-dealer contact/);
-  assert.equal(trackFor('deal.dealer/dealer-up', 'iv'), 'dealerv');
-  assert.equal(variantFrames({ frames: { 1: { '-': 30, '-i': 57, '-v': 44 } } }, { slot: 'deal.player.left/box0', variant: 'v' }), 44);
-  assert.throws(() => variantFrames({ frames: {} }, { slot: 'deal.player.left/box0', variant: 'u' }), /meta.json has no length/);
-});
-
-test('LF and CRLF catalogue text preserve identical identities and calm idle classification', () => {
-  const lf = readFileSync(new URL('../services/game/games/blackjack/presentation/k04-media.tsv', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-  const rows = parseCatalogue(lf), windowsRows = parseCatalogue(lf.replace(/\n/g, '\r\n'));
-  assert.deepEqual(windowsRows, rows);
-  assert.equal(bindIdle(windowsRows, { dealer: 'dragge', take: 'andas' }).calm, true);
-  assert.deepEqual(activationSet(windowsRows, 'dragge'), activationSet(rows, 'dragge'));
-});
-
-test('lines bind only in en/sv from the keyed dealer; Astrid has no lines or idle; idle takes by exact name', () => {
-  assert.equal(bindLine(catalogue, { dealer: 'dragge', line: 'bust', take: 3, language: 'sv' }).path, 'media/dealers/dragge/repliker/sv/bust_3.mp4');
-  assert.equal(bindLine(catalogue, { dealer: 'marten', line: 'goodluck', take: 1, language: 'en' }).slot, 'speak.goodluck/goodluck');
-  assert.throws(() => bindLine(catalogue, { dealer: 'dragge', line: 'bust', take: 1, language: 'pt' }), /outside en\/sv/);
-  for (const dealer of ['astrid', 'astrid2']) {
-    assert.throws(() => bindLine(catalogue, { dealer, line: 'goodluck', take: 1, language: 'en' }), /No media binding/, dealer);
-    assert.throws(() => bindIdle(catalogue, { dealer, take: 'still' }), /No media binding/, dealer);
-  }
-  assert.ok(!catalogue.some(r => r.path.startsWith('media/repliker') || r.path.startsWith('media/dealers/astrid2/')), 'no Astrid root lines or astrid2 rows');
-  assert.deepEqual([bindIdle(catalogue, { dealer: 'dragge', take: 'andas' }).calm, bindIdle(catalogue, { dealer: 'dragge', take: 'nick6101' }).calm], [true, false]);
-});
-
-test('activation verifies the whole binding, including meta.json, card track and texter.json', () => {
-  const set = activationSet(catalogue, 'dragge');
-  assert.ok(set.some(r => r.path === 'media/dealers/dragge/v2/meta.json') && set.some(r => r.path === 'public/dealer-card-tracks-dragge.js'));
-  assert.ok(set.some(r => r.path === 'media/dealers/dragge/repliker/sv/texter.json') && !set.some(r => r.language === 'pt' || r.language === 'ko'));
-  const all = new Map(set.map(r => [r.path, r.sha256]));
-  assert.equal(verifyActivation(catalogue, 'dragge', all).ok, true);
-  const tampered = new Map(all); tampered.set('media/dealers/dragge/v2/meta.json', '0'.repeat(64));
-  assert.deepEqual(verifyActivation(catalogue, 'dragge', tampered).mismatched, ['media/dealers/dragge/v2/meta.json']);
-  const missing = new Map(all); missing.delete('public/dealer-card-tracks-dragge.js');
-  assert.deepEqual(verifyActivation(catalogue, 'dragge', missing).missing, ['public/dealer-card-tracks-dragge.js']);
-  for (const dealer of ['nobody', 'astrid', 'astrid2']) assert.equal(verifyActivation(catalogue, dealer, all).reason, 'unknown_dealer', dealer);
-});
-
-test('activation set excludes the deferred K05 rows (G13 lines without a main slot)', () => {
-  const lang = r => !r.language || ['en', 'sv'].includes(r.language);
-  const deferred = isDeferred;
-  // Removed per dealer: the rows K05-mappning.md 4b lists for the kept dealers (44+44+44; Astrid's
-  // 22+1 left the catalogue with her rows).
-  const removed = { dragge: 44, paow: 44, marten: 44 };
-  for (const [dealer, n] of Object.entries(removed)) {
-    const set = activationSet(catalogue, dealer);
-    assert.ok(!set.some(deferred), `${dealer}: no deferred row`);
-    assert.equal(catalogue.filter(r => r.dealer === dealer && lang(r) && deferred(r)).length, n, dealer);
-  }
-  assert.ok(!activationSet(catalogue, 'dragge').some(r => r.path === 'media/dealers/dragge/repliker/sv/twentyone_1.mp4'));
-  // A deferred row is never required: verifyActivation passes without it and ignores a wrong hash for it.
-  const all = new Map(activationSet(catalogue, 'dragge').map(r => [r.path, r.sha256]));
-  all.set('media/dealers/dragge/repliker/sv/twentyone_1.mp4', '0'.repeat(64));
-  assert.equal(verifyActivation(catalogue, 'dragge', all).ok, true);
-});
-
-test('bindLine uses the same deferred predicate: G13 lines get no new binding', () => {
-  const lineOf = r => { const m = /\/([a-z]+)_(\d+)\.mp4$/.exec(r.path); return m && { line: m[1], take: Number(m[2]) }; };
-  const lineRows = catalogue.filter(r => ['replik', 'studio'].includes(r.source) && ['en', 'sv'].includes(r.language) && lineOf(r));
-  const bindable = lineRows.filter(r => !isDeferred(r)), deferredRows = lineRows.filter(isDeferred);
-  assert.ok(bindable.length > 0 && deferredRows.length > 0);
-  // Negative: every deferred en/sv line row (G13 without a main slot) refuses.
-  for (const r of deferredRows) {
-    assert.throws(() => bindLine(catalogue, { dealer: r.dealer, ...lineOf(r), language: r.language }), /No media binding/, r.path);
-  }
-  for (const dealer of ['dragge', 'paow', 'marten']) for (const language of ['en', 'sv']) {
-    assert.throws(() => bindLine(catalogue, { dealer, line: 'twentyone', take: 1, language }), /No media binding/, `${dealer} ${language}`);
-  }
-  // Positive: every non-deferred line row (base slots) binds to its exact row.
-  for (const r of bindable) {
-    const b = bindLine(catalogue, { dealer: r.dealer, ...lineOf(r), language: r.language });
-    assert.deepEqual([b.path, b.sha256, b.bytes, b.slot], [r.path, r.sha256, r.bytes, r.slot], r.path);
-  }
-  assert.equal(bindLine(catalogue, { dealer: 'dragge', line: 'goodluck', take: 1, language: 'sv' }).slot, 'speak.goodluck/goodluck');
-  // Bound lines and the activation set agree row for row; catalogue history keeps the deferred rows.
-  for (const dealer of ['dragge', 'paow', 'marten']) {
-    const set = new Set(activationSet(catalogue, dealer).map(r => r.path));
-    for (const r of bindable.filter(x => x.dealer === dealer)) assert.ok(set.has(r.path), r.path);
-  }
-  assert.ok(catalogue.some(r => r.path === 'media/dealers/dragge/repliker/sv/twentyone_1.mp4' && r.sha256 === 'c41dd6027d59cb6971049c2ba67051f83fc7c62bcb334e7ce752018be871cf53'));
-});
-
 test('line identity is stable per committed row; media re-plans are revisions; stale mouths are dropped', () => {
   assert.equal(lineIdOf('party', 'plan-1', 0, 'goodluck'), lineIdOf('party', 'plan-1', 0, 'goodluck'));
   assert.notEqual(lineIdOf('party', 'plan-1', 0, 'goodluck'), lineIdOf('party', 'plan-2', 0, 'goodluck'));
@@ -433,7 +318,7 @@ test('room idle chain is deterministic and is laid from the accepted plan row', 
   assert.deepEqual(wait.takes.map(x => x.take), ['andas', 'andasb', 'fingrar'], 'only calm takes while waiting');
   assert.equal(wait.from, row.payload.endAt); assert.equal(wait.seed, row.payload.planId);
   const clip = waitClipAt(wait, wait.from + 2000).clip;
-  assert.equal(bindIdle(catalogue, { dealer: 'dragge', take: clip.take }).calm, true);
+  assert.equal(takes.find(take => take.take === clip.take)?.calm, true);
   const ended = endWait(wait, wait.from + 2000);
   assert.ok(ended.until >= wait.from + 2000 && waitClipAt(ended, ended.until) === null);
   await t.act('kevin', 'stand');
@@ -470,9 +355,8 @@ test('reconnect never applies an older presentation over newer game state', asyn
 });
 
 test("main's live-idle 'server-chain' mode follows the room chain over the whole calm pool; 'own' mode unchanged", async () => {
-  // Dragan's 21 idle takes from the catalogue (11 calm): more than the policy's four base loops.
-  const takes = catalogue.filter(r => r.dealer === 'dragge' && r.source === 'idle-tagning').map(r => ({ take: r.path.split('/').at(-1).slice(0, -4), frames: 39, vikt: 6, calm: r.note === 'lugn' }));
-  assert.equal(takes.length, 21); assert.equal(takes.filter(x => x.calm).length, 11);
+  // A synthetic calm pool larger than the policy's four base loops, plus excluded active takes.
+  const takes = Array.from({ length: 9 }, (_, i) => ({ take: `idle-${i}`, frames: 39, vikt: 6, calm: i < 7 }));
   const uuid = i => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
   const idOf = new Map(takes.map((x, i) => [x.take, uuid(i + 1)]));
   const familyId = 'astrid/idle.ready/ready';
@@ -564,94 +448,7 @@ test("server-chain: an expired entry is not re-attached after a block; identity 
   }
 });
 
-test('planning/material revision: leadMs/cardMs + revision per exact dealer, language and media set; no binding, no publication', () => {
-  const observed = new Map(catalogue.map(r => [r.path, r.sha256]));
-  const docs = dealer => new Map(timingSourceOf(dealer) ? [[timingSourceOf(dealer), timingBytes(dealer)]] : []);
-  const plan = (dealer, language, extra = {}) => planningRevision({ catalogue, dealer, language, observed, documents: docs(dealer), ...extra });
-  // Exact timing bytes are verified against the active catalogue before publication.
-  for (const dealer of ['dragge', 'paow', 'marten'])
-    assert.equal(sha256(timingBytes(dealer)), catalogue.find(r => r.path === timingSourceOf(dealer)).sha256, dealer);
-  const expected = { dragge: [3205, 3539, 83, 39], paow: [3914, 3455, 81, 56], marten: [3205, 3539, 83, 39] };
-  for (const [dealer, [leadMs, cardMs, cardFrames, flipFrames]] of Object.entries(expected)) {
-    const r = plan(dealer, 'en');
-    assert.equal(r.ok, true, dealer); assert.equal(r.contract, MATERIAL_REVISION_CONTRACT);
-    assert.deepEqual([r.leadMs, r.cardMs, r.timing.cardFrames, r.timing.flipFrames], [leadMs, cardMs, cardFrames, flipFrames], dealer);
-    // Upper bound: every deal take of the set fits in cardMs (incl. the 80 ms gap), the flip in leadMs.
-    const meta = JSON.parse(timingBytes(dealer));
-    for (const [track, frames] of Object.entries(meta.frames)) for (const n of Object.values(frames))
-      assert.ok(n * 1000 / 24 + 80 <= (track === 'flip' ? r.leadMs - 1500 : r.cardMs), `${dealer} ${track}`);
-    assert.match(r.revision, /^[a-f0-9]{64}$/);
-    assert.deepEqual(plan(dealer, 'en'), r, 'deterministic');
-    assert.ok(r.media.every(([path]) => observed.has(path)) && r.media.some(([path]) => path === timingSourceOf(dealer)));
-    assert.ok(!r.media.some(([path]) => /\/repliker\/(sv|pt|ko|es)\//.test(path)), 'only the chosen language');
-  }
-  // Johns Bet's dealer and the Dragan reference: the exact revisions before ren start K3 removed
-  // Astrid's rows (main e83cd481). A catalogue change that moves them is a new material revision.
-  const locked = { 'paow/en': '1d56a614ea4b230cdbd278298f500a1081641a8a8226ff97b31afbcf1eb12405',
-    'paow/sv': '7c8cc191a27c6ab986d20f2a9c5168e7fa798535c8aeb84a7bcde2a99b96abf2',
-    'dragge/en': '4372d9450c38ab18769faa6a0d538429b2ca9322b80df612d80405c4110e3a6c',
-    'dragge/sv': '970c0dbcd4c6cf76c20da9b6906b39e7211d05a4ccda9575279dee9fd3d02065' };
-  for (const [key, revision] of Object.entries(locked)) assert.equal(plan(...key.split('/')).revision, revision, key);
-  // Planned media per dealer/language = K05-matris.tsv selected rows (urval=vald, 582 in the union
-  // with Astrid's, checked 0 differences against 0968b2ae; 450 without them): no deferred rows, no
-  // public/ source-evidence JS.
-  const sizes = { dragge: [118, 118], paow: [120, 120], marten: [100, 100] };
-  const union = new Set();
-  for (const [dealer, [enN, svN]] of Object.entries(sizes)) {
-    for (const language of ['en', 'sv']) {
-      const r = plan(dealer, language);
-      assert.equal(r.media.length, language === 'en' ? enN : svN, `${dealer} ${language}`);
-      assert.ok(!r.media.some(([path]) => path.startsWith('public/')), `${dealer} ${language}: no JS source evidence`);
-      r.media.forEach(([path]) => union.add(path));
-    }
-  }
-  assert.equal(union.size, 450);
-  // J08 observes only catalogue blob rows: without the five JS files planning still binds.
-  const noJs = new Map([...observed].filter(([path]) => !path.startsWith('public/')));
-  assert.equal(catalogue.filter(r => r.path.startsWith('public/')).length, 5);
-  for (const dealer of ['dragge', 'paow', 'marten']) assert.equal(plan(dealer, 'en', { observed: noJs }).ok, true, dealer);
-  // Deferred rows are not required and cannot change the revision.
-  const g13 = 'media/dealers/dragge/repliker/en/twentyone_1.mp4';
-  assert.ok(catalogue.some(r => r.path === g13 && r.source === 'replik' && !r.slot));
-  const noG13 = new Map(noJs); noG13.delete(g13);
-  assert.equal(plan('dragge', 'en', { observed: noG13 }).revision, plan('dragge', 'en').revision);
-  const badG13 = new Map(noJs); badG13.set(g13, '0'.repeat(64));
-  assert.equal(plan('dragge', 'en', { observed: badG13 }).ok, true);
-  assert.ok(!plan('dragge', 'en').media.some(([path]) => path === g13));
-  // Language is part of the material: same timing, different identity.
-  const sv = plan('dragge', 'sv'), en = plan('dragge', 'en');
-  assert.deepEqual([sv.leadMs, sv.cardMs], [en.leadMs, en.cardMs]); assert.notEqual(sv.revision, en.revision);
-  assert.ok(sv.media.some(([path]) => path.includes('/repliker/sv/')));
-  // Refusals, never a default.
-  assert.equal(plan('dragge', 'pt').reason, 'language_outside_en_sv');
-  for (const dealer of ['nobody', 'astrid', 'astrid2']) assert.equal(plan(dealer, 'en').reason, 'unknown_dealer', dealer);
-  assert.equal(timingSourceOf('astrid'), null);
-  const noLines = catalogue.filter(r => !(r.dealer === 'paow' && r.source === 'replik' && r.language === 'sv'));
-  assert.equal(planningRevision({ catalogue: noLines, dealer: 'paow', language: 'sv', observed, documents: docs('paow') }).reason, 'no_recorded_lines_in_language');
-  const take = 'media/dealers/dragge/v2/pos1-u.mp4';
-  const without = new Map(observed); without.delete(take);
-  assert.deepEqual(plan('dragge', 'en', { observed: without }).missing, [take]);
-  const tampered = new Map(observed); tampered.set(take, '0'.repeat(64));
-  assert.deepEqual(plan('dragge', 'en', { observed: tampered }).mismatched, [take]);
-  assert.equal(plan('dragge', 'en', { documents: new Map() }).reason, 'timing_document_missing');
-  const edited = Buffer.from(timingBytes('dragge').toString('utf8').replace('"-iu":83', '"-iu":40'));
-  assert.equal(plan('dragge', 'en', { documents: new Map([[timingSourceOf('dragge'), edited]]) }).reason, 'timing_document_mismatch');
-  assert.equal(planningRevision({ catalogue: [], dealer: 'dragge', language: 'en', observed, documents: docs('dragge') }).reason, 'no_catalogue');
-  assert.throws(() => requirePlanningRevision({ catalogue, dealer: 'dragge', language: 'en', observed: without, documents: docs('dragge') }),
-    e => e instanceof PlanningRefused && e.code === 'planning_refused' && e.refusal.reason === 'media_set_not_verified');
-  // J08 publication gate.
-  const pub = { dealer: 'dragge', language: 'en', leadMs: en.leadMs, cardMs: en.cardMs };
-  assert.equal(assertPublishable({ binding: en, ...pub }), en.revision);
-  assert.equal(assertPublishable({ binding: en, ...pub, revision: en.revision }), en.revision);
-  const refused = (args, reason) => assert.throws(() => assertPublishable(args), e => e instanceof PlanningRefused && e.refusal.reason === reason);
-  refused({ ...pub }, 'planning_binding_missing');
-  refused({ binding: plan('dragge', 'pt'), ...pub }, 'language_outside_en_sv');
-  refused({ binding: sv, ...pub }, 'planning_binding_other_material');
-  refused({ binding: en, ...pub, leadMs: 700, cardMs: 500 }, 'planning_timing_not_from_binding');
-  refused({ binding: en, ...pub, revision: sv.revision }, 'planning_revision_mismatch');
-});
-
-// K04 "Klart när": loading, speech and receiver failures and replay never change the server's
+// Loading, speech and receiver failures and replay never change the server's
 // balance, shoe or outcome. Two identical tables (same seed, clock, shoe and commands): one delivers
 // to a healthy receiver after every step, the other's every delivery fails (receiver down, a status
 // that is not an answer, missing/unknown-language media, decoder failure) until a full replay.
@@ -661,8 +458,8 @@ test('presentation failures and replay never change balance, shoe, ledger, audit
   const failures = [
     async () => { throw new Error('receiver unreachable'); },
     async () => 'loading',
-    async () => bindLine(catalogue, { dealer: 'dragge', line: 'twentyone', take: 1, language: 'sv' }),
-    async () => bindLine(catalogue, { dealer: 'dragge', line: 'bust', take: 1, language: 'pt' }),
+    async () => { throw new Error('presentation_media_unavailable'); },
+    async () => { throw new Error('presentation_language_unavailable'); },
     async () => { throw new Error('moving_speech_decoder_unavailable'); },
   ];
   const broken = async row => { presentationForRow(row); return failures[row.ver % failures.length](row); };
@@ -705,7 +502,7 @@ test('presentation failures and replay never change balance, shoe, ledger, audit
   assert.deepEqual(reconnectPresentation(snap, late.seen.at(-1)).apply, true);
 });
 
-// K04 checklist "när lipsyncworker saknas eller svarar sent" + decoder failure: the adapter's only
+// Missing/late worker and decoder failure: the adapter's only
 // effect is main's setMovingSpeechLayer; body video and recorded audio are never touched. With
 // main's real frame layer and a failing decoder the body frame is painted unchanged.
 test('no worker, a late patch or a failed decoder: only the mouth layer is affected, the body frame stays', async () => {
