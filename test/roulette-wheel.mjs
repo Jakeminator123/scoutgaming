@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+import {mountRouletteWheel} from '../services/game/public/roulette/wheel.mjs';
+import {createRouletteRoundController} from '../services/game/public/roulette/round-controller.mjs';
 import {WHEEL,pocketColor} from '../services/game/games/roulette/rules.mjs';
 import {createSpin,presentationForRound,SPIN_MS,TAU} from '../services/game/public/roulette/wheel-motion.mjs';
 const circularDistance=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
@@ -54,14 +54,12 @@ function fixture({reduced=false,fail=false}={}){
   let time=0,id=0,draws=0;const frames=new Map(),timers=new Map(),labels=[];
   const canvas={style:{},dataset:{},setAttribute(){},remove(){this.removed=true;},getContext(){return ctx;}};
   const ctx=new Proxy({fillText(value){labels.push(value);},clearRect(){draws++;if(fail&&draws>1)throw Error('context lost');},createRadialGradient(){return {addColorStop(){}};}},{get:(obj,key)=>obj[key]??(()=>{})});
-  const source=readFileSync(new URL('../services/game/public/roulette/wheel.mjs',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replace('export function mountRouletteWheel','function mountRouletteWheel');
-  const mount=runInNewContext(source+'\nmountRouletteWheel;',{
-    WHEEL,pocketColor,createSpin,presentationForRound,SPIN_MS,TAU,document:{createElement:()=>canvas},
+  const runtime={pockets:WHEEL,pocketColor,document:{createElement:()=>canvas},
     setTimeout(fn){const key=++id;timers.set(key,fn);return key;},clearTimeout:key=>timers.delete(key),
-  });
-  const options={now:()=>time,requestFrame:fn=>{const key=++id;frames.set(key,fn);return key;},cancelFrame:key=>frames.delete(key),reducedMotion:()=>reduced};
+  };
+  const options={...runtime,now:()=>time,requestFrame:fn=>{const key=++id;frames.set(key,fn);return key;},cancelFrame:key=>frames.delete(key),reducedMotion:()=>reduced};
   let appended=0,paints=0;const host={append(){appended++;}};
-  return {mount:(designId='roulette-anna-v1',embedded=false)=>mount(host,{designId,placement:{width:1.044565,x:0,y:0},embedded,onPaint:()=>paints++},options),canvas,labels,frames,timers,
+  return {mount:(designId='roulette-anna-v1',embedded=false)=>mountRouletteWheel(host,{designId,placement:{width:1.044565,x:0,y:0},embedded,onPaint:()=>paints++},options),canvas,labels,frames,timers,
     get appended(){return appended;},get paints(){return paints;},
     advance(ms){time+=ms;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(fn=>fn());},
     timeout(){[...timers.values()].forEach(fn=>fn());}};
@@ -111,8 +109,6 @@ test('reduced motion, hidden-tab timer and context loss cannot strand a confirme
 });
 
 test('real submit holds the displayed receipt until landing and never retries a confirmed round after visual failure',async()=>{
-  const app=readFileSync(new URL('../services/game/public/roulette/app.mjs',import.meta.url),'utf8');
-  const submit=app.slice(app.indexOf('async function submit()'),app.indexOf('async function init()'));
   for(const fails of [false,true]){
     let release,calls=0;const rendered=[],messages=[],elements=new Map();
     const request={playerId:'isolated',requestId:'one'},receipt={player:{id:'isolated'},requestId:'one',round:{event:{outcome:{number:6,color:'black'}},returned:0}};
@@ -124,11 +120,39 @@ test('real submit holds the displayed receipt until landing and never retries a 
       roomScene:{playRound:number=>{assert.equal(number,6);return new Promise((resolve,reject)=>{release=()=>fails?reject(Error('context lost')):resolve();});}},
     };
     context.roomSceneReady=Promise.resolve(context.roomScene);
-    const run=runInNewContext(submit+'\nsubmit;',context);
+    const {submit:run}=createRouletteRoundController({...context,state:context});
     const finished=run();await new Promise(setImmediate);
     assert.equal(context.busy,true);assert.equal(calls,1);assert.equal(rendered.length,0);
     await run();assert.equal(calls,1);release();await finished;
     assert.equal(context.busy,false);assert.equal(context.pending,null);assert.deepEqual(rendered,[receipt]);
     assert.match(messages.at(-1),/6 · Svart/);assert.equal(calls,1);
+  }
+});
+
+test('uncertain roulette requests retain their exact identity and mismatched receipts never replace state',async()=>{
+  for(const failure of ['network','player','request','round']){
+    const original={marker:'old'},request={playerId:'owner',requestId:'one',op:'spin',bets:[{id:'red',amount:5}]};
+    const state={busy:false,pending:request,state:original,draft:new Map([['red',500]]),undo:[],roomSceneReady:Promise.resolve(null)};
+    const elements=new Map(),calls=[],rendered=[];
+    const receipt={player:{id:'owner'},requestId:'one',round:{id:'round-1',event:{outcome:{number:6,color:'black'}},returned:0}};
+    const controller=createRouletteRoundController({state,$:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);},
+      command:async sent=>{calls.push(sent);if(calls.length===1){if(failure==='network')throw Error('Failed to fetch');
+        return {...receipt,...(failure==='player'?{player:{id:'other'}}:failure==='request'?{requestId:'other'}:{round:null})};}return receipt;},
+      clearPending:()=>{state.pending=null;},renderDraft(){},renderState:()=>rendered.push(state.state),showResult(){},message(){},colourNames:{black:'Svart'},errorText:{},money:String});
+    await controller.submit();assert.equal(state.pending,request);assert.equal(state.state,original);assert.equal(state.draft.size,1);
+    assert.equal(state.busy,false);assert.equal(elements.get('retry').hidden,false);assert.deepEqual(rendered,[]);
+    await controller.submit();assert.deepEqual(calls,[request,request]);assert.equal(state.pending,null);assert.deepEqual(rendered,[receipt]);
+  }
+});
+
+test('an explicit roulette validation refusal clears the pending request only after authoritative recovery succeeds',async()=>{
+  for(const recover of [false,true]){
+    const request={playerId:'owner',requestId:'one'},recovered={version:4},state={busy:false,pending:request,state:null};
+    const calls=[];
+    const controller=createRouletteRoundController({state,$:()=>({}),command:async command=>{calls.push(command);
+      if(command===request)throw Object.assign(Error('insufficient_balance'),{status:400});
+      if(!recover)throw Error('Failed to fetch');return recovered;},clearPending:()=>{state.pending=null;},renderDraft(){},renderState(){},message(){},errorText:{}});
+    await controller.submit();assert.deepEqual(calls,[request,{op:'state'}]);assert.equal(state.pending,recover?null:request);
+    assert.equal(state.state,recover?recovered:null);assert.equal(state.busy,false);
   }
 });

@@ -10,6 +10,11 @@ presentationsmodulerna används även från andra produktdelar.
 | [card-presentation/](card-presentation/README.md) | Aktiv kortprojektion, handocklusion och kalibrering från granskad GitLab-kod. `local-card-overlay.mjs` är produktadaptern. |
 | [game-interface.mjs](game-interface.mjs) | Sittplatser, action-/givknappar och chattplacering för `app.mjs`. Läser serverrundan; samordnar första synliga frame, resize och stängning. |
 | [dealer-chat-controls.mjs](dealer-chat-controls.mjs) | Chattens öppning/oläststatus och montering av röstkontroller efter kamerakontrollens servervaliderade readiness. Provspel exponerar inte chatt/röst. |
+| [player-entry-controls.mjs](player-entry-controls.mjs), [dealer-picker.mjs](dealer-picker.mjs), [dealer-rehearsal.mjs](dealer-rehearsal.mjs) | Previewnotis, sessionsbunden retur, tillåtna dealers och repetition genom samma taluppspelning. Repetition väntar på serverstart och stängning stoppar vidare batchuppspelning. |
+| [blackjack-bet-controls.mjs](blackjack-bet-controls.mjs), [blackjack-table-client.mjs](blackjack-table-client.mjs) | Insatsutkast, befintliga Classic-gränser och serverkommandon. Ett tvetydigt startsvar behåller samma request-id och låser klienten tills serverläget återhämtats. |
+| [filmed-action-controls.mjs](filmed-action-controls.mjs), [moving-speech-sequence.mjs](moving-speech-sequence.mjs) | Filmens actionägare och kortvisning enligt serverns draw-id, rundversion och exakta källframes. |
+| [player-chat-controller.mjs](player-chat-controller.mjs), [blackjack-feedback.mjs](blackjack-feedback.mjs) | Köad utdelningschatt, begärans livscykel och tal/ljud/markering utifrån serverns avräkning. |
+| [roulette/round-controller.mjs](roulette/round-controller.mjs), [roulette/wheel.mjs](roulette/wheel.mjs) | Sparat insatskommando och bekräftat kvitto; bildfel får inte skicka en ny insats. Hjulet får serverns utfall och den europeiska fickordningen från scenen. |
 | `performance-player.mjs`, `local-film-player.mjs`, `speech-*`, `astrid-*` | Filmuppspelning, tal, kamerafunktioner och Astrids presentation. |
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
@@ -21,6 +26,24 @@ som klienten. De mäter mobilernas hinder, återupptagna ytterhänder, start/st�
 och röstberedskap med DOM-fixturer. Det är kodprov, inte ny visuell driftacceptans.
 Modulerna levereras från den publika mappen; webbens importföljande byggsteg
 inkluderar dem utan nya alias i det delade publika modulregistret.
+
+Dealer-, preview-, film-, feedback-, utdelningschatt- och rouletteproven importerar
+också dessa produktkontroller direkt. `app.mjs` kopplar dem till levande getters
+och callbacks för dokumentets runda, session, saldo och mediakontroller. Där ligger
+fortfarande DOM-montering, bordets övergripande spelkoreografi, kassaflöde och
+native-brygga. `chat-requests.mjs` äger HTTP/strömning, pose-gaten äger talets
+dealer-/sessions-/rundgräns och `local-presentation.mjs` äger vald film och avbrott.
+Det är verkliga konsumentgränser; flyttarna skapar ingen alternativ spelmotor.
+Roulettens separata dokument serverar kontrollern genom dess exakta resursroute.
+Atlas följer modulimporterna; befintliga handgranskade spelkärneankare är oförändrade.
+
+Två angränsande integrationsharness har fortfarande andra verkliga beroenden:
+`operator-appearance-integration` avgränsar serverns HTTP-start och dokumentets
+appearance-/startkoreografi via AST; insatskontrollerna importeras direkt.
+`roulette-room-http` importerar hela rouletteklienten med serverns publika
+regelalias, men kör scenmodulen med ersatta media-/rendererportar för att pröva
+publicerad bolags-, dealer- och lagerisolering. Dessa prov är inte förbrukade;
+en senare extraktion behöver behålla deras scope-, start- och återhämtningsfall.
 
 Filmens kantshader används av `performance-player.mjs`; ljuskanterna följer
 fasta vägg- och filtfärger samt bordets bakre kant. En saknad eller misslyckad

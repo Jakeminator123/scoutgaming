@@ -10,15 +10,19 @@ Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och des
 
 Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-konsument är borttagna. Dealerverktygen använder hubbens navigation; den dubbla Studio-flikraden och dess förbrukade komponentkontrakt är borta. Filter, dealerbyte, historik, utkastskydd, CAS och scope verifieras fortfarande med beteendeprov. Den gamla Studio-probe-routen och dess adapter är avvecklade efter Jakobs uttryckliga godkännande; motorns probe är en separat aktiv tjänst. Exakta prov- och mergebevis hör till ändringens PR.
 
-## Klientens layout- och chattkontroller 1 november
+## Klientens beteendeprov 2 november
 
-De tre första extraktionerna i chattavsnittets tabell nedan är genomförda:
 `action-placement`, `game-overlay-layout` och `dealer-chat-visibility` importerar
-nu klientens [game-interface](../services/game/public/game-interface.mjs) och
+klientens [game-interface](../services/game/public/game-interface.mjs) och
 [dealer-chat-controls](../services/game/public/dealer-chat-controls.mjs).
 Mobilplacering, lagliga knappar, första frame/stängning, återupptagen ytterhand
-och chatt-/röstreadiness har kvar beteendeprov. De sju övriga källsnitten är
-oförändrade och passerar i den angränsande klientkörningen. Endast konsumenter
+och chatt-/röstreadiness har kvar beteendeprov. Dealerurval, previewkontroller,
+repetition, filmägarskap, utfallsfeedback, utdelningschatt och roulette importerar
+också produktens kontroller; källsnitt, omskrivna exporter och VM-körning är borta
+ur de berörda proven. [Klientguiden](../services/game/public/README.md) visar
+modulerna och de kvarvarande gränserna mot dokument, media och server.
+De riktade klientproven och webbens modulbygge passerar lokalt på Node 24.21.0.
+Endast konsumenter
 på main/preview styr fortsatt avveckling. Exakta lokala prov och leveransbevis
 hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
@@ -26,20 +30,11 @@ hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
 Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
 
-Övriga granskade källsnitt kör verkligt beteende och ska behålla täckningen när följande kod flyttas till importerbara produktmoduler. De är bedömda men inte ändrade i denna leverans:
-
-| Prov under `test/` | Nästa avgränsade extraktion |
-| --- | --- |
-| `action-placement.mjs` | `showActions`, `layoutDealControl` och kopplingen mellan första frame, layout och stängning. |
-| `game-overlay-layout.mjs` | Sittplatskontrollern runt `COMPACT_BOXES`/`layoutSeats`, inklusive återupptagen ytterhand. |
-| `dealer-chat-visibility.mjs` | `setChatOpen`/`noteChatMessage` och montering av röstkontroller efter readiness. |
-| `player-choices.mjs` | Dealerurval till spel/repetition samt lobby-/preview-retur. |
-| `studio-preview-client.mjs` | Insatskontroller, preview-notis och samma returkontroller som ovan; behåll maxgränser och sessionisolering. |
-| `dealer-version-switcher.mjs` | Repetitionspanelens byte, status, uppspelning, batchgranskning och readiness. |
-| `filmed-action-ownership.mjs` | `beginDealingTake`, `endDealingTake` och `revealHole`, med befintliga ägar-/avbrottsprov. |
-| `blackjack-feedback.mjs` | Presentationen av avräkning: tal, ljud och blackjackmarkering utifrån serverutfallet. |
-| `moving-speech-deal-plan.mjs` | Frame-/kortcommitkontroller samt köad chatt och återhämtning efter avvisad/tvetydig start. |
-| `roulette-wheel.mjs` | Rundans submit-/kvittoflöde och direkt import av hjulmonteringen, med bevarat skydd mot dubbel insats. |
+De tidigare listade klientkällsnitten är nu ersatta. Beteendeproven behåller
+maxinsatser, previewisolering, filmägare/hålkortsvisning, serverstyrda vinster,
+exakta frame-/kortcommits och idempotenta roulettkvitton. De prövar även sena
+svar efter dealer-/session-/rundbyte, stängd repetition och tvetydig start utan
+automatisk ny insats. Detta är ingen inventering av alla andra testharness i repot.
 
 ## Funktionsmappar för dealers 1 november
 

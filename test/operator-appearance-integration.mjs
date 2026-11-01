@@ -5,6 +5,7 @@ import {createRequire} from 'node:module';
 import {createOperatorAppearanceApi} from '../services/game/operator-appearance-api.mjs';
 import {createOperatorPackageReader} from '../services/game/storage/operator-package-reader.mjs';
 import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../services/game/public/operator-appearance-boundary.mjs';
+import {createBlackjackBetControls} from '../services/game/public/blackjack-bet-controls.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
 import {handleSharedRoomHttp} from '../services/game/shared-room-http.mjs';
 
@@ -83,15 +84,19 @@ function appFixture({responseRevision=4,requestError=false,storage=browserStorag
   const init=text(appSource,declaration(appTree,'operatorAppearanceBoundary'));
   const restore=appTree.body.find(node=>node.type==='IfStatement'&&(()=>{let found=false;walk(node,child=>{if(child.type==='CallExpression'&&child.callee.name==='consumeAppearanceBets')found=true;});return found;})());assert.ok(restore,'actual app must consume preserved bets');
   let clickNode;walk(appTree,node=>{if(node.type==='AssignmentExpression'&&node.left.type==='MemberExpression'&&node.left.property.name==='onclick'&&node.left.object.type==='CallExpression'&&node.left.object.callee.name==='$'&&node.left.object.arguments[0]?.value==='#deal-now')clickNode=node.right;});assert.ok(clickNode,'actual deal button handler must exist');
-  const runtime=compile({createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets,entrySelection:entry,studioPreview:preview?{}:null,
+  const runtime=compile({createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets,createBlackjackBetControls,entrySelection:entry,studioPreview:preview?{}:null,
     sessionStorage:storage,SEATS:2,bets:structuredClone(initialBets),round:activeRound,busy:initialBusy,balance:100,
     apiFetch:async(url,options)=>{reads++;events.push('appearance');assert.equal(url,'/api/operator/appearance?operator=north&table=qa-room');assert.equal(options.cache,'no-store');if(readGate)await readGate;if(requestError)throw Error('fixture network unavailable');return new Response(JSON.stringify({operator:'north',roomId:'qa-room',packageRevision:responseRevision}));},
     location:{reload(){reloaded++;events.push('reload');}},hint:(...args)=>hints.push(args),tableReady:Promise.resolve(),
     document:{body:{classList:{add:value=>classList.add(value),remove:value=>classList.delete(value)}}},renderBets:()=>events.push('render'),
     tableCommand:async(op,payload)=>{if(op==='state'){events.push('state');return {round:null,shoe:{}};}starts++;events.push('start');assert.equal(op,'start');assert.deepEqual(payload.bets,expectedBets);throw Error('fixture stops after actual start dispatch');},
     ensureLogin:async()=>true,tableError:error=>tableErrors.push(error.message),gameApi:{session:async()=>session},$:()=>({}),showShoe:()=>{},player:'isolated-player',
-    allSides:false,LIMITS:{max:1000},selected:10,undoStack:[],flyChip:()=>events.push('chip'),sfx:{play(){}},
-  },`${init}\n${text(appSource,declaration(appTree,'betTotal'))}\n${text(appSource,functionNode(appTree,'placeBet'))}\n${text(appSource,functionNode(appTree,'dealSequence'))}\n${text(appSource,functionNode(appTree,'prepareTable'))}\nreturn {deal:dealSequence,click:${text(appSource,clickNode)},prepare:prepareTable,place:()=>placeBet(0,'main',{}),restore:()=>{${text(appSource,restore)}},state:()=>({bets,busy,round,balance})};`);
+    allSides:false,selected:10,undoStack:[],flyChip:()=>events.push('chip'),sfx:{play(){}},fmt:String,
+  },`${init}\nconst {betTotal,placeBet,startRound}=createBlackjackBetControls({state:{
+    get bets(){return bets;},set bets(value){bets=value;},get busy(){return busy;},get round(){return round;},
+    get balance(){return balance;},get selected(){return selected;},get undoStack(){return undoStack;},get allSides(){return allSides;}
+  },$,hint,fmt,flyChip,sfx,renderBets,ensureLogin,dealSequence,SEATS});
+  ${text(appSource,functionNode(appTree,'dealSequence'))}\n${text(appSource,functionNode(appTree,'prepareTable'))}\nreturn {deal:dealSequence,click:${text(appSource,clickNode)},prepare:prepareTable,place:()=>placeBet(0,'main',{}),restore:()=>{${text(appSource,restore)}},state:()=>({bets,busy,round,balance})};`);
   return {...runtime,events,hints,tableErrors,classList,storage,get reads(){return reads;},get starts(){return starts;},get reloaded(){return reloaded;}};
 }
 

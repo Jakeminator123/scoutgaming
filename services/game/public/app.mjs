@@ -1,7 +1,14 @@
+import {initializePreviewControls,mountPlayerReturn} from './player-entry-controls.mjs';
+import {createBlackjackBetControls,CHIPS,LIMITS} from './blackjack-bet-controls.mjs';
+import {createBlackjackTableClient} from './blackjack-table-client.mjs';
+import {createFilmedActionControls} from './filmed-action-controls.mjs';
+import {createPlayerChatController} from './player-chat-controller.mjs';
+import {mountDealerPicker} from './dealer-picker.mjs';
+import {mountDealerRehearsal} from './dealer-rehearsal.mjs';
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
-import { requestPlayerChat, createLinkedChatSubmit } from './chat-requests.mjs';
-import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE, requestEmbeddedStudioPreviewClose } from './studio-preview-client.mjs';
+import { createLinkedChatSubmit } from './chat-requests.mjs';
+import { createStudioPreviewClient, studioPreviewFromDocument } from './studio-preview-client.mjs';
 import {createLayerComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import { createGameInterface } from './game-interface.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
@@ -11,7 +18,7 @@ import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
 import { createDealerChatVisibility, mountDealerVoiceControl } from './dealer-chat-controls.mjs';
 import { createSpeechPoseGate } from '../../../packages/presentation/runtime/speech-pose-gate.mjs';
-import { CHAT_STAGES, chatFailureMessage, chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
+import { chatFailureMessage } from '../../../packages/presentation/contracts/chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from '../../../packages/presentation/runtime/generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { displayChatDecision, cancelChatDecision, playChatDecision as playProductChatDecision } from './chat-decision-player.mjs';
@@ -22,12 +29,41 @@ import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelectio
 import { createPresentationStartup } from './presentation-startup.mjs';
 import { registeredFilmedProfile, frozenFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
-import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
+import { sideBetWin, roundWin, announceRound } from './blackjack-feedback.mjs';
 import { totalLabel } from './card-presentation/renderer-support.js';
 import { cardFaceArt } from './card-art.mjs';
-import { movingDealCard } from './moving-speech-sequence.mjs';
+import { createMovingDealPlayback } from './moving-speech-sequence.mjs';
 
 const $ = s => document.querySelector(s);
+// Controllers read current document state, including replacements after server commands.
+const clientState = {
+  get round(){return round;},set round(value){round=value;},
+  get busy(){return busy;},set busy(value){busy=value;},
+  get bets(){return bets;},set bets(value){bets=value;},
+  get selected(){return selected;},set selected(value){selected=value;},
+  get balance(){return balance;},set balance(value){balance=value;},
+  get undoStack(){return undoStack;},set undoStack(value){undoStack=value;},
+  get allSides(){return allSides;},set allSides(value){allSides=value;},
+  get seatEls(){return seatEls;},
+  get localPresentation(){return localPresentation;},set localPresentation(value){localPresentation=value;},
+  get localCards(){return localCards;},set localCards(value){localCards=value;},
+  get performancePlayer(){return performancePlayer;},set performancePlayer(value){performancePlayer=value;},
+  get speechPoseGate(){return speechPoseGate;},set speechPoseGate(value){speechPoseGate=value;},
+  get player(){return player;},set player(value){player=value;},
+  get tableVersion(){return tableVersion;},set tableVersion(value){tableVersion=value;},
+  get nextDealChat(){return nextDealChat;},set nextDealChat(value){nextDealChat=value;},
+  get movingSpeechAvailable(){return movingSpeechAvailable;},set movingSpeechAvailable(value){movingSpeechAvailable=value;},
+  get probeClient(){return probeClient;},set probeClient(value){probeClient=value;},
+  get observedTableView(){return observedTableView;},set observedTableView(value){observedTableView=value;},
+  get activeDealSpeech(){return activeDealSpeech;},set activeDealSpeech(value){activeDealSpeech=value;},
+  get nextDealControls(){return nextDealControls;},set nextDealControls(value){nextDealControls=value;},
+  get chatBusy(){return chatBusy;},set chatBusy(value){chatBusy=value;},
+  get chatStatus(){return chatStatus;},set chatStatus(value){chatStatus=value;},
+  get chatElapsed(){return chatElapsed;},set chatElapsed(value){chatElapsed=value;},
+  get chatHistory(){return chatHistory;},set chatHistory(value){chatHistory=value;},
+  get speaking(){return speaking;},set speaking(value){speaking=value;},
+};
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const CURRENCIES = { USD: 'en-US', EUR: 'de-DE', SEK: 'sv-SE' };
 let currency = 'USD';
@@ -44,41 +80,12 @@ const studioPreview = studioPreviewFromDocument(document.documentElement.dataset
 const requestLogin=studioPreview?async()=>{throw Error('Starta provspel från Sammansättning.');}:(await import('./auth-modal.mjs')).requestLogin;
 const gameApi = createStudioPreviewClient({context:studioPreview});
 const apiFetch = gameApi.request;
-let previewSession = null;
-if (studioPreview) {
-  const notice=document.createElement('details');notice.id='studio-preview-status';
-  const summary=document.createElement('summary');summary.textContent='Provspel · separat testsaldo';summary.title=STUDIO_PREVIEW_NOTICE;
-  const explanation=document.createElement('p');explanation.textContent=STUDIO_PREVIEW_NOTICE;
-  notice.append(summary,explanation);$('#top-right').append(notice);
-  $('#chat').hidden=true;$('#chat').inert=true;
-  $('#chat-input').disabled=true;$('#chat-send').disabled=true;
-  try { previewSession=await gameApi.session(); }
-  catch(error){notice.open=true;explanation.textContent=error.message;explanation.setAttribute('role','alert');throw error;}
-  const label=document.querySelector('#wallet label');if(label)label.textContent='TESTSALDO';
-  $('#add-funds').hidden=true;$('#sign-out').hidden=true;
-}
+const previewSession = await initializePreviewControls({studioPreview,document,gameApi});
 const choiceStorage=studioPreview?sessionStorage:localStorage;
 const previewSessionId=studioPreview?.sessionId??null;
 const soundStorageKey=studioPreview?'croupier.studio-preview.'+studioPreview.sessionId+'.muted':'croupier-muted';
 const playableChoices=previewSession&&entrySelection.choices?{...entrySelection.choices,dealers:entrySelection.choices.dealers.filter(id=>previewSession.dealerAvailability.some(row=>row.id===id&&row.playable))}:entrySelection.choices;
-const lobbyReturn = document.querySelector('.casino-return');
-if(lobbyReturn){
-  // Use the validated document context, never a return URL or room from the query.
-  const returnQuery=new URLSearchParams(studioPreview
-    ? {composition:studioPreview.presentationLaneId,...(entrySelection.dealer?{dealer:entrySelection.dealer}:{})}
-    : entrySelection.operator?{operator:entrySelection.operator,...(entrySelection.roomId?{room:entrySelection.roomId}:{})}:{});
-  lobbyReturn.href=(studioPreview?'/admin/compositions':'/lobby')+(returnQuery.size?'?'+returnQuery:'');
-  if(studioPreview){
-    lobbyReturn.textContent=window.parent===window?'Till Miljö':'Stäng provspel';
-    lobbyReturn.onclick=async event=>{
-      if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-      event.preventDefault();
-      try{await gameApi.close();}catch{ /* The expired session also permits returning to Studio. */ }
-      try{writeChoices(choiceStorage,entrySelection.operator,{},previewSessionId);choiceStorage.removeItem(soundStorageKey);}catch{}
-      if(!requestEmbeddedStudioPreviewClose(studioPreview))location.assign(lobbyReturn.href);
-    };
-  }
-}
+mountPlayerReturn({studioPreview,entrySelection,document,gameApi,choiceStorage,previewSessionId,soundStorageKey,location,window});
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,name:label,registered:true};
 const DEALER = DEALERS[entrySelection.dealer];
 if (!DEALER) { presentationStartup.fail(); throw new Error('Dealer is not registered'); }
@@ -464,19 +471,12 @@ setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('en-
 // ---------- state ----------
 const SEATS = 7;
 // The server and partner contract support these Classic limits.
-const CHIPS = [1, 5, 10, 25, 50, 100, 500, 1000];
-const LIMITS = { min: 5, max: 2000 };
 let balance = 1000;
 
 // ---------- player account: server-persisted demo money (PostgreSQL) ----------
 let player = null;
-async function api(path, payload) {
-  const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if(r.status===401) { player=null; throw new Error('Sign in required'); }
-  const out = await r.json().catch(() => ({}));
-  if (!r.ok || out.error) throw Object.assign(new Error(out.error ?? `api ${r.status}`), { status: r.status });
-  return out;
-}
+const {api,tableCommand,tableError}=createBlackjackTableClient({state:clientState,apiFetch,loadPlayer,DEALER,entrySelection,clientSessionRevision,
+  cancelNextDealChat:()=>cancelNextDealChat(),setMovingSpeechAvailable:value=>setMovingSpeechAvailable(value),updatePoseState,nativeObservation,document,setBanner,setChatStatus,renderBets});
 async function loadPlayer() {
   try {
     player = await api('/api/player', {  });
@@ -496,42 +496,6 @@ function showShoe(state) {
 function roundView(data) {
   return data && { ...data, live() { return this.hands; }, legal() { return this.legalActions; } };
 }
-async function tableCommand(op, extra = {}) {
-  if(op!=='state'&&op!=='start')cancelNextDealChat();
-  if (op !== 'state') probeClient?.activity();
-  if (!player) await loadPlayer();
-  if (!player) throw new Error('Cannot connect to the game server');
-  if (op !== 'state') localPresentation?.state({ action: true, command: op });
-  if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
-  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), dealer: DEALER.key, ...extra,
-    ...(op==='start'&&nextDealChat&&movingSpeechAvailable?{movingSpeech:{context:chatPresentationContext(entrySelection,DEALER.key),sessionRevision:clientSessionRevision}}:{}) };
-  let out;
-  for (let attempt=0; attempt<2; attempt++) {
-    try { out = await api('/api/table', payload); break; }
-    catch (e) {
-      if (op === 'start' && payload.movingSpeech && e.status === 409 && e.message === 'moving_deal_speech_unavailable') {
-        setMovingSpeechAvailable(false);
-        // A previous network failure may have hidden a committed start. Only
-        // an unambiguous first response can unlock the unchanged betting draft.
-        e.dealSpeechUnavailable = attempt === 0;
-      }
-      if (attempt || !/fetch|network|load failed/i.test(e.message)) {
-        if (op !== 'state') updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-command-failed');
-        throw e;
-      }
-    }
-  }
-  const previousVersion = tableVersion;
-  tableVersion = out.version;
-  if (op !== 'state') void localPresentation?.observeEvents?.(out.presentation,{command:op,previousVersion});
-  setMovingSpeechAvailable(out.movingSpeechAvailable===true);
-  updatePoseState({ roundRevision: String(tableVersion),
-    ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
-  if (op === 'state') localPresentation?.state({ action: false });
-  nativeObservation.command(payload, out, observedTableView, DEALER.key);
-  observedTableView = out;
-  return out;
-}
 async function ensureLogin(purpose) {
   await tableReady;
   const session=await gameApi.session();
@@ -540,17 +504,6 @@ async function ensureLogin(purpose) {
   if(studioPreview)throw Error('Starta ett nytt provspel från Sammansättning.');
   if(!session.authenticated && !session.guest && !await requestLogin(purpose))return false;
   await prepareTable();return !!player;
-}
-function tableError(e) {
-  if (e.dealSpeechUnavailable === true && !round) {
-    busy = false;
-    localPresentation?.state({ action: false });
-    setBanner('Tal under utdelning är avstängt. Ingen insats drogs. Tryck DEAL igen för att spela utan tal.');
-    setChatStatus('Det planerade svaret avbröts. Texten finns kvar.');
-    renderBets();
-    return;
-  }
-  busy = true; document.querySelectorAll('#actions button,#actions-top button').forEach(b=>b.disabled=true); setBanner(e.message + ' · Reload to resume'); renderBets();
 }
 async function prepareTable() {
   const session=await gameApi.session();
@@ -599,7 +552,7 @@ const operatorAppearanceBoundary = createOperatorAppearanceBoundary({
   },
 });
 
-const betTotal = () => bets.reduce((a, b) => a + b.main + b.pp + b.tp, 0);
+const {betTotal,placeBet,doubleBets,startRound,renderControls:renderBetControls}=createBlackjackBetControls({state:clientState,$,hint,fmt,flyChip,sfx,renderBets,ensureLogin,dealSequence,SEATS});
 const mains = () => bets.map(b => b.main);
 
 // ---------- seat layout on the oval ----------
@@ -690,29 +643,6 @@ function flyChip(value, targetEl) {
 
 // ---------- betting ----------
 let allSides = false;
-function placeBet(i, field, targetEl) {
-  console.info('[bet]', i, field, 'round=', !!round, 'busy=', busy);
-  if (round || busy) return;
-  // ALL SEATS mode: one click on any side-bet crescent bets it on every staked box
-  if (field !== 'main' && allSides && !placeBet.bulk) {
-    placeBet.bulk = true;
-    for (let j = 0; j < SEATS; j++) {
-      if (bets[j].main > 0) placeBet(j, field, seatEls[j].querySelector(field === 'pp' ? '.side.pp' : '.side.tp'));
-    }
-    placeBet.bulk = false;
-    return;
-  }
-  if (field !== 'main' && bets[i].main === 0) return; // side bets ride on a main bet
-  const cap = field === 'main' ? LIMITS.max : LIMITS.max / 2;
-  const next = bets[i][field] + selected;
-  if (next > cap) { hint('LIMIT', `${field === 'main' ? 'box' : 'side bet'} caps at ${fmt(cap)}`); return; }
-  if (betTotal() + selected > balance) { hint('BALANCE', `${fmt(selected)} more than you have — add funds`); return; }
-  flyChip(selected, targetEl);
-  sfx.play('chip');
-  bets[i][field] = next;
-  undoStack.push({ box: i, field, value: selected });
-  renderBets();
-}
 seatEls.forEach((seat, i) => {
   seat.querySelector('.spot').onclick = e => { console.info('[click-src]', i, 'trusted=', e.isTrusted); placeBet(i, 'main', e.currentTarget); };
   for(const target of seat.querySelectorAll('.bet-target'))target.onclick=e=>placeBet(i,e.currentTarget.dataset.bet,e.currentTarget);
@@ -732,18 +662,7 @@ $('#undo-btn').onclick = () => {
   if (bets[u.box].main === 0) { bets[u.box].pp = 0; bets[u.box].tp = 0; undoStack = undoStack.filter(x => x.box !== u.box); }
   renderBets();
 };
-$('#double-btn').onclick = () => {
-  if (round || busy) return;
-  const add = betTotal();
-  if (!add || add * 2 > balance + add - add || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max || b.pp * 2 > LIMITS.max / 2 || b.tp * 2 > LIMITS.max / 2)) return;
-  for (const [i, b] of bets.entries()) {
-    if (b.main) undoStack.push({ box: i, field: 'main', value: b.main });
-    if (b.pp) undoStack.push({ box: i, field: 'pp', value: b.pp });
-    if (b.tp) undoStack.push({ box: i, field: 'tp', value: b.tp });
-  }
-  bets = bets.map(b => ({ main: b.main * 2, pp: b.pp * 2, tp: b.tp * 2 }));
-  renderBets();
-};
+$('#double-btn').onclick = doubleBets;
 // MAX: fill the boxes you have chosen with the chip you have selected, as many
 // as fit inside the table cap and your balance. The chip sets the granularity
 // (pick 1K and boxes fill in 1K steps), and the hint says what stopped it so
@@ -834,15 +753,7 @@ function renderBets() {
   // Splits/doubles change server hand stakes, not the original betting draft.
   $('#total-bet').textContent = fmt(round ? round.hands.reduce((sum,h)=>sum+h.stake+(h.pp??0)+(h.tp??0)+(h.insured??0),0) : betTotal());
   $('#balance').textContent = fmt(balance);
-  const staked = bets.filter(b => b.main > 0);
-  const withinLimits = bets.every(b => b.main <= LIMITS.max && b.pp <= LIMITS.max / 2 && b.tp <= LIMITS.max / 2);
-  const playable = staked.length > 0 && staked.every(b => b.main >= LIMITS.min) && withinLimits;
-  $('#deal-now').title = withinLimits ? '' : 'Classic supports up to 2,000 per main bet and 1,000 per side bet. Reduce or clear your selected bets.';
-  $('#deal-now').disabled = !playable || !!round || busy;
-  $('#clear-btn').disabled = betTotal() === 0 || !!round || busy;
-  $('#undo-btn').disabled = !undoStack.length || !!round || busy;
-  $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max || b.pp * 2 > LIMITS.max / 2 || b.tp * 2 > LIMITS.max / 2) || !!round || busy;
-  $('#max-btn').disabled = balance < LIMITS.min || !!round || busy;
+  renderBetControls();
   layoutDealControl();
 }
 
@@ -1083,62 +994,6 @@ function dealCardTo(container, card, { faceDown = false, shoeDraw = card?.shoeDr
   el.dealt = flyFromShoe(el, card, faceDown, motion);
   return el;
 }
-async function deliverCard(container, card, options={}) {
-  const correlation=nativeObservation.context();
-  let motion;
-  const seatBox=container.closest('[data-box]')?.dataset.box;
-  if (localPresentationEnabled) {
-    const event = { type: 'deal', to: container.id === 'dealer-cards' ? 'dealer' : 'box',
-      box: seatBox == null ? null : Number(seatBox), shoeDraw: options.shoeDraw ?? card?.shoeDraw };
-    localCards?.sync(round);
-    let token;
-    const played = await localPresentation?.present(event, {
-      onSelected: (video, committedEvent) => { token = localCards?.begin(video, committedEvent); },
-      onFrame: time => localCards?.frame(token, time),
-    });
-    const calibratedContact = token == null ? false : localCards?.finish(token, event.shoeDraw, played);
-    if (token == null) localCards?.show(event.shoeDraw);
-    const element = dealCardTo(container, card, { ...options, motion: { localCompleted: played || !!localCards } });
-    await element.dealt;
-    nativeObservation.emit('playback', { event: 'deal', state: 'landed', ...event, type: undefined,
-      renderer: localCards ? 'svg-local' : '2d', evidence: calibratedContact ? 'video-frame-track' : 'static-card-presented', calibratedContact: !!calibratedContact }, correlation);
-    return;
-  }
-
-}
-
-async function endDealingTake({ deferIdle = false } = {}) {
-  // The filmed return owns the actor until its final pose and the matching
-  // idle frame have both been presented. Speech/decisions wait for this.
-  try {await performancePlayer?.finish({wait:['decisions','insurance'].includes(round?.phase)});}catch(error){console.warn('[performance] return',error.message);}
-  if (!deferIdle) {
-    updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'action-completed');
-    localPresentation?.state({ action: false });
-  }
-}
-async function revealHole(container, card) {
-  const back = container.querySelector('.card.back');
-  if (!back) return;
-  if (localPresentationEnabled) {
-    localPresentation?.state({ action: true });
-    localCards?.sync(round);
-    let token;
-    const played = await localPresentation?.present({ type: 'reveal', to: 'dealer', shoeDraw: card.shoeDraw }, {
-      onSelected: (video, event) => { token = localCards?.begin(video, event); },
-      onFrame: time => localCards?.frame(token, time),
-    });
-    const calibrated = token != null && localCards?.finish(token, card.shoeDraw, played);
-    if (token == null) localCards?.reveal(round);
-    nativeObservation.emit('playback', { event: 'reveal', state: 'landed', shoeDraw: card.shoeDraw,
-      renderer: 'svg-local', evidence: calibrated ? 'video-frame-track' : 'static-card-presented', calibratedContact: !!calibrated });
-  }
-  const el = cardEl(card);
-  el.style.setProperty('--ci', back.style.getPropertyValue('--ci') || 1);
-  el.classList.add('flip');
-  back.replaceWith(el);
-  localCards?.reveal(round);
-  nativeObservation.emit('playback',{event:'reveal',state:'presented',card,evidence:'DOM-replacement'});
-}
 function clearTable() {
   localCards?.clear();
   document.querySelectorAll('.cards').forEach(c => (c.innerHTML = ''));
@@ -1169,20 +1024,9 @@ function activeBoxHighlight() {
   }
   showActions(seat);
 }
-$('#deal-now').onclick = async () => { if(round||busy)return; if(bets.some(b=>b.main>LIMITS.max||b.pp>LIMITS.max/2||b.tp>LIMITS.max/2)){hint('CLASSIC LIMIT','Reduce or clear your selected bets: 2,000 per main bet, 1,000 per side bet.');renderBets();return;} try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
+$('#deal-now').onclick = startRound;
 
-async function beginDealingTake() {
-  try {
-  const currentOwner = speechPoseGate?.state.actionOwner ?? 'none';
-  updatePoseState({ dealerPose: 'action', actionOwner: currentOwner === 'none' ? 'dealer-action' : currentOwner,
-    idlePresented: null }, 'action-started');
-  await speechQueue.idle;
-  // A previous player take may have released the controller before the dealer
-  // continues. Reclaim it so late chat cleanup cannot interrupt this card run.
-  localPresentation?.state({ action: true });
-  if(performancePlayer){if(performancePlayer.joins)performancePlayer.beginSequence();console.info('[deal] Presented-frame performance sequence');return;}
-  } catch (error) { console.warn('[deal] Filmed action unavailable:', error.message); }
-}
+const {beginDealingTake,endDealingTake,deliverCard,revealHole}=createFilmedActionControls({state:clientState,localPresentationEnabled,speechQueue,updatePoseState,nativeObservation,cardEl,dealCardTo});
 
 async function dealSequence() {
   busy = true;
@@ -1439,16 +1283,7 @@ async function finish() {
   if (win) toast('ROUND PROFIT', win.profit, win.blackjack || win.profit >= 500);
   syncBalance('settle');
   renderBets();
-  const dealerTotal = handValue(round.dealer).total;
-  const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
-  const allBusted = live.length > 0 && live.every(h => h.busted || handValue(h.cards).total > 21);
-  if (dealerBJ) voice.say('dealerblackjack', { force: true });
-  else if (win?.blackjack) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
-  else if (allBusted) { /* already voiced on the hit; never celebrate a dealer bust the player didn't beat */ }
-  else if (dealerTotal > 21 && win) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
-  else if (win) { sfx.play('win'); voice.say('win', { force: true }); }
-  else if (anyPush && !anyLose) voice.say('push', { force: true });
-  else voice.say('lose', { force: true });
+  announceRound({live,dealer:round.dealer,anyPush,anyLose,voice,sfx,bjFlash});
   await Promise.all([sleep(1800), speechQueue.idle]);
   await endDealingTake({ deferIdle: true });
   updatePoseState({ dealerPose: 'unknown', actionOwner: 'none', idlePresented: null }, 'table-cleared');
@@ -1509,49 +1344,7 @@ async function playRecorded(id, signal) {
   return localPresentation?.present({ type: 'speak', line: id }, { signal });
 }
 
-function refreshNextDealChat(){
-  if(!nextDealControls)return;
-  nextDealControls.querySelector('button').hidden=!nextDealChat&&!activeDealSpeech;
-}
-function setMovingSpeechAvailable(available){
-  movingSpeechAvailable=available===true;
-  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
-  if(!movingSpeechAvailable){
-    const toggle=$('#chat-next-deal');if(toggle)toggle.checked=false;
-    cancelNextDealChat();
-  }
-}
-function cancelNextDealChat(){
-  nextDealChat=null;
-  if(activeDealSpeech?.jobId)speechPoseGate?.cancel(activeDealSpeech.jobId,'explicit-interrupt');
-  refreshNextDealChat();
-}
-function finishMovingDealStep(owned){
-  const step=owned.sequence?.steps[owned.stepIndex];if(!step)return;
-  if(owned.lastFrame<step.end-2)throw Error('moving_deal_card_frame_missing');
-  localCards?.finish(owned.token,step.event.shoeDraw,true);
-  const event=step.event,{card,liveIndex,visibleCards}=movingDealCard(round,event);
-  const container=event.to==='dealer'?$('#dealer-cards'):boxContainer(liveIndex);
-  dealCardTo(container,card,{faceDown:event.faceDown,shoeDraw:event.shoeDraw,motion:{localCompleted:true}});
-  if(visibleCards?.length)updateBadge(container,visibleCards);
-}
-function movingDealFrame(owned,sequence,k){
-  if(owned!==activeDealSpeech||owned.version!==tableVersion||sequence.version!==tableVersion||k<owned.lastFrame||k-owned.lastFrame>2)throw Error('stale_moving_deal_frame');
-  const index=sequence.steps.findIndex(step=>k>=step.first&&k<step.end);
-  if(index!==owned.stepIndex){
-    if(index!==owned.stepIndex+1)throw Error('moving_deal_step_skipped');
-    finishMovingDealStep(owned);owned.stepIndex=index;
-    owned.token=localCards?.begin(sequence.steps[index].video,sequence.steps[index].event);
-  }
-  owned.lastFrame=k;
-  localCards?.frame(owned.token,sequence.frames[k].frame/24);
-}
-function movingDealEnd(owned){
-  if(owned.completed)return;
-  if(owned.stepIndex!==owned.sequence.steps.length-1)throw Error('moving_deal_incomplete');
-  finishMovingDealStep(owned);owned.completed=true;
-}
-
+const {movingDealFrame,movingDealEnd}=createMovingDealPlayback({state:clientState,$,boxContainer,dealCardTo,updateBadge});
 async function playChatDecision(decision, signal, jobId) {
   return playProductChatDecision(chatDecisionRuntime(), decision, signal, jobId);
 }
@@ -1575,6 +1368,8 @@ function chatDecisionRuntime() {
     hideCaption: () => $('#caption').classList.remove('show'), now: () => performance.now(),
   };
 }
+
+const {sendChat,refreshNextDealChat,setMovingSpeechAvailable,cancelNextDealChat}=createPlayerChatController({state:clientState,studioPreview,$,DEALER,clientSessionRevision,entrySelection,compactChat,setChatStatus,localPresentationEnabled,nativeObservation,chatPlaybackDiagnostic,poseIdentity,chatLog,pendingChatReplies,apiFetch});
 
 $('#chat-send').onclick = () => void sendChat();
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
@@ -1635,102 +1430,6 @@ memoryForget.onclick = async () => {
   finally { memoryForget.disabled = false; }
 };
 
-async function sendChat({ message: reviewedMessage, images = [], profileRevision = null, dealSpeech=null } = {}) {
-  if(studioPreview){setChatStatus(STUDIO_PREVIEW_NOTICE);return false;}
-  const input = $('#chat-input');
-  const message = (reviewedMessage ?? input.value).trim();
-  if (!message || chatBusy) return false;
-  if(!dealSpeech&&reviewedMessage===undefined&&$('#chat-next-deal')?.checked&&movingSpeechAvailable){
-    if(busy){setChatStatus('Vänta tills den pågående utdelningen är klar.');return false;}
-    nextDealChat={message,dealerId:DEALER.key,sessionRevision:clientSessionRevision};refreshNextDealChat();
-    setChatStatus('Frågan sparad för nästa utdelning. Du kan avbryta.');return true;
-  }
-  probeClient?.activity();
-  if (reviewedMessage === undefined) input.value = '';
-  chatBusy = true;
-  $('#chat-send').disabled = true;
-  if (compactChat()) input.blur();
-  const requestedAt = performance.now();
-  setChatStatus('Förbereder svar…');
-  if (chatStatus) { chatStatus.dataset.stages = '[]'; delete chatStatus.dataset.playbackMs; delete chatStatus.dataset.firstFrameMs;
-    delete chatStatus.dataset.failureCode; delete chatStatus.dataset.providerMetrics; chatStatus.title = ''; }
-  const waitTimer = localPresentationEnabled ? setInterval(() => { chatElapsed.textContent = ` ${Math.floor((performance.now() - requestedAt) / 1000)} s`; }, 1000) : null;
-  const chatCorrelation=nativeObservation.context();
-  const history = chatHistory.slice(-30).map(({ role, text }) => ({ role, text }));
-  const requestId = crypto.randomUUID();
-  chatPlaybackDiagnostic.begin(requestId);
-  const identity = poseIdentity();
-  nativeObservation.emit('chat',{role:'user',text:message,source:'openclaw-chat',contextMessages:history},chatCorrelation);
-  localPresentation?.observeChat(message);
-  chatLog('user', message);
-  chatHistory.push({ role: 'user', text: message });
-  const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
-  const controller = new AbortController();
-  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller, requestedAt,dealSpeech });
-  const stages = [];
-  let previewRow = null;
-  try {
-    if (received.record.status === 'cancelled') throw new Error(received.record.reason);
-    if(dealSpeech){dealSpeech.jobId=requestId;speechPoseGate.reserveDeal(requestId,dealSpeech.version);refreshNextDealChat();}
-    const decision = await requestPlayerChat({ request: apiFetch, requestId, message, history, dealer: DEALER.key, entrySelection, identity,
-      signal: controller.signal, progressEvents: localPresentationEnabled, presentationVersion: dealSpeech?.version, images, profileRevision,
-      onProgress: progress => {
-      stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs, ...(progress.metrics ? { metrics: progress.metrics } : {}) });
-      if (chatStatus) {
-        chatStatus.dataset.stages = JSON.stringify(stages);
-        if (progress.metrics) chatStatus.dataset.providerMetrics = JSON.stringify(progress.metrics);
-        chatStatus.title = stages.map(item => `${CHAT_STAGES[item.stage]} ${(item.elapsedMs / 1000).toFixed(1)} s`).join('\n');
-        if (chatStatus.dataset.providerMetrics) {
-          const { runpodDelayMs, runpodExecutionMs } = JSON.parse(chatStatus.dataset.providerMetrics);
-          if (runpodDelayMs !== undefined) chatStatus.title += `\nRunPod-kö ${(runpodDelayMs / 1000).toFixed(1)} s`;
-          if (runpodExecutionMs !== undefined) chatStatus.title += `\nRunPod-körning ${(runpodExecutionMs / 1000).toFixed(1)} s`;
-        }
-      }
-      setChatStatus(CHAT_STAGES[progress.stage]);
-      nativeObservation.emit('status', { state: 'chat-progress', requestId, stage: progress.stage, elapsedMs: progress.elapsedMs,
-        ...(progress.metrics ? { metrics: progress.metrics } : {}) }, chatCorrelation);
-    }, onPreview: exactText => {
-      previewRow = chatLog('vera', exactText, true);
-      previewRow.title = 'Svarstext klar · förbereder röst och läppsynk';
-      const pending = pendingChatReplies.get(requestId);
-      if (pending) { pending.previewRow = previewRow; pending.previewText = exactText; }
-    } });
-    clearInterval(waitTimer);
-    setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
-    if (decision.kind !== 'silence'&&!dealSpeech) localPresentation?.state({ ready: true });
-    speechPoseGate.responseReady(requestId, decision);
-    const receipt = await received.completion;
-    if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
-    if (receipt.status === 'cancelled') {
-      chatPlaybackDiagnostic.finish(requestId, 'cancelled', receipt.reason);
-      if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(receipt.reason);
-      setChatStatus(chatFailureMessage(receipt.reason));
-    }
-    else {
-      if(dealSpeech&&input.value.trim()===message)input.value='';
-      chatPlaybackDiagnostic.finish(requestId, decision.kind === 'silence' ? 'silent' : 'unverified');
-      setChatStatus(decision.kind === 'silence' ? `${DEALER.name} valde att inte svara på det meddelandet.`
-        : pendingChatReplies.get(requestId)?.voiceUnavailable ? `Genererat tal är inte aktiverat för ${DEALER.name} just nu. Svaret visas som text.` : '');
-    }
-    return receipt.status==='completed';
-  } catch (error) {
-    if (previewRow?.classList.contains('pending')) previewRow.remove();
-    const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
-    if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(reason);
-    speechPoseGate.cancel(requestId, reason);
-    chatPlaybackDiagnostic.finish(requestId, 'failed', reason);
-    setChatStatus(reason === 'speech_autoplay_blocked'
-      ? 'Webbläsaren blockerade ljudet. Tillåt ljud för sidan och skicka frågan igen.' : chatFailureMessage(reason));
-    nativeObservation.emit('status', { state: 'chat-failed', requestId, reason }, chatCorrelation);
-    return false;
-  } finally {
-    pendingChatReplies.delete(requestId);
-    chatBusy = false;
-    clearInterval(waitTimer);
-    $('#chat-send').disabled = false;
-  }
-}
-
 $('#gate-enter').onclick = () => {
   $('#gate').classList.add('hidden');
   voice.greeted = true;
@@ -1779,31 +1478,7 @@ if (playerChoice && entrySelection.choices) {
 // Dealer tables are available in the main controls, without a rehearsal URL.
 // Every server-selected lane narrows the row, with or without an operator.
 // An unavailable dealer must not be advertised and then reopen default Astrid.
-const allowedDealerKeys = Array.isArray(entrySelection.choices?.dealers)
-  ? new Set(entrySelection.choices.dealers) : new Set([DEALER.key]);
-for (const dealer of Object.values(DEALERS)) {
-  if (allowedDealerKeys && !allowedDealerKeys.has(dealer.key)) continue;
-  const button = document.createElement('button');
-  button.type = 'button'; button.dataset.dealer = dealer.key;
-  const available=previewSession?.dealerAvailability.find(row=>row.id===dealer.key);
-  if(previewSession&&available?.playable!==true){button.disabled=true;button.title='Saknar spelbart grundklipp. Lägg till det under Dealers & klipp.';}
-  button.setAttribute('aria-label', `${dealer.name}'s table`);
-  button.setAttribute('aria-pressed', String(dealer.key === DEALER.key));
-  const portrait = document.createElement('span');
-  portrait.textContent = dealer.name.slice(0,1); portrait.setAttribute('aria-hidden','true');
-  const name = document.createElement('span'); name.textContent = dealer.name;
-  button.append(portrait, name);
-  button.onclick = () => {
-    if (button.disabled || dealer.key === DEALER.key) return;
-    if (round || busy) {
-      $('#dealer-switch-status').textContent = 'Finish this round to change tables.';
-      return;
-    }
-    location.href = dealerVersionPath(dealer.key, 'original', location.search);
-  };
-  $('#dealer-options').appendChild(button);
-}
-
+mountDealerPicker({document,$,entrySelection,DEALERS,DEALER,previewSession,state:clientState,location});
 
 buildChips();
 $('#limits').textContent = `${fmt(LIMITS.min)} \u2013 ${fmt(LIMITS.max)}`;
@@ -1819,80 +1494,10 @@ setBanner('PLEASE PLACE BETS');
 // prepareTable loads the player before opening the server-owned table.
 
 
-// Optional rehearsal uses the exact in-game playback path, with no generation
-// or chat request. This lets every dealer and recorded line be checked locally.
-let settleRehearsalInitialization;
-if (new URLSearchParams(location.search).get('rehearsal') === '1') {
-  const panel = document.createElement('details'); panel.id = 'rehearsal'; panel.open = true;
-  panel.addEventListener('toggle', () => { if(round&&!busy)activeBoxHighlight(); });
-  panel.innerHTML = `<summary>Dealer rehearsal</summary>
-    <label>Dealer<select id="rehearsal-dealer" aria-label="Rehearsal dealer" disabled></select></label>
-    <label>Recorded line<select id="rehearsal-line" aria-label="Recorded line" disabled></select></label>
-    <p id="rehearsal-status" aria-live="polite">Preparing the table for rehearsal…</p>
-    <button id="rehearsal-play" disabled>Play line</button><button id="rehearsal-repeat" disabled>Play twice</button>`;
-  $('#scene').appendChild(panel);
-  const dealerSelect = panel.querySelector('#rehearsal-dealer');
-  for (const d of Object.values(DEALERS)) {
-    if (allowedDealerKeys && !allowedDealerKeys.has(d.key)) continue;
-    dealerSelect.add(new Option(d.name, d.key));
-  }
-  dealerSelect.value = DEALER.key;
-  dealerSelect.onchange = () => { location.href = dealerVersionPath(dealerSelect.value, 'original', location.search); };
-  const lineSelect = panel.querySelector('#rehearsal-line');
-  const bank = {};
-  for (const id of new Set([...VOICE_LINES, ...Object.keys(bank)])) {
-    lineSelect.add(new Option(id.replaceAll('_', ' '), id));
-  }
-  const status = panel.querySelector('#rehearsal-status');
-  let rehearsalInitialized = false;
-  const update = () => {
-    if (!rehearsalInitialized) { status.textContent = 'Preparing the table for rehearsal…'; return; }
-    const id = lineSelect.value;
-    if (localPresentationEnabled) {
-      status.textContent = (bank[id]?.text ?? LINES[id] ?? id) + ' — shared Studio presentation; exact clip selected at playback.';
-      return;
-    }
-  };
-  lineSelect.onchange = update; update();
-  const play = async () => {
-    const id = lineSelect.value;
-    setMuted(false);
-    let completed;
-    await speechTurn(async signal => { completed = await playRecorded(id, signal); });
-    if (localPresentationEnabled && completed !== true) throw new Error('Shared Studio clip did not complete; check playback status.');
-    return completed;
-  };
-  const review = async count => {
-    if (!rehearsalInitialized) return;
-    const controls=[...panel.querySelectorAll('button,select')];
-    controls.forEach(control=>control.disabled=true);
-    update();
-    if (localPresentationEnabled) status.textContent = `0/${count} completed — reviewing ${lineSelect.value} with the shared Studio presentation.`;
-    try { for(let i=0;i<count;i++){
-      // The first gesture can unlock the automatic greeting. Queue the
-      // requested review behind it instead of silently dropping both plays.
-      while(speaking)await new Promise(resolve=>setTimeout(resolve,50));
-      const completed = await play();
-      if (localPresentationEnabled && completed === true) status.textContent = `${i + 1}/${count} completed — ${lineSelect.value}, shared Studio clip.`;
-    } }
-    catch(error){status.textContent=`Playback failed: ${error.message}`;}
-    finally{controls.forEach(control=>control.disabled=false);}
-  };
-  panel.querySelector('#rehearsal-play').onclick = () => review(1);
-  panel.querySelector('#rehearsal-repeat').onclick = () => review(2);
-  const initialControls = [...panel.querySelectorAll('button,select')];
-  settleRehearsalInitialization = failed => {
-    if (failed) { status.textContent = 'The table could not start. Sign in and reload to rehearse.'; return; }
-    rehearsalInitialized = true;
-    initialControls.forEach(control => { control.disabled = false; });
-    update();
-  };
-
-}
-
 const tableReady = prepareTable().catch(e=>{ tableError(e); throw e; });
 tableReady.catch(()=>{});
-tableReady.then(() => settleRehearsalInitialization?.(false), () => settleRehearsalInitialization?.(true));
+const dealerRehearsal=mountDealerRehearsal({document,$,location,entrySelection,DEALERS,DEALER,VOICE_LINES,LINES,localPresentationEnabled,setMuted,speechTurn,playRecorded,state:clientState,tableReady,activeBoxHighlight});
+window.addEventListener('pagehide',()=>dealerRehearsal?.close(),{once:true});
 document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;astridCamera?.stop('Utloggad · Av');await api('/api/auth/logout',{});location.reload();};
 
 // Separate explicit chat capability for the bound local lab. It cannot issue
