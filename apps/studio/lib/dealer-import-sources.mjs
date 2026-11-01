@@ -1,5 +1,5 @@
-// Frozen Kevin import sources shared by the offline plan and the Studio import
-// assistant: exact repository refs, Git blob identities, declared texts, pose
+// Frozen Kevin import sources for the Studio import assistant:
+// exact repository refs, Git blob identities, declared texts, pose
 // metadata and each source's runtime selection. Read-only data: nothing here
 // registers a dealer, uploads, publishes or approves content.
 import dragge from './dealer-import-kevin-source.json' with { type: 'json' };
@@ -8,8 +8,6 @@ import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/f
 import { PAOW_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
 
 const SOURCES = Object.freeze({ [dragge.sourceDealerId]: dragge, [paow.sourceDealerId]: paow });
-export const FROZEN_IMPORT_SOURCE_ALIASES = Object.freeze(Object.keys(SOURCES));
-export const DEFAULT_FROZEN_IMPORT_SOURCE_ALIAS = dragge.sourceDealerId;
 const fail = code => { throw Object.assign(Error(code), { code }); };
 
 export function frozenImportSource(alias) {
