@@ -111,6 +111,6 @@ test('request normalizer refuses unknown fields and keeps tuning only for the sa
   assert.deepEqual(dealerVoiceFromRequest({provider:'elevenlabs',voiceId:PAOW,modelId:'eleven_multilingual_v2'},current),
     {provider:'elevenlabs',voiceId:PAOW,modelId:'eleven_multilingual_v2',settings:{stability:0.38,similarity_boost:0.8,style:0.3,use_speaker_boost:true}});
   assert.deepEqual(dealerVoiceFromRequest({provider:'elevenlabs',voiceId:OTHER}),{provider:'elevenlabs',voiceId:OTHER,modelId:'eleven_multilingual_v2'});
-  for(const input of [null,{provider:'elevenlabs',voiceId:OTHER,settings:{stability:2}},{provider:'elevenlabs',voiceId:OTHER+'x'},{provider:'elevenlabs',voiceId:'../../'+OTHER.slice(3)}])
+  for(const input of [null,{provider:'elevenlabs',voiceId:OTHER,settings:{stability:2}},{provider:'elevenlabs',voiceId:OTHER+'x'},{provider:'elevenlabs',voiceId:'../'+OTHER.slice(3)}])
     assert.throws(()=>dealerVoiceFromRequest(input),{code:'studio_dealer_voice_invalid'});
 });
