@@ -1,34 +1,68 @@
 import { fileURLToPath as speechRootPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { dirname, basename, join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from '../services/game/generated-speech-stream.mjs';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
+import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
+import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
 
 const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));
 
 const secret = 'isolated-stream-secret-at-least-32-characters';
+const digest = value => createHash('sha256').update(value).digest('hex');
+const avatar = dealerId => { const bytes = Buffer.from('synthetic ' + dealerId); return {
+  schemaVersion:1, dealerId, profileRevision:digest(dealerId), imageSha256:digest(bytes), imageBase64:bytes.toString('base64'),
+}; };
 async function fixture(t, options = {}) {
-  const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-test-'));
-  let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0, available = options.initialAvailable ?? 1;
-  const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model', ...(options.overlapAudio ? { overlapAudio: true } : {}) };
+  const pool = speechMemoryPool(Date.now), journal = await createSpeechJournal({ pool, environmentId:'isolated-stream-fixture' });
+  await journal.initializeBudgetPolicy({ dailyBudgetMicroUsd:1000000, confirmation:'verified-new-empty-cost-journal' });
+  await journal.initializeFullfileBudgetPolicy({ reserveMicroUsd:200000,currentBudgetMicroUsd:1000000,confirmation:'verified-new-empty-cost-journal' });
+  const managed = options.session || options.overlapAudio;
+  let relayOptions, service, fresh = true, sourceCalls = 0, aborted = false, written = 0, available = managed ? 0 : 1;
+  let workerId, jobStatus = 'IN_PROGRESS', providerCalls = 0;
+  const config = { workerSecret: secret, ticketSecret: secret, origin: 'https://stream.example.test', apiKey: 'fixture', voiceId: 'voice', modelId: 'model',
+    ...(managed ? {session:{apiKey:'synthetic-provider',endpointId:'stream-fixture',reserveUsd:'0.20',dailyBudgetUsd:'1'}} : {}),
+    ...(options.overlapAudio ? { overlapAudio: true } : {}) };
   const services = [];
-  const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; await options.onWrite?.(b); }, end() {}, abort() { aborted = true; } }) };
-  const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10, journalRequired: false,
+  const state = () => ({ workers:Number(available > 0), busy:0, available });
+  const relay = { status:state, workerStatus:id => id === workerId ? state() : {workers:0,busy:0,available:0},
+    stopWorker(id) { assert.equal(id,workerId); options.onStop?.(id); available=0; jobStatus='COMPLETED'; return true; },
+    close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; await options.onWrite?.(b); }, end() {}, abort() { aborted = true; } }) };
+  const response = value => new Response(JSON.stringify(value), {headers:{'content-type':'application/json'}});
+  const fetchImpl = async (url, init) => {
+    assert.ok(url.startsWith('https://api.runpod.ai/v2/stream-fixture/'));
+    if(url.endsWith('/run')) {
+      providerCalls++; const input=JSON.parse(init.body).input; workerId=input.worker_id;
+      assert.equal(pool.state.requests.size,1,'request identity is durable before paid work');
+      const replacement=await options.onSubmit?.(input,init);
+      return replacement ?? response({id:'stream-job',status:'IN_QUEUE'});
+    }
+    if(url.endsWith('/status/stream-job')) { await options.onStatus?.(init); if(jobStatus==='IN_PROGRESS')available=1; return response({id:'stream-job',status:jobStatus}); }
+    if(url.endsWith('/cancel/stream-job')) { available=0;jobStatus='CANCELLED';return response({id:'stream-job',status:jobStatus}); }
+    assert.fail('unexpected fixture provider route');
+  };
+  const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10, journal, fetchImpl,
     resolveOwner: req => req.owner,
     attachRelay: (_, value) => { relayOptions = value; return relay; },
     pcmSource: options.pcmSource ?? (async function*({ beforeCostly }) { await beforeCostly(); sourceCalls++; yield new Uint8Array(48); }),
-    sessionManager: options.sessionManager,
     dealerRuntime: options.dealerRuntime, replyLibrary:options.replyLibrary, onLibraryStatus:options.onLibraryStatus, replyCaptureBytes:options.replyCaptureBytes,
   }).then(value => { services.push(value); return value; });
   service = await construct();
-  const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner, playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
-  const request = (d, who = owner) => ({ owner: who, headers: { 'sec-websocket-protocol': `astrid-v2, ticket.${d.ticket}` } });
-  t.after(async () => { await Promise.allSettled(services.map(s => s.close())); assert.equal(dirname(directory), resolve(tmpdir())); assert.match(basename(directory), /^croupier-stream-test-/); await rm(directory, { recursive: true, force: true }); });
-  return { config, directory, service, construct, input, request, get relayOptions() { return relayOptions; },
-    get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; }, setAvailable(value) { available = value; } };
+  const input = (requestId = 'test-request') => ({ requestId, dealerId: 'astrid', text: 'A test reply.', owner:'owner-one', playerId: 'player-one', beforeCostly: async () => { if (!fresh) throw Error('stale'); } });
+  const request = (d, who = 'owner-one') => ({ owner: who, headers: { 'sec-websocket-protocol': `astrid-v2, ticket.${d.ticket}` } });
+  t.after(async () => {
+    if(!options.uncertainSubmission){await Promise.all(services.map(s=>s.close()));return;}
+    const outcomes=await Promise.allSettled(services.map(s=>s.close()));
+    assert.ok(outcomes.some(outcome=>outcome.status==='rejected'));
+    for(const outcome of outcomes)if(outcome.status==='rejected')assert.equal(outcome.reason.code,'generated_speech_stream_shutdown_incomplete');
+    assert.equal([...pool.state.sessions.values()][0].state,'submission_uncertain');
+  });
+  return { config, pool, journal, service, construct, input, request, get relayOptions() { return relayOptions; },
+    get workerId(){return workerId;}, get providerCalls(){return providerCalls;},
+    get sourceCalls() { return sourceCalls; }, get aborted() { return aborted; }, get written() { return written; }, stale() { fresh = false; } };
 }
 
 test('prepare is unpaid, exact expiry is signed, cookie owner required; ready begins source', async t => {
@@ -49,28 +83,30 @@ test('prepare is unpaid, exact expiry is signed, cookie owner required; ready be
 
 test('registered stream binds own source and exact worker, then invalidates on profile change after preparation',async t=>{
   let fresh=true, paid=0, avatarSeen;
-  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId:'paow'},
+  const selected=avatar('paow');
+  const runtime={profileRevision:selected.profileRevision,imageSha256:selected.imageSha256,compositing:null,avatar:selected,
     assertFresh:async()=>{if(!fresh)throw Error('profile changed');},
     source:async function*({beforeCostly}){await beforeCostly();paid++;yield new Uint8Array(48);}};
-  const f=await fixture(t,{dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
-    async ensure({avatar,beforeCostly}){await beforeCostly();avatarSeen=avatar;return {ready:true,workerId:'paow-worker',binding:{dealerId:'paow',profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,protocolVersion:3}};},close(){}}});
+  const f=await fixture(t,{session:true,dealerRuntime:{prepare:async()=>runtime},onSubmit:input=>{avatarSeen=input.avatar;}});
   const descriptor=await f.service.prepare({...f.input(),dealerId:'paow'});
   assert.equal(descriptor.schemaVersion,2);assert.equal(descriptor.dealerId,'paow');assert.equal(descriptor.profileRevision,runtime.profileRevision);
-  assert.equal(descriptor.compositing,null);assert.equal(avatarSeen,runtime.avatar);assert.equal(paid,0);
-  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));assert.equal(identity.workerId,'paow-worker');
+  assert.equal(descriptor.compositing,null);assert.deepEqual(avatarSeen,runtime.avatar);assert.equal(paid,0);
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));assert.equal(identity.workerId,f.workerId);
   await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
   assert.equal(paid,1);assert.equal(f.sourceCalls,0);assert.equal(f.written,48);
   fresh=false;await new Promise(resolve=>setTimeout(resolve,40));assert.equal(f.aborted,true);
 });
-test('mismatched worker attestation produces no registered ticket or TTS',async t=>{
+test('mismatched worker attestation cannot join the registered session or start TTS',async t=>{
   let paid=0;
-  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId:'paow'},assertFresh:async()=>{},source:async function*(){paid++;yield new Uint8Array(48);}};
-  const f=await fixture(t,{dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
-    ensure:async()=>({ready:true,workerId:'foreign',binding:{dealerId:'astrid'}}),close(){}}});
-  await assert.rejects(f.service.prepare({...f.input(),dealerId:'paow'}),{code:'generated_speech_worker_binding_mismatch'});
-  assert.equal(paid,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
+  const selected=avatar('paow');
+  const runtime={profileRevision:selected.profileRevision,imageSha256:selected.imageSha256,compositing:null,avatar:selected,assertFresh:async()=>{},source:async function*(){paid++;yield new Uint8Array(48);}};
+  const f=await fixture(t,{session:true,dealerRuntime:{prepare:async()=>runtime}});
+  await f.service.prepare({...f.input(),dealerId:'paow'});
+  assert.equal(f.relayOptions.authenticateWorker({headers:{'x-dealer-id':'astrid','x-speech-protocol':'3'}},f.workerId),false);
+  assert.equal(f.relayOptions.authenticateWorker({headers:{}},'foreign'),false);
+  assert.equal(paid,0);assert.equal(f.sourceCalls,0);
 });
-test('legacy local streaming still admits its worker but cannot accept a profile-bound avatar',async t=>{
+test('a prewarmed base worker cannot claim a profile-bound avatar',async t=>{
   const f=await fixture(t);
   assert.equal(f.relayOptions.authenticateWorker({headers:{}},'legacy'),true);
   assert.equal(f.relayOptions.authenticateWorker({headers:{'x-dealer-id':'paow','x-speech-protocol':'3'}},'foreign'),false);
@@ -85,20 +121,20 @@ test('foreign websocket cookie and stale state never enter paid source', async t
 });
 
 test('durable request is exclusive after restart and across fullfile capability', async t => {
-  const f = await fixture(t); await f.service.prepare(f.input()); f.service.close();
+  const f = await fixture(t); await f.service.prepare(f.input()); await f.service.close();
   const restarted = await f.construct();
   await assert.rejects(restarted.prepare(f.input()), /already_attempted/);
   let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, journalRequired: false, provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
+  const oldService = createGeneratedSpeechService({reserveMicroUsd:200000,dailyBudgetMicroUsd:1000000}, { repositoryRoot: speechRepositoryRoot, journal:f.journal, artifacts:{save(){assert.fail('no new artifact');},get(){assert.fail('no artifact read');}}, provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
   await assert.rejects(oldService.generate({ ...f.input(), text: 'A test reply.' }), /conflict|attempted/);
-  assert.equal(fullfileCalls, 0); assert.equal((await readdir(f.directory)).filter(v => v.endsWith('.request.json')).length, 1);
+  assert.equal(fullfileCalls, 0); assert.equal(f.pool.state.requests.size, 1);
 });
 
 test('an earlier fullfile paid attempt blocks same request in streaming mode', async t => {
   const f = await fixture(t); let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, journalRequired: false, provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
+  const oldService = createGeneratedSpeechService({reserveMicroUsd:200000,dailyBudgetMicroUsd:1000000}, { repositoryRoot: speechRepositoryRoot, journal:f.journal, artifacts:{save(){assert.fail('failed provider cannot save');},get(){assert.fail('no artifact read');}}, provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
   await assert.rejects(oldService.generate(f.input()));
-  await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
+  await assert.rejects(f.service.prepare(f.input()), {code:'generated_speech_request_conflict'});
   assert.equal(fullfileCalls, 1); assert.equal(f.sourceCalls, 0);
 });
 
@@ -108,7 +144,7 @@ test('concurrent prepares for same owner preserve only newest reservation', asyn
   assert.equal(results[0].status, 'rejected'); assert.equal(results[1].status, 'fulfilled'); assert.equal(f.service.status().pending, 1);
 });
 
-test('pending prepares count toward bounded capacity before disk awaits', async t => {
+test('pending prepares count toward bounded capacity before journal awaits', async t => {
   const f = await fixture(t); let release;
   const held = new Promise(resolve => { release = resolve; });
   const pending = Array.from({ length: 32 }, (_, i) => f.service.prepare({ ...f.input(`request-${i}`), owner: `owner-${i}`, beforeCostly: () => held }));
@@ -154,134 +190,32 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
 test('service closes the session manager before terminating the relay', async t => {
   const order = [];
   const f = await fixture(t, {
+    session:true,
     onRelayClose: () => order.push('relay'),
-    sessionManager: { close: async () => { order.push('manager'); } },
+    onStop: () => order.push('manager'),
   });
+  await f.service.prepare(f.input());
   await f.service.close();
   assert.deepEqual(order, ['manager', 'relay']);
 });
 
-test('close starts provider cleanup immediately, is idempotent and awaits a stale preparation even if manager fails', async t => {
-  const activity = []; let release, entered;
-  const held = new Promise(resolve => { release = resolve; });
-  const started = new Promise(resolve => { entered = resolve; });
-  const f = await fixture(t, { sessionManager: {
-    ensure: async () => {}, close: async () => { activity.push('manager:close'); throw Error('fixture incomplete provider'); },
-  }, onRelayClose: () => activity.push('relay:close') });
-  const preparing = f.service.prepare({ ...f.input(), beforeCostly: async () => { entered(); await held; } });
-  await started;
-  const controller = new AbortController(), closing = f.service.close({ signal: controller.signal });
-  assert.equal(f.service.close({ signal: controller.signal }), closing);
-  let settled = false;
-  const observedClose = closing.catch(error => { assert.equal(error.code, 'generated_speech_stream_shutdown_incomplete'); settled = true; });
-  await new Promise(resolve => setImmediate(resolve));
-  assert.deepEqual(activity, ['manager:close']); assert.equal(settled, false);
-  await assert.rejects(f.service.prepare(f.input('after-close')), { code: 'generated_speech_stream_cancelled' });
-  release();
-  await assert.rejects(preparing, { code: 'generated_speech_stream_cancelled' });
-  await observedClose;
-  assert.deepEqual(activity, ['manager:close', 'relay:close']);
-});
-
 test('verified request reserves identity before starting/reusing worker; TTS waits for socket admission', async t => {
   let starts = 0, f;
-  const activity = [];
-  f = await fixture(t, { initialAvailable: 0, sessionManager: {
-    async ensure({ beforeCostly }) {
-      await beforeCostly();
-      assert.equal((await readdir(f.directory)).filter(name => name.endsWith('.request.json')).length, 1);
-      starts++; f.setAvailable(1);
-    }, activity(workerId) { activity.push(workerId); }, close() {},
-  } });
+  f = await fixture(t, { session:true,onSubmit() { assert.equal(f.pool.state.requests.size,1); starts++; } });
   const descriptor = await f.service.prepare(f.input());
   assert.equal(starts, 1); assert.equal(f.sourceCalls, 0); assert.equal(descriptor.kind, 'generated-speech-stream');
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(starts, 1, 'duplicate request cannot restart a paid worker');
-  f.relayOptions.onWorkerIdle('owned-worker');
-  assert.deepEqual(activity, ['owned-worker'], 'completed relay utterance resets its manager idle clock');
+  f.relayOptions.onWorkerIdle(f.workerId);
   assert.equal(starts, 1, 'completion notification does not submit another job');
 });
 
 test('failed worker startup cannot issue a stream ticket or pay again for the same request', async t => {
   let starts = 0;
-  const f = await fixture(t, { initialAvailable: 0, sessionManager: {
-    async ensure() { starts++; throw Object.assign(Error('blocked'), { code: 'generated_speech_daily_budget_exhausted' }); }, close() {},
-  } });
-  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_daily_budget_exhausted' });
+  const f = await fixture(t, { session:true,uncertainSubmission:true,onSubmit() { starts++; return new Response('synthetic rejected request',{status:403}); } });
+  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_provider_forbidden' });
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(starts, 1); assert.equal(f.service.status().pending, 0); assert.equal(f.sourceCalls, 0);
-});
-
-test('exclusive QA lease rejects product admission before reservation or costly work', async t => {
-  const f = await fixture(t); let costly = 0;
-  const release = f.service.acquireExclusive('operator-qa-one');
-  assert.throws(() => f.service.acquireExclusive('operator-qa-two'), /stream_busy/);
-  await assert.rejects(f.service.prepare({ ...f.input(), beforeCostly: async () => { costly++; } }), /stream_busy/);
-  assert.equal(costly, 0); assert.deepEqual(await readdir(f.directory), []);
-  release();
-  await f.service.prepare(f.input());
-  assert.equal(f.service.status().pending, 1);
-});
-
-test('in-flight product preparation and prepared records both block a QA lease', async t => {
-  const f = await fixture(t); let release, entered;
-  const held = new Promise(resolve => { release = resolve; });
-  const started = new Promise(resolve => { entered = resolve; });
-  const preparing = f.service.prepare({ ...f.input(), beforeCostly: async () => { entered(); await held; } });
-  await started;
-  assert.equal(f.service.status().pending, 1);
-  assert.throws(() => f.service.acquireExclusive('operator-qa-one'), /stream_busy/);
-  release(); await preparing;
-  assert.throws(() => f.service.acquireExclusive('operator-qa-one'), /stream_busy/);
-  f.service.cancelOwner('owner-one');
-  const releaseQa = f.service.acquireExclusive('operator-qa-one'); releaseQa();
-});
-
-test('exclusive lease persists through TTS EOF and releases on stream terminal', async t => {
-  const f = await fixture(t);
-  f.service.acquireExclusive('owner-one');
-  const descriptor = await f.service.prepare(f.input());
-  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
-  const wire = new AbortController();
-  await f.relayOptions.onSessionReady({ ...identity, id: 'qa-wire', signal: wire.signal });
-  await assert.rejects(f.service.prepare({ ...f.input('product'), owner: 'product' }), /stream_busy/);
-  wire.abort();
-  await f.service.prepare({ ...f.input('product'), owner: 'product' });
-  assert.equal(f.sourceCalls, 1);
-});
-
-test('exclusive lease automatically releases on preparation error and explicit owner cancellation', async t => {
-  const f = await fixture(t);
-  f.service.acquireExclusive('owner-one');
-  await assert.rejects(f.service.prepare({ ...f.input(), beforeCostly: async () => { throw Error('stale'); } }));
-  const release = f.service.acquireExclusive('owner-one');
-  await f.service.prepare(f.input('qa-next'));
-  f.service.cancelOwner('owner-one'); release();
-  await f.service.prepare({ ...f.input('product'), owner: 'product' });
-});
-
-test('QA abort retains exclusion until shared manager cancellation settles; product cannot join it', async t => {
-  let starts = 0, entered, drain, f;
-  const started = new Promise(resolve => { entered = resolve; });
-  const cleanup = new Promise(resolve => { drain = resolve; });
-  f = await fixture(t, { sessionManager: {
-    async ensure({ signal }) {
-      starts++;
-      if (starts === 1) { entered(); await cleanup; signal.throwIfAborted(); }
-    }, close() {},
-  } });
-  const abort = new AbortController(), release = f.service.acquireExclusive('owner-one');
-  const qa = f.service.prepare({ ...f.input('qa'), signal: abort.signal });
-  await started;
-  abort.abort(); f.service.cancelOwner('owner-one'); release();
-  assert.equal(f.service.status().pending, 1, 'cancelled work stays visible until cleanup ends');
-  assert.throws(() => f.service.acquireExclusive('another-qa'), /stream_busy/);
-  await assert.rejects(f.service.prepare({ ...f.input('product'), owner: 'product' }), /stream_busy/);
-  assert.equal(starts, 1, 'product never enters the old ensure promise');
-  drain(); await assert.rejects(qa);
-  assert.equal(f.service.status().pending, 0);
-  await f.service.prepare({ ...f.input('product'), owner: 'product' });
-  assert.equal(starts, 2);
 });
 
 test('only a completed exact audio/video pair enters reply library; save never gates first media',async t=>{
@@ -301,10 +235,10 @@ test('only a completed exact audio/video pair enters reply library; save never g
 for(const [dealerId,language] of [['paow','sv'],['dragan','sv'],['nova','en']])
 test(`reply library stores the ${dealerId} chat persona language`,async t=>{
   const saved=[];
-  const runtime={profileRevision:'a'.repeat(64),imageSha256:'b'.repeat(64),compositing:null,avatar:{dealerId},assertFresh:async()=>{},
+  const selected=avatar(dealerId);
+  const runtime={profileRevision:selected.profileRevision,imageSha256:selected.imageSha256,compositing:null,avatar:selected,assertFresh:async()=>{},
     source:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(48);}};
-  const f=await fixture(t,{replyLibrary:{async save(value){saved.push(value);}},dealerRuntime:{prepare:async()=>runtime},sessionManager:{supportsAvatars:true,
-    async ensure({beforeCostly}){await beforeCostly();return {ready:true,workerId:dealerId+'-worker',binding:{dealerId,profileRevision:runtime.profileRevision,imageSha256:runtime.imageSha256,protocolVersion:3}};},close(){}}});
+  const f=await fixture(t,{session:true,replyLibrary:{async save(value){saved.push(value);}},dealerRuntime:{prepare:async()=>runtime}});
   const descriptor=await f.service.prepare({...f.input(),dealerId,text:'Lugnt, korten har ingen brådska.'});
   const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
   await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
@@ -347,11 +281,11 @@ test('pending Blob writes count toward reply capture memory until they settle',a
 });
 
 test('prewarm reads only the selected dealer runtime; no GPU session or audio is started',async t=>{
-  let references=0,workers=0;
-  const f=await fixture(t,{dealerRuntime:{async prepare({dealerId,beforeCostly}){await beforeCostly();assert.equal(dealerId,'paow');references++;return {}; }},sessionManager:{async ensure(){workers++;},close(){}}});
+  let references=0;
+  const f=await fixture(t,{session:true,dealerRuntime:{async prepare({dealerId,beforeCostly}){await beforeCostly();assert.equal(dealerId,'paow');references++;return {}; }}});
   assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),true);
-  assert.equal(references,1);assert.equal(workers,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
-  f.stale();assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),false);assert.equal(references,1);assert.equal(workers,0);
+  assert.equal(references,1);assert.equal(f.providerCalls,0);assert.equal(f.sourceCalls,0);assert.equal(f.service.status().pending,0);
+  f.stale();assert.equal(await f.service.prewarm({...f.input(),dealerId:'paow'}),false);assert.equal(references,1);assert.equal(f.providerCalls,0);
 });
 
 test('cloud overlap buffers TTS while the GPU session starts and writes it once', async t => {
@@ -367,7 +301,7 @@ test('cloud overlap buffers TTS while the GPU session starts and writes it once'
       await gate;
       yield new Uint8Array(24);
     },
-    sessionManager: { async ensure({ beforeCostly, onSubmitted }) { await beforeCostly(); await onSubmitted(); await gate; return { ready: true }; }, close() {} },
+    onStatus:async()=>{await gate;},
   });
   const pending = f.service.prepare(f.input());
   await opened;
@@ -391,7 +325,7 @@ test('buffered PCM drains in bounded blocks independent of provider packet sizes
       for (let i=0; i<24000; i+=240) yield expected.subarray(i,i+240);
       yield expected.subarray(24000); finished();
     },
-    sessionManager: { async ensure({onSubmitted}) { await onSubmitted(); await ready; return {ready:true}; }, close() {} },
+    onStatus:async()=>{await ready;},
   });
   const descriptor = await f.service.prepare(f.input());
   const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
@@ -408,7 +342,6 @@ test('a partial PCM block flows before the provider finishes', async t => {
   const f=await fixture(t,{
     overlapAudio:true, onWrite:bytes=>{writes.push(bytes.length);seen();},
     pcmSource:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(24);await gate;yield new Uint8Array(24);},
-    sessionManager:{async ensure({onSubmitted}){await onSubmitted();return {ready:true};},close(){}},
   });
   const descriptor=await f.service.prepare(f.input());
   const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
@@ -423,7 +356,7 @@ test('freshness rejection between buffered blocks prevents remaining PCM deliver
   const f=await fixture(t,{
     overlapAudio:true, onWrite:()=>f.stale(),
     pcmSource:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(100000);finished();},
-    sessionManager:{async ensure({onSubmitted}){await onSubmitted();await ready;return {ready:true};},close(){}},
+    onStatus:async()=>{await ready;},
   });
   const descriptor=await f.service.prepare(f.input());
   const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
@@ -435,13 +368,11 @@ test('a rejected GPU job never starts overlapped TTS', async t => {
   let calls = 0;
   const f = await fixture(t, {
     overlapAudio: true,
+    uncertainSubmission:true,
     pcmSource: async function* () { calls++; yield new Uint8Array(24); },
-    sessionManager: {
-      async ensure() { throw Object.assign(Error('blocked'), { code: 'generated_speech_session_worker_failed' }); },
-      close() {},
-    },
+    onSubmit:()=>new Response('synthetic denied GPU job',{status:403}),
   });
-  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_worker_failed' });
+  await assert.rejects(f.service.prepare(f.input()), { code: 'generated_speech_session_provider_forbidden' });
   assert.equal(calls, 0); assert.equal(f.service.status().pending, 0);
 });
 
@@ -455,10 +386,7 @@ test('owner cancellation aborts overlapped TTS while the GPU worker is still con
       await beforeCostly(); calls++; seen();
       await new Promise((_, reject) => signal.addEventListener('abort', () => { aborted = true; reject(Object.assign(Error('aborted'), { code: 'generated_speech_stream_cancelled' })); }));
     },
-    sessionManager: {
-      async ensure({ onSubmitted }) { await onSubmitted(); await gate; return { ready: true }; },
-      close() {},
-    },
+    onStatus:async()=>{await gate;},
   });
   const pending = f.service.prepare(f.input());
   await opened;

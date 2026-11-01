@@ -36,6 +36,7 @@ Spelmotorn behåller sina pooler, miljöval och läsarportar. Blandning, kort, p
 ## Drift och data
 
 - Neon äger spel-, konto-, Admin- och publiceringsdata; Blob äger mediebytes. Motorn kör bara PostgreSQL (ingen variabel väljer databas), kör alltid med Neon som Studio-register och privat Blob (fast i koden, ingen variabel väljer dem) och har ingen SQLite- eller diskreserv; satt `CROUPIER_DATA_DIR` stoppar starten.
+- Genererat tal kräver Neon-journal för GPU-sessioner, strömförfrågningar och fullfilsjobb; fullfilernas ljud och video går via den privata Blob-adaptern. Det finns ingen valbar diskjournal eller separat operatörs-QA-reservation. Isolerade prov använder samma journal med syntetiska SQL-/providerportar.
 - `CROUPIER_STREAM_LANE=lissabon-stream-lane` är ett anslutnings-ID som `ops/cloud/config.mjs` sätter för spelprocessen; det är ingen panelpost. Lissabon-gästprofilerna är borttagna.
 - Miljövariabler: [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#render-croupier-v3-spelmotorn). Deploy och kontroller: [RENDER-V3](../../ops/cloud/RENDER-V3.md). Driftkarta och schemaordning: [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md). Backup och återgång: [ENVIRONMENT-RESTORATION](../../docs/ENVIRONMENT-RESTORATION.md). Tekniska format: [LOCAL-PRESENTATION-RUNTIME](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 

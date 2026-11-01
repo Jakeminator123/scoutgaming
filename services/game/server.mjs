@@ -1130,7 +1130,7 @@ else if (!speechStartupDisabled && process.env.CROUPIER_GENERATED_SPEECH_STREAMI
       movingSpeechRoutes:process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1',
       dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
       onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
-      ...(speechJournal ? { journal: speechJournal, journalRequired: true } : {}),
+      ...(speechJournal ? { journal: speechJournal } : {}),
       resolveOwner: chatSessionOwner,
     });
     if (speechStreamService) speechStartupStatus.state='ready';

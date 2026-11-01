@@ -1,18 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { isIP } from 'node:net';
-import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from '../../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { dealerChatLanguage } from '../../packages/presentation/contracts/dealer-chat-persona.mjs';
 import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd } from './generated-speech-session.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from '../../packages/presentation/server/speech-journal-lease.mjs';
 import { acceptsWorkerBinding } from '../astrid-gpu-worker/gateway/worker-binding.mjs';
 
-const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const digest = value => createHash('sha256').update(value).digest('hex');
-const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 const identifier = v => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v);
 const PCM_LIMIT = 24000 * 2 * 25;
 function startAudioPrefetch(open, signal) {
@@ -61,13 +55,6 @@ function startAudioPrefetch(open, signal) {
   };
 }
 function fail(code, statusCode = 503) { throw Object.assign(new Error(code), { code, statusCode }); }
-function privateDirectory(value) {
-  if (typeof value !== 'string' || !isAbsolute(value)) return false;
-  const path = resolve(value), inside = relative(REPOSITORY, path);
-  return ![parse(path).root, homedir(), process.cwd()].some(v => equalPath(path, resolve(v)))
-    && (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside));
-}
-
 export function generatedSpeechStreamConfiguration(env = process.env) {
   let origin = null;
   const local = env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1' && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
@@ -119,38 +106,25 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  * Normal HTTP result completion does not own this lifetime.
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
-  resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
+  resolveOwner, attachRelay, pcmSource, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
   freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000, movingSpeechRoutes = false,
-  journal = null, journalRequired = true,
+  journal = null,
 } = {}) {
-  if (journalRequired || journal) requireSpeechJournal(journal);
-  if (journal && suppliedSessionManager) fail('generated_speech_journal_unavailable');
-  const ownership = journal ? createSpeechJournalLease({ journal, resource:'stream-session' }) : null;
+  requireSpeechJournal(journal);
+  const ownership = createSpeechJournalLease({ journal, resource:'stream-session' });
   const journalTasks = new Set();
   let serviceClosing = false, closePromise;
   const track = task => { journalTasks.add(task); task.finally(() => journalTasks.delete(task)).catch(() => {}); return task; };
-  if ((!journal && !privateDirectory(configuration?.directory)) || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
+  if (!configuration || typeof resolveOwner !== 'function') fail('generated_speech_stream_not_configured');
   const [{ issueTicket, ticketAuthenticator }, { createCartesiaSource }] = await Promise.all([
     import('../astrid-gpu-worker/gateway/auth.mjs'),
     import('../astrid-gpu-worker/gateway/cartesia-source.mjs'),
   ]);
-  const { directory, workerSecret, ticketSecret, origin } = configuration;
+  const { workerSecret, ticketSecret, origin } = configuration;
   const authenticateTicket = ticketAuthenticator(ticketSecret);
   const source = pcmSource ?? createCartesiaSource(configuration, { fetchImpl });
   const attach = attachRelay ?? (await import('../astrid-gpu-worker/gateway/relay.mjs')).attachSpeechRelay;
   const records = new Map(), owners = new Map(), preparations = new Map(), inFlight = new Set();
-  let exclusive = null;
-  const settleExclusive = () => {
-    if (exclusive?.releasing && ![...inFlight].some(item => item.owner === exclusive.owner)
-      && !owners.has(exclusive.owner)) exclusive = null;
-  };
-  const releaseOwner = owner => {
-    if (exclusive?.owner !== owner) return;
-    exclusive.releasing = true;
-    // Cancellation removes the public preparation entry immediately. Retain
-    // admission until its manager promise has finished cancelling its own job.
-    settleExclusive();
-  };
   const mark = (record, stage, ms) => {
     try { record.input.onTiming?.(stage, ms); } catch { /* Telemetry cannot affect paid work. */ }
   };
@@ -205,7 +179,6 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     record.wireSignal?.removeEventListener('abort', record.wireAbort);
     if (records.get(record.id) === record) records.delete(record.id);
     if (owners.get(record.input.owner) === record) owners.delete(record.input.owner);
-    releaseOwner(record.input.owner);
   };
   const cancel = record => {
     if (!records.has(record.id)) return;
@@ -238,7 +211,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     onWorkerIdle(workerId) { sessionManager?.activity?.(workerId); },
     authenticateWorker(req, workerId) {
       if (configuration.session && typeof sessionManager?.authorizeWorker === 'function') return sessionManager.authorizeWorker(req.headers, workerId);
-      // Existing non-journal/local streaming accepts only the legacy avatar.
+      // A prewarmed worker without a managed session accepts only the base avatar.
       // Profile-bound workers require the journal manager's exact expectation.
       return acceptsWorkerBinding(null, req.headers);
     },
@@ -304,36 +277,20 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       } catch { cancel(record); throw Error('Speech source unavailable'); }
     },
   });
-  sessionManager = suppliedSessionManager ?? (configuration.session ? createSpeechSessionManager({
-    ...configuration.session, directory, workerSecret, origin,
-  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id), fetchImpl, journal, journalRequired, leaseManager:ownership }) : null);
-  async function reserve(input, key, fingerprint) {
-    if (journal) {
-      const identity = { ownerHash:digest(input.owner), requestId:input.requestId, fingerprint, capability:'stream' };
-      if (await journal.findRequest(identity)) fail('generated_speech_request_already_attempted', 409);
-      const lease = await ownership.get({ recover:true });
-      if (lease.recoveryOnly) {
-        if (sessionManager) await sessionManager.ensure({ signal:input.signal, beforeCostly:input.beforeCostly });
-        fail('generated_speech_recovery_required', 409);
-      }
-      const claim = await journal.claimRequest({ ...identity, lease });
-      if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
-      return claim;
+  sessionManager = configuration.session ? createSpeechSessionManager({
+    ...configuration.session, workerSecret, origin,
+  }, { workerState: id => id ? relay.workerStatus(id) : relay.status(), stopWorker: id => relay.stopWorker(id), fetchImpl, journal, leaseManager:ownership }) : null;
+  async function reserve(input, fingerprint) {
+    const identity = { ownerHash:digest(input.owner), requestId:input.requestId, fingerprint, capability:'stream' };
+    if (await journal.findRequest(identity)) fail('generated_speech_request_already_attempted', 409);
+    const lease = await ownership.get({ recover:true });
+    if (lease.recoveryOnly) {
+      if (sessionManager) await sessionManager.ensure({ signal:input.signal, beforeCostly:input.beforeCostly });
+      fail('generated_speech_recovery_required', 409);
     }
-    await mkdir(directory, { recursive: true, mode: 0o700 });
-    const info = await lstat(directory);
-    if (!info.isDirectory() || info.isSymbolicLink() || !equalPath(await realpath(directory), resolve(directory))) fail('generated_speech_stream_invalid_directory');
-    const reservations = (await readdir(directory)).filter(name => /^(?:stream-)?[a-f0-9]{64}\.request\.json$/.test(name));
-    if (reservations.length >= 1024) fail('generated_speech_stream_ledger_full');
-    // Recognize early experimental reservations, then use the exact full-file
-    // service key so capability changes cannot pay twice for one request.
-    try { await lstat(join(directory, `stream-${key}.request.json`)); fail('generated_speech_request_already_attempted', 409); }
-    catch (error) { if (error.code !== 'ENOENT') throw error; }
-    let file;
-    try { file = await open(join(directory, `${key}.request.json`), 'wx', 0o600); }
-    catch (error) { if (error.code === 'EEXIST') fail('generated_speech_request_already_attempted', 409); throw error; }
-    try { await file.writeFile(JSON.stringify({ fingerprint, ownerHash: digest(input.owner), state: 'reserved', createdAt: Date.now() })); await file.sync(); }
-    finally { await file.close(); }
+    const claim = await journal.claimRequest({ ...identity, lease });
+    if (claim.status !== 'new') fail('generated_speech_request_already_attempted', 409);
+    return claim;
   }
   return {
     status: () => ({ enabled: true, ...relay.status(), pending: records.size + inFlight.size }),
@@ -342,19 +299,11 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const work = Promise.resolve().then(() => dealerRuntime.prepare({dealerId,beforeCostly,signal})).then(() => true, () => false);
       track(work); return work;
     },
-    acquireExclusive(owner) {
-      if (typeof owner !== 'string' || !owner || owner.length > 512) fail('invalid_generated_speech_stream_request', 400);
-      if (exclusive || records.size || preparations.size || inFlight.size || relay.status().busy > 0) fail('generated_speech_stream_busy', 429);
-      const lease = { owner, releasing: false };
-      exclusive = lease;
-      return () => { if (exclusive === lease) releaseOwner(owner); };
-    },
     async prepare(input) {
       if (serviceClosing) fail('generated_speech_stream_cancelled', 499);
       if (!input || !identifier(input.requestId) || (input.dealerId !== 'astrid' && (!dealerRuntime || !/^[a-z][a-z0-9-]{0,63}$/.test(input.dealerId ?? ''))) || typeof input.owner !== 'string' || !input.owner || input.owner.length > 512
         || typeof input.text !== 'string' || !input.text.trim() || input.text !== input.text.trim() || input.text.length > 500
         || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(input.text) || typeof input.beforeCostly !== 'function') fail('invalid_generated_speech_stream_request', 400);
-      if (exclusive && (exclusive.owner !== input.owner || exclusive.releasing)) fail('generated_speech_stream_busy', 429);
       if (!preparations.has(input.owner) && !owners.has(input.owner) && records.size + preparations.size >= 32) fail('generated_speech_stream_busy', 429);
       const preparation = { playerId: input.playerId, owner: input.owner };
       let settled;
@@ -368,13 +317,13 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
       const runtime = input.dealerId === 'astrid' ? null : await dealerRuntime.prepare(input);
       current();
       if (runtime && !sessionManager?.supportsAvatars) fail('generated_speech_profiles_not_configured');
-      const key = digest(`${digest(input.owner)}\0${input.requestId}`), fingerprint = digest(JSON.stringify(runtime
+      const fingerprint = digest(JSON.stringify(runtime
         ? [input.text,input.dealerId,runtime.profileRevision,runtime.imageSha256] : [input.text, configuration.voiceId, configuration.modelId]));
       // Never silently fall back to a paid full-file job on unavailable capacity.
       if (!sessionManager && !relay.status().available) fail('generated_speech_stream_worker_unavailable', 503);
       if (records.size >= 32) fail('generated_speech_stream_busy', 429);
       if (owners.has(input.owner)) cancel(owners.get(input.owner));
-      preparation.journalClaim = await reserve(input, key, fingerprint);
+      preparation.journalClaim = await reserve(input, fingerprint);
       current(); await input.beforeCostly(); current();
       let workerId, audioPrefetch = null;
       const beginAudio = async () => {
@@ -417,18 +366,17 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
         if (journal && preparation.journalClaim && !published) {
           try { await journal.failRequest({ key:preparation.journalClaim.key, lease:await ownership.get(), safeCode:'generated_speech_stream_failed' }); } catch {}
         }
-        releaseOwner(input.owner);
         if (/^(?:generated_speech_|invalid_generated_speech_)/.test(error?.code || '') || /^(?:stale_chat_|chat_cancelled)/.test(error?.message || '')) throw error;
         if (input.signal?.aborted) fail('generated_speech_stream_cancelled', 499);
         fail('generated_speech_stream_failed');
       } finally {
         if (preparations.get(input.owner) === preparation) preparations.delete(input.owner);
-        inFlight.delete(preparation); settleExclusive();
+        inFlight.delete(preparation);
         settled();
       }
     },
-    cancelOwner(owner) { preparations.get(owner)?.stopPrefetch?.(); preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); releaseOwner(owner); },
-    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparation.stopPrefetch?.(); preparations.delete(owner); releaseOwner(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
+    cancelOwner(owner) { preparations.get(owner)?.stopPrefetch?.(); preparations.delete(owner); const record = owners.get(owner); if (record) cancel(record); },
+    cancelPlayer(playerId) { for (const [owner, preparation] of preparations) if (preparation.playerId === playerId) { preparation.stopPrefetch?.(); preparations.delete(owner); } for (const record of records.values()) if (record.input.playerId === playerId) cancel(record); },
     close(options) {
       if (closePromise) return closePromise;
       serviceClosing = true;

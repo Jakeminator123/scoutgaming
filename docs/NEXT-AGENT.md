@@ -2,6 +2,18 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Talets lagring och gamla QA-reservationer 1 november
+
+De tre taladaptrarna kräver nu alltid Neon-journal; förbrukade diskjournaler,
+lokala ljud-/videofiler och operatörs-QA:ns oanvända exklusivitets-API är borttagna.
+Fullfils-, ström- och sessionsproven använder journalen och behåller scope,
+budget, samtidighet, exakta artefakter, gamla svar och avbruten uppspelning.
+Filformat-/fillåsprov och fem rena QA-reservationsprov är avvecklade;
+dagens journalprov täcker dessutom återstart, kalla workers och osäkra submit.
+Den historiska ledgerimporten, SQL-migreringarna och lagrade data är oförändrade.
+Riktade prov passerar på Node 24.21.0; full CI hör till PR:en. Talet är fortsatt
+pausat och ingen drift-, provider- eller AV-acceptans ingår.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.
