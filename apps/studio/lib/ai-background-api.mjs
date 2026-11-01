@@ -5,7 +5,7 @@
 // template lists it and is published. The key, the provider's responses and its
 // error texts stay on this server; the browser only receives fixed codes.
 import {randomUUID} from 'node:crypto';
-import {openAiModelConnection} from './dealer-import-model.mjs';
+import {openAiModelConnection} from './dealers/dealer-import-model.mjs';
 import {canonicalStudioJson,StudioStorageError,validateActor,validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {assertNativeStudioRequest,nativeStudioErrorResponse,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';

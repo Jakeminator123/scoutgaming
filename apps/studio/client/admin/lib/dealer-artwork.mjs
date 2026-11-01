@@ -4,7 +4,7 @@ const base = '/admin/_assets/lobby';
 const pair = (names, image, video) => Object.freeze({ names: Object.freeze(names), image: `${base}/images/dealers/${image}`, video: `${base}/videos/dealers/${video}` });
 const pairs = Object.freeze({
   marten: pair(['Mårten', 'Marten'], 'marten.jpg', 'marten-look.mp4'),
-  // Dragge is registered as `dragan` (named Dragan) since the Kevin import (apps/studio/lib/dealer-import-kevin-source.json).
+  // Dragge is registered as `dragan` (named Dragan) since the Kevin import (apps/studio/lib/dealers/dealer-import-kevin-source.json).
   dragge: pair(['Dragge', 'Dragan'], 'dragge.jpg', 'dragge-shirt.mp4'),
   anna: pair(['Anna'], 'anna.png', 'anna.mp4'),
   paow: pair(['Paow'], 'paow.jpg', 'paow-hair.mp4'),

@@ -1,7 +1,7 @@
 // Shared in-memory fixture for Dealer Forge tests: fake repository, store, Runway, images and private Blob.
 import { createHash } from 'node:crypto';
 import { createSeedProject, addDealer } from '../../../../packages/presentation/contracts/studio-model.mjs';
-import { createDealerForgeService } from '../../lib/dealer-forge-service.mjs';
+import { createDealerForgeService } from '../../lib/dealers/dealer-forge-service.mjs';
 import { validateStudioMedia } from '../../../../packages/studio-registry/server/document-contract.mjs';
 
 export const scope = { environment: 'test', workspaceId: 'ws' };

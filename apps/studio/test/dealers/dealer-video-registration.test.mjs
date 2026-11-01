@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BASE_DEALER_IDS,MAX_DEALERS,isDealerId,registeredDealerIds} from '../../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateVideoMetadata,validateVideoCompositing,videoCompositing,videoFitsLine} from '../../../packages/presentation/contracts/video-intake.mjs';
-import {mediaBlobPath,validatePrivateMedia} from '../lib/cloud-media-store.mjs';
-import {requireSavedVideoDealer} from '../../../packages/studio-registry/server/video-dealer-registration.mjs';
-import {createStudioUploadService} from '../lib/studio-upload-service.mjs';
-import {DEFAULT_DEALER_COMPOSITING,effectiveDealerCompositing} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
+import {BASE_DEALER_IDS,MAX_DEALERS,isDealerId,registeredDealerIds} from '../../../../packages/presentation/contracts/dealer-identity.mjs';
+import {validateVideoMetadata,validateVideoCompositing,videoCompositing,videoFitsLine} from '../../../../packages/presentation/contracts/video-intake.mjs';
+import {mediaBlobPath,validatePrivateMedia} from '../../lib/cloud-media-store.mjs';
+import {requireSavedVideoDealer} from '../../../../packages/studio-registry/server/video-dealer-registration.mjs';
+import {createStudioUploadService} from '../../lib/studio-upload-service.mjs';
+import {DEFAULT_DEALER_COMPOSITING,effectiveDealerCompositing} from '../../../../packages/presentation/contracts/dealer-compositing.mjs';
 const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Nora',notes:'',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
 const project=()=>({dealers:[...BASE_DEALER_IDS,'nora'].map(id=>({id,label:id}))});
 const scope={environment:'test',workspaceId:'nora-intake'},id='00000000-0000-4000-8000-000000000001',sha256='d'.repeat(64);
@@ -58,10 +58,10 @@ test('upload token issuance checks saved roster and removal revokes a signed gra
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,dirname,resolve,basename} from 'node:path';
-import {createSeedProject,addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {seedLegacyVideo} from './fixtures/legacy-video.mjs';
-import {readUploads} from '../lib/video-local-readers.mjs';
-import {loadVideoRegistry} from './fixtures/local-video-registry.mjs';
+import {createSeedProject,addDealer} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {seedLegacyVideo} from '../fixtures/legacy-video.mjs';
+import {readUploads} from '../../lib/video-local-readers.mjs';
+import {loadVideoRegistry} from '../fixtures/local-video-registry.mjs';
 
 test('registered Nora video survives reload with greenscreen metadata and never binds Astrid footage',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-nora-video-'));

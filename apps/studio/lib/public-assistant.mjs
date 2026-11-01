@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { dealerImportModelConfiguration } from './dealer-import-model.mjs';
+import { dealerImportModelConfiguration } from './dealers/dealer-import-model.mjs';
 import { assistantRequestConfiguration, normalizeNativeStudioRequest } from './studio-native-request.mjs';
 
 export const PUBLIC_MODEL = Object.freeze({id:'gpt-6-luna',reasoningEffort:'low'});

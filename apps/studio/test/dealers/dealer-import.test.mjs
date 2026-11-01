@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, frozenDealerImportMatches, frozenImportNoteRepairs, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
-import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
-import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
-import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
-import { frozenImportSource } from '../lib/dealer-import-sources.mjs';
-import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
-import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
-import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
-import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
-import {restoreIntakeNotes} from '../client/admin/lib/clip-intake.mjs';
+import { addDealer, createSeedProject } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, frozenDealerImportMatches, frozenImportNoteRepairs, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../../lib/dealers/dealer-import-catalog.mjs';
+import { dealerMediaSlots } from '../../lib/dealers/dealer-media-library.mjs';
+import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../../lib/dealers/dealer-import-model.mjs';
+import { createDealerImportApi, createDealerImportLimiter } from '../../lib/dealers/dealer-import-api.mjs';
+import { frozenImportSource } from '../../lib/dealers/dealer-import-sources.mjs';
+import {createStudioMediaApi} from '../../lib/studio-media-api.mjs';
+import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
+import {createStudioMemoryPool} from '../../../../test/fixtures/studio-memory-pool.mjs';
+import {seedSavedVideoProject} from '../fixtures/video-dealer-project.mjs';
+import {restoreIntakeNotes} from '../../client/admin/lib/clip-intake.mjs';
 
 const origin = 'https://studio.example.invalid', scope = { environment: 'test', workspaceId: 'studio-test' };
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth', allowedOrigins: ['https://public.example.invalid', origin], publicHosts: ['public.example.invalid', 'studio.example.invalid'] };

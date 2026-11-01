@@ -1,5 +1,5 @@
 import {StudioStorageError,validateMediaId,validateRevision,validateDocumentValue,canonicalStudioJson} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
+import {assertLifecyclePackages} from './dealers/dealer-lifecycle.mjs';
 import {readMediaBlobIndex} from './media-blob-index.mjs';
 import {readRuntimeCatalog} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 import {isCloudMediaConfigured,purgeManagedMedia} from './cloud-media-store.mjs';

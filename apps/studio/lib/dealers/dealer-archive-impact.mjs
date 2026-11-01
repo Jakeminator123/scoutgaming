@@ -1,16 +1,16 @@
-import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mjs';
+import {nativeFilmedPlanningMutations} from '../presentation-runtime-readiness.mjs';
 import {createHash} from 'node:crypto';
-import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
-import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
-import {packageRoomsFor} from '../../../packages/presentation/server/package-rooms.mjs';
-import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
-import {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
-export {withoutPresentationLanes} from '../../../packages/presentation/contracts/retained-presentation.mjs';
-import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
-import {isPresentationRoom} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {operatorAuditContext} from './operator-audit-context.mjs';
+import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../../packages/studio-registry/server/document-contract.mjs';
+import {createOperatorStore} from '../../../../packages/operators/server/operator-store.mjs';
+import {readOperatorLifecycle,withOperatorLifecycle} from '../../../../packages/operators/server/operator-lifecycle.mjs';
+import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../../packages/presentation/server/presentation-package.mjs';
+import {packageRoomsFor} from '../../../../packages/presentation/server/package-rooms.mjs';
+import {EXTENDED_PRESENTATION_FORMAT} from '../../../../packages/presentation/server/presentation-storage.mjs';
+import {withoutPresentationLanes} from '../../../../packages/presentation/contracts/retained-presentation.mjs';
+export {withoutPresentationLanes} from '../../../../packages/presentation/contracts/retained-presentation.mjs';
+import { gameLaneConfiguration } from '../../../../packages/presentation/contracts/game-lanes.mjs';
+import {isPresentationRoom} from '../../../../packages/presentation/contracts/presentation-room.mjs';
+import {operatorAuditContext} from '../operator-audit-context.mjs';
 
 const fail=(code='studio_dealer_archive_coverage_incomplete',status=409)=>{throw new StudioStorageError(code,status);};
 const same=(left,right)=>canonicalStudioJson(left)===canonicalStudioJson(right);

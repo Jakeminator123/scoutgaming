@@ -13,7 +13,7 @@ export const dealerPortraits = [
 export const portraitBackdrop = `${assets}images/lobby/room-salongen.png`;
 
 // Exact registered IDs only: PAOW was published as `paow-v2`, and Dragge is
-// registered as `dragan` since the Kevin import (apps/studio/lib/dealer-import-kevin-source.json).
+// registered as `dragan` since the Kevin import (apps/studio/lib/dealers/dealer-import-kevin-source.json).
 const artworkAliases = Object.freeze({ 'paow-v2': 'paow', dragan: 'dragge' });
 
 // Match an exact registered ID, never an approximate display name.

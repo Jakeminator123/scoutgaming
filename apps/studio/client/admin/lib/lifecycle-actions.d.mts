@@ -1,5 +1,5 @@
 import type { StudioProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import type { DealerArchiveImpact } from '../../../lib/dealer-archive-impact.mjs';
+import type { DealerArchiveImpact } from '../../../lib/dealers/dealer-archive-impact.mjs';
 import type { VideoInventory } from './connected-studio.mjs';
 import type { DeletionPlan, LifecycleVideo } from './studio-lifecycle.mjs';
 

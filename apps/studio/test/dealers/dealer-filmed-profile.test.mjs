@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
-import {measuredFixtureRecord} from '../../../test/fixtures/native-room-game-material.mjs';
-import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
-import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
-import {addDealer,createSeedProject,validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {registeredFilmedProfile} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
-import {filmedTakePlacement} from '../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
-import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
-import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
-import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
+import {createPglitePool} from '../../../../test/fixtures/pglite-pool.mjs';
+import {measuredFixtureRecord} from '../../../../test/fixtures/native-room-game-material.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../../ops/neon-studio/migrations.mjs';
+import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
+import {addDealer,createSeedProject,validateProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {registeredFilmedProfile} from '../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import {filmedTakePlacement} from '../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
+import {createStudioDealerApi} from '../../lib/studio-dealer-api.mjs';
+import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../../lib/presentation-runtime-readiness.mjs';
+import {presentationCapabilitiesForVersion} from '../../../../packages/presentation/capability-contract.mjs';
 
 // Admin › Dealers › Landningar on real PostgreSQL SQL (PGlite with the Studio
 // migrations). Synthetic clip records; no Neon, no Blob, no published room.

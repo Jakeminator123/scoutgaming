@@ -1,13 +1,13 @@
 import {createHash} from 'node:crypto';
-import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {registeredFilmedProfile,registeredFilmedProfileById} from '../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
-import {validateStudioFilmedProfile,filmedProfileFor,copyTakeFrames,copiedFilmedTake} from '../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
-import {filmedTakePlacement} from '../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
-import {requiredNativeFilmedTakes} from '../../../packages/presentation/runtime/filmed-deal-coverage.mjs';
-import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {validateProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {registeredFilmedProfile,registeredFilmedProfileById} from '../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
+import {validateStudioFilmedProfile,filmedProfileFor,copyTakeFrames,copiedFilmedTake} from '../../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
+import {filmedTakePlacement} from '../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
+import {requiredNativeFilmedTakes} from '../../../../packages/presentation/runtime/filmed-deal-coverage.mjs';
+import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../../../packages/studio-registry/server/document-contract.mjs';
 import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
-import {filmedTableTemplate} from './filmed-table-template.mjs';
-import {normalizeMediaTiming} from '../../../packages/presentation/contracts/media-timing.mjs';
+import {filmedTableTemplate} from '../filmed-table-template.mjs';
+import {normalizeMediaTiming} from '../../../../packages/presentation/contracts/media-timing.mjs';
 
 // Admin › Dealers › Landningar: dealers[].filmedProfile in the saved project.
 // Same CAS and journal as every project save (document_history, audit_events).

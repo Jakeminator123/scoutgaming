@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createSeedProject, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { forgeSlots, slotById, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
-import {dealerMediaSlots} from '../lib/dealer-media-library.mjs';
-import {ROULETTE_MEDIA_EVENTS} from '../../../packages/presentation/contracts/roulette-media.mjs';
-import { ForgeError } from '../lib/dealer-forge-service.mjs';
-import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
-import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';
-import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
-import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
-import { createStudioMemoryPool } from '../../../test/fixtures/studio-memory-pool.mjs';
-import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
-import { checkPermanentMediaDeletion } from '../lib/studio-media-deletion.mjs';
+import { createSeedProject, addDealer } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { forgeSlots, slotById, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../../lib/dealers/dealer-forge-catalog.mjs';
+import {dealerMediaSlots} from '../../lib/dealers/dealer-media-library.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../../../../packages/presentation/contracts/roulette-media.mjs';
+import { ForgeError } from '../../lib/dealers/dealer-forge-service.mjs';
+import { fixture, sha, scope, PNG, MP4 } from '../fixtures/dealer-forge-fixture.mjs';
+import { createDealerForgeStore } from '../../lib/dealers/dealer-forge-store.mjs';
+import { createRunwayClient, RunwayError } from '../../lib/runway-client.mjs';
+import { createStudioRepository } from '../../../../packages/studio-registry/server/document-repository.mjs';
+import { createStudioMemoryPool } from '../../../../test/fixtures/studio-memory-pool.mjs';
+import { seedSavedVideoProject } from '../fixtures/video-dealer-project.mjs';
+import { checkPermanentMediaDeletion } from '../../lib/studio-media-deletion.mjs';
 
 const actor = { actor: 'tester' };
 

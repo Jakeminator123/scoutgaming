@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server.js';
 import { normalizeNativeStudioRequest, normalizeNativeStudioPageRequest, studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from '../lib/studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest } from '../lib/studio-native-runtime.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createDealerForgeApi } from '../lib/dealer-forge-api.mjs';
+import { createDealerForgeApi } from '../lib/dealers/dealer-forge-api.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
 import { serveAdminWorkspaceData } from '../lib/admin-workspace-data.mjs';
 

@@ -4,8 +4,8 @@
 // registers a dealer, uploads, publishes or approves content.
 import dragge from './dealer-import-kevin-source.json' with { type: 'json' };
 import paow from './dealer-import-kevin-source-paow.json' with { type: 'json' };
-import { DRAGAN_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
-import { PAOW_KEVIN_PROFILE } from '../../../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
+import { DRAGAN_KEVIN_PROFILE } from '../../../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import { PAOW_KEVIN_PROFILE } from '../../../../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
 
 const SOURCES = Object.freeze({ [dragge.sourceDealerId]: dragge, [paow.sourceDealerId]: paow });
 const fail = code => { throw Object.assign(Error(code), { code }); };

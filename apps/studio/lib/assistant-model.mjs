@@ -1,5 +1,5 @@
 import {ASSISTANT_SOURCES,ASSISTANT_PAGES,validateAssistantRead,assistantNavigation} from './assistant-reads.mjs';
-import { dealerImportModelConfiguration } from './dealer-import-model.mjs';
+import { dealerImportModelConfiguration } from './dealers/dealer-import-model.mjs';
 
 export const ASSISTANT_MODELS = Object.freeze({
   help: { id: 'gpt-6-luna', reasoningEffort: 'low' },

@@ -26,7 +26,7 @@ Produktens spel i drift: Johns Bet med dealern PAOW. Spelmotorn (`services/game`
 | Fryst rum, speltyp och bolag | [presentation-room.mjs](../../../packages/presentation/contracts/presentation-room.mjs) |
 | Klippurval, vila och skobyten | [packages/presentation/runtime](../../../packages/presentation/runtime/) |
 | Kortlagrets layout | [card-presentation](../../../services/game/public/card-presentation/README.md) |
-| Forge-mål och geometriprofil | [dealer-forge-catalog.mjs](../../../apps/studio/lib/dealer-forge-catalog.mjs) |
+| Forge-mål och geometriprofil | [dealer-forge-catalog.mjs](../../../apps/studio/lib/dealers/dealer-forge-catalog.mjs) |
 
 ## Kommandon och rum
 

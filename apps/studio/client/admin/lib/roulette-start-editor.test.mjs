@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 import {createSeedProject,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {materialById} from '../../../../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {mediaClassification} from '../../../lib/dealer-media-library.mjs';
+import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
 import {createStudioClient,currentClipId} from './connected-studio.mjs';
 import * as slots from './roulette-clip-map.mjs';
 import * as editor from './roulette-start-editor.mjs';

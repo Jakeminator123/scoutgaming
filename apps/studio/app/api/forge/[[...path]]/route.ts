@@ -1,4 +1,4 @@
-import {handleNativeDealerForge} from '@/lib/dealer-forge-api.mjs';
+import {handleNativeDealerForge} from '@/lib/dealers/dealer-forge-api.mjs';
 
 // Runway download + private Blob commit of a 1080p clip needs more than the default budget.
 export const runtime='nodejs';
