@@ -97,7 +97,7 @@ run_node_tests access runtime test/vercel-presentation-video-origin.mjs
 run_check access craig-login 180 node test/craig-login.mjs
 run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
 run_node_tests speech openclaw-chat-contract test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs test/microphone-openclaw-integration.mjs
+run_node_tests speech dealer-camera test/dealer-camera.mjs test/dealer-camera-control.mjs test/dealer-camera-audio.mjs test/dealer-wake-word.mjs test/dealer-transcription.mjs test/dealer-chat-visibility.mjs test/microphone-openclaw-integration.mjs
 run_node_tests speech generated-speech-providers test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
 run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs
@@ -109,7 +109,7 @@ run_node_tests gameplay generations-api test/generations-api.mjs
 run_node_tests gameplay native-partner-events test/native-partner-events.mjs test/native-observation-publisher.mjs
 run_node_tests gameplay native-observation test/native-observation.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests gameplay roulette test/roulette.mjs test/roulette-room.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs
-run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs test/room-idle.mjs test/table-behaviours-kevin.mjs test/table-limits-kevin.mjs test/table-restart-kevin.mjs test/shared-room-overlap.mjs test/shared-table-full.mjs test/shared-table-settled.mjs test/shared-room-waiting.mjs
+run_node_tests gameplay shared-blackjack test/blackjack-core.mjs test/blackjack-table.mjs test/shared-table-command-authority.mjs test/shared-table-runtime.mjs test/shared-postgres-transaction.mjs test/shared-table-client-snapshot.mjs test/blackjack-presentation.mjs test/room-idle.mjs test/table-player-actions.mjs test/table-limit-profiles.mjs test/table-state-recovery.mjs test/shared-room-overlap.mjs test/shared-table-full.mjs test/shared-table-settled.mjs test/shared-room-waiting.mjs
 run_node_tests gameplay fuzz-blackjack test/fuzz-blackjack.mjs test/blackjack-sidebets.mjs
 run_node_tests gameplay generation-media test/generation-media.mjs test/qa-process-guard.mjs
 run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs

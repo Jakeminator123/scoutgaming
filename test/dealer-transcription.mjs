@@ -68,7 +68,7 @@ test('off, wrong method or missing key rejects before provider work', async () =
   assert.equal(unconfigured.res.status, 503); assert.equal(calls, 0);
 });
 
-test('origin, Astrid-only, language and profile guards reject before reading/forwarding audio', async () => {
+test('origin, selected-dealer, language and profile guards reject before reading/forwarding audio', async () => {
   let calls = 0;
   const api = createAstridTranscriptionApi({ apiKey: 'synthetic-key', fetchImpl: async () => { calls++; } });
   for (const replacement of [

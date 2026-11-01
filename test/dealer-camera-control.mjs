@@ -120,7 +120,7 @@ test('page loads off with separate playback, microphone and camera controls; fir
   } finally { h.restore(); }
 });
 
-test('Play only toggles Astrid playback and never requests recording consent or devices', async () => {
+test('Play only toggles selected-dealer playback and never requests recording consent or devices', async () => {
   const h = harness();
   try { await tick(); h.click(h.play); await tick(); assert.equal(h.playbackToggles(), 1); assert.equal(h.play.attributes['aria-pressed'], 'true'); assert.equal(h.dialog.hidden, true); assert.equal(h.requests.length, 0); }
   finally { h.restore(); }
@@ -433,7 +433,7 @@ test('selecting Terra after the tab opened enables images on the next fresh voic
   } finally { h.restore(); }
 });
 
-test('canWake stays false until local PCM buffer is ready and while Astrid is speaking', async () => {
+test('canWake stays false until local PCM buffer is ready and while the selected dealer is speaking', async () => {
   let quiet = false;
   const h = harness({ permission: 'pending', canStart: () => quiet });
   try {
