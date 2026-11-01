@@ -55,7 +55,7 @@ hämtas `model.primary` från `croupier-chat` (annars director); ett befintligt
 modellval får skilja sig från chatten. Rollen har tom `fallbacks` och `skills`, avstängd
 minnessökning och heartbeat (`0m`), `tools.profile=minimal`,
 `tools.deny=["*"]` och avstängd elevated. Gateway-starten lägger additivt till
-en saknad roll (`reconcile-speech` / `reconcile-roles`) och skriver aldrig över
+en saknad roll (`reconcile-speech`) och skriver aldrig över
 en konflikterande handredigerad roll. Fälten finns i den taggade versionens
 schema ([AgentEntry](https://github.com/openclaw/openclaw/blob/v2026.9.5/src/config/zod-schema.agent-runtime.ts),
 [agents](https://github.com/openclaw/openclaw/blob/v2026.9.5/src/config/zod-schema.agents.ts),

@@ -1,8 +1,7 @@
 # Studios scheman
 
 Projekt-, video-, idle- och probescheman ägs av
-`../../packages/presentation/contracts/schemas/`. `lab-video-manifest.schema.json`
-och `social.schema.json` stannar här med appens lagrings- och socialfunktioner.
+`../../packages/presentation/contracts/schemas/`. `lab-video-manifest.schema.json` stannar här med appens lagringsfunktioner.
 Tekniska ID:n och tillåtna situationer samordnas med
 `../../packages/presentation/contracts/policies/studio-contract.json`.
 `test/studio-contract.test.mjs` kontrollerar att dessa håller ihop.

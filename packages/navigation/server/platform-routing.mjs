@@ -168,7 +168,7 @@ export function platformRoute(url, config, request) {
   if (workspace && (path === '/partner' || path.startsWith('/partner/'))) {
     return { kind: 'studio', destination: `${config.labUiOrigin}${workspace.studioPath}${url.search}` };
   }
-  if (config.nativeStudio && (['/studio/api/project','/studio/api/social'].includes(path)
+  if (config.nativeStudio && (path === '/studio/api/project'
     || /^\/studio\/api\/(?:videos|dealers|layer-assets|replies)(?:\/|$)/.test(path))) {
     return { kind: 'studio', destination: `${config.labUiOrigin}${path}${url.search}` };
   }

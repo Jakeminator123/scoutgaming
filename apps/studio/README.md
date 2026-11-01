@@ -84,8 +84,8 @@ app/          Next.js-sidor och API-rutter (app/api/…)
 client/       Admin- och lobbyklienten (eget bygge)
 components/   delade React-komponenter, bland annat Partnerportalens arbetsyta (partner/)
 lib/          serveradaptrar: lagring, behörighet, observation, tal
-policies/     appens egna policyer, till exempel social.seed.json
-schemas/      appens egna scheman (manifest, social policy)
+policies/     guide till projektets gemensamma startregler
+schemas/      appens videomanifestschema
 test/         Studio-, API- och lagringsprov
 tools/        byggsteg för förhandsvisning och klient
 docs/         användarguiden och TERMINOLOGI (Admins Hjälp länkar hit)

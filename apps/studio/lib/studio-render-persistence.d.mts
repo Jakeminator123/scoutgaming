@@ -1,6 +1,5 @@
 export interface StudioReadPersistence {
   projectStore: {load(): Promise<any>; save(...args: any[]): Promise<never>};
-  socialStore: {load(): Promise<any>; save(...args: any[]): Promise<never>};
   videoRegistry(): Promise<any>;
   videoResponse(id: string, request: Request): Promise<Response>;
   validateProjectBindings(project: any): Promise<void>;

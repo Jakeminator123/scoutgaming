@@ -15,7 +15,7 @@ const settings = (patch = {}) => ({
   host: '0.0.0.0', port: 0, apiToken: labToken, dataDir: '', remoteUrl: '', remoteToken: '',
   baseUrl: 'https://gateway.example.test', gatewayKey, agent: 'openclaw/croupier-director', chatAgent: 'openclaw/croupier-chat',
   speechAgent: 'openclaw/croupier-speech', speechUrl: '', speechToken, adviceTimeoutMs: 250,
-  companionEnabled: false, companionFunEnabled: false, companionWebEnabled: false, dashboardOrigin: '', dashboardAllowLoopback: false,
+  companionEnabled: false, companionFunEnabled: false, dashboardOrigin: '', dashboardAllowLoopback: false,
   ...patch,
 });
 

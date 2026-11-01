@@ -48,7 +48,7 @@ och `OPENCLAW_MODEL_API_KEY` stannar i Gatewayn.
 Inställningar sparas på Gatewayns disk och skrivs inte över vid start.
 `croupier-operator` är agenten för dashboardarbete; dess verktyg börjar
 avstängda och aktiveras bara uttryckligen. Låt de nekade verktygen hos
-`croupier-director`, `croupier-chat`, `croupier-social` och `croupier-speech`
+`croupier-director`, `croupier-chat` och `croupier-speech`
 vara kvar, och skicka aldrig spelartext till operatörsagenten. Dashboarden
 skapar ingen koppling till slump, spelregler, spelardatabas eller teaminbox.
 

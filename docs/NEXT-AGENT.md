@@ -53,6 +53,16 @@ Riktade SQL-, native- och browserprov samt leveransbevis anges i ändringens PR.
 Ingen DDL, produktionsdata, mediebytes eller driftacceptans ingår.
 Säkert materialbyte är nästa separata delmål.
 
+## Social-/companionkod avvecklad 2 november
+
+Eventstudios kvarvarande API, Director-endpoints, minneslager och Gateway-rollens
+kodregistrering är borttagna. Aktiv operatörschatt, privat sökning och produkttal
+har kvar sina egna vägar. Den generella registervalidatorn behåller läsning,
+export och återställning av det kvarvarande `social-policy`-dokumentet.
+Ingen data, molnkonfiguration eller deploy har ändrats. Separat avveckling av
+Neon-dokumentet och lagrad Gateway-/companiondata återstår enligt
+[AI-guiden](AI/README.md#avvecklad-labbchatt); provbevis hör till PR:en.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.

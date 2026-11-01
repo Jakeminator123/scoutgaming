@@ -26,9 +26,9 @@ gränser.
 | Klippassistenten (`POST /api/dealers/import-proposal`) | Vercel → modell i `apps/studio/lib/dealers/dealer-import-model.mjs` | Föreslår klippfack efter klippkartan. Inga verktyg, inga bildrutor, kan inte spara; servern räknar `role` och validerar alternativen. |
 | OpenClaws dashboard | Director `/openclaw/` → Gatewayns Control UI → `croupier-operator` | Separat administrativ konversation; styr inte webbchatten. |
 
-Gatewayn har fem roller, inte fem servrar: `croupier-director` (väljer
+Gatewayn konfigurerar fyra roller: `croupier-director` (väljer
 kompatibel presentationsvariant), `croupier-chat` (förklarar konfiguration),
-`croupier-operator` (dashboarden), `croupier-social` (pensionerad labbyta) och
+`croupier-operator` (dashboarden) och
 `croupier-speech` (spelarens tal). Repots konfiguration har heartbeat `0m`,
 nekade verktyg och avstängd cron och webbläsare, så ingen roll arbetar i
 bakgrunden. Effektiv modell per roll ligger i Gatewayns beständiga
@@ -45,16 +45,23 @@ modellbyte.
   vid containerstart; webbchatten får sitt sammanhang från serveradaptern.
 - Ändringar i `packages/director` eller `services/openclaw/lab` når drift först
   när Director respektive Gateway har deployats om.
-## Pensionerad labbchatt
+## Avvecklad labbchatt
 
 Eventstudio, Astrids labbchatts enda produktklient, togs bort i #468.
-Kvarvarande social-/companion-routrar och adaptrar är avvecklingskandidater
-enligt [lagringsguidens avvecklingsordning](../storage/BLOB-NEON.md#avveckling-av-produktdata-och-original), inte ett krav att bevara Astrid.
-Spelarens tal använder det separata produkttalkontraktet ovan.
-Följ `apps/studio/app/api/social/`, `apps/studio/lib/social-server.mjs` och
-`packages/director/{social,companion}.mjs` vid kodavvecklingen. Hjälptjänsten
-`services/openclaw/lab/deploy/companion-search-server.mjs` används även av
-dashboardinloggning (`services/openclaw/lab/src/studio-admin.mjs`) och
-måste bedömas med den konsumenten. Variabelregistret
-beskriver kvarvarande avstängningsflaggor; den borttagna labbguidens
-historiska detaljkontrakt finns via [HISTORIK](../HISTORIK.md).
+Dess social-/companion-API, minneslager och rollens kodregistrering är nu
+borttagna. Spelarens tal använder det separata produkttalkontraktet ovan.
+Operatörschattens delade persona-/humorfunktion och hjälptjänsten
+`services/openclaw/lab/deploy/companion-search-server.mjs` används fortfarande;
+den senare äger också dashboardinloggningens handoff.
+
+Det befintliga `social-policy`-dokumentet är fortsatt läsbart och kan exporteras
+och återställas genom det generella registret. Den rena validatorn finns i
+`packages/studio-registry/server/document-contract.mjs`; inget API kan längre
+redigera policyn. Validatorn, dokumenttypen och revisionsprefixet kan tas bort
+först efter separat verifierad dataavveckling och beslut om äldre snapshots.
+Följ [lagringsguidens avvecklingsordning](../storage/BLOB-NEON.md#avveckling-av-produktdata-och-original).
+
+Befintlig `companion.json` och lagrad Gateway-roll/workspace/session är privata
+driftdata. Kodavvecklingen raderar dem inte vid start. Deras avveckling kräver
+ett separat datasteg med backup; [återställningsguiden](../ENVIRONMENT-RESTORATION.md)
+beskriver den bevarade diskkopieringen.

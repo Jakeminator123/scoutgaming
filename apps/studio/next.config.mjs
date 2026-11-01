@@ -22,7 +22,7 @@ export default {
     '../../.croupier-inbox/**', '../../arkiv/**', '../../media/dealers/**',
     '../../media/layout.json', '../../media/blob-index.json', '../../media/catalog/**'] },
   outputFileTracingIncludes: appTraceRoutes({
-    ...Object.fromEntries(['/api/replies/**', '/api/layer-assets/**', '/', '/administration', '/partner/[[...path]]', '/partner/login', '/partner/set-password', '/api/partner-preview', '/api/partner/[...action]', '/admin/login', '/admin/set-password', '/api/assistant', '/api/openclaw/admin', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**', '/api/dealers/**', '/api/zones/reference']
+    ...Object.fromEntries(['/api/replies/**', '/api/layer-assets/**', '/', '/administration', '/partner/[[...path]]', '/partner/login', '/partner/set-password', '/api/partner-preview', '/api/partner/[...action]', '/admin/login', '/admin/set-password', '/api/assistant', '/api/openclaw/admin', '/api/admin/**', '/api/auth/**', '/api/project', '/api/videos/**', '/api/dealers/**', '/api/zones/reference']
       .map(route => [route, ['../../ops/neon-game/product-schema.sql', '../../ops/neon-studio/*.sql',
         // This worker runs as an unbundled Node module. Trace its runtime imports
         // explicitly, including Sharp's native binaries and transitive helpers.

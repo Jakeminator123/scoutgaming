@@ -45,4 +45,3 @@ function documentStore(kind, { repository, scope, actor } = {}) {
 }
 
 export const createNeonProjectStore = options => documentStore('project', options);
-export const createNeonSocialStore = options => documentStore('social-policy', options);

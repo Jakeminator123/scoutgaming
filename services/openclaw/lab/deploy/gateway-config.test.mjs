@@ -113,15 +113,12 @@ test('chat cannot gain tools or share the presentation agent workspace', () => {
   assert.notEqual(director.workspace, chat.workspace);
   assert.notEqual(director.agentDir, chat.agentDir);
   const operator = config.agents.entries['croupier-operator'];
-  const social = config.agents.entries['croupier-social'];
   const speech = config.agents.entries['croupier-speech'];
   assert.notEqual(operator.workspace, chat.workspace);
   assert.notEqual(operator.agentDir, director.agentDir);
-  assert.notEqual(social.workspace, chat.workspace);
-  assert.notEqual(social.agentDir, operator.agentDir);
   assert.notEqual(speech.workspace, chat.workspace);
   assert.notEqual(speech.agentDir, director.agentDir);
-  for (const agent of [director, chat, operator, social, speech]) {
+  for (const agent of [director, chat, operator, speech]) {
     assert.deepEqual(agent.tools.deny, ['*']);
     assert.deepEqual(agent.model.fallbacks, []);
     assert.equal(agent.memory.search.enabled, false);
@@ -175,7 +172,6 @@ function legacyConfig(env = example) {
   config.gateway.controlUi = { enabled: false };
   delete config.gateway.publicOrigin;
   delete config.agents.entries['croupier-operator'];
-  delete config.agents.entries['croupier-social'];
   delete config.agents.entries['croupier-speech'];
   delete config.agents.defaults;
   delete config.talk;
@@ -204,31 +200,10 @@ test('only the exact old generated configuration receives the legacy migration',
 
   legacy.agents.entries['croupier-chat'].name = 'Human customized name';
   const custom = planGatewayConfig(legacy, example);
-  assert.equal(custom.action, 'reconcile-roles');
+  assert.equal(custom.action, 'reconcile-speech');
   assert.equal(custom.config.agents.entries['croupier-chat'].name, 'Human customized name');
   assert.equal(custom.config.agents.entries['croupier-operator'], undefined);
   assert.deepEqual(custom.config.tools.deny, ['*']);
-});
-
-test('social role reconciliation is additive and reuses the persisted model, not a new env default', () => {
-  const config = gatewayConfig(example);
-  delete config.agents.entries['croupier-social'];
-  config.agents.entries['croupier-chat'].model.primary = 'custom-provider/existing-model';
-  config.agents.entries['croupier-speech'].model.primary = 'custom-provider/existing-model';
-  config.agents.entries['croupier-operator'].name = 'Human operator';
-  const before = structuredClone(config);
-  const result = planGatewayConfig(config, { ...example, OPENCLAW_MODEL_ID: 'different-env-default' });
-  assert.equal(result.action, 'reconcile-social');
-  assert.deepEqual(config, before);
-  const social = result.config.agents.entries['croupier-social'];
-  assert.equal(social.model.primary, 'custom-provider/existing-model');
-  assert.deepEqual(social.tools.deny, ['*']);
-  const withoutSocial = structuredClone(result.config);
-  delete withoutSocial.agents.entries['croupier-social'];
-  assert.deepEqual(withoutSocial, before);
-  social.name = 'Own Astrid name';
-  social.model.primary = 'custom-provider/social-model';
-  assert.deepEqual(planGatewayConfig(result.config, example), { action: 'reuse', config: result.config });
 });
 
 test('speech role reconciliation is additive, isolated, tool-denied and preserves operator-chat meaning', () => {
@@ -257,20 +232,6 @@ test('speech role rejects model, tool or state-sharing drift without rewriting i
     const config = gatewayConfig(example); edit(config);
     const original = structuredClone(config);
     assert.throws(() => planGatewayConfig(config, example), /speech role conflict/);
-    assert.deepEqual(config, original);
-  }
-});
-
-test('conflicting social tools or shared state are rejected without overwriting custom config', () => {
-  for (const edit of [
-    config => { config.agents.entries['croupier-social'].tools.deny = []; },
-    config => { config.agents.entries['croupier-social'].workspace = config.agents.entries['croupier-chat'].workspace; },
-    config => { config.agents.entries['croupier-social'].agentDir = config.agents.entries['croupier-operator'].agentDir; },
-    config => { config.agents.entries['croupier-social'].memory.search.enabled = true; },
-  ]) {
-    const config = gatewayConfig(example); edit(config);
-    const original = structuredClone(config);
-    assert.throws(() => planGatewayConfig(config, example), /social role conflict/);
     assert.deepEqual(config, original);
   }
 });

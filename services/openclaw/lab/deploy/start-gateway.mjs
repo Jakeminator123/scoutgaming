@@ -128,11 +128,9 @@ export async function prepareGatewayConfig(env, {
     onPhase('config-validate');
     await validateConfig(candidate, gatewayEnv);
     onPhase('config-write');
-    if (['seed', 'migrate-legacy', 'reconcile-social', 'reconcile-speech', 'reconcile-roles'].includes(plan.action)) {
-      const agents = plan.action === 'reconcile-social' ? [plan.config.agents.entries['croupier-social']]
-        : plan.action === 'reconcile-speech' ? [plan.config.agents.entries['croupier-speech']]
-          : plan.action === 'reconcile-roles' ? [plan.config.agents.entries['croupier-social'], plan.config.agents.entries['croupier-speech']]
-            : Object.values(plan.config.agents.entries);
+    if (['seed', 'migrate-legacy', 'reconcile-speech'].includes(plan.action)) {
+      const agents = plan.action === 'reconcile-speech' ? [plan.config.agents.entries['croupier-speech']]
+        : Object.values(plan.config.agents.entries);
       for (const agent of agents) {
         await mkdir(agent.workspace, { recursive: true, mode: 0o700 });
         await mkdir(agent.agentDir, { recursive: true, mode: 0o700 });
@@ -145,9 +143,9 @@ export async function prepareGatewayConfig(env, {
       if (await readExistingConfig(configPath) !== original) {
         throw new Error('OpenClaw configuration changed during startup; refusing to overwrite it. Restart after the other writer finishes.');
       }
-      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-social', 'reconcile-speech', 'reconcile-roles', 'reconcile-models'].includes(plan.action)) {
+      if (['migrate-legacy', 'reconcile-ownership', 'reconcile-speech', 'reconcile-models'].includes(plan.action)) {
         const suffix = { 'migrate-legacy': 'pre-dashboard-migration', 'reconcile-ownership': 'pre-ownership-migration',
-          'reconcile-social': 'pre-social-migration', 'reconcile-speech': 'pre-speech-migration', 'reconcile-roles': 'pre-role-migration',
+          'reconcile-speech': 'pre-speech-migration',
           'reconcile-models': 'pre-model-migration' }[plan.action];
         backupPath = `${configPath}.${suffix}.bak`;
         try { backupPath = await preserveConfigBackup(backupPath, original); } catch {
