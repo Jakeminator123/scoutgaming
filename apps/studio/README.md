@@ -60,7 +60,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Lobbykatalogen | `packages/player-catalog/` | Katalogtester |
 | Sparade projekt, policy och mediemetadata | Neon (`croupier_studio`) med revisionslås och historik | Studio-API:ts konfliktprov |
 
-Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma presentationen. Produktionens nuvarande katalog med Astrids bank läses tills den byts i [REN-START](../../docs/plans/REN-START.md) steg 6.
+Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma presentationen. Den registerlagrade katalogen läses tills den ersätts enligt [REN-START: genomförande och återgång](../../docs/plans/REN-START.md#genomförande-och-återgång).
 
 ## Mappar
 
