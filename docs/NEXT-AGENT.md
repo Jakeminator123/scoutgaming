@@ -19,9 +19,11 @@ var en försiktig innehållsbedömning, ingen teknisk bevarandespärr.
 SQL-migreringarnas historiska kommentarvägar lämnas byte för byte eftersom
 källbytes ingår i ledgerns checksumma; övriga konsumenthänvisningar är uppdaterade.
 
-Verifiering: dokument-/ankarkontroll, miljöregister, kommentarsdiff och ordinarie
-hook redovisas i ändringens PR. Ingen produktlogik, DDL, data, molninställning
-eller talaktivering ändras; ny runtime- eller AV-acceptans ingår inte.
+Verifierat: dokumentlänkar/ankare och miljöregister är gröna. Exekverbara token
+är identiska i 41 käll-/testfiler; 012/014:s SQL är byte-identisk. Ordinarie hook:
+861 godkända, 0 fel, 11 hoppade av 872 prov; demo-byggaren 14/14. Ingen
+produktlogik, DDL, data, molninställning eller talaktivering ändras; ny runtime-
+eller AV-acceptans ingår inte.
 
 ## Organisationsarbete
 
