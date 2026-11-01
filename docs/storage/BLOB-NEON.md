@@ -105,7 +105,7 @@ dragan__speech__blackjack__sv__t01.mp4
 
 Varje importerad tillgång behöver validerad identitet, format, storlek och hash, dealer, spel, funktion, situation och källproveniens. Poseklipp behöver start- och slutpose och kalibreringsrevision; tal dessutom språk, exakt text, replik och tagning. Fält som saknas i schemat införs med en versionerad migrering, aldrig som ad hoc-fält i produktions-JSON.
 
-Frysta importkällor i `apps/studio/lib/dealer-import-sources.mjs` används av Admins importassistent för kända filers placering, pose och inspelade text. Källmanifestens exakta identiteter och filmprofiler hör till den aktiva importen; de registrerar, publicerar eller godkänner inget själva. Även större importer går genom Admins revisionsskyddade skrivare:
+Frysta importkällor i `apps/studio/lib/dealers/dealer-import-sources.mjs` används av Admins importassistent för kända filers placering, pose och inspelade text. Källmanifestens exakta identiteter och filmprofiler hör till den aktiva importen; de registrerar, publicerar eller godkänner inget själva. Även större importer går genom Admins revisionsskyddade skrivare:
 
 1. Frys källmanifest, mål-scope, projekt- och medierevisioner och spara ett privat återgångsunderlag.
 2. Ladda upp saknade bytes, läs tillbaka och verifiera hash och storlek innan registrering.
@@ -122,7 +122,7 @@ Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryc
 - En aktiv GPU-session, giltig tallease eller oavslutad helfilsbegäran i miljön stoppar radering konservativt, eftersom äldre talsessioner saknar exakta indatareferenser.
 - Nya Forge-jobb kontrolleras atomiskt mot pending, deleted och arkiverad media under samma scopelås; ett sent providerutfall får aldrig återaktivera raderad media.
 
-"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
+"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealers/dealer-lifecycle.test.mjs`, `apps/studio/test/dealers/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
 
 ## Avveckling av produktdata och original
 
@@ -156,9 +156,9 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 
 | Del | Filer |
 | --- | --- |
-| Import och klassning | `apps/studio/lib/dealer-import-*.mjs`, `packages/presentation/contracts/video-intake.mjs`, `packages/presentation/contracts/schemas/video.schema.json` |
+| Import och klassning | `apps/studio/lib/dealers/dealer-import-*.mjs`, `packages/presentation/contracts/video-intake.mjs`, `packages/presentation/contracts/schemas/video.schema.json` |
 | Pose och utdelning | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `services/game/filmed-deal-selection.mjs` |
-| Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealer-lifecycle.mjs` |
+| Register och radering | `packages/studio-registry/server/repository.mjs`, `apps/studio/lib/studio-media-deletion.mjs`, `apps/studio/lib/dealers/dealer-lifecycle.mjs` |
 | Talrepliker | `packages/presentation/server/speech-reply-repository.mjs` |
 | `media/blob-index.json` (manuellt, inget skript anropar det) | `tools/export-media-blob.mjs`: torrkörning utan flaggor; `--output media/blob-index.json` skriver indexet, `--apply` laddar upp privat och verifierar |
 | Rörligt tal | `services/moving-gpu-worker/`, `services/game/moving-speech-*.mjs`, `services/game/generated-speech-stream.mjs` |

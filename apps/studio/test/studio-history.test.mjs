@@ -88,13 +88,15 @@ let adminSource;
 async function adminFixtureSource(){
   return adminSource??=build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
     import {WorkspaceTool} from './client/admin/components/studio/workspace-tools';
+    import {Tabs} from './client/admin/components/ui/hub';
+    import {adminDealerTabs} from './client/admin/lib/admin-navigation';
     import {usePathname,useSearchParams,navigate} from './client/runtime/navigation';
     import {studioHistory} from './lib/studio-history.mjs';
     const owner=studioHistory(window),audit=window.__adminAudit={traversals:[]};
     owner.guardTraversal(href=>{queueMicrotask(()=>audit.traversals.push({raw:href,accepted:owner.snapshotHref()}));return true;});
     window.__historyOwner=owner;window.__adminNavigate=navigate;
     // Like the dealer nav (dealer-hub.tsx), the fixture hands the tool the dealer from the path.
-    function App(){const path=usePathname(),search=useSearchParams();const dealer=path.match(/^\\/admin\\/dealers\\/([^/]+)$/)?.[1];return <><output data-testid="path">{path}</output><output data-testid="query">{search.toString()}</output><WorkspaceTool section="replies" overrides={dealer?{dealer}:{}}/></>;}
+    function App(){const path=usePathname(),search=useSearchParams();const dealer=path.match(/^\\/admin\\/dealers\\/([^/]+)$/)?.[1];return <><output data-testid="path">{path}</output><output data-testid="query">{search.toString()}</output><Tabs items={adminDealerTabs} active={search.get('flik')??'tal'}/><WorkspaceTool section="replies" overrides={dealer?{dealer}:{}}/></>;}
     createRoot(document.getElementById('root')).render(<App/>);`,resolveDir:lab,loader:'tsx'},
     bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"'},
     alias:{react:fileURLToPath(new URL('../client/node_modules/react',import.meta.url)),'react-dom':fileURLToPath(new URL('../client/node_modules/react-dom',import.meta.url)),'next/navigation':fileURLToPath(new URL('../client/runtime/navigation.tsx',import.meta.url))},plugins:[{name:'admin-replies-boundaries',setup(builder){
@@ -178,7 +180,7 @@ test('Admin Replies retains category and room context through filtering, dealer 
     await f.page.getByLabel('Filtrera svarskategori').selectOption('player-question');await f.ready('astrid');await f.choose('elin');const target=f.page.url();
     // The new dealer is the new nav; the room context and the filter follow in the query and every tab link stays in that nav.
     assert.equal(new URL(target).pathname,navPath('elin'));assert.equal(new URL(target).searchParams.get('flik'),'tal');assert.equal(new URL(target).searchParams.get('category'),'player-question');assert.deepEqual(fiveFields(target),shared);
-    const links=await f.page.locator('nav[aria-label^="Studio för"] a').evaluateAll(links=>links.map(link=>link.href));assert.ok(links.length);
+    const links=await f.page.getByRole('navigation',{name:'Flikar',exact:true}).getByRole('link').evaluateAll(links=>links.map(link=>link.href));assert.ok(links.length);
     for(const href of links){assert.equal(new URL(href).pathname,navPath('elin'),href);assert.deepEqual(fiveFields(href),shared,href);}
     await f.page.goBack();await f.ready('astrid');assert.equal(await f.page.getByLabel('Filtrera svarskategori').inputValue(),'player-question');
     await f.page.goForward();await f.page.waitForURL(target);await f.ready('elin');await f.page.reload();await f.ready('elin');

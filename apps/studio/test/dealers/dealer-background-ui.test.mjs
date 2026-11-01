@@ -6,8 +6,8 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {build} from 'esbuild';
 import vm from 'node:vm';
 import React from 'react';
-import {addDealer,createSeedProject,defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {layerAssetPath} from '../../../packages/presentation/contracts/presentation-layers.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {layerAssetPath} from '../../../../packages/presentation/contracts/presentation-layers.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 function load(file,overrides={},globals={}){
@@ -16,7 +16,7 @@ function load(file,overrides={},globals={}){
   vm.runInNewContext(code,{module,exports:module.exports,structuredClone,URL,URLSearchParams,...globals,require:name=>{
     if(Object.hasOwn(overrides,name))return overrides[name];
     if(name.endsWith('.css'))return {__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})};
-    if(name==='./studio-types')return load('../components/studio-types.ts',overrides,globals);
+    if(name==='./studio-types')return load('../../components/studio-types.ts',overrides,globals);
     if(name.startsWith('./')&&!/\.(mjs|js)$/.test(name))return new Proxy({},{get:(_,key)=>key});
     return localRequire(name);
   }});return module.exports;
@@ -35,7 +35,7 @@ test('the actual dealer canvas keys legacy and classified frames and clears fail
     const video={src:'/first.mp4',currentTime:0,videoWidth:2,videoHeight:1,readyState:2,pause(){pauses++;}};
     const context={clearRect(){pixels.fill(0);},drawImage(){pixels.set(video.src==='/second.mp4'?[0,255,0,255,0,0,255,255]:[0,255,0,255,255,0,0,255]);},getImageData(){if(broken)throw Error('fixture cross-origin read denied');return {data:pixels.slice()};},putImageData(frame){pixels=frame.data.slice();}};
     const root={querySelector:()=>video,addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:name=>events.delete(name)},canvas={getContext:()=>context};
-    const {DealerVideoSurface}=load('../components/dealer-video-surface.tsx',{react:h.react},{requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id)});
+    const {DealerVideoSurface}=load('../../components/dealer-video-surface.tsx',{react:h.react},{requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id)});
     let tree=h.render(DealerVideoSurface,{compositing,children:React.createElement('video',{src:video.src})});tree.props.ref.current=root;nodes(tree,node=>node.type==='canvas')[0].props.ref.current=canvas;h.effects();
     const paint=()=>{const [id,fn]=frames.entries().next().value;frames.delete(id);fn();};
     paint();assert.deepEqual([...pixels],[0,compositing?.despill===.5?128:255,0,0,255,0,0,255]);assert.equal(tree.props['data-keyed'],'true');
@@ -53,7 +53,7 @@ test('the rendered dealer surface hides the raw video while its canvas remains v
   const {outputFiles}=await build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
     import {DealerVideoSurface} from './components/dealer-video-surface';
     createRoot(document.getElementById('root')).render(<DealerVideoSurface><video aria-label="Raw dealer"/></DealerVideoSurface>);`,
-    resolveDir:fileURLToPath(new URL('../',import.meta.url)),loader:'tsx'},bundle:true,write:false,outfile:'fixture.js',platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent'});
+    resolveDir:fileURLToPath(new URL('../../',import.meta.url)),loader:'tsx'},bundle:true,write:false,outfile:'fixture.js',platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent'});
   const {chromium}=await import(pathToFileURL(browserModule).href);
   const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try{
@@ -75,7 +75,7 @@ test('dealer PNG canvas preserves alpha and green pixels without depending on DO
   const expected=[0,255,0,255,255,0,0,0];
   const context={clearRect(){pixels.fill(0);},drawImage(){draws++;pixels.set(expected);},getImageData(){return {data:pixels.slice()};},putImageData(frame){pixels=frame.data.slice();}};
   const root={querySelector:()=>image,addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:name=>events.delete(name)},canvas={getContext:()=>context};
-  const {DealerVideoSurface}=load('../components/dealer-video-surface.tsx',{react:h.react},{requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id)});
+  const {DealerVideoSurface}=load('../../components/dealer-video-surface.tsx',{react:h.react},{requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id)});
   const tree=h.render(DealerVideoSurface,{compositing:{mode:'alpha'},children:React.createElement('img',{src:image.src})});
   tree.props.ref.current=root;nodes(tree,node=>node.type==='canvas')[0].props.ref.current=canvas;h.effects();
   const paint=()=>{const [id,fn]=frames.entries().next().value;frames.delete(id);fn();};

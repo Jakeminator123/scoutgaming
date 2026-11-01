@@ -1,12 +1,12 @@
 // Advisory import contract. All destinations come from the saved project; a
 // filename or model response cannot create dealers, events, bindings or media.
 import { dealerMediaSlots } from './dealer-media-library.mjs';
-import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from '../../../packages/presentation/contracts/video-intake.mjs';
-import { registeredDealerIds } from '../../../packages/presentation/contracts/dealer-identity.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
-import { StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { parseClipFilename, clipNamingGuide, CLIP_POSE_VARIANTS } from '../../../packages/presentation/contracts/clip-naming.mjs';
-import { speechSlotStandard } from '../../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from '../../../../packages/presentation/contracts/video-intake.mjs';
+import { registeredDealerIds } from '../../../../packages/presentation/contracts/dealer-identity.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import { StudioStorageError } from '../../../../packages/studio-registry/server/document-contract.mjs';
+import { parseClipFilename, clipNamingGuide, CLIP_POSE_VARIANTS } from '../../../../packages/presentation/contracts/clip-naming.mjs';
+import { speechSlotStandard } from '../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { frozenImportFileMatch, frozenImportProposal, frozenImportWarnings, frozenImportSourceForDealer } from './dealer-import-sources.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,

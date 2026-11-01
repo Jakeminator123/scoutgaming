@@ -66,7 +66,7 @@ export const presentationPublicModules = Object.freeze([
   ...['live-idle', 'idle-policy', 'idle-rotation'].map(name => ({source: 'packages/presentation/runtime/' + name + '.mjs',
     paths: ['/presentation-runtime/' + name + '.mjs', '/packages/presentation/runtime/' + name + '.mjs']})),
   {source: 'packages/presentation/contracts/policies/idle-policy.seed.json',
-    paths: ['/lab/policies/idle-policy.seed.json', '/packages/presentation/contracts/policies/idle-policy.seed.json']},
+    paths: ['/packages/presentation/contracts/policies/idle-policy.seed.json']},
 ].map(row => Object.freeze({...row, paths: Object.freeze(row.paths)})));
 const sourceByPath = new Map(presentationPublicModules.flatMap(row => row.paths.map(url => [url, row.source])));
 export function presentationPublicSource(pathname) { return sourceByPath.get(pathname) ?? null; }

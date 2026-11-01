@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
-import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
-import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
-import {addDealer,createSeedProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
-import {dealerVoiceFromRequest,dealerVoiceProfileView} from '../../../packages/presentation/contracts/dealer-voice-profile.mjs';
-import {createDealerSpeechRuntime} from '../../../services/game/dealer-speech-runtime.mjs';
+import {createPglitePool} from '../../../../test/fixtures/pglite-pool.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../../ops/neon-studio/migrations.mjs';
+import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
+import {addDealer,createSeedProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {createStudioDealerApi} from '../../lib/studio-dealer-api.mjs';
+import {dealerVoiceFromRequest,dealerVoiceProfileView} from '../../../../packages/presentation/contracts/dealer-voice-profile.mjs';
+import {createDealerSpeechRuntime} from '../../../../services/game/dealer-speech-runtime.mjs';
 
 // Röstprofil per dealer on real PostgreSQL SQL (PGlite with the Studio
 // migrations): read/write, Admin-only, journalled, and the speech chain reads

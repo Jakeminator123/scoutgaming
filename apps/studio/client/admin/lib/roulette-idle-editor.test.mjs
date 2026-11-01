@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {createSeedProject,validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {mediaClassification} from '../../../lib/dealer-media-library.mjs';
+import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
 import {setRouletteIdleForeground} from './roulette-clip-map.mjs';
 const require=createRequire(import.meta.url),React=require('react');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];

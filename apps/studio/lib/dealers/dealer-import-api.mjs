@@ -1,7 +1,7 @@
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
-import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
-import { readStudioDocumentJson } from './studio-document-api.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../../packages/studio-registry/server/document-contract.mjs';
+import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from '../studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from '../studio-native-request.mjs';
+import { readStudioDocumentJson } from '../studio-document-api.mjs';
 import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, validateDealerImportAdvice, finishDealerImportRows, frozenImportNoteRepairs, DEALER_IMPORT_STORAGE_WARNING } from './dealer-import-catalog.mjs';
 import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImportSelectedModel, askDealerImportModel } from './dealer-import-model.mjs';
 import { frozenImportSourcesSummary } from './dealer-import-sources.mjs';

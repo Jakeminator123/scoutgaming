@@ -21,6 +21,15 @@ Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
   `admin-workspace-routes.mjs`, `proxy.ts` och
   `lib/legacy-studio-document.mjs`); `/bo` är borta. Bygg inga nya flöden där.
 
+## Funktionsmappar
+
+Dealerns import, fabrik, filmprofil, röst, mediebibliotek och livscykel finns
+i [`lib/dealers/`](lib/dealers/). Frysta importmanifest hör till samma modulgrupp;
+deras identiteter och innehåll ändras inte av mappindelningen.
+Motsvarande beteendeprov, inklusive dealergruppernas ägarskap och revisioner,
+finns i [`test/dealers/`](test/dealers/). Delade register- och presentationskontrakt
+ligger fortsatt i `packages/`.
+
 ## Starta och bygga
 
 ```powershell
@@ -139,6 +148,8 @@ npm --prefix apps/studio run build
   `sh .githooks/pre-commit-full <svit>`. Högst fyra testarbetare.
 - `node tools/check-orphan-tests.mjs` visar JS/TS-prov som ingen körlista tar
   med; `tools/orphan-tests-exceptions.json` namnger manuella prov med skäl.
+- Studio-kommandot och CI:s Studio-svit hittar `*.test.mjs` rekursivt under
+  `test/` och `components/`, med högst fyra testarbetare.
 - Prov använder isolerade filer och simulerade modelltransporter, aldrig
   riktiga spelare eller modellnycklar. Lägg nya kontroller i ett befintligt
   beteendeprov när det räcker; behåll negativa prov för hemliga fält, åtkomst

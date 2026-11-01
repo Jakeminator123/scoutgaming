@@ -541,7 +541,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     presentationKind = 'idle'; onBusy();
     idleRun = clip.playId; const epoch = ++serial;
     const video = config.inventory.videos.find(item => item.id === clip.videoId && item.dealer === dealerId);
-    if (!video) { status.textContent = 'Ingen lokal idlefilm · 2D-reserv'; return; }
+    if (!video) { status.textContent = 'Ingen lokal idlefilm.'; return; }
     void film(video, { kind: 'idle', details: { idleKind: clip.kind, standardBase: clip.standardBase, reason: clip.reason, projectRevision: config.projectRevision || config.revision, configurationSource },
       timing: idle.mode === 'rotation' ? { startOffset: clip.startOffset } : {},
       onMediaFrame: idle.mode === 'rotation' ? seconds => { if (epoch === serial && !closed) idle.progress(clip.playId, seconds); } : undefined,
@@ -615,7 +615,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // step's file is prepared all the same, also when no answer arrived (K04 F5).
     const leftLate = () => {
       if (signal?.aborted && signal.reason?.late === true) {
-        receipt({ event: kind, state: 'skipped', late: true, sourceEvent: event, reason: 'step_time_over', renderer: kind === 'speech' ? 'none' : '2d',
+        receipt({ event: kind, state: 'skipped', late: true, sourceEvent: event, reason: 'step_time_over', renderer: 'none',
           requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId, projectRevision: result?.projectRevision, configurationSource });
         if (!closed && token === serial) { pass(); prepare(upcoming[0]); }
       }
@@ -640,7 +640,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         if (reason === 'recorded_speech_unavailable') throw new Error('Talfilmens granskning eller identitet stämmer inte');
       }
       if (!result.video && ((kind === 'deal' && result.decision.media?.reason === 'position_clip_missing') || result.decision.media?.reason === 'frozen_clip_missing')) {
-        receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: result.decision.media.reason, renderer: '2d',
+        receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: result.decision.media.reason, renderer: 'none',
           requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
           projectRevision: result.projectRevision, configurationSource });
         retainRule(result, requestVersion);
@@ -703,7 +703,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       const missing = unavailableMedia(error);
       receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message,
         ...(error.code ? { code: error.code } : {}), ...(Number.isInteger(error.status) ? { status: error.status } : {}), ...(error.serverCode ? { serverCode: error.serverCode } : {}),
-        ...(missing ? { unavailable: true } : {}), ...(soundBlocked ? { soundUnlocked } : {}), ...(cardShown ? { cardShown: true } : {}), renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+        ...(missing ? { unavailable: true } : {}), ...(soundBlocked ? { soundUnlocked } : {}), ...(cardShown ? { cardShown: true } : {}), renderer: 'none', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
         projectRevision: result?.projectRevision, configurationSource });
       if (missing) { try { onUnavailable?.(); } catch {} }
       // The step's result is on the table: the shared table reports no media error for it.

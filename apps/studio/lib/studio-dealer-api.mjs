@@ -2,9 +2,9 @@ import {canonicalStudioJson,StudioStorageError,validateActor,validateStudioScope
 import {assertNativeStudioRequest,nativeStudioErrorResponse,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
 import {readStudioDocumentJson} from './studio-document-api.mjs';
-import {changeDealerLifecycle,checkDealerArchive} from './dealer-lifecycle.mjs';
-import {changeDealerVoice} from './dealer-voice.mjs';
-import {readDealerFilmedProfile,changeDealerFilmedProfile} from './dealer-filmed-profile.mjs';
+import {changeDealerLifecycle,checkDealerArchive} from './dealers/dealer-lifecycle.mjs';
+import {changeDealerVoice} from './dealers/dealer-voice.mjs';
+import {readDealerFilmedProfile,changeDealerFilmedProfile} from './dealers/dealer-filmed-profile.mjs';
 const fail=(code,status=403)=>{throw new StudioStorageError(code,status);};
 export function createStudioDealerApi({repository,mutationTransaction,videoRegistry,mediaDeletion,authorize,config,gamePolicy}={}){
  const prefix=config?.apiBase==='/api/admin'?'/api':'/studio/api';

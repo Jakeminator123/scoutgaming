@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Plus, RefreshCw, Upload } from 'lucide-react';
 import { addDealer } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import type { DealerArchiveImpact } from '../../../../lib/dealer-archive-impact.mjs';
+import type { DealerArchiveImpact } from '../../../../lib/dealers/dealer-archive-impact.mjs';
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
 import { createLifecycleClient, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
 import { dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';

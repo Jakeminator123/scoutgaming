@@ -1,5 +1,5 @@
 import type { StudioProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import type { DealerArchiveImpact } from '../../../lib/dealer-archive-impact.mjs';
+import type { DealerArchiveImpact } from '../../../lib/dealers/dealer-archive-impact.mjs';
 import type { Catalog, VideoEntry, VideoInventory } from './connected-studio.mjs';
 export type LifecycleVideo = VideoEntry & { sha256?: string; revision?: string; dealer?: string; retainedBank?: boolean; bindingScope?: string; deletion?: { state: 'pending'|'deleted'; requestedAt: string } };
 export type LifecycleBank = { dealer: StudioProject['dealers'][number]; archived: boolean; deletionPending: boolean; videos: LifecycleVideo[]; compositions: NonNullable<StudioProject['lanes']>; rooms: Catalog['administration']['rooms'] };

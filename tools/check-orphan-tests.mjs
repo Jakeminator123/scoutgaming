@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,20 +44,6 @@ function collectTree(relDir, root) {
   return found;
 }
 
-function globRegExp(pattern) {
-  const body = pattern.split('/').map(segment => {
-    let out = '';
-    for (const ch of segment) {
-      if (ch === '*') out += '[^/]*';
-      else if (ch === '?') out += '[^/]';
-      else if ('\\.+^${}()|[]'.includes(ch)) out += `\\${ch}`;
-      else out += ch;
-    }
-    return out;
-  }).join('/');
-  return new RegExp(`^${body}$`);
-}
-
 function isPathArg(token) {
   if (!token || token.startsWith('-') || /[$={}\s]/.test(token) || token.includes('..')) return false;
   const bare = token.replaceAll('*', 'x').replaceAll('?', 'x');
@@ -73,9 +59,18 @@ function withCwd(token, cwd) {
 }
 
 function tokenize(command) {
-  const tokens = [];
+  const argv = [], literalGlobs = new Set();
   let current = '';
   let quote = '';
+  let unquotedGlob = false;
+  const push = () => {
+    if (current) {
+      if (!unquotedGlob && /[*?]/.test(current)) literalGlobs.add(argv.length);
+      argv.push(current);
+    }
+    current = '';
+    unquotedGlob = false;
+  };
   for (const ch of command) {
     if (quote) {
       if (ch === quote) quote = '';
@@ -87,14 +82,14 @@ function tokenize(command) {
       continue;
     }
     if (/\s/.test(ch)) {
-      if (current) tokens.push(current);
-      current = '';
+      push();
       continue;
     }
+    if (ch === '*' || ch === '?') unquotedGlob = true;
     current += ch;
   }
-  if (current) tokens.push(current);
-  return tokens;
+  push();
+  return { argv, literalGlobs };
 }
 
 function splitShell(line) {
@@ -182,7 +177,7 @@ function readTestScript(prefix, root) {
   return typeof script === 'string' ? script : null;
 }
 
-function commandPatterns(argv, cwd, followNpm, root) {
+function commandPatterns({ argv, literalGlobs }, cwd, followNpm, root) {
   if (argv.length === 0) return [];
   if (followNpm && argv[0] === 'npm' && npmRunsTest(argv)) {
     const prefix = npmPrefix(argv) || cwd || '.';
@@ -202,12 +197,16 @@ function commandPatterns(argv, cwd, followNpm, root) {
   if (rest.some(token => ['--check', '-c', '--eval', '-e', '--print', '-p'].includes(token))) return [];
   const selected = [];
   if (argv[nodeAt] === 'run_node_tests' || rest.includes('--test')) {
-    for (const token of rest) if (isPathArg(token)) selected.push(token);
+    for (let index = nodeAt + 1; index < argv.length; index++) {
+      const token = argv[index];
+      if (isPathArg(token)) selected.push({ token, literalGlob: literalGlobs.has(index) });
+    }
   } else {
     const file = rest.find(token => !token.startsWith('-') && isPathArg(token));
-    if (file) selected.push(file);
+    if (file) selected.push({ token: file, literalGlob: false });
   }
-  return selected.map(token => withCwd(token, cwd)).filter(pattern => coverageRoots.test(pattern));
+  return selected.map(({ token, literalGlob }) => ({ pattern: withCwd(token, cwd), literalGlob }))
+    .filter(item => coverageRoots.test(item.pattern));
 }
 
 function patternsFromShell(text, cwd, followNpm, root) {
@@ -223,7 +222,7 @@ function patternsFromShell(text, cwd, followNpm, root) {
 function loadRunnerPatterns(root) {
   const found = [];
   const add = (runner, patterns) => {
-    for (const pattern of patterns) found.push({ runner, pattern });
+    for (const pattern of patterns) found.push({ runner, ...pattern });
   };
   const workflowDir = join(root, '.github/workflows');
   if (existsSync(workflowDir)) {
@@ -247,16 +246,8 @@ function loadRunnerPatterns(root) {
   return found;
 }
 
-function compilePatterns(items) {
-  return items.map(item => ({
-    runner: item.runner,
-    pattern: item.pattern,
-    regex: item.pattern.includes('*') || item.pattern.includes('?') ? globRegExp(item.pattern) : null,
-  }));
-}
-
 function patternHits(pattern, file) {
-  return pattern.regex ? pattern.regex.test(file) : pattern.pattern === file;
+  return /[*?]/.test(pattern.pattern) ? posix.matchesGlob(file, pattern.pattern) : pattern.pattern === file;
 }
 
 function loadExceptions(root) {
@@ -300,9 +291,9 @@ function loadExceptions(root) {
 
 export function auditOrphanTests({ root = repositoryRoot } = {}) {
   const items = loadRunnerPatterns(root);
-  // Recursive glob semantics differ between sh, bash and Node. Do not infer coverage.
-  const unsupported = items.filter(item => item.pattern.includes('**'));
-  const patterns = compilePatterns(items.filter(item => !item.pattern.includes('**')));
+  // Quoted globs reach Node unchanged. Unquoted ** depends on shell expansion.
+  const unsupported = items.filter(item => item.pattern.includes('**') && !item.literalGlob);
+  const patterns = items.filter(item => !unsupported.includes(item));
   const files = [...new Set(discoveryRoots.flatMap(directory => collectTree(directory, root)))].sort();
   const unique = files.filter(isTestFile);
   const pythonFiles = files.filter(file => file.startsWith('services/') && /\/tests?\/test_[^/]+\.py$/.test(file));

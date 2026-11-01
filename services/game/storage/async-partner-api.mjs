@@ -10,8 +10,8 @@ import { activeKeyOperator, keyOperator } from '../partner-operator.mjs';
 import { depositAmount } from './deposit-amount.mjs';
 
 export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl, root, publicGamePath = '/', readMetadata, hasPublicMedia, operatorById,
-  // Neon is the one registry on every deployment, so native mode is on and legacy partner sessions are off.
-  nativeMode = true, allowLegacyPartnerSessions = false }) {
+  // Neon is the one registry on every deployment; legacy partner sessions are off.
+  allowLegacyPartnerSessions = false }) {
   if (!['/', '/game','/blackjack'].includes(publicGamePath)) throw Error('Invalid public game path');
   // SSE subscribers per (key,player): partner clients receive presentation events as they happen.
   const subs = new Map(); const chan = (k, pid) => `${k}:${pid}`;
@@ -153,8 +153,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
       if (pathname === '/api/v1/assets') { const e = need(k, 'lobby'); if (e) return send(e.status, e);
         try { return send(200, await buildAssetsManifest(root, input.dealer ?? 'astrid', publicUrl,{readMetadata,hasPublicMedia})); } catch (err) { return send(err.statusCode===400?400:readMetadata?503:400, { error: err.statusCode===400?'unknown dealer':readMetadata?'assets unavailable':err.message }); } }
       if (pathname === '/api/v1/lobby') { const e = need(k, 'lobby'); if (e) return send(e.status, e);
-        if(nativeMode)return send(410,{error:'legacy_lobby_retired',url:'/lobby'});
-        return send(200, { tables: [{ id: 'astrid-blackjack', game: 'blackjack', dealer: 'astrid', name: 'Dark Hall', decks: 8, cutAfter: 312, boxes: 7, minBet: 5, maxBet: 2000, sideBets: ['perfectPairs', '21+3'], blackjackPays: '3:2', dealerStandsSoft17: true, aiDealer: true }] }); }
+        return send(410,{error:'legacy_lobby_retired',url:'/lobby'}); }
       if (pathname === '/api/v1/launch') { const e = need(k, 'launch'); if (e) return send(e.status, e);
         const { playerId, displayName, currency, language, returnUrl } = input; if (typeof playerId !== 'string' || !playerId) return send(400, { error: 'playerId required' });
         const presentedAs = normalizeDisplayName(displayName);

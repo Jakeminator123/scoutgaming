@@ -1,5 +1,6 @@
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
+import { requestPlayerChat, createLinkedChatSubmit } from './chat-requests.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE, requestEmbeddedStudioPreviewClose } from './studio-preview-client.mjs';
 import {createLayerComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
@@ -10,7 +11,7 @@ import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
 import { createAstridCameraControl } from './astrid-camera-control.mjs';
 import { createSpeechPoseGate } from '../../../packages/presentation/runtime/speech-pose-gate.mjs';
-import { CHAT_STAGES, readChatResponse, chatFailureMessage, chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
+import { CHAT_STAGES, chatFailureMessage, chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
 import { playGeneratedSpeech, loadGeneratedSpeech } from '../../../packages/presentation/runtime/generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from './chat-playback-diagnostic.mjs';
 import { displayChatDecision, cancelChatDecision, playChatDecision as playProductChatDecision } from './chat-decision-player.mjs';
@@ -215,7 +216,7 @@ if (localPresentationEnabled) {
     console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
     if(error.code==='studio_presentation_idle_package_changed'){ status.textContent=error.message+' '; const reload=document.createElement('button');reload.type='button';reload.textContent='Ladda om';reload.onclick=()=>location.reload();status.append(reload); }
-    else status.textContent = 'Lokal video kunde inte startas · 2D-reserv';
+    else status.textContent = 'Lokal video kunde inte startas.';
     $('#scene').append(status);
   }
 }
@@ -1869,15 +1870,9 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
   try {
     if (received.record.status === 'cancelled') throw new Error(received.record.reason);
     if(dealSpeech){dealSpeech.jobId=requestId;speechPoseGate.reserveDeal(requestId,dealSpeech.version);refreshNextDealChat();}
-    const r = await apiFetch('/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
-      body: JSON.stringify({ requestId, message, history, dealer: DEALER.key, acceptsSpeechStream: true,
-        ...(chatPresentationContext(entrySelection,DEALER.key)?{presentationContext:chatPresentationContext(entrySelection,DEALER.key)}:{}),
-        sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
-        ...(dealSpeech?{presentationVersion:dealSpeech.version}:{}),
-        ...(images.length ? { observation: { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision, images } } : {}) }),
-    });
-    const decision = await readChatResponse(r, progress => {
+    const decision = await requestPlayerChat({ request: apiFetch, requestId, message, history, dealer: DEALER.key, entrySelection, identity,
+      signal: controller.signal, progressEvents: localPresentationEnabled, presentationVersion: dealSpeech?.version, images, profileRevision,
+      onProgress: progress => {
       stages.push({ stage: progress.stage, elapsedMs: progress.elapsedMs, ...(progress.metrics ? { metrics: progress.metrics } : {}) });
       if (chatStatus) {
         chatStatus.dataset.stages = JSON.stringify(stages);
@@ -1892,12 +1887,12 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
       setChatStatus(CHAT_STAGES[progress.stage]);
       nativeObservation.emit('status', { state: 'chat-progress', requestId, stage: progress.stage, elapsedMs: progress.elapsedMs,
         ...(progress.metrics ? { metrics: progress.metrics } : {}) }, chatCorrelation);
-    }, exactText => {
+    }, onPreview: exactText => {
       previewRow = chatLog('vera', exactText, true);
       previewRow.title = 'Svarstext klar · förbereder röst och läppsynk';
       const pending = pendingChatReplies.get(requestId);
       if (pending) { pending.previewRow = previewRow; pending.previewText = exactText; }
-    });
+    } });
     clearInterval(waitTimer);
     setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
     if (decision.kind !== 'silence'&&!dealSpeech) localPresentation?.state({ ready: true });
@@ -2103,27 +2098,9 @@ document.querySelector('#sign-out').onclick=async()=>{if(studioPreview)return;as
 // produces the response; the lab owns its own presentation/standard-idle gate.
 const labSpeechBridge = studioPreview?null:createNativeSpeechBridge({ href: location.href, opener: window.opener,
   loadMedia: loadGeneratedSpeech,
-  onSubmit: async ({ requestId, text, signal }) => {
-    if (chatBusy) throw new Error('A chat request is already active');
-    await tableReady;
-    if (signal.aborted) return;
-    if (chatBusy) throw new Error('A chat request is already active');
-    chatBusy = true;
-    const identity = poseIdentity();
-    nativeObservation.emit('chat', { role: 'user', text, source: 'linked-lab-chat', requestId });
-    try {
-      const response = await apiFetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-        body: JSON.stringify({ requestId, message: text, history: [], dealer: DEALER.key,
-          ...(chatPresentationContext(entrySelection, DEALER.key) ? { presentationContext: chatPresentationContext(entrySelection, DEALER.key) } : {}),
-          sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision }),
-      });
-      if (!response.ok) throw new Error('Linked chat unavailable');
-      const decision = await response.json();
-      const current = poseIdentity();
-      if (signal.aborted || current.dealerId !== identity.dealerId || current.sessionRevision !== identity.sessionRevision || current.roundRevision !== identity.roundRevision) throw new Error('Stale linked chat');
-      await labSpeechBridge.ready(decision);
-    } finally { chatBusy = false; }
-  },
+  onSubmit: createLinkedChatSubmit({ request: apiFetch, tableReady, isBusy: () => chatBusy, setBusy: value => { chatBusy = value; },
+    getIdentity: poseIdentity, getContext: () => ({ dealer: DEALER.key, entrySelection }),
+    onChat: value => nativeObservation.emit('chat', value), onReady: decision => labSpeechBridge.ready(decision) }),
 });
 window.addEventListener('message', event => labSpeechBridge?.accept(event));
 window.addEventListener('pagehide', () => labSpeechBridge?.close(), { once: true });

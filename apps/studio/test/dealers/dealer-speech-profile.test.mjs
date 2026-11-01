@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation,dealerSpeechReferenceCheck} from '../../../packages/presentation/contracts/dealer-speech-profile.mjs';
-import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {createStudioProjectBindings} from '../../../packages/presentation/server/studio-project-bindings.mjs';
-import {captureFrozenRegisteredDealers} from '../../../packages/presentation/server/frozen-dealer-idle.mjs';
-import {dealerVoicePreset,dealerVoiceDraft,dealerVoiceFromDraft,matchingDealerVoicePreset,suggestedDealerVoicePreset} from '../../../packages/presentation/contracts/dealer-voice-catalog.mjs';
+import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation,dealerSpeechReferenceCheck} from '../../../../packages/presentation/contracts/dealer-speech-profile.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {createStudioProjectBindings} from '../../../../packages/presentation/server/studio-project-bindings.mjs';
+import {captureFrozenRegisteredDealers} from '../../../../packages/presentation/server/frozen-dealer-idle.mjs';
+import {dealerVoicePreset,dealerVoiceDraft,dealerVoiceFromDraft,matchingDealerVoicePreset,suggestedDealerVoicePreset} from '../../../../packages/presentation/contracts/dealer-voice-catalog.mjs';
 
 test('original celebrity presets choose exact IDs, language-specific models and independent tuning',()=>{
   const paow=dealerVoicePreset('paow','sv'),english=dealerVoicePreset('paow','en'),dragge=dealerVoicePreset('dragge','sv');

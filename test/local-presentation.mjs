@@ -95,7 +95,7 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   }
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
     '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
-    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
+    '/web/public/dealer-identity.mjs',
     '/packages/presentation/contracts/game-lane-id.mjs','/packages/navigation/game-entry.mjs'])assert.ok(visited.has(path),path);
   for (const name of ['dealer-framing','composition-settings','speech-package','astrid-voice-profile']) {
     const alias = await fetch(origin+'/'+name+'.mjs');
@@ -981,12 +981,12 @@ test('Studio rehearsal without a published room keeps its local clip-mode contro
   assert.equal(local.receipts[0].modeSource, undefined);
 });
 
-test('a film error keeps the selection correlation when reporting a 2D fallback, never an end receipt', async t => {
+test('a film error keeps selection correlation without claiming a renderer or an end receipt', async t => {
   const { controller, jobs, receipts } = await controllerFixture(t);
   const result = controller.present(source); await new Promise(resolve => setImmediate(resolve));
   jobs[0].reject(new Error('fixture film unavailable')); assert.equal(await result, false);
   const fallback = receipts.find(row => row.state === 'fallback');
-  assert.equal(fallback.renderer, '2d'); assert.equal(fallback.requestId, 'selection-fixture');
+  assert.equal(fallback.renderer, 'none'); assert.equal(fallback.requestId, 'selection-fixture');
   assert.equal(fallback.projectRevision, 'studio-selection-fixture'); assert.ok(fallback.familyId);
   assert.equal(receipts.some(row => row.event === 'deal' && row.state === 'end'), false);
 });
@@ -1080,7 +1080,7 @@ test('a recovered idle frame preserves a newer action error on the shared status
   jobs[2].reject(new Error('Action clip unavailable')); assert.equal(await action, false);
   // A fixed Swedish line for the player; the film's own reason stays in the receipt.
   const warning = 'Filmen kunde inte spelas.'; assert.equal(status.textContent, warning);
-  const failed = receipts.findLast(row => row.state === 'fallback'); assert.equal(failed.reason, 'Action clip unavailable'); assert.equal(failed.renderer, '2d');
+  const failed = receipts.findLast(row => row.state === 'fallback'); assert.equal(failed.reason, 'Action clip unavailable'); assert.equal(failed.renderer, 'none');
   controller.state({ action: false });
   jobs[3].options.onReceipt({ state: 'presented' }); assert.equal(status.textContent, warning);
 });
@@ -1145,7 +1145,7 @@ for (const kind of ['deal', 'speech']) test(`a missing ${kind} file ends its ste
   const failed = f.receipts.at(-1);
   assert.equal(failed.reason, 'Local film unavailable'); assert.equal(failed.code, 'local_film_unavailable'); assert.equal(failed.status, 404);
   assert.equal(failed.serverCode, 'studio_presentation_idle_media_unavailable'); assert.equal(failed.unavailable, true);
-  assert.equal(failed.state, kind === 'speech' ? 'failed' : 'fallback'); assert.equal(failed.renderer, kind === 'speech' ? 'none' : '2d');
+  assert.equal(failed.state, kind === 'speech' ? 'failed' : 'fallback'); assert.equal(failed.renderer, 'none');
 });
 
 // K04 F9 (omprov 5, 28 Oct 2026): a take that stalled after its card was on the table read
@@ -1162,7 +1162,7 @@ for (const cardShown of [true, false]) test(`a stalled deal take ${cardShown ? '
   assert.equal(f.status.textContent, cardShown ? '' : 'Filmen kunde inte spelas.');
   const stalled = f.receipts.at(-1);
   assert.deepEqual([stalled.state, stalled.code, stalled.reason, stalled.renderer, stalled.cardShown],
-    ['fallback', 'local_film_stalled', 'Film playback stalled', '2d', cardShown ? true : undefined]);
+    ['fallback', 'local_film_stalled', 'Film playback stalled', 'none', cardShown ? true : undefined]);
 });
 
 test('a stalled speech line and any other deal failure keep their failure line even when the card shows', async t => {
@@ -1503,13 +1503,13 @@ test('published Linnea repeats her frozen silent idle, checks the exact package 
   const before=f.requests.length;assert.equal(await f.controller.present(source),false);f.controller.start();f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));assert.equal(f.requests.length,before);assert.equal(f.jobs.length,2);
 });
 
-test('Linnea with empty exact positions forwards only her package context and keeps the committed card in 2D',async t=>{
+test('Linnea with empty exact positions forwards only her package context without claiming film playback',async t=>{
   const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7},missingPosition:true});
   assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
   const payload=JSON.parse(f.requests.find(request=>request.url==='/api/presentation/select').options.body);
   assert.deepEqual(payload.presentationContext,{operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'});
   assert.deepEqual(payload.event,source);assert.equal(payload.context,undefined);
-  assert.equal(f.receipts.find(receipt=>receipt.state==='skipped').renderer,'2d');assert.equal(f.receipts.some(receipt=>receipt.state==='end'),false);
+  assert.equal(f.receipts.find(receipt=>receipt.state==='skipped').renderer,'none');assert.equal(f.receipts.some(receipt=>receipt.state==='end'),false);
 });
 
 test('a separately saved Linnea skips each empty exact position and preserves server-owned hidden and visible cards',async()=>{
@@ -2017,7 +2017,7 @@ test('a step the shared table leaves because its time is over is skipped as late
   clip.abort(Object.assign(new DOMException('Step time is over', 'AbortError'), { late: true }));
   assert.equal(await result, false); assert.equal(f.jobs.length, 1, 'no standard film'); assert.equal(f.status.textContent, '');
   const left = f.receipts.at(-1);
-  assert.deepEqual([left.state, left.late, left.reason, left.renderer, left.requestId], ['skipped', true, 'step_time_over', '2d', 'selection-fixture']);
+  assert.deepEqual([left.state, left.late, left.reason, left.renderer, left.requestId], ['skipped', true, 'step_time_over', 'none', 'selection-fixture']);
   assert.equal(unavailable, 0);
   const plain = new AbortController(), cancelled = f.controller.present(source, { signal: plain.signal }); await settle();
   const count = f.receipts.length; plain.abort(); assert.equal(await cancelled, false);

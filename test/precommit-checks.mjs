@@ -308,6 +308,21 @@ test('focused selection follows changed and deleted sources without running unre
   });
 });
 
+test('focused selection follows a feature module to its matching nested test directory', async () => {
+  await fixture(async root => {
+    await mkdir(join(root, 'apps/studio/lib/dealers'), { recursive: true });
+    await mkdir(join(root, 'apps/studio/test/dealers'), { recursive: true });
+    await writeFile(join(root, 'apps/studio/lib/dealers/lifecycle.mjs'), 'export {};\n');
+    await writeFile(join(root, 'apps/studio/test/dealers/lifecycle.test.mjs'), 'import "node:test";\n');
+    await writeFile(join(root, 'apps/studio/test/dealers/unrelated.test.mjs'), 'throw Error("must not run");\n');
+    assert.deepEqual(focusedTests([change('apps/studio/lib/dealers/lifecycle.mjs')], root),
+      ['apps/studio/test/dealers/lifecycle.test.mjs']);
+    await rm(join(root, 'apps/studio/lib/dealers/lifecycle.mjs'));
+    assert.deepEqual(focusedTests([change('apps/studio/lib/dealers/lifecycle.mjs', 'D')], root),
+      ['apps/studio/test/dealers/lifecycle.test.mjs']);
+  });
+});
+
 test('focused selection rejects traversal and option-like paths', () => {
   for (const path of ['../outside.mjs', 'web/../outside.mjs', '/outside.mjs', '--help', 'web\\outside.mjs']) {
     assert.throws(() => checkPlan('focused', {changes: [change(path)]}), /Invalid changed path/);

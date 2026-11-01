@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { createSeedProject, createEmptyProject, addDealer } from '../packages/presentation/contracts/studio-model.mjs';
 import { mediaTimingSpeechIdentity } from '../packages/presentation/contracts/media-timing.mjs';
 import { normalizeRecordedSpeech, recordedSpeechIdentity, recordedSpeechForVideo } from '../packages/presentation/contracts/recorded-speech.mjs';
-import { lifecycleProject } from '../apps/studio/lib/dealer-lifecycle.mjs';
+import { lifecycleProject } from '../apps/studio/lib/dealers/dealer-lifecycle.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';

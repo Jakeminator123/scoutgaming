@@ -2,8 +2,8 @@ import {ADMIN_WORKSPACE_TOOLS} from '../../../packages/navigation/admin-workspac
 import {STANDARD_OPERATOR_ROLES} from './operator-admin-api.mjs';
 import {isCompanyTeamReadQuery} from './studio-admin-contract.mjs';
 
-// Preserve the deployed read contract while old document editors are retired.
-const workspaceReadSections=new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'compositions','videos','rehearsal','probe','company-team']);
+// Only embedded dealer tools and the scoped company team have workspace readers.
+const workspaceReadSections=new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'company-team']);
 const headers={'Cache-Control':'private, no-store','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
 
 // A read adapter for the existing editors, never another store or write path.

@@ -11,7 +11,7 @@
     "build": "node tools/prepare-public-assistant.mjs && node tools/prepare-preview.mjs && node tools/prepare-design-preview.mjs && next build --webpack && node tools/check-build-traces.mjs --sanitize",
     "start": "next start --hostname 127.0.0.1 --port 4188",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.mjs components/*.test.mjs"
+    "test": "node --test --test-concurrency=4 \"test/**/*.test.mjs\" \"components/**/*.test.mjs\""
   },
   "engines": {
     "node": "24.x"

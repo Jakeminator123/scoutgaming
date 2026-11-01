@@ -5,7 +5,7 @@ import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {createSeedProject,defaultPresentationLane,validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {changeMaterialTrash,materialUsedBy} from '../lib/material-trash.mjs';
 import {defaultLayerRule} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
-import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
+import {lifecycleProject} from '../lib/dealers/dealer-lifecycle.mjs';
 import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
@@ -18,7 +18,7 @@ import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../..
 import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
-import {withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
+import {withoutPresentationLanes} from '../lib/dealers/dealer-archive-impact.mjs';
 import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
 
 const scope={environment:'material-trash-test',workspaceId:'isolated'},origin='https://trash.example.invalid';

@@ -23,7 +23,7 @@ test('catalog errors propagate instead of producing an empty disk fallback',asyn
 });
 test('Postgres contract signed assets awaits catalog and redacts read failure',async()=>{
   const db=createPartnerDb();
-  let failure=false,calls=0;const api=asyncApi({db,boDb:db,root:'missing-local-tree',publicUrl:'https://game.invalid',nativeMode:true,readMetadata:async path=>{await new Promise(resolve=>setImmediate(resolve));calls++;if(failure)throw Error('private database diagnostic');return path.endsWith('/bank.json')?{goodluck:{text:'Saved in Neon'}}:null;}});
+  let failure=false,calls=0;const api=asyncApi({db,boDb:db,root:'missing-local-tree',publicUrl:'https://game.invalid',readMetadata:async path=>{await new Promise(resolve=>setImmediate(resolve));calls++;if(failure)throw Error('private database diagnostic');return path.endsWith('/bank.json')?{goodluck:{text:'Saved in Neon'}}:null;}});
   const key=await api.keys.create({name:'catalog',scopes:['lobby']});
   const invoke=async(path='/api/v1/assets')=>{const body='{}',ts=String(Math.floor(Date.now()/1000)),req=Readable.from([body]);req.method='POST';req.headers={'x-api-key':key.key,'x-timestamp':ts,'x-signature':createHmac('sha256',key.secret).update(`${ts}.POST.${path}.${body}`).digest('hex')};const res={writeHead(status){this.status=status;},end(value){this.body=JSON.parse(value);}};await api.handle(req,res,path);return res;};
   const good=await invoke();assert.equal(good.status,200);assert.equal(good.body.speech[0].text,'Saved in Neon');assert.equal(calls,5);

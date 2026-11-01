@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { legacyStudioDocumentHref } from '../lib/legacy-studio-document.mjs';
-import { studioLoginDestination } from '../lib/studio-login-client.mjs';
+import { legacyStudioDocumentHref } from '../../lib/legacy-studio-document.mjs';
+import { studioLoginDestination } from '../../lib/studio-login-client.mjs';
 
 test('legacy material URL redirects safe dealer and room context into the existing workspace',()=>{
   const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/dealer-forge?'+query));

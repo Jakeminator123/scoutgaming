@@ -1,4 +1,4 @@
-import { handleNativeDealerImport } from '@/lib/dealer-import-api.mjs';
+import { handleNativeDealerImport } from '@/lib/dealers/dealer-import-api.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 75;

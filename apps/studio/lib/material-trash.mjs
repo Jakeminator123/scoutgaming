@@ -8,7 +8,7 @@ import {readOperatorLifecycle,withOperatorLifecycle} from '../../../packages/ope
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {packageRoomsFor} from '../../../packages/presentation/server/package-rooms.mjs';
 import {EXTENDED_PRESENTATION_FORMAT} from '../../../packages/presentation/server/presentation-storage.mjs';
-import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
+import {withoutPresentationLanes} from './dealers/dealer-archive-impact.mjs';
 import {retainBlackjackTableGeometry} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 const fail=(code='studio_material_missing')=>{throw new StudioStorageError(code,409);};

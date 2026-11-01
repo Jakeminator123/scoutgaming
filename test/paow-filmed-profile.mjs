@@ -10,7 +10,7 @@ import {createStudioProjectBindings} from '../packages/presentation/server/studi
 import {planFilmedDealSequence,orderFilmedPresentationEvents} from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
 import {filmedDealSelection} from '../services/game/filmed-deal-selection.mjs';
 import {bindClip,clipSlots,configuredClipIds} from '../apps/studio/client/admin/lib/connected-studio.mjs';
-import source from '../apps/studio/lib/dealer-import-kevin-source-paow.json' with {type:'json'};
+import source from '../apps/studio/lib/dealers/dealer-import-kevin-source-paow.json' with {type:'json'};
 
 function fixture(){
  const project=addDealer(addDealer(createEmptyProject(),'astrid','Astrid'),'paow','PAOW');

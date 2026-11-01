@@ -4,7 +4,7 @@ import * as THREE from './vendor/three/three.module.js';
 import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from '../../../packages/presentation/contracts/performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
-import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';
+import {edgeBlendGLSL,edgeUniforms,updateEdgeUniforms} from './actor-edge-blend.mjs';
 import {deliveryReach,shiftCard,canRetargetTake} from './dealer-reach.mjs';
 import {selectSceneJoin,validateSceneJoin,sceneJoinPayload} from './scene-join.mjs';
 
@@ -399,11 +399,10 @@ function createContactVisual(canvas,width,height,card,faceDown,video,colourGain=
   // lighting made it cream in motion, then white when the DOM took over.
   const mat=new THREE.MeshBasicMaterial({map:front,transparent:true,alphaTest:.01,toneMapped:false,side:THREE.DoubleSide});
   const mesh=new THREE.Mesh(geo,mat);mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
-  const sceneSampler=createSceneSampler();
-  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));if(canvas.isConnected)sceneSampler.update(plane.material.uniforms,canvas);}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
+  return {paint(sample,reach){for(const plane of planes){plane.material.uniforms.reachShoulder.value.set(...(reach?.shoulder??[0,0]));plane.material.uniforms.reachAnchor.value.set(...(reach?.anchor??[0,0]));plane.material.uniforms.reachDelta.value.set(...(reach?.delta??[0,0]));if(canvas.isConnected)updateEdgeUniforms(plane.material.uniforms,canvas);}videoTexture.needsUpdate=true;mesh.visible=!!sample;if(sample){
     for(let i=0;i<4;i++){const p=sample.corners[i];geo.attributes.position.setXYZ(i,p[0]*width,-p[1]*height,p[2]);}
     geo.attributes.position.needsUpdate=true;geo.computeVertexNormals();mat.map=faceDown||!sample.faceUp?back:front;mat.needsUpdate=true;
-  }renderer.render(scene,camera);},dispose(){sceneSampler.dispose();geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
+  }renderer.render(scene,camera);},dispose(){geo.dispose();mat.dispose();front.dispose();back.dispose();videoTexture.dispose();for(const plane of planes){plane.geometry.dispose();plane.material.dispose();}renderer.dispose();renderer.forceContextLoss();}};
 }
 
 // The table's hands use affine CSS transforms (fan rotation, skew and felt

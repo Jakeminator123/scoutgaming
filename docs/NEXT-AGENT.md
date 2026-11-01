@@ -2,6 +2,49 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## CI-bas och historikprov 1 november
+
+Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.
+
+## Masskontroll: Admin 1 november
+
+Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-konsument är borttagna. Dealerverktygen använder hubbens navigation; den dubbla Studio-flikraden och dess förbrukade komponentkontrakt är borta. Filter, dealerbyte, historik, utkastskydd, CAS och scope verifieras fortfarande med beteendeprov. Den gamla Studio-probe-routen och dess adapter är avvecklade efter Jakobs uttryckliga godkännande; motorns probe är en separat aktiv tjänst. Exakta prov- och mergebevis hör till ändringens PR.
+
+## Chattens beteendeprov 1 november
+
+Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
+
+Övriga granskade källsnitt kör verkligt beteende och ska behålla täckningen när följande kod flyttas till importerbara produktmoduler. De är bedömda men inte ändrade i denna leverans:
+
+| Prov under `test/` | Nästa avgränsade extraktion |
+| --- | --- |
+| `action-placement.mjs` | `showActions`, `layoutDealControl` och kopplingen mellan första frame, layout och stängning. |
+| `game-overlay-layout.mjs` | Sittplatskontrollern runt `COMPACT_BOXES`/`layoutSeats`, inklusive återupptagen ytterhand. |
+| `dealer-chat-visibility.mjs` | `setChatOpen`/`noteChatMessage` och montering av röstkontroller efter readiness. |
+| `player-choices.mjs` | Dealerurval till spel/repetition samt lobby-/preview-retur. |
+| `studio-preview-client.mjs` | Insatskontroller, preview-notis och samma returkontroller som ovan; behåll maxgränser och sessionisolering. |
+| `dealer-version-switcher.mjs` | Repetitionspanelens byte, status, uppspelning, batchgranskning och readiness. |
+| `filmed-action-ownership.mjs` | `beginDealingTake`, `endDealingTake` och `revealHole`, med befintliga ägar-/avbrottsprov. |
+| `blackjack-feedback.mjs` | Presentationen av avräkning: tal, ljud och blackjackmarkering utifrån serverutfallet. |
+| `moving-speech-deal-plan.mjs` | Frame-/kortcommitkontroller samt köad chatt och återhämtning efter avvisad/tvetydig start. |
+| `roulette-wheel.mjs` | Rundans submit-/kvittoflöde och direkt import av hjulmonteringen, med bevarat skydd mot dubbel insats. |
+
+## Funktionsmappar för dealers 1 november
+
+Dealerns import, fabrik, filmprofil, röst, mediebibliotek och livscykel ligger
+nu i [lib/dealers](../apps/studio/lib/dealers/), med sina frysta importmanifest.
+De 15 befintliga dealerproven, inklusive dealergruppers CAS och medieägarskap,
+ligger i [test/dealers](../apps/studio/test/dealers/). [Utvecklarguiden](../apps/studio/README.md#funktionsmappar)
+beskriver gränsen. Importer, filankare, `.ignore` och källhänvisningar följer flytten;
+de båda JSON-manifesten har oförändrade bytes och Git-blobbar.
+
+Studio-kommandot och full regression hittar tester rekursivt med citerade
+Node-globbar. Inventeringen går från 202 till 203 filer utan bortfall: tillägget
+är dealergruppsprovet som tidigare låg i `lib` och kördes i adminsviten.
+Orphan-audit, Studio-/klienttyper, miljöregister, dokumentlänkar och Atlas passerar.
+Detaljer och slutligt PR-/hookbevis finns i det privata uppdragskvittot
+`.cache/gpt-auto-boundaries-1101/mappstruktur.md`. CI och driftsättning följs av samordnaren.
+
 ## Avvecklad K04-testkedja 1 november
 
 Den historiska mediekatalogen, revisionshjälparen och tre timingfixturer är

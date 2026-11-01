@@ -27,13 +27,10 @@ export const STUDIO_ADMIN_SECTIONS = Object.freeze([
 // Explicit existing BO floors: unknown actions never inherit the old admin default.
 export const STUDIO_ADMIN_ACTIONS = Object.freeze([
   ['overview', 'admin'], ['config', 'admin'],
-  ['clips', 'admin'], ['generations', 'admin'], ['gen-verdicts', 'admin'],
   ['apikeys', 'admin'], ['users', 'admin'], ['players', 'admin'],
   ['transactions', 'admin'], ['emails', 'admin'], ['shoes', 'admin'],
   ['tier', 'admin'], ['game-lane', 'admin'],
   ['game-lanes/create', 'admin'], ['game-lanes/remove', 'admin'],
-  ['clip-landing', 'admin'], ['clip-never', 'admin'],
-  ['gen-landing', 'admin'], ['gen-verdict', 'admin'],
   ['players/create', 'admin', ['player-lifecycle-and-ledger']],
   ['players/status', 'admin', ['player-lifecycle-and-ledger', 'cancel-player-runtime']],
   ['players/password', 'admin', ['game-authority', 'player-lifecycle-and-ledger', 'cancel-player-runtime']],

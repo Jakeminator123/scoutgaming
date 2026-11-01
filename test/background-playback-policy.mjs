@@ -5,7 +5,7 @@ import {createSeedProject, defaultPresentationLane, validateProject} from '../pa
 import {layerAssetPath, validatePresentationPackage} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation, readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
-import {withoutPresentationLanes} from '../apps/studio/lib/dealer-archive-impact.mjs';
+import {withoutPresentationLanes} from '../apps/studio/lib/dealers/dealer-archive-impact.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
 

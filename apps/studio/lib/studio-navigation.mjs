@@ -1,14 +1,6 @@
 import { labUrl } from './lab-url.mjs';
 import { canonicalControlHref } from '../../../packages/navigation/control-flow.mjs';
 
-export const STUDIO_DEALER_TABS = Object.freeze([
-  {id:'clips',label:'Klippkarta',href:'/admin/clips'},
-  {id:'speech',label:'Röst & tal',href:'/admin/clips?panel=room'},
-  {id:'replies',label:'Svarsbibliotek',href:'/admin/replies'},
-  {id:'generate',label:'Skapa material',href:'/admin/dealer-studio?view=generate'},
-  {id:'settings',label:'Inställningar',href:'/admin/clips?panel=dealer'},
-].map(tab=>Object.freeze(tab)));
-
 const CONTEXT_PARAMETERS = Object.freeze({
   dealerId: 'dealer', eventId: 'event', variantId: 'variant', situation: 'situation', laneId: 'composition', operatorId: 'operator', tableId: 'table', game: 'game',
 });
@@ -69,8 +61,4 @@ export function studioScopedHref(path, query, context = {}) {
     for (const value of values) url.searchParams.append(parameter, value);
   }
   return url.pathname + url.search + url.hash;
-}
-
-export function studioNavigationTabs(context = {}, hrefs = {}) {
-  return STUDIO_DEALER_TABS.map(tab => ({ ...tab, href: studioNavigationHref(hrefs[tab.id] ?? tab.href, context) }));
 }

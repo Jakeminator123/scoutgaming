@@ -207,7 +207,10 @@ test('CI PR identity and complete ancestry include both side parents and hidden 
     const result = inspectCi({ cwd: root, env, event });
     assert.equal(result.commits, 5);
     assert.match(result.errors.join('\n'), /large\.bin: 1\.00 MB/);
-    assert.throws(() => inspectCi({ cwd: root, env, event: { ...event, pull_request: { ...event.pull_request, base: { sha: base } } } }), /mergeföräldrarna/);
+    const staleBase = inspectCi({ cwd: root, env, event: { ...event, pull_request: { ...event.pull_request, base: { sha: base } } } });
+    assert.deepEqual(staleBase, result, 'stale event metadata must inspect the same commits and hidden oversized blobs in the actual merge');
+    assert.throws(() => inspectCi({ cwd: root, env, event: { ...event, pull_request: { ...event.pull_request, head: { sha: base } } } }), /mergeföräldrarna/);
+    assert.throws(() => inspectCi({ cwd: root, env, event: { ...event, pull_request: { ...event.pull_request, base: { sha: '--all' } } } }), /PR-identitet/);
     for (const changed of [{ GITHUB_SHA: base }, { GITHUB_REF: 'refs/pull/41/merge' }, { GITHUB_EVENT_NAME: 'pull_request_target' }]) {
       assert.throws(() => inspectCi({ cwd: root, env: { ...env, ...changed }, event }), /CI-gränser/);
     }

@@ -5,7 +5,6 @@ import { studioScopedHref } from '../lib/studio-navigation.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import type { StudioProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
-import { StudioNavigation } from './studio-navigation';
 import { PageTemplate } from './page-template.mjs';
 import { useStudioSession } from './studio-session';
 import { resolveStudioDealerId, type ConnectionStatus } from './studio-types';
@@ -28,7 +27,6 @@ function SelectedControlOpenClawChat({ initialProject, initialVideos, initialSta
     intro={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label??dealerId}
   >
     <div className="sg-page-body">
-      <StudioNavigation dealerId={dealerId} dealerLabel={initialProject.dealers.find(dealer=>dealer.id===dealerId)?.label} active="speech"/>
       <GatewayPanel status={status} mode={mode} onModeChange={changeMode} dealerId={dealerId} dirty={dirty} onPlayerChat={() => { if(studioHistory(window).canNavigate(rehearsalHref))window.location.assign(rehearsalHref); }} />
     </div>
   </PageTemplate>;
