@@ -32,7 +32,7 @@ async function withPage(run,prepare=()=>{}){
   await fixtureSource();
   const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});
   try{
-    const context=await browser.newContext(),failures=[],state={catalog:catalog(),reads:0,completedReads:[],lifecycleReads:0,status:200,lifecycleStatus:200,writes:[],beforeRead:null,beforeLifecycle:null,assignmentStatus:200};
+    const context=await browser.newContext(),failures=[],state={catalog:catalog(),reads:0,completedReads:[],lifecycleReads:0,status:200,lifecycleStatus:200,writes:[],beforeRead:null,beforeLifecycle:null,assignmentStatus:200,loseReceipt:false};
     prepare(state);
     await context.addInitScript(studioHistoryBootstrap);
     await context.route('**/*',async route=>{
@@ -54,10 +54,11 @@ async function withPage(run,prepare=()=>{}){
         const body=route.request().postDataJSON();state.writes.push(body);
         const operator=state.catalog.administration.operators.find(row=>row.id===body.operatorId);
         assert.equal(body.expectedPackageRevision,operator.packageRevision,'writes use the current company CAS revision');
-        if(body.action==='publish-assignment'&&state.assignmentStatus!==200)return route.fulfill({status:state.assignmentStatus,json:{ok:false}});
+        if(body.assignment&&state.assignmentStatus!==200)return route.fulfill({status:state.assignmentStatus,json:{ok:false}});
         operator.packageRevision++;
         if(body.lanes)operator.packageLanes=body.lanes;
         if(body.assignment)operator.assignment={...operator.assignment,...body.assignment};
+        if(state.loseReceipt){state.loseReceipt=false;return route.abort('failed');}
         return route.fulfill({json:{ok:true,operatorId:operator.id,packageRevision:operator.packageRevision,lanes:operator.packageLanes,assignment:operator.assignment}});
       }
       if(url.pathname==='/api/project')return route.fulfill({json:{project:{}}});
@@ -104,14 +105,38 @@ test('failed publication readback still refreshes catalog and blocks stale write
   assert.equal(state.writes[1].expectedPackageRevision,2);
 }));
 
-test('partial publication reads the completed revision and the unchanged assignment without a duplicate catalog refresh',{skip:!browserModule},()=>withPage(async(page,state)=>{
-  await ready(page);state.assignmentStatus=503;
+test('combined edits commit one revision and refresh once',{skip:!browserModule},()=>withPage(async(page,state)=>{
+  await ready(page);await scene(page).check();await page.locator('input[name="allow-pause"]').check();await publish(page).click();
+  await page.getByText('Senast publicerat · version 2',{exact:true}).waitFor();await ready(page);
+  assert.equal(state.reads,2);assert.equal(state.writes.length,1);
+  assert.equal(state.writes[0].action,'publish-company-assignment');assert.equal(state.writes[0].expectedPackageRevision,1);
+  assert.equal(state.catalog.administration.operators[0].assignment.allow.pause,true);
+  assert.deepEqual(state.catalog.administration.operators[1],catalog().administration.operators[1]);
+}));
+
+test('rejected combined edits preserve both drafts and the published revision',{skip:!browserModule},()=>withPage(async(page,state)=>{
+  await ready(page);state.assignmentStatus=422;
   await scene(page).check();await page.locator('input[name="allow-pause"]').check();await publish(page).click();
-  await page.waitForFunction(()=>document.body.textContent.includes('Tilldelning version 2'));await ready(page);
-  assert.equal(state.reads,2);assert.equal(state.writes.length,2);assert.equal(state.writes[1].expectedPackageRevision,2);
-  // The new catalog revision starts the assignment draft from the authoritative, unchanged view.
-  assert.equal(await page.locator('input[name="allow-pause"]').isChecked(),false);
+  await page.getByRole('alert').filter({hasText:'Tilldelningen godtogs inte'}).waitFor();await ready(page);
+  assert.equal(state.reads,1);assert.equal(state.writes.length,1);
+  assert.equal(state.catalog.administration.operators[0].packageRevision,1);
+  assert.deepEqual(state.catalog.administration.operators[0].packageLanes,['scene-1']);
   assert.equal(state.catalog.administration.operators[0].assignment.allow.pause,false);
+  assert.equal(await scene(page).isChecked(),true);assert.equal(await page.locator('input[name="allow-pause"]').isChecked(),true);
+}));
+
+test('a lost combined receipt blocks retry until authoritative readback',{skip:!browserModule},()=>withPage(async(page,state)=>{
+  await ready(page);state.loseReceipt=true;
+  await scene(page).check();await page.locator('input[name="allow-pause"]').check();await publish(page).click();
+  await page.getByRole('alert').filter({hasText:'kunde inte bekräftas'}).waitFor();
+  assert.equal(state.writes.length,1);assert.equal(state.catalog.administration.operators[0].packageRevision,2);
+  assert.equal(await publish(page).isDisabled(),true);
+  assert.equal(await scene(page).isChecked(),true);assert.equal(await page.locator('input[name="allow-pause"]').isChecked(),true);
+  await update(page).click();await page.waitForFunction(()=>document.body.textContent.includes('Tilldelning version 2'));await ready(page);
+  assert.equal(state.reads,2);assert.equal(await publish(page).isDisabled(),true);
+  await page.locator('input[name="allow-pause"]').uncheck();await publish(page).click();
+  await page.getByText('Senast publicerat · version 3',{exact:true}).waitFor();await ready(page);
+  assert.equal(state.writes[1].action,'publish-assignment');assert.equal(state.writes[1].expectedPackageRevision,2);
 }));
 
 test('catalog error disables the existing draft, retry validates and recovers without a child fetch',{skip:!browserModule},()=>withPage(async(page,state)=>{

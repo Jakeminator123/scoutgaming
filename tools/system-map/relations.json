@@ -985,6 +985,119 @@
         }
       ],
       "defaultEdge": "studio-access"
+    },
+    {
+      "id": "company-publication",
+      "category": "code",
+      "title": "Atomisk bolagspublicering",
+      "note": "Både urval och tilldelning ändras i samma CAS-transaktion. Statisk kodkedja; SQL- och browserprov redovisas i PR.",
+      "nodes": [
+        {
+          "id": "ui",
+          "label": "Tilldelning",
+          "place": "Admin · RegisteredStudio",
+          "col": 0,
+          "row": 0
+        },
+        {
+          "id": "client",
+          "label": "Ett kombinationsanrop",
+          "place": "operator-assignment-client.mjs",
+          "col": 1,
+          "row": 0
+        },
+        {
+          "id": "gate",
+          "label": "Auth och låst mutation",
+          "place": "studio-admin-api.mjs",
+          "col": 2,
+          "row": 0
+        },
+        {
+          "id": "package",
+          "label": "Fryst kandidat + CAS",
+          "place": "operator-package-api.mjs",
+          "col": 1,
+          "row": 1
+        },
+        {
+          "id": "sql",
+          "label": "En revision och audit",
+          "place": "operator-store.mjs · Neon",
+          "col": 2,
+          "row": 1
+        }
+      ],
+      "edges": [
+        {
+          "id": "ui-client",
+          "source": "ui",
+          "target": "client",
+          "kind": "Anrop",
+          "label": "Publicera ändringarna",
+          "explanation": "Formuläret skickar bolagets revision, ändrat urval och tilldelningsutkast till samma klientfunktion.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/client/admin/components/studio/registered-studio.tsx",
+              "match": "const result = await publishCompanyAssignment({ endpoint: labBasePath() + '/api/admin/operator-package', operatorId: id, revision, lanes: sendLanes ? lanes : null, draft, fetchImpl: fetch });"
+            }
+          ]
+        },
+        {
+          "id": "client-gate",
+          "source": "client",
+          "target": "gate",
+          "kind": "HTTP POST",
+          "label": "publish-company-assignment",
+          "explanation": "När båda fälten ändrats skickas ett enda POST med explicit paketrevision; ett osäkert kvitto kräver återläsning.",
+          "conditional": true,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/operator-assignment-client.mjs",
+              "match": "body:JSON.stringify({action:'publish-company-assignment',operatorId,expectedPackageRevision:revision,lanes,"
+            }
+          ]
+        },
+        {
+          "id": "gate-package",
+          "source": "gate",
+          "target": "package",
+          "kind": "Förberedelse + transaktion",
+          "label": "Auth före förberedelse och skrivning",
+          "explanation": "Admin uppdaterar identiteten och förhandlar den förberedda kandidatens mutationer innan produkttransaktionen anropar handlern.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/studio-admin-api.mjs",
+              "match": "const assignment = endpoint.action === 'operator-package' && ['publish-assignment','publish-company-assignment'].includes(body?.action);"
+            },
+            {
+              "path": "apps/studio/lib/studio-admin-api.mjs",
+              "match": "const result = localMutation ? await mutationTransaction(invoke, presentationOptions) : await invoke();"
+            }
+          ]
+        },
+        {
+          "id": "package-sql",
+          "source": "package",
+          "target": "sql",
+          "kind": "Transaktion + SQL",
+          "label": "Urval och assignment i samma paket",
+          "explanation": "Slutkandidaten återvalideras mot snapshot, media, bolag och CAS. publishPackage skriver presentation och assignment tillsammans; auditfel rullar tillbaka paketet.",
+          "conditional": false,
+          "evidence": [
+            {
+              "path": "apps/studio/lib/operator-package-api.mjs",
+              "match": "const branding=companyIntent ? {...current.branding,[PARTNER_ASSIGNMENT_KEY]:validateAdminAssignment(companyIntent.assignment,prepared.presentation)} : current?.branding ?? {};"
+            },
+            {
+              "path": "packages/operators/server/operator-store.mjs",
+              "match": "const assignmentBefore=current?.branding?.[ASSIGNMENT_KEY]??null,assignmentAfter=saved.branding?.[ASSIGNMENT_KEY]??null;"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

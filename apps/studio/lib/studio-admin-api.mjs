@@ -151,8 +151,8 @@ export function createStudioAdminApi({ authorize, allowedOrigins, publicHosts, h
       const roomRelease = endpoint.action === 'operator-package' && ROOM_RELEASE_ACTIONS.includes(body?.action);
       if (roomRelease && (invocation.prepared?.action !== body.action || !invocation.prepared.presentation)) throw failure(503);
       // Bolag › Tilldelat: den förberedda kandidaten bär exakt det paket transaktionen förhandlar.
-      const assignment = endpoint.action === 'operator-package' && body?.action === 'publish-assignment';
-      if (assignment && (invocation.prepared?.action !== 'publish-assignment' || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
+      const assignment = endpoint.action === 'operator-package' && ['publish-assignment','publish-company-assignment'].includes(body?.action);
+      if (assignment && (invocation.prepared?.action !== body.action || !Array.isArray(invocation.prepared.mutations))) throw failure(503);
       const invoke = async () => {
         if (request.method !== 'GET') await refresh();
         const value = await registered.get(`${endpoint.method} ${endpoint.path}`)(invocation);

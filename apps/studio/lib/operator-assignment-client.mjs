@@ -1,9 +1,9 @@
 // Bolag › Tilldelat: Admins fält för bolagets `assignment` (allow, insatsprofiler
 // och språk). Publiceras som en ny paketrevision genom paketets vanliga väg
-// (POST operator-package, action publish-assignment, CAS på revisionen).
+// (POST operator-package med CAS; kombinerat urval/tilldelning skrivs atomiskt).
 // Servern avgör allt: fältet erbjuder bara det miljön ger bolaget och
 // skickar ändå hela tilldelningen, som servern validerar igen.
-import { publishOperatorPackage, publishedPackageMessage } from './operator-package-client.mjs';
+import { publishOperatorPackage, publishedPackageMessage, verifiedPackageRevision, PACKAGE_RECEIPT_MISMATCH, PACKAGE_UNCONFIRMED, packagePublishError } from './operator-package-client.mjs';
 
 export const ASSIGNMENT_ALLOW_KEYS = Object.freeze(['dealer', 'tableAsset', 'background', 'language', 'limit', 'pause']);
 export const ASSIGNMENT_LAYER_KEYS = Object.freeze(['dealer', 'tableAsset', 'background']);
@@ -77,14 +77,29 @@ export async function publishAssignment({ endpoint, operatorId, revision, draft,
 }
 
 /**
- * Bolag › Tilldelning har en knapp, Publicera: urvalet (`lanes`) först och sedan vad bolaget får ändra (`draft`),
- * var och en bara när den är ändrad (null hoppar över). Det andra anropet tar revisionen ur det första kvittot
- * (CAS). Ett stopp avbryter utan nytt försök; `done` säger vad som hann publiceras och `revision` gäller efter det.
+ * Bolag › Tilldelning: när både urval och tilldelning ändrats publiceras de
+ * atomiskt i ett anrop och en revision. Enskilda ändringar behåller sina kontrakt.
+ * Ett osäkert kvitto eller nätutfall kräver återläsning innan ett nytt försök.
  * @param {{endpoint:string;operatorId:string;revision:number|null;lanes?:string[]|null;fetchImpl?:typeof fetch;
  *   draft?:{allow:Record<string,boolean>;limitPresets:string[];languages:string[]}|null}} options
  * @returns {Promise<{ok:true;revision:number;done:string[];message:string}|{ok:false;revision:number|null;done:string[];error:string;needsRefresh:boolean}>}
  */
 export async function publishCompanyAssignment({ endpoint, operatorId, revision, lanes = null, draft = null, fetchImpl = fetch }) {
+  if(lanes&&draft){
+    const failed=(error,needsRefresh)=>({ok:false,revision,done:[],error,needsRefresh});
+    try{
+      const response=await fetchImpl(endpoint,{method:'POST',credentials:'same-origin',
+        headers:{'content-type':'application/json',accept:'application/json'},
+        body:JSON.stringify({action:'publish-company-assignment',operatorId,expectedPackageRevision:revision,lanes,
+          assignment:{allow:{...draft.allow},limitPresets:[...draft.limitPresets],languages:[...draft.languages]}})});
+      const payload=await response.json().catch(()=>null);
+      if(!response.ok)return failed(response.status>=500?PACKAGE_UNCONFIRMED:payload?.code?packagePublishError(response.status,payload):assignmentPublishError(response.status),response.status===409||response.status>=500);
+      const next=verifiedPackageRevision(payload,{operatorId,lanes,revision}),view=payload?.assignment;
+      if(next===null||!view||ASSIGNMENT_ALLOW_KEYS.some(key=>typeof view.allow?.[key]!=='boolean')
+        ||!Array.isArray(view.limitPresets)||!Array.isArray(view.languages)||canonical(view)!==canonical(draft))return failed(PACKAGE_RECEIPT_MISMATCH,true);
+      return {ok:true,revision:next,done:['lanes','assignment'],message:`Urvalet och vad bolaget får ändra är publicerade. Version ${next}.`};
+    }catch{return failed(PACKAGE_UNCONFIRMED,true);}
+  }
   let current = revision;
   const done = [];
   if (lanes) {
@@ -95,10 +110,9 @@ export async function publishCompanyAssignment({ endpoint, operatorId, revision,
   if (draft) {
     const result = await publishAssignment({ endpoint, operatorId, revision: current, draft, fetchImpl });
     if (!result.ok) return { ok: false, needsRefresh: result.needsRefresh, revision: current, done,
-      error: done.length ? `Urvalet är publicerat som version ${current}. Vad bolaget får ändra publicerades inte: ${result.error}` : result.error };
+      error: result.error };
     current = result.revision; done.push('assignment');
   }
-  const message = done.length === 2 ? `Urvalet och vad bolaget får ändra är publicerade. Version ${current}.`
-    : done[0] === 'assignment' ? `Tilldelningen är publicerad. Version ${current}.` : publishedPackageMessage(current);
+  const message = done[0] === 'assignment' ? `Tilldelningen är publicerad. Version ${current}.` : publishedPackageMessage(current);
   return { ok: true, revision: current, done, message };
 }
