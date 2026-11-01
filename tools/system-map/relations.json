@@ -3,6 +3,49 @@
   "origin": "Handgranskade samband från ARKITEKTEN; varje kodankare återkontrolleras vid generering. Textens innebörd kräver mänsklig granskning.",
   "graphs": [
     {
+      "id": "room-material-publication",
+      "category": "runtime",
+      "title": "Ett spelbords materialbyte",
+      "note": "Handgranskad avgränsad väg för Admin. Fryst presentation, bara rummets bakgrund/bord; ingen projektinfångning eller materialmerge. Kodankarna är inte driftacceptans.",
+      "nodes": [
+        {"id": "appearance", "label": "Utseende", "place": "PartnerAppearance i Admin", "col": 0, "row": 0},
+        {"id": "branding", "label": "Branding-API", "place": "Session, scope, CAS och utkastgräns", "col": 1, "row": 0},
+        {"id": "store", "label": "Bolagslagring", "place": "Paket och journal i samma SQL-transaktion", "col": 2, "row": 0},
+        {"id": "config", "label": "J08-konfiguration", "place": "Nytt materialval för A, fryst B", "col": 2, "row": 1}
+      ],
+      "edges": [
+        {
+          "id": "appearance-branding", "source": "appearance", "target": "branding", "kind": "HTTP",
+          "label": "Publicera materialval", "conditional": true,
+          "explanation": "Spara och granska går via befintlig branding-route. Admin skickar roomId och de granskade revisionerna för publish-room-material; routen avvisar extra fält och bestämmer actor/scope från sessionen.",
+          "evidence": [
+            {"path": "apps/studio/components/partner-appearance.tsx", "match": "...(action === 'publish-room-material' ? {roomId} : {}),"},
+            {"path": "apps/studio/lib/partner-session.mjs", "match": "'publish-room-material':['action','roomId','expectedDraftRevision','expectedPackageRevision','reviewToken'],"}
+          ]
+        },
+        {
+          "id": "branding-store", "source": "branding", "target": "store", "kind": "Funktionsanrop",
+          "label": "Validerat utkast → fryst paket", "conditional": true,
+          "explanation": "Under samma skrivkontext återkontrolleras behörighet, paket-/utkastrevision och granskning. Hela utkastet måste ändra enbart A:s background/table. Tillåtna assets och dealer-/bordskompatibilitet prövas mot paketets befintliga presentation.",
+          "evidence": [
+            {"path": "apps/studio/lib/partner-branding-api.mjs", "match": "if(!isRoomMaterialChange(pack.branding,draft.branding,room.id))fail(422);"},
+            {"path": "apps/studio/lib/partner-branding-api.mjs", "match": "await context.store.publishBrandingDraft({...input,branding});"}
+          ]
+        },
+        {
+          "id": "store-config", "source": "store", "target": "config", "kind": "SQL",
+          "label": "Atomiskt paket, config och journal", "conditional": true,
+          "explanation": "Befintlig brandingwriter publicerar paket och utkastjournal med samma klient. J08 skapar ny config för A när dess effekt ändras. B:s identiska effekt behåller configVersion och dess historiska packageRevision även när B är pausat.",
+          "evidence": [
+            {"path": "packages/operators/server/operator-store.mjs", "match": "const saved=await publishWithin(txQuery,{...input,expectedRevision:expectedPackage,lanes:pack.lanes,games:pack.games,tables:pack.tables,branding},null,{rebaseDraft:false});"},
+            {"path": "packages/operators/server/operator-store.mjs", "match": "const draft=await markDraftPublished(txQuery,input,before,saved.revision);"},
+            {"path": "packages/presentation/server/room-game-publication.mjs", "match": "if(!same(effect(source,room,oldPresentation),effect(next,room,presentation)))conflict();"}
+          ]
+        }
+      ],
+      "defaultEdge": "appearance-branding"
+    },
+    {
       "id": "runtime",
       "category": "runtime",
       "title": "Anrop och data",

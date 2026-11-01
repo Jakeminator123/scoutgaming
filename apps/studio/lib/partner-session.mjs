@@ -530,6 +530,7 @@ async function brandingResponse(prepared, config) {
     'discard-draft':['action','expectedDraftRevision','expectedPackageRevision'],
     review:['action','expectedDraftRevision','expectedPackageRevision'],
     publish:['action','expectedDraftRevision','expectedPackageRevision','reviewToken'],
+    'publish-room-material':['action','roomId','expectedDraftRevision','expectedPackageRevision','reviewToken'],
     restore:['action','expectedDraftRevision','expectedPackageRevision','sourcePackageRevision'],
   };
   if(!Object.hasOwn(actionFields,body.action))fail(400);

@@ -2,6 +2,24 @@
 
 Aktuell samordning 2 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Avgränsat materialbyte för ett spelbord 2 november
+
+Admins Utseende erbjuder **Publicera materialval** när hela utkastets enda
+ändringar gäller det valda blackjackbordets bakgrund eller bordsgrafik och
+bordet redan har publicerade spelinställningar. Den befintliga brandingvägen
+verifierar gränsen under låset och använder det frysta paketets tillåtna
+material. Projektutkast och nytt bolagsmaterial följer inte med.
+J08 skriver rummets nya config tillsammans med paket och journal; ett pausat
+grannrum behåller sin configVersion och historiska packageRevision.
+
+Reproduktionen i `room-release.test.mjs` visar att den fullständiga
+publiceringen ger 409 efter en orelaterad projektsparning när ett annat
+konfigurerat rum är pausat. Samma prov verifierar avgränsat byte, obehörighet,
+CAS, främmande material, ändrade medier och rollback vid journalfel.
+UI- och Chromeproven täcker spara → granska → publicera på mobil och dator.
+Lokala resultat och slutlig SHA hör till PR:en; CI och driftacceptans följs
+separat. Ingen produktdata eller process i Render ändras av uppdraget.
+
 ## Återuppta arbete mellan IDE:er 2 november
 
 Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.

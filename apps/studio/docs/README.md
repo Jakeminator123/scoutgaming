@@ -526,6 +526,13 @@ väntar. **Öppna i spelet** startar spelbordet.
   bolagets utkast** tar bort bolagets utkast; publicerade spelbord ändras
   inte. I versionshistoriken återställer **Återställ till utkast** en äldre
   version som nytt utkast. Utseendet kräver att tilldelningen är publicerad.
+  När utkastet bara byter detta spelbords bakgrund eller bordsgrafik visas
+  **Publicera materialval** här. Granska bytet och välj **Publicera nu**.
+  Valen måste redan vara tillåtna i den publicerade miljön och spelbordet
+  måste ha publicerade spelinställningar. Andra spelbord och sparade
+  miljöändringar behålls; ett pausat spelbord hindrar därför inte bytet.
+  Om utkastet också ändrar dealer, bolagets standard eller ett annat
+  spelbord används den fullständiga publiceringen ovanför flikarna.
 - **Dealer**: dealers i spelbordets miljö, med länk till dealerns sida.
   Dealern väljs under Utseende.
 - **Spelinställningar**: **Bordsspråk** och **Insatsprofil**. **Spara

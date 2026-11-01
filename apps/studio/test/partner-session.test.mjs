@@ -632,6 +632,16 @@ async function nativeBrandingFixture({anchors=false,tableGeometry=anchors,capabi
     changeAdmin:()=>base.corruptDocument(scope,'administration',row=>({...row,revision:'admin-native-2'}))};
 }
 
+test('room material publication rejects partner access and forged scope or authority fields at the HTTP boundary',async()=>{
+  const f=await nativeBrandingFixture(),before=f.pool.snapshot();
+  const intent={action:'publish-room-material',roomId:'room-native',expectedDraftRevision:0,expectedPackageRevision:1,reviewToken:'unused'};
+  for(const extra of [{operatorId:'other'},{audit:{accessClass:'internal-admin'}},{branding:{}},{gameConfig:{language:'sv'}}])
+    assert.equal((await f.command({...intent,...extra})).status,400);
+  assert.equal((await f.command(intent)).status,403);
+  assert.equal((await f.command(intent,'other')).status,404);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
 test('native discard accepts only scoped revision intent and preserves the published package',async()=>{
   const f=await nativeBrandingFixture();assert.equal((await f.save()).status,200);
   const before=f.pool.snapshot(),current=await(await f.get()).json();
