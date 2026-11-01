@@ -60,7 +60,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Lobbykatalogen | `packages/player-catalog/` | Katalogtester |
 | Sparade projekt, policy och mediemetadata | Neon (`croupier_studio`) med revisionslås och historik | Studio-API:ts konfliktprov |
 
-Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma presentationen. Den registerlagrade katalogen läses tills den ersätts enligt [REN-START: genomförande och återgång](../../docs/plans/REN-START.md#genomförande-och-återgång).
+Repot bygger ingen presentationsbank: katalogbygget skriver alltid den tomma presentationen. Den registerlagrade katalogen läses tills den ersätts enligt [lagringsguidens avvecklingsordning](../../docs/storage/BLOB-NEON.md#avveckling-av-produktdata-och-original).
 
 ## Mappar
 

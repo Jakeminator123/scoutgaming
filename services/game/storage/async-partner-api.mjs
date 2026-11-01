@@ -19,7 +19,7 @@ export function installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, l
   // events = observe the SSE stream only; play implies it. A key with just events cannot launch or act.
   const SCOPES = ['launch', 'play', 'wallet', 'history', 'lobby', 'events'];
   const keyStamp = key => createHash('sha256').update(key.secret).digest('hex');
-  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a key with a company launches only there. The
+  // Nyckel→bolag (docs/games/partner-api.md#company-binding): a key with a company launches only there. The
   // signed claims carry its id and the address its slug; a key without one launches as today.
   async function launchTarget(row) {
     const operatorId = keyOperator(row);

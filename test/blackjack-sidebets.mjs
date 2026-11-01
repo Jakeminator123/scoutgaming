@@ -1,4 +1,4 @@
-// P-E (docs/plans/KEVIN-PORT.md, K9): fixed paytable for the side bets, written against main's own
+// Fixed paytable for the side bets, written against main's own
 // rule code (services/game/games/blackjack/round.mjs) and core ledger (core.mjs). It complements the
 // fuzz oracle in test/fuzz-blackjack.mjs: the fuzz re-implements the rules, this file locks the numbers.
 //

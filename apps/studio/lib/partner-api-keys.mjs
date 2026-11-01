@@ -1,5 +1,5 @@
 // Partnerportalens Integration: bolagets egna API-nycklar, maskerade (Nyckel→bolag,
-// docs/plans/NYCKEL-BOLAG.md). Samma pool och behörighetskedja som snapshoten; bolaget
+// docs/games/partner-api.md#company-binding). Samma pool och behörighetskedja som snapshoten; bolaget
 // kommer alltid från arbetsytans session (partner-data.mjs), aldrig från adressen eller
 // en body. Frågan väljer aldrig nyckel, hemlighet, wallet-adress, IP-lista eller skapare:
 // partnern ser namn, status, rättigheter och tider. Nycklar skapas, roteras och

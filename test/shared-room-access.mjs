@@ -384,7 +384,7 @@ test('the package port reads exactly one operator package revision and grants no
   h.assertReleased();
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters its key's company's rooms
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): a partner-launched session enters its key's company's rooms
 // with a player's rights, and is refused by name in another company's room or without a company.
 const partner=(h,operatorId='north',partnerKeyId='key-a')=>{h.state.session={...h.state.session,partnerKeyId,operatorId};};
 test('a partner session bound to the room company is admitted in authorize, revalidate and revalidateLocked',async()=>{

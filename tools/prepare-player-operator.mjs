@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Offline only: no database driver, environment credentials or apply mode (docs/plans/STEG-F.md).
+// Offline only: no database driver, environment credentials or apply mode (docs/games/partner-api.md#native-player-accounts).
 // Renders game-014 (players.operator_id) for Jakob; the evidence names the target, the engine's
 // Studio scope and the fallback company of the backfill, which is Jakob's decision.
 import { readFile } from 'node:fs/promises';

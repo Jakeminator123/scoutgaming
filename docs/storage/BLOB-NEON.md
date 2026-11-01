@@ -114,7 +114,7 @@ Frysta importkällor i `apps/studio/lib/dealer-import-sources.mjs` används av A
 
 ## Radering
 
-Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryckligt beställd avveckling av original, som Astrid, följer [REN-START](../plans/REN-START.md) och dess referens-/återställningskontroller. Skydden som finns i koden ska återanvändas, inte byggas om:
+Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryckligt beställd avveckling av original, som Astrid, följer [avvecklingsordningen nedan](#avveckling-av-produktdata-och-original) och uppdragets bevaringsgränser. Skydden som finns i koden ska återanvändas, inte byggas om:
 
 - Arkivering före permanent radering, revisions- och hashkontroll, objektlås och sekvensen `pending → radera Blob → deleted` med förnyad behörighetskontroll (`apps/studio/lib/studio-media-deletion.mjs`).
 - `inspectMediaDeletion` (`packages/studio-registry/server/repository.mjs`) läser dokument, paket, alias, Forge-profiler och icke-avslutade Forge-jobb, sparade talrepliker och talpaketens metadata, och kontrollerar Neons runtimeindex. Saknade tabeller, fler sidor eller okända svar stoppar raderingen.
@@ -123,6 +123,24 @@ Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryc
 - Nya Forge-jobb kontrolleras atomiskt mot pending, deleted och arkiverad media under samma scopelås; ett sent providerutfall får aldrig återaktivera raderad media.
 
 "Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealer-lifecycle.test.mjs`, `apps/studio/test/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
+
+## Avveckling av produktdata och original
+
+Uttryckligt beställd avveckling kan även omfatta original. Uppdragets aktuella
+kandidater och bevaringsidentiteter står i [körplanen](../plans/organisation/KORPLAN-v2.md#data-och-medieavveckling),
+inte i en gammal objektlista. Vanlig livscykel får fortfarande inte radera
+källmedia, historik eller plånboksjournal som bieffekt.
+
+1. Frys miljö, scope, exakt kandidatlista, konsumenter och revisioner; kontrollera pågående jobb och andra agenters ägarskap. Följ `operator-store.mjs`, publicerade `operator_packages.rooms` och sparade paket som aktiva rum eller låsta konfigurationer använder. Administrationsdokumentets gamla rumskopia är inte rumsregistret.
+2. Följ dealerposter, `media_records`, registrerade filmprofiler, lager, `shared_table_configs` och deras heads/materialrevisioner. För tal behövs profiler, `moving_speech_bindings`, driftprofiler, bankkarta, journal, budget, reservationer och callbackbindningar. Följ körbara anrop; en textreferens eller ett tomt rum räcker inte.
+3. Utred API-nycklar, partnerspelare, sessioner och bolagsbindningar före bolagsradering enligt [Partner-API-guiden](../games/partner-api.md#company-binding). Raderingen får inte lämna fungerande nycklar eller felbundna spelare.
+4. Förbered verifierbar återställning enligt [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md): Neon-underlag, aktuella revisioner och exakta Blob-URL:er/hashar. Privata data stannar utanför Git. Följ uppdragets mandat för särskilda databasingrepp och leverera kompatibla kodvägar före avveckling.
+5. Ta bort eller koppla om referenser i rätt transaktion/revision. Lös aktiva beroenden hos konsumenten; radera inte kalibrering eller bevis för att kringgå en spärr. Den registerlagrade runtimekatalogen ändras via `ops/neon-studio/runtime-media-import.mjs` och dess runner med revisions- och planhashkontroll. Publicera bara paket/rum vars verkliga kontrakt ändras; gamla K04-testkataloger är ingen produktionsgrind.
+6. Prova uppdragets bevarade produktflöden, behörighet och negativa åtkomstfall. Bekräfta att ingen klient eller aktivt jobb längre begär kandidaterna. Radera sedan exakt verifierade Blob-objekt; avvikelse från den frysta revisionen kräver nytt underlag, inte bred prefixradering.
+
+Återgång återställer dokumenterade data- och medierevisioner utan att automatiskt
+öppna rum eller aktivera tal. Behåll det driftkvitto som ett aktivt releasebeslut
+behöver; avslutade körlistor hör till Git-historiken.
 
 ## Rörligt tal och talworkern
 

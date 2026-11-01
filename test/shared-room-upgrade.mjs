@@ -304,7 +304,7 @@ test('service shutdown closes an open real socket with 1012 before the transport
   } finally { client.terminate();if(server.listening)await new Promise(resolve=>server.close(resolve)); }
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a browser sees a rejected handshake only as 1006 and retried
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): a browser sees a rejected handshake only as 1006 and retried
 // for a minute (receipt O02 partner-key-shared-table). A partner refused by name for its key's company
 // gets 101 and at once 1008 with that code instead; no other refusal opens a socket.
 // Preview 29 Oct 2026: an open room without published game settings is refused by name the same way.

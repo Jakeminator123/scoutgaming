@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { WAIT_REFRESH_MS, WAITING_TEXT, createSharedRoomWaiting, waitingForSeat } from '../services/game/public/shared-room-waiting.mjs';
 import { FULL_TABLE, WAIT_WRITE_AFTER_MS } from '../services/game/games/blackjack/table/coordinator.mjs';
 
-// K6 (docs/plans/KEVIN-PORT.md, P-C): the client renews a viewer's wait for a seat while the shown table is full.
+// The client renews a viewer's wait for a seat while the shown table is full.
 const me = (extra = {}) => ({ id: 'carol', seats: [], memberGen: 0, active: false, available: 1000, pausedUntil: 0, ...extra });
 const full = (extra = {}) => ({ owners: Array(7).fill('bob'), serverNow: 1000, me: me(), ...extra });
 const free = () => full({ owners: ['bob', 'bob', 'bob', null, 'bob', 'bob', 'bob'] });

@@ -23,7 +23,7 @@ const previous = s => Array.isArray(s.me.lastSettlement?.hands) && s.me.lastSett
 // A side bet needs the main bet of its own box (coordinator.mjs bet: NO_BETS).
 const sideOpen = (s, box) => s.bets[box]?.main > 0;
 export const SIGN_IN_EXPIRED = 'Din session har gått ut. Logga in igen.';
-// A partner key's company (docs/plans/NYCKEL-BOLAG.md): a reload cannot change these answers.
+// A partner key's company (docs/games/partner-api.md#company-binding): a reload cannot change these answers.
 export const PARTNER_REFUSED = new Map([
   ['partner_operator_mismatch', 'Nyckeln gäller ett annat bolag. Öppna spelet från ditt eget spelbolag.'],
   ['partner_key_unbound', 'Nyckeln är inte kopplad till något spelbolag.'],

@@ -26,10 +26,10 @@ const versions = Object.freeze([
   { version: 'game-009-shared-blackjack', file: '009-shared-blackjack.sql', deploymentOptional: true },
   { version: 'game-010-presentation-receiver', file: '010-presentation-receiver.sql', deploymentOptional: true },
   { version: 'game-011-retire-lissabon', file: '011-retire-lissabon.sql', deploymentOptional: true },
-  // PR C i docs/plans/NYCKEL-BOLAG.md gör 012 obligatorisk här samtidigt som motorn kräver den vid start.
+  // Kravhöjningen i docs/plans/organisation/KORPLAN-v2.md gör 012 obligatorisk när readiness tillåter.
   { version: 'game-012-api-key-operator', file: '012-api-key-operator.sql', deploymentOptional: true },
   { version: 'game-013-ledger-backfill', file: '013-ledger-backfill.sql', deploymentOptional: true },
-  // Steg F (docs/plans/STEG-F.md): spelarens bolag. Valfri tills kravsteget kräver den vid start.
+  // Steg F (docs/games/partner-api.md#native-player-accounts): spelarens bolag. Valfri tills kravsteget kräver den vid start.
   { version: 'game-014-player-operator', file: '014-player-operator.sql', deploymentOptional: true },
 ].map(Object.freeze));
 

@@ -1,4 +1,4 @@
-// Migration 012 (docs/plans/NYCKEL-BOLAG.md): its offline preparation and the rendered SQL on PGlite.
+// Migration 012 (docs/games/partner-api.md#company-binding): its offline preparation and the rendered SQL on PGlite.
 // PGlite runs one session, so lock contention and lock_timeout stay unproved here (011 has them on CI Postgres).
 import test from 'node:test';
 import assert from 'node:assert/strict';

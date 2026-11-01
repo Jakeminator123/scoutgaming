@@ -1,4 +1,4 @@
-// Steg F, PR F1 (docs/plans/STEG-F.md): migration game-014 (players.operator_id) and the tolerant reads.
+// Steg F, PR F1 (docs/games/partner-api.md#native-player-accounts): migration game-014 (players.operator_id) and the tolerant reads.
 // The offline preparation, the rendered SQL on PGlite before and after, the backfill rule, idempotence,
 // refusals and the game ledger's readiness; then the engine session and Admin's player list run the same
 // code without and with 014. PGlite runs one session: lock contention and lock_timeout stay unproved here.

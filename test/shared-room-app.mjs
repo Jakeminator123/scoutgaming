@@ -1710,7 +1710,7 @@ test('a state of another round, window or configuration never waits beside the p
   }
 });
 
-// K6 (docs/plans/KEVIN-PORT.md, P-C): a viewer without a seat at a full table waits for one.
+// A viewer without a seat at a full table waits for one.
 const fullTable=(version,extra={})=>snapshot(version,{owners:Array(7).fill('bob'),seatGen:Array(7).fill(1),bets:Array.from({length:7},()=>({main:5,pp:0,tp:0})),unopened:false,...extra});
 test('the status line tells a viewer without a seat at a full table that he waits for one',()=>{
   const {document,nodes}=documentFixture(),view=createSharedRoomView({document});view.bind({dispatch(){},selectChip(){},retry(){}});

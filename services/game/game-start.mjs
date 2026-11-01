@@ -16,7 +16,7 @@ export function publicGameStart(input,{origin,games = ['blackjack','roulette']} 
   return '/game?'+new URLSearchParams([['game',game],...query]);
 }
 
-// A partner launch is a blackjack start. A key bound to a company (docs/plans/NYCKEL-BOLAG.md)
+// A partner launch is a blackjack start. A key bound to a company (docs/games/partner-api.md#company-binding)
 // always lands at that company: the engine passes its slug as `operator`, after checking any
 // ?operator= against the signed claims. A launch without a company and without ?operator=
 // lands in the lobby (L1): a dealer, lane or table without a company is never a game. Older

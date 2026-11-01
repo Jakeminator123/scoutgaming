@@ -107,7 +107,7 @@ export function studioAdminActor(value: unknown): StudioAdminActor | null {
   return { username: actor.username, role: normalizeStudioRole(actor.role) as StudioRole };
 }
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the fixed codes apikeys/create answers with, in words.
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): the fixed codes apikeys/create answers with, in words.
 // Only these codes are read from a refusal body; any other server text is never shown.
 const KEY_REFUSALS: Record<string, string> = {
   partner_key_operator_schema_pending: 'Nyckeln skapades inte: databasen saknar ännu kopplingen mellan nyckel och bolag (spelmigrering 012). Nycklar kan skapas när Scoutgaming har lagt in den.',

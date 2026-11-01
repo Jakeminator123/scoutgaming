@@ -1,5 +1,5 @@
 // Synthetic presentation bank for contract tests. The repository carries no
-// dealer bank since 2026-10-28 (docs/plans/REN-START.md, K1): the structure
+// dealer bank since 2026-10-28 (docs/storage/BLOB-NEON.md): the structure
 // comes only from the locked family definitions, and the bytes are
 // deterministic placeholders, never filmed media.
 import {createHash} from 'node:crypto';

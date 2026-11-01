@@ -49,7 +49,7 @@ modellbyte.
 
 Eventstudio, Astrids labbchatts enda produktklient, togs bort i #468.
 Kvarvarande social-/companion-routrar och adaptrar är avvecklingskandidater
-enligt [REN-START](../plans/REN-START.md), inte ett krav att bevara Astrid.
+enligt [lagringsguidens avvecklingsordning](../storage/BLOB-NEON.md#avveckling-av-produktdata-och-original), inte ett krav att bevara Astrid.
 Spelarens tal använder det separata produkttalkontraktet ovan.
 Följ `apps/studio/app/api/social/`, `apps/studio/lib/social-server.mjs` och
 `packages/director/{social,companion}.mjs` vid kodavvecklingen. Hjälptjänsten

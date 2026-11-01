@@ -26,7 +26,7 @@ function walletUrl(value) {
       || ipv4[0] === 192 && ipv4[1] === 168 || ipv4[0] === 100 && ipv4[1] >= 64 && ipv4[1] <= 127)) fail();
   return url.href;
 }
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): every new partner key belongs to one company.
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): every new partner key belongs to one company.
 // operatorId is checked on its own and removed, so the rest of the body keeps its own checks.
 const OPERATOR_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 function keyOperatorBody(body) {

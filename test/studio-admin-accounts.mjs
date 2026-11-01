@@ -6,7 +6,7 @@ import { createStudioAdminData } from '../apps/studio/lib/studio-admin-data.mjs'
 
 const scope = {environment:'fixture',workspaceId:'croupier'}, publicOrigin = 'https://studio.example.invalid';
 function fixture(overrides = {}) {
-  // operatorColumn: game migration 012 (docs/plans/NYCKEL-BOLAG.md); operators: croupier_studio.operators in this scope.
+  // operatorColumn: game migration 012 (docs/games/partner-api.md#company-binding); operators: croupier_studio.operators in this scope.
   let state = {users:[],tokens:[],apiKeys:[],playerAccounts:[],operatorColumn:true,
     operators:[{operator_id:'north',status:'active'},{operator_id:'paused',status:'suspended'}]};
   const writes = [],sent = [],requests = [], failure = {sql:null};
@@ -129,7 +129,7 @@ test('partner create validates exact scopes and creates one-time credentials in 
   assert.equal(f.state.apiKeys.length,1);
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): every new key belongs to one active company, and no key
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): every new key belongs to one active company, and no key
 // is created before migration 012, so the table stays empty for it.
 test('partner create requires one active company in scope and creates nothing before migration 012', async () => {
   const f = fixture();

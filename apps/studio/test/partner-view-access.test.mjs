@@ -246,7 +246,7 @@ test('the snapshot carries only the sections the role may read, so a denied or n
   }
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Integration shows the company's own keys, masked.
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): Integration shows the company's own keys, masked.
 // The memory pool hands back whole rows (key, secret, wallet, IP list, creator) on purpose: only
 // the projection in lib/partner-api-keys.mjs may reach the snapshot. The SQL runs on PGlite in
 // test/partner-key-operator.mjs.

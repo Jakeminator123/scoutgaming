@@ -101,7 +101,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     ]);
     return { tiers: saved.value.tiers, rooms: saved.value.rooms, revision: saved.revision, players: total.n, tx };
   });
-  // Steg F (docs/plans/STEG-F.md): each player names its company once game migration 014 exists.
+  // Steg F (docs/games/partner-api.md#native-player-accounts): each player names its company once game migration 014 exists.
   // Before it the column is absent, every player reads as without company and operatorBinding is pending.
   register('GET', 'players', async () => {
     const column = await db.prepare(PLAYER_OPERATOR_COLUMN).get();
@@ -116,7 +116,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
   });
   register('GET', 'transactions', async () => ({ tx: await db.prepare('SELECT player_id,type,amount,currency,meta,at FROM transactions ORDER BY id DESC LIMIT 100').all() }));
   register('GET', 'users', async () => ({ users: await boDb.prepare('SELECT username,email,role,created_at,(hash IS NOT NULL)::integer AS active FROM users ORDER BY id').all() }));
-  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): each key names its company, and Admin chooses
+  // Nyckel→bolag (docs/games/partner-api.md#company-binding): each key names its company, and Admin chooses
   // among this scope's companies when it creates one. Before game migration 012 the column is
   // absent: keys read as without company and operatorBinding says creation waits for it.
   register('GET', 'apikeys', async () => {

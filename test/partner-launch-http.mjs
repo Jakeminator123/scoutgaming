@@ -1,4 +1,4 @@
-// Nyckel→bolag, PR A (docs/plans/NYCKEL-BOLAG.md) over the engine's own HTTP: services/game/server.mjs
+// Nyckel→bolag, PR A (docs/games/partner-api.md#company-binding) over the engine's own HTTP: services/game/server.mjs
 // runs from the repository on its disposable PostgreSQL database (test/fixtures/engine-qa.mjs) with the
 // Studio policy runtime, one published room and shared tables on. Once without migration 012 (no key has
 // a company) and once with 012 applied through its own offline tool, exactly as Jakob will apply it.

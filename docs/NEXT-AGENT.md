@@ -2,27 +2,26 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
-## Dokumentgranskning 1 november
+## Dokumentkonsolidering 1 november
 
-Samtliga 39 ursprungliga filer under `docs/` är innehållsbedömda mot
-`e3dbed2c17afe91deb81ff9b9e9d88264958d38f` och relevanta kodkonsumenter.
-Astrids förbrukade labbguide är raderad med länkar och HISTORIK i samma
-leverans. Lagrings-/driftguiderna rättar 023:s krav, game-readiness,
-OpenClaw-nycklar, valfri talstart och API-kontrakt. REN-START, NYCKEL-BOLAG,
-STEG-F och TALKEDJA beskriver genomförda delar och verkligt restarbete utan
-gamla produktionsantal eller förbrukade körlistor.
+Fem plan-/loggfiler efter #782 är avvecklade: KEVIN-PORT, NYCKEL-BOLAG,
+STEG-F, REN-START och organisationens BESLUTSLOGG. Bolagskontraktet finns i
+[Partner-API-guiden](games/partner-api.md#company-binding), verkligt restarbete
+och de uttryckliga Johns Bet-/Paow-/Dragan-gränserna i [körplanen](plans/organisation/KORPLAN-v2.md),
+och avvecklingsordningen i [lagringsguiden](storage/BLOB-NEON.md#avveckling-av-produktdata-och-original).
+Avslutade etappkvitton och obeställda presentationsidéer finns i Git enligt
+[HISTORIK](HISTORIK.md). F11-kvittot och de två beställda incidentunderlagen består.
 
-Blackjacks historiska fixturer hör till `test/fixtures/blackjack/` enligt
-den samordnade teststädningen. K04-testkatalogerna kräver ingen ompublicering
-av rum; den riktiga publiceringskedjan använder registrerad filmprofil och
-`native-room-game-material.mjs`. Nödvändiga F11-/repo-/talbevis är kvar.
-Talet är fortsatt pausat. Ingen ny moln-, data- eller AV-acceptans ingår.
+Granskningen på `f6185c3663dc9101958c8aca78527a5fa2d0301b` verifierade att
+012/014 fortfarande är optional och att spelarens skapvägar saknar bolagsfält.
+Restarbetet består trots att planfilerna försvinner. De tidigare behållandena
+var en försiktig innehållsbedömning, ingen teknisk bevarandespärr.
+SQL-migreringarnas historiska kommentarvägar lämnas byte för byte eftersom
+källbytes ingår i ledgerns checksumma; övriga konsumenthänvisningar är uppdaterade.
 
-Verifiering: dokumentlänkar/ankare, miljöregister och commitens riktade
-hookar redovisas i ändringens PR. Den lokala 39-filersmatrisen finns i
-kanoniska checkoutens `.cache/apt-auto-audit-1101/docs-audit-coverage.md`;
-den är privat arbetsunderlag,
-inte ytterligare en produktguide.
+Verifiering: dokument-/ankarkontroll, miljöregister, kommentarsdiff och ordinarie
+hook redovisas i ändringens PR. Ingen produktlogik, DDL, data, molninställning
+eller talaktivering ändras; ny runtime- eller AV-acceptans ingår inte.
 
 ## Organisationsarbete
 
@@ -44,21 +43,21 @@ Rapportfynd är prövade, inte automatiska raderingsorder. Three-kärnan, Provsp
 
 **Dokumentlänkar, 31 oktober:** [PR #760](https://github.com/Jakeminator123/scoutgaming/pull/760) är mergad med [grön CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/41219682447). `tools/check-documentation.mjs` kontrollerar spårade relativa mål och Markdownankare i de centrala guiderna. Beteendeprov omfattar privata mål, kodexempel och att ostagade reparationer inte maskerar fel i commitens index. CI upptäckte ett dubbelt testgruppsnamn som rättades före merge; gruppregistrets befintliga prov väljs nu även av lokal hook. Ingen ny driftacceptans ingår.
 
-**Dokumentgranskning efter systemkartorna, 31 oktober:** sex ersatta planer är borttagna och registrerade i HISTORIK. Aktuella UI-/byggkontrakt finns i klient- och partnerguiderna; kvarvarande planer är tydligt daterade underlag för bolagsbindning, pausat tal, presentationsförslag och eventuell datarensning. NYCKEL-BOLAG/STEG-F är inte klara: 012/014 är fortfarande `deploymentOptional` i kod, och spelaradministrationens skapväg saknar bolagsfält. Granskningen har inte verifierat nytt molnläge eller utfört någon dataåtgärd. [Dokumentindexet](README.md) anger läsare, ändringstillfällen och varför underlaget behövs; gamla kodkommentarer återfinns via Git-versionerna i HISTORIK.
+**Dokumentgranskning efter systemkartorna, 31 oktober:** sex ersatta planer avvecklades. Den senare konsolideringen ovan ersätter även bolags-/dataplanerna med befintliga sakguider och verkligt restarbete i körplanen. Äldre textversioner finns i HISTORIK; detta är ingen ny moln- eller dataacceptans.
 
 **PR-märkning, 31 oktober:** [#759](https://github.com/Jakeminator123/scoutgaming/pull/759) är mergad. Jakobs agenter anger `#Jakobs agent` för sina verkliga uppdrag. Verifierade Jakobs agenter får merga hans arbete till `main`/`preview` inom sin tilldelning med `tools/merge-pr.mjs`; konto, källrepo, branch, känt uppdrag, exakt SHA och övriga grindar gäller fortsatt. Märkningen är en deklaration, inte autentisering. Se [leveransregeln](../AGENTS.md#leverans-och-merge).
 
 [KORPLAN-v2](plans/organisation/KORPLAN-v2.md) är enda aktiva körordning. Den äldre inventeringen och områdesfilerna är ersatta; Git och [HISTORIK](HISTORIK.md) bevarar deras ursprung. Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan fler godkännandefrågor. Ägar-, CI-, SHA- och verifieringsgrindarna gäller fortfarande. GitHubs normala auto-delete behålls vid godkända PR-merges. Äldre resurser gallras endast efter separat kontroll av ägarskap, merge och osparat arbete enligt AGENTS; kollegors resurser och RunPod-endpoints rörs inte.
 
-Orkestratorn äger integration, denna överlämning och körplanen. Nya fynd samt verkliga kod-/CI-/deploy-/acceptansbevis står i [beslutsloggen](plans/organisation/BESLUTSLOGG.md). F11:s [verkliga driftkvitto](plans/organisation/F11-DRIFTKVITTO.md) omfattar två Render-instanser, pengar, återanslutning och negativa prov. Den särskilda F11-spärren är hävd för kompatibla releaser; flaggbyte/publicering och övrig acceptans följer egna kriterier. Äldre versionsuppgifter i kvittona nedan är daterade; aktuell leverans och kvarvarande prov finns i körplanen.
+Orkestratorn äger integration, denna överlämning och körplanen. Aktuellt restarbete står i körplanen och nya leveransbevis i respektive PR; den avslutade beslutsloggen finns i Git enligt HISTORIK. F11:s [verkliga driftkvitto](plans/organisation/F11-DRIFTKVITTO.md) omfattar två Render-instanser, pengar, återanslutning och negativa prov. Den särskilda F11-spärren är hävd för kompatibla releaser; flaggbyte/publicering och övrig acceptans följer egna kriterier. Äldre versionsuppgifter i kvittona nedan är daterade; aktuell leverans och kvarvarande prov finns i körplanen.
 
 **Avslutad första genomförandevåg 31 oktober:** 4/4 + 3/3 + 2/2 leveranser (inklusive talstart och F11). Produktens övriga acceptans/backlog är inte 100 %. Nästa session börjar med denna överlämning och körplanen, inte gamla chattexporter.
 
 **R1–R5 levererade genom #747:** två separata satsningsrutor och Ångra verifierade i den verkliga previewn; lokal mobil-/tangentbordsverifiering, riktig PostgreSQL, exakt CI och båda molnmiljöerna godkända på `bebe483c7f6c846c10d69545f6c67186839e808e`. 44 ersatta organisationsdokument och sex frysta exekverbara testkopior är borttagna; direkta app-typer och den centrala Git-objektkontrollen rättade. Efterrättningen av tomma rutors etiketter vid rundstart levererades i #748 (`7589d2ba453346ce6fca33b3d53c541f72185138`). Inga spelregler, env, schema eller talaktivering ändrades.
 
-**S1–S3 levererade av MERGEAGENTEN 2:** #752 integrerar de tre teamchattarnas ändringar och #753 rättar det transportfel som verkligt previewprov upptäckte. Konstanta övergångsval och döda medie-/klippmappningsvägar är borta. Skapa bolag och Team har egna komponenter; Team läser ett bolag utan projekt/video eller nästlad bolagskatalog. Byggartefakterna kontrolleras i befintligt CI-bygge och rådgivande browserjobb ligger utanför obligatorisk väntan. [Systemkartan](../START-HERE.md#systemkarta-vem-äger-vilket-beslut) visar produktväg, kod, data, drift, ansvar och prov. Exakta CI-/release-/UI-bevis finns i körplanen och beslutsloggen; privata bildbevis ligger i `.cache/cleanup-1031/`.
+**S1–S3 levererade av MERGEAGENTEN 2:** #752 integrerar de tre teamchattarnas ändringar och #753 rättar det transportfel som verkligt previewprov upptäckte. Konstanta övergångsval och döda medie-/klippmappningsvägar är borta. Skapa bolag och Team har egna komponenter; Team läser ett bolag utan projekt/video eller nästlad bolagskatalog. Byggartefakterna kontrolleras i befintligt CI-bygge och rådgivande browserjobb ligger utanför obligatorisk väntan. [Systemkartan](../START-HERE.md#systemkarta-vem-äger-vilket-beslut) visar produktväg, kod, data, drift, ansvar och prov. Exakta daterade CI-/release-/UI-bevis finns i Git-versionerna av körplanen och beslutsloggen enligt HISTORIK; privata bildbevis ligger i `.cache/cleanup-1031/`.
 
-**S4–S6 mergade genom #755–757:** systemkartans kodreferenser är förankrade i spårad kod. `python tools/system-map.py` skapar `.cache/system-map/index.html` från tabellen i START-HERE; sex områden och 37/37 referenser verifierade på integrerad kod, med zoom/expandering provade i webbläsare. CI kan välja två UI-/byggben i stället för fyra vid enbart vanliga ändringar i tre befintliga Admin-CSS-filer; obligatorisk Chrome och full körning för osäkra/blandade ändringar består. Exakt grön PR-CI, 8 Pythonprov och orkestratorns 22 CI-urvalsprov finns som bevis i körplanen.
+**S4–S6 mergade genom #755–757:** systemkartans kodreferenser är förankrade i spårad kod. `python tools/system-map.py` skapar `.cache/system-map/index.html` från tabellen i START-HERE; sex områden och 37/37 referenser verifierade på integrerad kod, med zoom/expandering provade i webbläsare. CI kan välja två UI-/byggben i stället för fyra vid enbart vanliga ändringar i tre befintliga Admin-CSS-filer; obligatorisk Chrome och full körning för osäkra/blandade ändringar består. Exakt grön PR-CI, 8 Pythonprov och orkestratorns 22 CI-urvalsprov finns i körplanens daterade Git-version enligt HISTORIK.
 
 De tre tidigare teamuppdragen är avslutade. Normalt auto-delete används efter godkända PR-merges; egna verifierat mergade resurser städas enligt AGENTS. Äldre eller osäkra worktrees och den okända `.pnpm-store/` bevaras. Våg 2:s avgränsning och separat produktarbete står ovan. Återöppna inte migrationen eller F11 som generell startuppgift.
 

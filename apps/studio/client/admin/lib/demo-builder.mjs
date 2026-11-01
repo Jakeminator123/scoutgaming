@@ -2,7 +2,7 @@
 // demolänken. Läser GET /admin/_data/catalog och GET room-game-config; skriver
 // bara via dagens actions apikeys/create, apikeys/launch, apikeys/credit och apikeys/revoke.
 // En demo är en API-nyckel demo-<namn> plus en testsession på den nyckeln. Nyckeln hör till
-// det valda bolaget (Nyckel→bolag, docs/plans/NYCKEL-BOLAG.md), så spelmotorn släpper in
+// det valda bolaget (Nyckel→bolag, docs/games/partner-api.md#company-binding), så spelmotorn släpper in
 // demospelaren vid bolagets delade bord och nekar alla andra bolags.
 import {ROOM_LIMIT_PRESETS} from '../../../../../packages/presentation/contracts/room-game-config.mjs';
 import {isActiveDealerId} from '../../../../../packages/presentation/contracts/dealer-identity.mjs';

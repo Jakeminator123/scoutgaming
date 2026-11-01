@@ -13,7 +13,7 @@ import { createSharedRoomWaiting, waitingForSeat } from '../services/game/public
 import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
-// K6 / P11 (docs/plans/KEVIN-PORT.md, P-C): a full table and a viewer waiting for a seat. Kevin's behaviour
+// A full table and a viewer waiting for a seat. Kevin's behaviour
 // (kevin-staging K/server/shared-table.mjs 7ddb7de4, K/test/ghost-seats.test.mjs), rewritten for main's coordinator
 // and run on PostgreSQL (PGlite) through the production table store, lock plans included.
 const ROOM = 'full-room', T0 = 1_800_000_000_000;

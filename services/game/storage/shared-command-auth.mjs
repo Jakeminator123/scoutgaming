@@ -60,7 +60,7 @@ export function createSharedCommandAuth({ db, boDb, scope, playerAccounts = fals
     if (!player || player.id !== actorId || player.status !== 'active') return null;
     let operatorId;
     if (partner) {
-      // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the key row is locked between P and the session,
+      // Nyckel→bolag (docs/games/partner-api.md#company-binding): the key row is locked between P and the session,
       // as rotation and revocation take it before deleting sessions. A rotated, revoked, external
       // wallet or company-less key binds nothing. Its company is read tolerantly until PR C.
       const key = await read(boDb, "SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=? FOR SHARE",

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Offline only: no database driver, environment credentials or apply mode (docs/plans/NYCKEL-BOLAG.md).
+// Offline only: no database driver, environment credentials or apply mode (docs/games/partner-api.md#company-binding).
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
