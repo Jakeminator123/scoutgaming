@@ -26,6 +26,7 @@ import {nativeFilmedPlanningMutations} from './presentation-runtime-readiness.mj
 
 // Bolag › Tilldelat: Admins `assignment` i paketets branding (ADMIN-FORENKLING 5.3).
 export const ASSIGNMENT_ACTION='publish-assignment';
+export const COMPANY_ASSIGNMENT_ACTION='publish-company-assignment';
 
 const fail = statusCode => { throw Object.assign(new Error('operator_package_rejected'), { statusCode }); };
 
@@ -195,7 +196,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
   // inte skriva `assignment` (partner-branding-api.mjs tar bara bolagets fält).
   function assignmentIntent(context) {
     const body=context.body;
-    exactKeys(body,['action','operatorId','expectedPackageRevision','assignment']);
+    exactKeys(body,['action','operatorId','expectedPackageRevision','assignment',...(body?.action===COMPANY_ASSIGNMENT_ACTION?['lanes']:[])]);
     if(!isRoomOperatorId(body.operatorId)||!Number.isSafeInteger(body.expectedPackageRevision)||body.expectedPackageRevision<1)fail(400);
     const actor=context.actor;
     const internal=internalPartnerContext({accountId:actor?.accountId,role:actor?.role,scope},{id:body.operatorId,status:'active',scope});
@@ -203,9 +204,12 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if(canonicalStudioJson(validateStudioScope(context.scope))!==canonicalStudioJson(validateStudioScope(scope)))fail(403);
     return body;
   }
-  function assignmentCandidate(operator,current,body) {
+  function assertAssignmentPackage(operator,current,body) {
     if(!operator||operator.status!=='active'||!current||current.operatorId!==body.operatorId)fail(404);
     if(current.revision!==body.expectedPackageRevision)fail(409);
+  }
+  function assignmentCandidate(operator,current,body) {
+    assertAssignmentPackage(operator,current,body);
     const presentation=readPackagePresentation(current);
     if(!presentation)fail(409); // Tilldelningen bygger på paketets frysta miljöer.
     return {presentation,assignment:validateAdminAssignment(body.assignment,presentation)};
@@ -224,12 +228,15 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if([ROOM_RELEASE_ACTION,AI_ADOPT_ACTION].includes(context.body?.action))return release.prepare(context);
     if(context.body?.action==='refresh-dealer-idle')return prepareIdleRefresh(context);
     if(context.body?.action==='publish-scene-layout')return prepareSceneLayout(context);
-    const expectedPackageRevision = requestedPackageRevision(context.body);
-    const operatorId = context.body.operatorId;
+    // Freeze the complete combined intent before provider I/O. It must use the
+    // native snapshot/transaction path, never the old project-only fallback.
+    const companyIntent = context.body?.action===COMPANY_ASSIGNMENT_ACTION ? structuredClone(assignmentIntent(context)) : null;
+    const expectedPackageRevision = companyIntent ? companyIntent.expectedPackageRevision : requestedPackageRevision(context.body);
+    const operatorId = companyIntent?.operatorId ?? context.body.operatorId;
     if (typeof operatorId !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(operatorId)) fail(422);
     // Clone the intent before any asynchronous read/provider verification.
-    const wanted = structuredClone(context.body.lanes);
-    if (!repository) return null;
+    const wanted = structuredClone(companyIntent?.lanes ?? context.body.lanes);
+    if (!repository) { if(companyIntent)fail(503); return null; }
     if (!repository.readPresentationSnapshot || !repository.transaction || !repository.withTransactionClient
       || canonicalStudioJson(validateStudioScope(repository.scope)) !== canonicalStudioJson(validateStudioScope(scope))) fail(503);
     const snapshot = await repository.readPresentationSnapshot();
@@ -246,6 +253,7 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     // null. Reading it before I/O ensures concurrent branding cannot be erased.
     const operators = await store();
     const current = await operators.getCurrentPackage(operatorId);
+    if(companyIntent)assertAssignmentPackage(await operators.getOperatorById(operatorId),current,companyIntent);
     if (expectedPackageRevision !== undefined && (current?.revision ?? null) !== expectedPackageRevision) fail(409);
     const inventory = hasDealers ? await videoRegistry.loadCaptured(snapshot) : null;
     const rooms=(snapshot.administrationDocument.value.rooms??[]).filter(room=>room.operatorId===operatorId&&current?.tables?.includes(room.id));
@@ -258,7 +266,10 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
     const merged = mergedMaterials(captured.presentation, await materialRows(pool, operatorId),
       {administration:snapshot.administrationDocument.value, pack:current, branding:current?.branding ?? {}, allowExtended:canExtend()});
-    const value = freeze({operatorId, lanes:[...lanes], ...captured, ...merged, expectedPackageRevision:current?.revision ?? null});
+    const value = freeze({operatorId, lanes:[...lanes], ...captured, ...merged, expectedPackageRevision:current?.revision ?? null,
+      ...(companyIntent ? {action:COMPANY_ASSIGNMENT_ACTION,intent:canonicalStudioJson(companyIntent),
+        assignment:validateAdminAssignment(companyIntent.assignment,merged.presentation),
+        mutations:[...nativeFilmedPlanningMutations(current),{kind:'presentation-package',value:merged.presentation}]} : {})});
     preparedValues.add(value);
     return value;
   }
@@ -335,29 +346,35 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
         return {...result(published,presentation),compositionId:body.compositionId,projectRevision:prepared.projectRevision,affectedRooms,...warningsOf(prepared)};
       }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
     }
-    const expectedPackageRevision = requestedPackageRevision(context.body);
+    const companyIntent = context.body?.action===COMPANY_ASSIGNMENT_ACTION ? assignmentIntent(context) : null;
+    const expectedPackageRevision = companyIntent ? companyIntent.expectedPackageRevision : requestedPackageRevision(context.body);
+    if(companyIntent&&!repository)fail(503);
     if (repository) {
       const prepared = context.prepared === undefined ? await prepare(context) : context.prepared;
       if (!preparedValues.has(prepared) || prepared.operatorId !== context.body.operatorId
         || canonicalStudioJson(prepared.lanes) !== canonicalStudioJson(context.body.lanes)) fail(422);
+      if(companyIntent&&(prepared.action!==COMPANY_ASSIGNMENT_ACTION||prepared.intent!==canonicalStudioJson(companyIntent)))fail(422);
       if (expectedPackageRevision !== undefined && prepared.expectedPackageRevision !== expectedPackageRevision) fail(409);
       const encoding=encodingOptions(prepared.presentation);
       return repository.transaction(() => repository.withTransactionClient(async client => {
         const operators = await createOperatorStore({sql:client, scope, now, transaction:work => repository.withTransactionClient(work)});
         const projectDocument = await repository.readDocument('project'), administrationDocument = await repository.readDocument('administration');
         const current = await operators.getCurrentPackage(prepared.operatorId);
+        if(companyIntent)assertAssignmentPackage(await operators.getOperatorById(prepared.operatorId),current,companyIntent);
         if (projectDocument?.revision !== prepared.projectRevision || administrationDocument?.revision !== prepared.administrationRevision
           || (current?.revision ?? null) !== prepared.expectedPackageRevision) throw new StudioStorageError('studio_conflict', 409);
         await assertSameMaterials(client, prepared.operatorId, prepared.materialFingerprint);
         await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
         assertPublishedRoomBindings({administration:administrationDocument.value, operatorId:prepared.operatorId,
           currentPackage:current, presentation:prepared.presentation});
+        const branding=companyIntent ? {...current.branding,[PARTNER_ASSIGNMENT_KEY]:validateAdminAssignment(companyIntent.assignment,prepared.presentation)} : current?.branding ?? {};
         const published = await operators.publishPackage({actor:context.actor.user, audit:operatorAuditContext(context.actor), operatorId:prepared.operatorId,
           expectedRevision:prepared.expectedPackageRevision, lanes:[...prepared.lanes],
           games:current?.games?.length ? [...current.games] : ['blackjack'], tables:current ? [...current.tables] : [],
-          branding:withPackagePresentation(current?.branding ?? {}, prepared.presentation,encoding)});
-        return {...result(published, prepared.presentation), ...warningsOf(prepared)};
-      }),{presentationMutation:{kind:'presentation-package',value:prepared.presentation}});
+          branding:withPackagePresentation(branding, prepared.presentation,encoding)});
+        return {...result(published, prepared.presentation), ...warningsOf(prepared),
+          ...(companyIntent ? {assignment:adminAssignmentView(published,prepared.presentation)} : {})};
+      }),{presentationMutation:companyIntent?prepared.mutations:{kind:'presentation-package',value:prepared.presentation}});
     }
     // Local fixture/legacy adapters retain original-four behavior. A registered
     // extra dealer requires the native saved snapshot and immutable media path.

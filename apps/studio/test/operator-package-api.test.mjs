@@ -255,6 +255,25 @@ async function nativeFixture({dealer='linnea',materials=null}={}){
   return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,videoRegistry,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
 }
 
+test('combined publication binds the prepared intent and rechecks snapshot, media and CAS before a single write',async()=>{
+  for(const kind of ['intent','forged','project','administration','media','package','sql','provider']){
+    const f=await nativeFixture();await f.publish();
+    f.context.actor={user:'tester',role:'admin',accountId:'7'};
+    f.context.body={action:'publish-company-assignment',operatorId:'north',expectedPackageRevision:1,lanes:[f.lane.id],
+      assignment:{allow:{dealer:false,tableAsset:false,background:false,language:false,limit:false,pause:true},limitPresets:[],languages:['sv']}};
+    if(kind==='provider')f.videoRegistry.verifyCapturedMedia=async()=>{throw Object.assign(Error('unavailable media'),{statusCode:422});};
+    if(kind==='provider'){const before=f.pool.snapshot();await assert.rejects(f.prepare(),e=>e.statusCode===422);assert.deepEqual(f.pool.snapshot(),before);continue;}
+    let prepared=await f.prepare();
+    if(kind==='intent')f.context.body.assignment.allow.pause=false;
+    if(kind==='forged')prepared={...prepared};
+    if(kind==='project'||kind==='administration'){const doc=await f.repository.readDocument(kind);await f.repository.saveDocument(kind,{value:doc.value,expectedRevision:doc.revision,actor:'concurrent'});}
+    if(kind==='media'){const row=await f.repository.getMedia(f.record.id);await f.repository.classifyMedia(row.id,{sha256:row.sha256,expectedRevision:row.revision,metadata:{...row.classification,label:'Changed'},actor:'concurrent'});}
+    if(kind==='package'){const old=await f.direct.getCurrentPackage('north');await f.direct.publishPackage({actor:'concurrent',operatorId:'north',expectedRevision:1,lanes:old.lanes,games:old.games,tables:old.tables,branding:old.branding});}
+    if(kind==='sql')f.pool.failNext('publish-package');
+    const before=f.pool.snapshot();await assert.rejects(f.publish(prepared));assert.deepEqual(f.pool.snapshot(),before,kind);
+  }
+});
+
 const placementTable='f00be01d-fe7c-4a43-85b9-952e378f7331';
 async function placementFixture(options){
   const f=await nativeFixture(options),first=await f.publish(),presentation=structuredClone(first.presentation),lane=presentation.lanes[0];

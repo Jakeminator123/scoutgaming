@@ -496,11 +496,11 @@ API-nycklarna under System › Integration.
   tillåter det; annars *Låst i miljön*), bordsspråk, insatsprofil och
   paus, och vilka insatsprofiler och språk bolaget väljer bland. Ett upplåst
   språk eller en upplåst insatsprofil kräver minst ett alternativ.
-  **Publicera** skickar det som är ändrat: urvalet först och sedan det bolaget
-  får ändra, på versionen från första kvittot. Varje steg ger paketet en ny
-  version och en rad i journalen; Partnerportalen läser den direkt. Stoppas
-  ett steg (till exempel för att någon annan har publicerat) försöker Admin
-  inte igen; läs in bolaget och publicera på nytt.
+  **Publicera** sparar urvalet och det bolaget får ändra tillsammans, som en
+  ny version och en publiceringsrad i journalen. Båda ändras eller inget.
+  Tilldelningen kontrolleras mot de valda miljöerna. Partnerportalen läser
+  resultatet direkt. Vid versionskonflikt eller osäkert nätutfall: läs in
+  bolaget före ett nytt försök. Dina val finns kvar när publiceringen nekas.
 - **Team**: medlemmar, roller och inbjudningar. Ett fält
   tar ny e-post eller ett befintligt partnerkontos användarnamn; en ny adress
   får en aktiveringslänk. **Vad får rollerna göra?** visar rollernas

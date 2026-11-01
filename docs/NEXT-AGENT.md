@@ -2,6 +2,19 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Atomisk bolagspublicering 2 november
+
+Bolag › Tilldelning skickar kombinerade ändringar som
+`publish-company-assignment`: valda miljöer och `branding.assignment`
+publiceras i samma servertransaktion, med en paketrevision och en
+`package.publish`-journalpost. Tilldelningen valideras mot slutkandidaten;
+behörighet, bolag/scope, CAS, projekt-/adminrevision, media och eget material
+återkontrolleras före skrivning. Enskilda ändringar använder sina tidigare kontrakt.
+Felaktigt kvitto eller osäkert nätutfall kräver återläsning före nytt försök.
+Riktade SQL-, native- och browserprov samt leveransbevis anges i ändringens PR.
+Ingen DDL, produktionsdata, mediebytes eller driftacceptans ingår.
+Säkert materialbyte är nästa separata delmål.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.
