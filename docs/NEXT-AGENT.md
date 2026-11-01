@@ -20,7 +20,8 @@ Talet är fortsatt pausat. Ingen ny moln-, data- eller AV-acceptans ingår.
 
 Verifiering: dokumentlänkar/ankare, miljöregister och commitens riktade
 hookar redovisas i ändringens PR. Den lokala 39-filersmatrisen finns i
-dokumentagentens `.cache/docs-audit-coverage.md`; den är arbetsunderlag,
+kanoniska checkoutens `.cache/apt-auto-audit-1101/docs-audit-coverage.md`;
+den är privat arbetsunderlag,
 inte ytterligare en produktguide.
 
 ## Organisationsarbete
