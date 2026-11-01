@@ -75,7 +75,7 @@ export function createSharedRoomUpgrade({engineOrigin,origin,channel,WebSocketSe
     try {socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nCache-Control: private, no-store\r\nContent-Length: 0\r\n\r\n`,()=>socket.destroy());}
     catch {socket.destroy();}
   }
-  // A signed-in partner refused for its key's company (docs/plans/NYCKEL-BOLAG.md) must learn why:
+  // A signed-in partner refused for its key's company (docs/games/partner-api.md#company-binding) must learn why:
   // a browser sees a rejected handshake only as 1006 and retries for a minute. This socket opens
   // and closes at once with 1008 and the fixed code as reason; it never carries a room frame.
   function refuse(request,socket,head,code) {

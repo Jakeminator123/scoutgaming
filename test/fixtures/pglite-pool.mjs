@@ -32,7 +32,7 @@ const schemaFile = file => new URL(`../../ops/neon-game/${file}`, import.meta.ur
 // Forward game migrations after product-schema.sql. 011 is an optional reviewed retirement.
 export const GAME_MIGRATIONS = Object.freeze(['006-player-profile.sql', '007-roulette-tables.sql',
   '008-shared-wallet.sql', '009-shared-blackjack.sql', '010-presentation-receiver.sql']);
-// 012 stays optional until PR C (docs/plans/NYCKEL-BOLAG.md): tests run the same code with and
+// 012 stays optional until PR C (docs/games/partner-api.md#company-binding): tests run the same code with and
 // without it, rendered by its own offline tool for PGlite's single role and database.
 export const API_KEY_OPERATOR_MIGRATION = '012-api-key-operator.sql';
 export const WITH_API_KEY_OPERATOR = Object.freeze([...GAME_MIGRATIONS, API_KEY_OPERATOR_MIGRATION]);

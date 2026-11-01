@@ -25,7 +25,7 @@ function session(value,now) {
   if(!value||!Object.hasOwn(value,'partnerKeyId')
     ||!id(value.actorId)||!/^player-[a-f0-9]{64}$/.test(value.sessionId)
     ||!Number.isSafeInteger(value.expiresAt)||value.expiresAt<=now())deny();
-  // Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner-launched session enters only rooms of its
+  // Nyckel→bolag (docs/games/partner-api.md#company-binding): a partner-launched session enters only rooms of its
   // key's company, with a player's rights; admit() compares that company with the room's. A key
   // without a company (every key before 012) has no room grant and is refused by name.
   if(value.partnerKeyId!==null) {

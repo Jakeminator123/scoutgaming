@@ -5,7 +5,7 @@ import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 export const PARTNER_LAUNCH_PATHS = Object.freeze(['/game', '/blackjack']);
 const LAUNCH_TOKEN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-// launch is required. operator is the key's company (Nyckel→bolag, docs/plans/NYCKEL-BOLAG.md):
+// launch is required. operator is the key's company (Nyckel→bolag, docs/games/partner-api.md#company-binding):
 // the engine adds its slug for a key with a company and checks it against the signed claim.
 // dealer: an engine deployed before L1 (O02) still adds a well-formed one, which its landing
 // then ignores without a company.

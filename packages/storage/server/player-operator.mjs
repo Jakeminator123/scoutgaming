@@ -1,4 +1,4 @@
-// Steg F (docs/plans/STEG-F.md): a player belongs to one company, croupier_game.players.operator_id,
+// Steg F (docs/games/partner-api.md#native-player-accounts): a player belongs to one company, croupier_game.players.operator_id,
 // the croupier_studio.operators id in the engine's scope (game migration 014). Reads are tolerant
 // until the krav PR: callers select to_jsonb(p)->>'operator_id', which is null before 014 and for a
 // player without a company, so today's behaviour holds. Nothing here refuses a player yet.

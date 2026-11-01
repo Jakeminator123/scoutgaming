@@ -4,7 +4,7 @@
 // stake. Tab or a click gives the panel focus, and the view gives it back after each snapshot (keepFocus).
 // The panel is one composite control: with focus on any of its buttons every key is armed, also D and P, which
 // move money. Requiring focus on Double itself would make D say no more than Enter does, and the panel only
-// exists during the player's own decision, when the controller checks each action's legality again (KEVIN-PORT K10).
+// exists during the player's own decision, when the controller checks each action's legality again.
 // A key clicks the panel's own button: the controller checks turn, deadline, pause, connection and a pending
 // command as it does for a pointer, and builds the same server command.
 const KEYS = new Map([['h','hit'],['s','stand'],['d','double'],['p','split']]);

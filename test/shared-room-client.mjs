@@ -549,7 +549,7 @@ test("a spoken line's speechTake, and any later event field, reaches the rendere
   assert.deepEqual(h.errors, []); assert.deepEqual(h.sockets[0].closed, []);
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): the O02 receipt showed 15 sockets over 60 s ending in the error page.
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): the O02 receipt showed 15 sockets over 60 s ending in the error page.
 // Preview 29 Oct 2026: a room without published game settings was retried for a minute and ended in the generic
 // error page. Named in the server's 1008 close, it gets one more socket and then ends the client with its code.
 test('a room without game settings is tried twice in all, then ends the client with room_config_missing', async t => {

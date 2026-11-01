@@ -249,7 +249,7 @@ test('invalid or advancing clocks cannot issue a binding after its expiry', asyn
   assert.equal(await auth.bindingById(sessionId, { actorId }), null);
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a stamped partner session of a key bound to a company plays
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): a stamped partner session of a key bound to a company plays
 // at the table. The key row is locked between P and the final session lock, and its company is returned.
 test('stamped partner binding locks player, key and session in order and names the key company', async () => {
   const h = fixture({ source: 'partner', playerAccounts: false });

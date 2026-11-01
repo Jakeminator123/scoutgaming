@@ -76,7 +76,7 @@ function readState(frame, roomId) {
 // Renderer failures a fresh socket resolves: the room moved on during the binding read, or the binding read
 // kept failing transiently after its own retries (shared-room-app.mjs).
 const recoverable = new Set(['shared_room_presentation_stale', 'shared_room_presentation_binding_unavailable']);
-// A partner session refused for its key's company (docs/plans/NYCKEL-BOLAG.md): the server names the
+// A partner session refused for its key's company (docs/games/partner-api.md#company-binding): the server names the
 // reason in its 1008 close. No other socket changes that answer, so the client ends at once with it.
 const partnerRefusals = new Set(['partner_operator_mismatch', 'partner_key_unbound']);
 // A live room without published game settings (shared-room-access.mjs ROOM_CONFIG_MISSING). Admin can publish

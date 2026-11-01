@@ -7,7 +7,7 @@ Börja i [START-HERE](../START-HERE.md); arbetsreglerna står i [AGENTS](../AGEN
 | Fråga | Dokument | Uppdateras |
 | --- | --- | --- |
 | Vad händer nu? | [NEXT-AGENT](NEXT-AGENT.md) | Vid överlämning |
-| Organisationsarbete och verifiering | [KORPLAN-v2](plans/organisation/KORPLAN-v2.md), [beslutslogg](plans/organisation/BESLUTSLOGG.md) | Vid ny tilldelning, beslut eller verifiering |
+| Organisationsarbete och verifiering | [KORPLAN-v2](plans/organisation/KORPLAN-v2.md) | Vid ny tilldelning, beslut eller verifiering |
 | Var finns borttagen text? | [HISTORIK](HISTORIK.md) anger fil och Git-version | När dokument raderas |
 
 ## Produkt och kontrakt
@@ -38,20 +38,18 @@ Kontrollera kvarvarande delar mot aktuell kod före start. Genomförda steg och 
 
 | Område | Dokument | Varför det finns kvar |
 | --- | --- | --- |
-| Bolagsbindning för nycklar och spelare | [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), [STEG-F](plans/STEG-F.md) | Koden har fortfarande toleranta läsvägar. Full kravhöjning och driftacceptans är inte verifierade av dokumentgranskningen. |
+| Bolagsbindning för nycklar och spelare | [API-kontraktet](games/partner-api.md#company-binding), [restarbetet](plans/organisation/KORPLAN-v2.md#bolagsbindning-kvarvarande-leverans) | 012/014 och skapvägarna är ännu inte fullt kravhöjda. Kontrakt och arbete har varsin befintlig hemvist. |
 | Tal, röst och läppsynk | [TALKEDJA](plans/TALKEDJA.md), [RunPod-underlag](TALKEDJA-RUNPOD.md) | Pausat uppdrag. Daterade prov är underlag, inte aktuell molnstatus eller godkänd läppsynk. |
-| Selektiva presentationsförslag | [KEVIN-PORT](plans/KEVIN-PORT.md) | Daterat jämförelseunderlag med kvarvarande förslag. Kontrollera varje förslag mot aktuell main före nytt arbete. |
-| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md) | Återgångs- och referensvillkor inför eventuell dataåtgärd. Den gamla objektlistan och SQL-körlistan är ersatta med aktuell beroende- och återgångsordning. |
+| Kontrollerad avveckling av data och media | [Lagringsguiden](storage/BLOB-NEON.md#avveckling-av-produktdata-och-original), [uppdragets avgränsning](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling) | Aktuella konsumenter, frysta revisioner och verifierbar återgång före den avgränsade dataåtgärden. |
 | Beställd Git-utredning och möjligt repo-byte | [historikmätning](incidents/2026-10-31-repository-history.md), [övergångsplan](incidents/2026-10-31-clean-repository-plan.md) | Beslutsunderlag för ett fortfarande separat repo-byte, inte en utförd flytt. |
 
-Granskning 1 november 2026 mot
-`e3dbed2c17afe91deb81ff9b9e9d88264958d38f` omfattar samtliga 39 då spårade
-och fysiska filer under `docs/`. Astrids förbrukade labbguide är borttagen;
-aktuella gränser finns i AI-index. Sakguiderna rättar schema/readiness,
-publicering, talstart och API-exempel. Aktiva planer är kortade till
-verifierat kodläge och kvarvarande arbete. [HISTORIK](HISTORIK.md) anger
-originalversionen. Daterade drift- och AV-kvitton har inte gjorts om till
-nya acceptanspåståenden.
+Konsolidering 1 november 2026 mot `f6185c3663dc9101958c8aca78527a5fa2d0301b`:
+fem ytterligare plan-/loggfiler är borttagna. Bolagskontrakt, verkligt restarbete
+och avvecklingsordning finns i guiderna ovan. Obeställda presentationsidéer och
+avslutade etappkvitton finns i Git via [HISTORIK](HISTORIK.md).
+Den tidigare bedömningen att varje restuppgift behövde en egen plan var för
+försiktig; länkkontrollen kräver hela hänvisningar, inte att dokumenten bevaras.
+F11:s aktiva releasebevis och de beställda incidentunderlagen är kvar.
 
 ## Underhåll
 

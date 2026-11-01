@@ -1,122 +1,72 @@
 # Körplan: återstående arbete
 
-Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor, bort med förbrukad legacy och dokumentation, och färre onödiga ändringsspärrar. **Talet väntar.** Den här filen är enda aktiva körordning för organisationsarbetet. Migreringen avslutades 28 oktober (20/20, PR #527); historiken finns i Git och [HISTORIK](../../HISTORIK.md).
+Uppdaterad 1 november 2026 mot `f6185c3663dc9101958c8aca78527a5fa2d0301b`.
+Kvarvarande uppdrag och beslut samlas här. Migreringen och organisationsvågorna
+R1–R5, S1–S6 och förenklingsvåg 2 är avslutade inom sina omfattningar;
+[HISTORIK](../../HISTORIK.md) anger de borttagna planernas Git-versioner.
+**Talet är pausat enligt Jakob.**
 
 ## Utgångsläge och mandat
 
-- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Historiska S1–S3 utgick från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Förenklingsvåg 2 utgick från `53b57cb31f037433375c35b6053a21615f5c389b` och är avslutad enligt NEXT-AGENT. Nytt arbete använder aktuell tilldelning och isolerade worktrees under `.claude/worktrees`.
-- Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, ingrepp i kollegors resurser eller RunPod-endpoints ingår. GitHubs normala auto-delete behålls vid godkända PR-merges; äldre brancher/worktrees har inte gallrats i denna leverans.
-- **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
-- Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
-
-## Leveransens tre faser
-
-| Fas | Parallellt arbete | Färdigt när |
-| --- | --- | --- |
-| 1. Rätta och rensa | R1 spelkontroller, R2 fixturer och R3 dokument har olika skrivare. Orkestratorn tar R4/R5. | Konsumenter och ändrat beteende är verifierade; avgränsade diffar och prov finns. |
-| 2. Granska och integrera | Oberoende granskning av spel-/pengaflöden och CI. Dokument och beroenden kan granskas parallellt. | Relevanta lokala prov och CI på den exakta integrerade headen är gröna. |
-| 3. Leverera och prova | Main/preview synkas enligt repoets mergegrind. Vercel och berörd Render-tjänst verifieras. | Rätt SHA och hälsa, plus verkligt demoprov av satsningsval och kontroller. |
-
-## Den avslutade etappen
-
-| ID / område | Ägare och avgränsning | Status | Acceptans |
-| --- | --- | --- | --- |
-| R1 Spelkontroller | Astra: `betting-spots-1031`; klient, rutägarskap och riktade prov | VERIFIERAD | Spelare/kameravy skiljs från satsningsruta. Flera lediga rutor kan väljas och satsas på. Rutbyte lägger ingen oavsiktlig insats; annans aktiva ruta, stängt fönster och otillåtet sidobet nekas. Begripliga markerare och kontroller även på liten skärm. |
-| R2 Test och legacy | Sol: `legacy-fixtures-1031`; gamla kodkopior och deras tester | VERIFIERAD | `kevin-5aa7ed1` förklaras och avvecklas. Oberoende förväntningar för regler, pengar, proof och presentation finns kvar; nödvändiga små timingdata får tydlig hemvist. Inga skyddade brancher ändras. |
-| R3 Dokument och regler | Sol: `docs-unlock-1031`; docs-index, ordlista och gamla planer | VERIFIERAD | Avklarade dubbletter borta; länkar hela. En körplan, kort ordlista, ingen historisk layout- eller mappfrysning. F11:s riktiga driftkvitto och aktiva sakguider kvar. |
-| R4 Typer och runtime | MERGEAGENTEN; web/Studio-manifest och låsfiler | VERIFIERAD | Node-typer matchar Node 24, React-typer matchar respektive app. Frysta installationer, typkontroller och berörda byggen passerar utan bred runtimeuppgradering. |
-| R5 Central objektkontroll | MERGEAGENTEN; CI och befintlig storlekskontroll | VERIFIERAD | Även en stor blob som läggs till och sedan tas bort före PR-slutet nekas centralt. Hela nya intervallet kontrolleras; saknad bas/ofullständig historik får inte passera tyst. Raderad eller orelaterad mediehistorik laddas inte ner som bieffekt; schedule/manual kontrollerar dagens HEAD-träd. |
-
-R1–R5 levererades genom [PR #747](https://github.com/Jakeminator123/scoutgaming/pull/747), exakt CI [41205741884](https://github.com/Jakeminator123/scoutgaming/actions/runs/41205741884), release `bebe483c7f6c846c10d69545f6c67186839e808e`. Båda Vercel-projekten var READY och båda Render-motorerna live med samma revision och health=ok. Verkligt previewprov bekräftade rutbyte utan debitering, två samtidiga huvudinsatser på ruta 1/7 och Ångra av endast sista insatsen. Desktop visar alla sju rutor; separat mobil bordsvy verifierades i Chrome-fixturen. Vid rundstart upptäcktes även missvisande etiketter på tomma rutor; en separat efterrättning skiljer stängt insatsfönster från annans ägarskap, med negativa round/settled-prov. Talets konservativa öppnings-/avräkningstid återstår enligt pausen.
-
-Kod, lokal verifiering, merge, driftsättning och produktacceptans är olika status. Markera inte en rad klar enbart för att agenten har öppnat en PR. G1 är löpande releasekontroll, ingen separat halvfärdig produktleverans.
+- Kanonisk checkout är `C:/Users/jakob/dev/scoutgaming`; aktuell tilldelning avgör skrivare och samordnare. Tidigare agentuppdrag ger inget nytt skrivansvar.
+- Jakobs fullmandat för nödvändiga merges och kontrollerade releaser består. Ägar-, head-, CI- och verifieringskraven i [AGENTS](../../../AGENTS.md) gäller. Äldre frågespärrar och städpauser är ersatta; egna verifierat mergade resurser städas enligt samma regler. Andras arbete, osäkra resurser och RunPod-endpoints rörs inte av dokument- eller kodstädningen.
+- Inga produktmappar eller gamla implementationer är frysta. Bevara serverauktoritet, atomiska pengar, behörighet, bolags-/rumsisolering och aktiva publicerade mediereferenser. Data-/historikradering, repo-byte och betald drift följer sina konkreta uppdrag och återställningsunderlag.
+- [F11-driftkvittot](F11-DRIFTKVITTO.md) styrker att kompatibla Render-releaser saknar den tidigare generella tomt-bord-spärren. Flaggbyte, publicering och övrig acceptans följer sina egna kriterier; driftprovet bevisar inte generell last, real-money eller ljud-/bildacceptans.
 
 ## Återstående områden och tydliga gränser
 
-| Område | Kvar / beslut | Vad som krävs för nästa ändring |
+| Område | Kvar / beslut | Verifiering för ändringen |
 | --- | --- | --- |
-| Legacy/Astrid | Den gamla clip-policy-kedjan är borttagen. Återstående worker-/medierester måste följas till faktisk användning; gatewaydelen är aktiv i spelcontainern. | Ta bort döda delar efter konsumentbevis; flytta eller ersätt levande konsument före radering. Inga RunPod-endpoints ändras. |
-| Material och Admin | Kompatibelt materialbyte med påverkan per rum/bolag och atomisk publicering är kvarvarande produktarbete. | Scope/CAS/samtidighet, grannrummets utkast och låsta publicerade versioner ska hålla. Återställning får inte öppna rum eller aktivera tal. |
-| Data och återställning | Återställningsprov från 28 oktober är dokumenterat. Det ersätter inte ett aktuellt prov för en ny destruktiv dataåtgärd. | Isolerat återställningsmål och jämförelse inför den data-/historikåtgärd som faktiskt beställs; inget generellt omprov för vanlig kod-/UI-städning. |
-| Native, partner och sessioner | Aktiva adaptrar är inte legacy bara på grund av namnet. Extern partnerwallet är inte real-money-accepterad. | Konsolidera ett belagt dubbelt/felaktigt kontrakt i taget med behörighets-, samtidighets- och pengaprov. |
-| Lounge och vyer | Prototyper och Admins layout får utvecklas; befintliga opublicerade prototyputkast är andras bevarade arbetsmaterial. | Välj ändringen i aktuell main och pröva den; merga inte en hel gammal prototypbranch. |
-| Tal | **PAUSAT enligt Jakob.** Generated speech, ny bank och läppsynk ingår inte nu. Talberoende öppning/avräkning har kvar konservativ reservtid. | Eget uppdrag för aktualitet/mute/distribution och godkända ljud-/bildrutebundna medier. |
-| Säkerhet och synlighet | Ingen ny bred historikscan eller synlighetsändring beställd. GitGuardians `too_large` innebär ofullständig historisk täckning trots 0 öppna fynd vid senaste kontroll. | Färsk säkerhetsstatus före push/merge. Ny scanning/synlighet kräver konkret scope och verifierade åtkomst-/kostnadsvillkor. |
+| Legacy/Astrid | Clip-policy-kedjan är borta; kvarvarande worker-/medierester bedöms efter faktisk användning. Gatewaydelen används i spelcontainern. | Följ konsumenterna, ersätt levande anrop och ta bort död kod med förbrukade prov. Astrid avvecklas enligt dataavsnittet nedan. |
+| Material och Admin | Kompatibelt materialbyte och atomisk publicering med påverkan per rum/bolag återstår. | Scope, CAS, samtidighet, grannrummets utkast och låsta paketversioner ska hålla. Återställning får inte öppna rum eller aktivera tal. |
+| Bolag, native och partner | Nyckel-/spelarbindning och kravhöjning återstår enligt avsnittet nedan. Extern partnerwallet är inte real-money-accepterad. | Prova faktisk behörighet, samtidighet och pengar för berörd ingång. Aktiva adaptrar är inte legacy på grund av sitt namn. |
+| Lounge och vyer | Produktutveckling väljs mot aktuell main; opublicerade prototyputkast är andras arbetsmaterial. | Avgränsa ändringen och dess prov; en gammal prototypbranch är inget implementationsmandat. |
+| Tal | **PAUSAT.** Talberoende öppning/avräkning har konservativ reservtid. [TALKEDJA](../TALKEDJA.md) samlar det pausade uppdraget. | Aktualitet, mute/distribution, bank/worker och ljud-/bildrutebundna medier prövas inom återupptaget taluppdrag. |
+| Säkerhet och repo | Färsk säkerhetsstatus krävs före push/merge. GitGuardians historiska `too_large` ger ofullständig täckning. | Ny bred scan, synlighetsändring eller repo-byte har separat scope; de beställda [incidentunderlagen](../../incidents/2026-10-31-repository-history.md) finns kvar. |
 
-Det finns inget uppmätt totalprocenttal för hela produkten. Den externa uppföljningen på `c0150add` uppskattar det bredare förenklingsarbetet till cirka 80 % (75–85 %), men detta är en bedömning, inget mål att fylla med nya städuppdrag. R1–R5 och S1–S6 är avslutade inom sina omfattningar. Redovisa leveranser och kvarvarande acceptanskriterier separat.
+Ett tidigare rapportfynd är en hypotes, ingen automatisk arbetsorder. Three-kärnan,
+Provspel/gästpreview, aktiva register och importkällor har följts till konsumenter;
+`lab_sessions` har en producent. Dessa avslutade bedömningar öppnar ingen ny
+migrationsvåg. Hela produkten har inget uppmätt totalprocenttal.
 
-## Levererad första städvåg: S1–S3
+## Bolagsbindning: kvarvarande leverans
 
-Jakobs uppföljning 31 oktober flyttar tyngdpunkten från visuell putsning till levande konsumenter, färre överlappande vägar, namngivning och en begriplig systemkarta. MERGEAGENTEN 2 har tagit över efter #748; föregående huvudagent är klar. Extern granskning är underlag att kontrollera, inte en orderlista.
+Det varaktiga kontraktet finns i [Partner-API-guiden](../../games/partner-api.md#company-binding).
+Kodbasen har fortfarande `deploymentOptional` för game-012 och game-014.
+Admins `player-administration.mjs` och partner-API:ts skapväg skriver ännu inte
+spelarens `operator_id`; `async-player-auth.mjs` har toleranta läsningar.
+Detta är kodrestarbete, inte en ny databas- eller driftkontroll.
 
-| Spår | Levererad avgränsning | Verifiering och gräns |
-| --- | --- | --- |
-| S1 Övergångskod | Konstanta native-/Neon-/lokalmedia-val, generation-media och oåtkomlig klippmappning borttagna med förbrukade prov. | API-beteenden jämförda före/efter, oberoende granskning och grön full CI. Aktiva adaptrar, behörighet och serverauktoritet består. |
-| S2 Bolagsflöde och systemkarta | Separat skapa-formulär och routebundet Team med smal bolagsläsning; den nästlade bolagskatalogen är borta. Kallstart kräver inte projekt/video. Systemkartan finns i START-HERE. | Async-/scope-/CAS-/rollprov och verklig previewläsning. Transportfelet från första releasen rättat i #753. DB/schema/signer förblir obligatoriska. Skapa-flödets skrivning verifierad i tester; inga nya konton skapade i liveprovet. |
-| S3 Tester och leverans | Byggkontroller körs efter befintligt bygge. Obligatoriskt och rådgivande browserjobb är åtskilda; det rådgivande jobbet ligger utanför CI:s väntkedja. | Verklig byggartefakt lokalt och i CI; CSS-/tema-/fokusprov utan kosmetiska källkodslås. Bredare CI-selektion återstår som separat avgränsning. |
+1. Läs aktuell game-ledger och readiness per miljö. `prepare-api-key-operator.mjs` och `prepare-player-operator.mjs` renderar SQL offline. 012:s preflight kräver tom nyckeltabell; radera inte aktiva nycklar för att få kontrollen grön. DDL följer mandat och [återställningsguiden](../../ENVIRONMENT-RESTORATION.md).
+2. När readiness tillåter: gör 012 obligatorisk, neka obundna nycklar/launch-token och avveckla förbrukade toleranta läsvägar. Följ `keys.list/create` och `allowLegacyPartnerSessions`. Bevara felkoder, rotation/återkallelse, låsordning och återvalidering vid samtidiga kommandon.
+3. Bind spelaren till validerat aktivt bolag i varje skapväg: Admin, partner, registrering, personal-/Craig-koppling, `/api/player` och förhandsvisning. Partnerns spelarvy ska filtreras på sessionens bolag. Samma identitet behövs vid sida, socket, kommando, roulette och partner-API; saldo och transaktioner består.
+4. Besluta verifierat reservbolag, globalt eller bolagsunikt inloggningsnamn och vilka vägar utan bolagskontext som ska stängas eller kräva bolag. Besluta även om spelarens bolag får ändras. `player_accounts.email` är global primärnyckel i dagens kontrakt. 014:s backfillförslag använder nyckelns bolag, senaste bolagsbundna bord och ett uttryckligt reservbolag; senaste bord är en heuristik, inte auktoritet. Visa aktuell NULL-fördelning före skrivning.
+5. Leverera fungerande skapvägar före återstående migrering och kravhöjning: tolerant kod → godkänd migrering → obligatoriskt krav. `game-015` var ett planerat namn, ingen levererad migrering i denna bas. Ta bort toleranta grenar först efter readiness.
+6. Prova isolerat en bunden partners hand med atomiska plånboksrader och nativebolagsisolering. Fel bolag, okänt rum, förfalskad claim, rotation och återkallelse ska nekas utan sessionsläcka, även vid återanslutning/samtidiga kommandon. Återpröva den gamla #538-rapportens skillnad mellan främmande och okänt rum mot dagens kod.
 
-REPOAGENTEN, ARKITEKTEN och DRIFTAGENTEN levererade avgränsade ändringar i egna worktrees. Huvudagenten ägde systemkarta, integration, granskning och release. De tre uppdragen är avslutade; inget nytt skrivansvar följer automatiskt av den tidigare tilldelningen.
+Befintliga relevanta prov: `test/api-key-operator-migration.mjs`,
+`test/studio-admin-accounts.mjs`, `test/partner-launch-route.mjs`,
+`test/shared-room-access.mjs` och `test/shared-command-auth.mjs`.
 
-Brancher och worktrees för S1–S3 och integrationen är bevarade enligt uppdraget. Inga schema-, env- eller talaktiveringar ingick.
+## Data och medieavveckling
 
-**Leveransbevis:** [#752](https://github.com/Jakeminator123/scoutgaming/pull/752) förenade [S1 #749](https://github.com/Jakeminator123/scoutgaming/pull/749), [S2 #751](https://github.com/Jakeminator123/scoutgaming/pull/751) och [S3 #750](https://github.com/Jakeminator123/scoutgaming/pull/750). Integrationen passerade 77/77 riktade prov, Studio/Admin/Lobby-typer, verkligt klientbygge och exakt [CI 41209843388](https://github.com/Jakeminator123/scoutgaming/actions/runs/41209843388). Två oberoende granskningsfynd rättades: likvärdig platt fokus-CSS och saknade bolags-id som inte är slugs.
+Följande avgränsning från Jakobs beslut 28 oktober består; en gammal inventering
+är ingen aktuell kandidatlista:
 
-Första publicerade provet fann ett ytterligare transportfel på Team; [#753](https://github.com/Jakeminator123/scoutgaming/pull/753) rättade det efter röd reproduktion, 65/65 riktade prov och exakt [CI 41210914261](https://github.com/Jakeminator123/scoutgaming/actions/runs/41210914261). Slutlig publicerad verifiering och revision redovisas i beslutsloggen; den första releasens gröna CI räckte inte som UI-acceptans.
+- Behåll Johns Bet (`johns-bet`), `room-76640ca1-b619-7948-596e-3d102202b7d0`, Paow, rummets använda paket, konfigurationer och media samt de konton Jakob använder. Äldre paketrevisioner 1–11 och 53 klipp begränsar inte senare giltiga revisioner.
+- Behåll talkedjan och Dragans dealer, talbank och bindningar som referens för generaliseringen. Genererade Paow-svar och Dragans talreferens får inte försvinna som bieffekt.
+- Astrid, även märkt legacy-referens, ska tas bort helt. Avveckla konsumenter innan underlaget tas bort. Namnen `retained`/`legacy` är inget bevarandebeslut.
+- Övriga bolag, rum, papperskorgsposter och oanvända medier är kandidater först efter aktuell konsumentinventering. Beslutet är inget generellt mandat att radera allt utom Johns Bet. Spelare, saldon, transaktioner och användbara taldata omfattas inte av vanlig mediestädning; ändra inga talflaggor som del av städningen.
 
-Efter första städvågen väljs en levande legacykedja åt gången: Admins isolerade provspel, sessionsutfärdande eller det äldre referens-/mappingflödet. Atomisk bolagspublicering och materialersättning är separata funktionsändringar. Namnbyten i molnet och stora workspaceomläggningar prioriteras inte framför belagda dubbletter. Talet väntar fortfarande.
+Ordningen och de konkreta referenserna finns i [lagringsguiden](../../storage/BLOB-NEON.md#avveckling-av-produktdata-och-original).
+En ny destruktiv åtgärd behöver avgränsad lista, frysta revisioner och verifierbart
+återgångsunderlag i rätt miljö; ett daterat restoreprov räcker inte för nya data.
+Återgång får inte automatiskt öppna rum eller slå på tal.
 
-## Levererad systemkarta och smal CI-selektion: S4–S6
+## Överlämning
 
-Jakobs nästa uppdrag till de tre befintliga teamchattarna är genomfört. REPOAGENTEN #755 (`71af69d97351f3b21b737b5010ce3f03b76ad7a9`, CI 41212844431) verifierade och länkade kartans kod-/provgränser. ARKITEKTEN #757 (`6611a1398753cb6e16494441e2d08223a2772142`, CI 41213561936) byggde `tools/system-map.py`; 8/8 Pythonprov och oberoende granskning passerade. Orkestratorn genererade kartan på integrerad `1c920187b11f84b5c02abec72cad920a29428833`: sex områden, 37/37 referenser, inga fel eller varningar. Faktisk browserkontroll bekräftade läsbar layout, zoom och expandera/fäll ihop. Lokala fillänkar verifierades som referenser; klick från HTTP-preview till `file://` är inte ett accepterat webbflöde. Den fristående filen öppnas lokalt enligt START-HERE.
-
-DRIFTAGENTEN #756 (`07ca8ee6ee145d292c82826010ff6f220472ec80`, CI 41213034222) begränsar endast vanliga M/100644-ändringar i tre befintliga Admin-CSS-filer till `studio-admin-contracts` + `access-presentation`, med verkligt bygge/artefaktkontroll och obligatorisk Chrome. Databas/engine och tal/gameplay utelämnas för just denna klass. Orkestratorns 22/22 riktade prov passerade, inklusive riktiga Git-mergefixturer och negativa gateprov. Okända/blandade ändringar, nya/raderade/omdöpta filer och preview/nattlig/manuell körning behåller full täckning. Inga sparade minuter eller bredare totalprestandavinster är uppmätta.
-
-Alla tre PR:er är verifierat våra genom tilldelad teamchatt, rapporterad head och samma frysta GitHub-SHA. Ett commitnamn eller PR-kontot ensamt bevisar inte uppdragets ägare. Inga oklara kollegors PR:er ingick i denna mergeomgång.
-
-## Avslutat underlag
-
-Den tidigare organisationsvågen är avslutad: 4/4 + 3/3 + 2/2 leveranser (#723–737). Secure-cookie, pushkontroll, avvecklad clip-policy, tålig talstart och F11 ska inte beställas om. [Beslutsloggen](BESLUTSLOGG.md) och [F11-driftkvittot](F11-DRIFTKVITTO.md) anger bevis och gränser.
-
-#740–742 levererade synliga kontroller, exakt talfri filmplan och stabila kortankare. Verkligt demoprov mätte Hit till cirka 5,3 sekunder; filmplanen var 4 155 ms och nästa beslut fick 15 sekunder. Talberoende reserver och hela produktens acceptans är skilda frågor. Den särskilda kalibreringen gäller det testade previewrummet, inte en generell publicering av alla rum.
-
-Den gamla inventeringen, områdesplanerna och deras tomma aktiviteter är ersatta av denna körplan och sakguiderna i [docs-indexet](../../README.md). Git bevarar historiken; borttagna dokument redovisas i [HISTORIK](../../HISTORIK.md).
-
-## Nya fynd och överlämning
-
-Den externa uppföljningens små efterrättningar: **#762 mergad** (gemensamt
-agentmandat och borttagna kosmetiska testlås), **#763 mergad** (avstängt
-fristående röstprov avvecklat, social fallback kvar). Båda har grön exakt CI.
-Tilldelning återanvänder förälderns katalog i **#764**; nio browserprov verifierar
-läsantal, uppdatering, CAS, fel och bolagsbundna utkast. Publiceringsordningen
-och partialresultaten består. Atomisk publicering/materialbyte är ett eget
-produktuppdrag. Hela repoets filer och
-tester är inte därmed granskade eller nödvändighetsbevisade.
-
-[Atlas, PR #761](https://github.com/Jakeminator123/scoutgaming/pull/761) förenar de
-tidigare kartorna. Ansvarstabell, handgranskade kedjor och statiska kodreferenser
-visas tillsammans med tydliga bevisnivåer. 18 Pythonprov, generering och lokal
-browserkontroll har passerat. Kontrollen av kodankare ingår i befintlig CI;
-ändrade samband granskas och förbrukade samband raderas med koden. Kartan
-bevisar inte att varje fil används eller att dokumenterade prov har körts.
-
-Dokumentgranskning 31 oktober efter systemkartorna: sex ersatta planer avvecklas
-med Git-hänvisningar i [HISTORIK](../../HISTORIK.md). Saktext om UI/bygg/partner
-samlas i befintliga guider. Att bolagsplanerna står kvar har konkret kodstöd:
-012/014 är `deploymentOptional`, och spelaradministrationens skapväg saknar
-bolagsfält. Detta är kvarvarande arbete, inte återöppnad migreringsacceptans.
-Dokumentindexet förklarar vilka underlag som är guider, pausade planer, daterade
-beslutsunderlag och provmallar. Kontroll av länkar och rubriker kompletterar
-granskning av sakuppgifter; den bevisar inte att ett moln- eller produktpåstående
-fortfarande stämmer.
-
-## Förenklingsvåg 2 och dess gräns
-
-#769–773 omfattar pensionerade `bo:`-spelarsessioner, operator-speech-QA, villkorad montering av kamerakontroller, Studio-routingens namn samt ersatta kosmetiska test- och verktygslås. Behörighet, bolags-/rumsisolering, verklig PostgreSQL-samtidighet och aktiva publicerade mediereferenser består. Dagens Admin-cookie och partnersessioner är inte den borttagna spelarsessionsvägen.
-
-Den beställda inventeringen omfattar också avvisade rapportfynd: Three-kärnan importeras, Provspel/gästpreview har skilda aktiva konsumenter, och register/importkällor samt stora tillgångar används. `lab_sessions` har en aktiv producent. Dessa fynd är klassificerade och avslutade som raderingsförslag; de skapar ingen ny obegränsad migrationsvåg. Materialersättning, data-/historikgallring och eventuell Blob-flytt kräver ett konkret eget produkt-/databeslut. Ingen env-, DDL-, provider- eller talaktivering gjordes i kodstädningen.
-
-Det uttryckligen beställda leveranskvittot `.cache/wave2-final-result.md` samlar exakt borttagna regler/testlås, PR-headar, CI, slutlig release och egen resursstädning. Nio tillfälligt upplåsta ignore-filer återställdes byte för byte; synlighetsinstruktionen skiljer spårad inventering från terminalens vanliga dotfilefilter. Miljörapporten är läsande underlag, inte utförda nyckelbyten eller ett produktionsrensningsbeslut.
-
-Skriv en kort rad i [BESLUTSLOGG](BESLUTSLOGG.md): reproduktion + full SHA/resurs + berörd aktivitet + beslut. Skilj produktval från fel och osäkerhet. Ändra berörd rad här; skapa ingen konkurrerande tracker eller rapporthierarki.
-
-Underagenter får tom kontext, egna filer och konkreta prov; högst tre samtidigt. De öppnar granskbara PR:er och väntar inte på CI. Orkestratorn granskar, integrerar och verifierar leveransen. Rapport högst 200 ord med faktisk verifiering och kvarstående begränsning. Avslutade agenter återupptas inte.
+Ändra berört restarbete här och sakguiden när kontraktet ändras. [NEXT-AGENT](../../NEXT-AGENT.md)
+bär aktuell överlämning; PR:en bär ändringens granskning och kod-/CI-bevis.
+Ange full SHA och verklig verifiering. Skilj kod, deploy och produktacceptans.
+Daterade etappkvitton och beslut finns i Git enligt HISTORIK; F11 behåller sitt
+separata bevis eftersom ett aktuellt releasebeslut använder det.

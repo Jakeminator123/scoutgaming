@@ -8,7 +8,7 @@ import {createEmptyPresentationManifest} from '../packages/studio-registry/serve
 // The catalogue serves exactly the layout's public and private JSON metadata.
 const servedJson=row=>row.access!=='source'&&row.path.endsWith('.json');
 
-// The repository carries no presentation bank (REN-START, 2026-10-28), so the
+// The repository carries no presentation bank (docs/storage/BLOB-NEON.md), so the
 // built catalogue has no dealer families. A layout that lists bank rows is stale.
 function presentationManifest(layout){
   const bank=PRESENTATION_BANK_PATH+'/';

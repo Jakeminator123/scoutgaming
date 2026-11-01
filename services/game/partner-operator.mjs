@@ -1,4 +1,4 @@
-// Nyckel → bolag (docs/plans/NYCKEL-BOLAG.md, PR A). A partner key belongs to one company:
+// Nyckel → bolag (docs/games/partner-api.md#company-binding, PR A). A partner key belongs to one company:
 // croupier_auth.api_keys.operator_id, the croupier_studio.operators id in the engine's scope.
 // The engine checks that binding after a verified signature; the public bridge only forwards
 // ?operator=. Reads are tolerant until PR C: before migration 012 no key has a company, the

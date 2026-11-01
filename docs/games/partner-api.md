@@ -34,6 +34,33 @@ console.log(await call('/api/v1/ping'));
 
 Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404/503. Key scopes: `launch`, `play`, `events`, `wallet`, `history`, `lobby`.
 
+### Company binding
+
+Admin creates each partner key for an active company in the engine's Studio scope.
+The key's company is immutable. A bound launch, session and shared room must refer
+to that same company; rotation or revocation invalidates affected sessions.
+Partner players belong to the key. There is no cross-schema foreign key between
+auth and Studio, so scope and active-company checks remain necessary.
+
+Game migration 012 supplies `api_keys.operator_id`, its index and the immutable
+binding. Admin refuses key creation when the column is missing. Launch claims and
+URLs use the key's company, and page/socket/command checks revalidate it.
+Readiness still marks 012 optional; tolerant `to_jsonb` reads, unbound-key paths
+and `allowLegacyPartnerSessions` remain in the code. Their existence does not
+prove a current deployment needs them. The [remaining company work](../plans/organisation/KORPLAN-v2.md#bolagsbindning-kvarvarande-leverans)
+tracks readiness, removal of compatibility paths and isolation tests.
+
+### Native player accounts
+
+The intended account boundary is one company per player, with that account's
+balance and game history kept separate from the same person's accounts elsewhere.
+This is not yet complete: game-014 is optional and nullable; Admin and partner
+creation paths can still omit the player company. `async-player-auth.mjs` reads
+`playerOperatorId` tolerantly. `player_accounts.email` remains a global primary
+key; company-local login names and mutable player-company binding are unresolved
+product/schema decisions in the remaining work above. Never treat a free client
+`operatorId` as proof of company access.
+
 ## 2. Endpoints
 
 ### POST /api/v1/ping

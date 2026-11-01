@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Explicit operator runner for the scoped runtime media catalogue (docs/plans/REN-START.md, steps 6–7).
+// Explicit operator runner for the scoped runtime media catalogue (docs/storage/BLOB-NEON.md#avveckling-av-produktdata-och-original).
 //   prepare                  local only: hashes the four source files and prints the new revision.
 //   plan --out <file>        read-only against CROUPIER_GAME_DATABASE_URL; saves the reviewable plan.
 //   apply --plan <file> --actor <name>

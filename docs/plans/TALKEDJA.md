@@ -113,7 +113,7 @@ Följ de faktiska konsumenterna i `dealer-chat-persona.mjs`,
 `product-speech.mjs`, `speech-routing.mjs`, `speech-package.mjs`,
 `generated-speech-stream.mjs` och motorns integration. Flytta eller ta bort
 hårdkodade specialfall när de ersätts av dealerdata; avveckla Astrid enligt
-[REN-START](REN-START.md). Behåll behörighet, tids-/revisionsbindning och
+[körplanens datauppdrag](organisation/KORPLAN-v2.md#data-och-medieavveckling). Behåll behörighet, tids-/revisionsbindning och
 verifierad mediekomposition; ta bort rena testlås på pensionerat beteende.
 
 K04:s dealerlistor och timingdata hör till testfixturen

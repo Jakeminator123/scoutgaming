@@ -1,4 +1,4 @@
-// Nyckel→bolag, PR A (docs/plans/NYCKEL-BOLAG.md): the engine reads a partner key's company tolerantly.
+// Nyckel→bolag, PR A (docs/games/partner-api.md#company-binding): the engine reads a partner key's company tolerantly.
 // Every product path runs on PGlite without migration 012 (today: no key has a company) and with it.
 import test from 'node:test';
 import assert from 'node:assert/strict';

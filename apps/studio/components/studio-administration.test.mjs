@@ -1290,7 +1290,7 @@ test('a dealer without a drift profile is told so by its fixed code; other drift
      error=>error.status===status&&error.code===undefined&&!/server text|driftprofil|Nyckeln/.test(error.message),code);
 });
 
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): Admin chooses the company when it creates a key, the list
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): Admin chooses the company when it creates a key, the list
 // shows each key's company, and the server's fixed refusals are explained instead of a generic error.
 test('Integration creates a key for a chosen active company and shows each key\'s company', () => {
   const h = harness(), calls = [], data = resources();

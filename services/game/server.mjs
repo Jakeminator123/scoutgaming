@@ -138,7 +138,7 @@ const { createPublicOperatorDirectory } = await import('./public-operators.mjs')
 const publicOperatorStore = studioPolicyRuntime ? await (await import('../../packages/operators/server/operator-store.mjs')).createOperatorStore({
   sql: storage.pool, scope: studioPolicyRuntime.scope,
 }) : null;
-// Nyckel→bolag (docs/plans/NYCKEL-BOLAG.md): a partner key's company exists and is active in this scope.
+// Nyckel→bolag (docs/games/partner-api.md#company-binding): a partner key's company exists and is active in this scope.
 const partnerOperatorById = publicOperatorStore ? id => publicOperatorStore.getOperatorById(id) : null;
 const partnerOperatorBySlug = publicOperatorStore ? slug => publicOperatorStore.getOperatorBySlug(slug) : null;
 const partnerRefused = (req, res, code) => {
@@ -466,7 +466,7 @@ const frontendOrigin=sharedRoomQa?.publicOrigin??(cloudRuntime ? process.env.CRO
 // Single-origin ingress has no separate frontend origin; shared rooms then accept the canonical public origin.
 const roomOrigins=sharedRoomOrigins({qaOrigin:sharedRoomQa?.publicOrigin,frontendOrigin});
 const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,
-  // The key's company reads as null until migration 012 adds the column (docs/plans/NYCKEL-BOLAG.md).
+  // The key's company reads as null until migration 012 adds the column (docs/games/partner-api.md#company-binding).
   partnerAuthority: async partnerKeyId => boDb.prepare("SELECT id,secret,revoked_at,wallet_url,to_jsonb(k)->>'operator_id' AS operator_id FROM api_keys k WHERE id=?").get(partnerKeyId)}));
 const guestPreview = process.env.DEMO_GUEST_ACCESS === '1';
 const playerSession = async req => (await auth.session(req));

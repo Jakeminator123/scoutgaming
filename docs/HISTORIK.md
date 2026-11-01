@@ -8,12 +8,29 @@ Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökväga
 
 | Fil | Ersättning och skäl; originalet läses med `git show e3dbed2c17afe91deb81ff9b9e9d88264958d38f:<fil>` |
 | --- | --- |
-| `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#pensionerad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [REN-START](plans/REN-START.md) bär datauppdraget. |
+| `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#pensionerad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [körplanen](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling) bär datauppdraget. |
 
 Samma granskning ersatte förbrukade steg, gamla SQL-körlistor och daterade
 produktantal i REN-START, NYCKEL-BOLAG, STEG-F och TALKEDJA med aktuellt
 kodläge och kvarstående uppdrag. Originalen finns i Git-versionen ovan;
 inga produktdata, providerinställningar eller scheman ändrades.
+
+### Konsoliderade planer och avslutad beslutslogg
+
+Originalen nedan läses med `git show f6185c3663dc9101958c8aca78527a5fa2d0301b:<fil>`.
+
+| Fil | Ersättning och skäl |
+| --- | --- |
+| `docs/plans/KEVIN-PORT.md` | Leveranshistorik och obeställda presentationsidéer; ingen aktuell uppgift kräver filen. Idéerna flyttas inte till en ny arbetslista. |
+| `docs/plans/NYCKEL-BOLAG.md` | Varaktigt kontrakt i [Partner-API](games/partner-api.md#company-binding), kvarvarande readiness/kravhöjning och isoleringsprov i [körplanen](plans/organisation/KORPLAN-v2.md#bolagsbindning-kvarvarande-leverans). |
+| `docs/plans/STEG-F.md` | Spelarkontots bolagsgräns i [Partner-API](games/partner-api.md#native-player-accounts), skapvägar, backfillbeslut och kravhöjning i samma körplansavsnitt. Arbetet är inte markerat klart. |
+| `docs/plans/REN-START.md` | Johns Bet-rum, Paow, Dragan och dataavgränsningen i [körplanen](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling); referens-/återgångsordning i [lagringsguiden](storage/BLOB-NEON.md#avveckling-av-produktdata-och-original). |
+| `docs/plans/organisation/BESLUTSLOGG.md` | Avslutade etappbeslut och kvitton. Gällande fullmandat/talpaus och upphävda äldre städpauser finns i körplanen/AGENTS; det fortsatt använda [F11-kvittot](plans/organisation/F11-DRIFTKVITTO.md) behålls. |
+
+Körplanens daterade R/S-etappkvitton finns i samma Git-version. Historiska planvägar
+i `ops/neon-game/012-api-key-operator.sql` och `014-player-operator.sql` lämnas
+oförändrade: migrationernas normaliserade källbytes ger ledgerns SHA-256.
+Kommentarerna är proveniens, inga aktiva dokumentkonsumenter eller bevarandekrav.
 
 ## Raderade 31 oktober 2026
 
