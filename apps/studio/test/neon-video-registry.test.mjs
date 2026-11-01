@@ -214,7 +214,7 @@ test('empty scoped bank supports Admin intake, captured revisions and verified p
  await rm(join(f.root,'media'),{recursive:true});
  await f.repository.initializeDocument('administration',{actor:'Operator',value:{rooms:[],gameLanes:[],gameLane:null}});
  const runtime={videoRegistry:f.registry.load,gamePolicy:{readSaved:async()=>({project:(await f.repository.readDocument('project')).value})}};
- const workspace=await serveAdminWorkspaceData(new Request('https://studio.example.invalid/studio/api/admin/workspace/videos'),{authorize:async()=>{},runtime:async()=>runtime});
+ const workspace=await serveAdminWorkspaceData(new Request('https://studio.example.invalid/studio/api/admin/workspace/replies'),{authorize:async()=>{},runtime:async()=>runtime});
  const initial=await workspace.json();assert.equal(workspace.status,200);assert.deepEqual(initial.videos.videos,[]);assert.deepEqual(initial.videos.families,[]);
  assert.deepEqual(initial.project.dealers,[]);assert.equal(initial.videos.summary.readable,true);
  assert.doesNotMatch(JSON.stringify(initial.videos),/emil|astrid/i);

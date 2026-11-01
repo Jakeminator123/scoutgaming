@@ -1,13 +1,12 @@
 'use client';
 
-import {useEffect,useRef,useState,type MouseEvent} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {studioHistory} from '../lib/studio-history.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {studioNavigationContextFromQuery,studioNavigationHref,type StudioNavigationContext} from '../lib/studio-navigation.mjs';
 import {REPLY_CATEGORIES} from '../../../packages/presentation/contracts/speech-reply-library.mjs';
 import type {SpeechReplyItem as ReplyItem} from '../../../packages/presentation/server/speech-reply-library.mjs';
 import {PageTemplate} from './page-template.mjs';
-import {StudioNavigation} from './studio-navigation';
 import {DealerClipPreview} from './dealer-video-surface';
 import {activeStudioDealers,requestJson} from './studio-types';
 import styles from './control-replies-page.module.css';
@@ -108,9 +107,6 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
     const url=new URL(studioNavigationHref('/admin/replies',{...nextContext,dealerId:nextDealer}),window.location.href);if(nextCategory)url.searchParams.set('category',nextCategory);
     studioHistory(window).push(url);context.current.href=url.href;
   }
-  function navigate(event:MouseEvent<HTMLAnchorElement>){
-    if(studioHistory(window).isRestoring()||dirty||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}
-  }
   function toggle(item:ReplyItem,id:Category){
     if(writeLock.current)return;
     setDrafts(current=>{const chosen=current[item.id]??item.categories,next=chosen.includes(id)?chosen.filter(value=>value!==id):[...chosen,id];const result={...current};if(sameCategories(next,item.categories))delete result[item.id];else result[item.id]=next;return result;});setNotice('');
@@ -157,7 +153,6 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
         <label>Kategori<select aria-label="Filtrera svarskategori" data-field="category" value={category} disabled={Boolean(writingId)} onChange={event=>choose(dealerId,event.target.value)}><option value="">Alla kategorier</option>{categories.map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
         <button type="button" className="sg-btn sg-btn-secondary" data-action="refresh" disabled={loading||dirty||Boolean(writingId)||!dealerId} onClick={()=>setReload(value=>value+1)}>Uppdatera</button>
       </div>
-      <StudioNavigation {...navigationContext} active="replies" dealerId={dealerId} dealerLabel={dealer?.label} onNavigate={navigate}/>
       {dirty?<p role="status" className={styles.feedback}>Du har osparade kategorival. Spara eller ångra dem innan du byter dealer, filter eller sida.</p>:null}
       {error?<p role="alert" className={styles.error}>{error}</p>:null}{notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
       {!dealerId?<p className={styles.empty} data-empty="no-dealer">Välj en dealer för att läsa dess svarsbibliotek.</p>:null}

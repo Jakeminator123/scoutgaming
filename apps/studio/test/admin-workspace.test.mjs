@@ -95,7 +95,7 @@ test('login restores the exact Admin page and context without accepting external
   assert.equal(studioLoginReturnTo('/admin/dealers/dragan?flik=tal&verktyg=dialog'),'/admin/dealers/dragan?flik=tal&verktyg=dialog');
   for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','/admin/dealers/dragan?flik=klipp&flik=tal','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/admin');
 });
-// The workspace reader serves exactly the embedded tools' sections (ADMIN_WORKSPACE_TOOLS) plus the legacy read-only ones.
+// The workspace reader serves the embedded tools' sections and the scoped company team.
 test('dealer workspace tools read saved data without any company team reads',async()=>{
   let authorized=false;
   const runtime=async()=>{assert.equal(authorized,true);return {gamePolicy:{readSaved:async()=>({project:{revision:'saved',dealers:[]}})},
@@ -125,12 +125,12 @@ test('workspace reader rejects unknown sections, queries and writes',async()=>{
     listLaneOperators:async()=>[],listOperatorDirectory:async()=>[]})};
   const request=section=>new Request('https://site.invalid/studio/api/admin/workspace/'+section);
   assert.equal((await serveAdminWorkspaceData(request('unknown'),options)).status,400);
-  for(const invalid of ['companies','company-team','company-team?operator=','company-team?operator=north&operator=south','company-team?operator=north&extra=1','company-team?operator=../north']){
+  for(const invalid of ['compositions','videos','rehearsal','probe','companies','company-team','company-team?operator=','company-team?operator=north&operator=south','company-team?operator=north&extra=1','company-team?operator=../north']){
     assert.equal((await serveAdminWorkspaceData(request(invalid),{...options,runtime:()=>assert.fail('Invalid request must not read')})).status,400,invalid);
   }
   assert.equal((await serveAdminWorkspaceData(request('companies?extra=1'),options)).status,400);
   assert.equal((await serveAdminWorkspaceData(new Request(request('companies'),{method:'POST'}),options)).status,400);
-  const media=await serveAdminWorkspaceData(request('videos'),options);assert.equal(media.status,200);assert.equal((await media.json()).directory,null);
+  const media=await serveAdminWorkspaceData(request('replies'),options);assert.equal(media.status,200);assert.equal((await media.json()).directory,null);
 });
 
 test('material library bookmarks share one destination and preserve their selection and context',()=>{

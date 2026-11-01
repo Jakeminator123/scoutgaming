@@ -7,7 +7,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {REPLY_CATEGORIES,validateReplyCategories} from '../../../packages/presentation/contracts/speech-reply-library.mjs';
 import {parseStudioRepliesRequest} from '../lib/studio-replies-query.mjs';
-import {studioNavigationContextFromQuery,studioNavigationHref,STUDIO_DEALER_TABS} from '../lib/studio-navigation.mjs';
+import {studioNavigationContextFromQuery,studioNavigationHref} from '../lib/studio-navigation.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const source=readFileSync(new URL('./control-replies-page.tsx',import.meta.url),'utf8');
@@ -15,9 +15,6 @@ const output=transformSync(source,{filename:'control-replies-page.tsx',jsc:{pars
 const typesModule={exports:{}};
 const typesOutput=transformSync(readFileSync(new URL('./studio-types.ts',import.meta.url),'utf8'),{filename:'studio-types.ts',jsc:{parser:{syntax:'typescript'}},module:{type:'commonjs'}});
 vm.runInNewContext(typesOutput.code,{module:typesModule,exports:typesModule.exports,URL,URLSearchParams,require});
-const navigationOutput=transformSync(readFileSync(new URL('./studio-navigation.tsx',import.meta.url),'utf8'),{filename:'studio-navigation.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
-const navigationModule={exports:{}};vm.runInNewContext(navigationOutput.code,{module:navigationModule,exports:navigationModule.exports,URL,require:name=>name==='next/navigation'?{useSearchParams:()=>new URLSearchParams()}:name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
-const StudioNavigation=navigationModule.exports.StudioNavigation;
 const DealerClipPreview=({url,label})=>React.createElement('video',{src:url,'aria-label':label});
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -30,7 +27,7 @@ function harness(requestJson,p=props){
   const writeHistory=(value,_title,url)=>{historyState=structuredClone(value);if(url!==undefined)initialUrl.href=new URL(url,initialUrl).href;};
   const runtimeWindow={location:initialUrl,history:{get state(){return historyState;},pushState:writeHistory,replaceState:writeHistory},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);},dispatchEvent(event){listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
   const react={...React,useState(initial){const key=cursor++;if(!(key in values))values[key]=typeof initial==='function'?initial():initial;return[values[key],next=>{if(unmounted)afterUnmount.push(next);values[key]=typeof next==='function'?next(values[key]):next;}];},useRef(initial){return refs[refCursor++]??={current:initial};},useEffect(run,deps){const key=effectCursor++,previous=effects[key];effects[key]={...previous,run,deps,changed:!previous||!deps||deps.some((value,index)=>value!==previous.deps?.[index])};}};
-  const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,window:runtimeWindow,URL,URLSearchParams,AbortController,Intl,Date,require:name=>name==='react'?react:name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./studio-types'?{...typesModule.exports,requestJson(...args){calls.push(args);return requestJson(...args);}}:name==='./studio-navigation'?{StudioNavigation}:name==='./dealer-video-surface'?{DealerClipPreview}:require(name)});
+  const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,window:runtimeWindow,URL,URLSearchParams,AbortController,Intl,Date,require:name=>name==='react'?react:name.endsWith('.module.css')?{__esModule:true,default:{}}:name==='./studio-types'?{...typesModule.exports,requestJson(...args){calls.push(args);return requestJson(...args);}}:name==='./dealer-video-surface'?{DealerClipPreview}:require(name)});
   const h={render(){cursor=refCursor=effectCursor=0;return module.exports.ControlRepliesPage(p);},effects(){for(const effect of effects.filter(row=>row.changed)){effect.cleanup?.();effect.changed=false;effect.cleanup=effect.run();}},unmount(){unmounted=true;for(const effect of effects)effect.cleanup?.();},calls,listeners,afterUnmount,window:runtimeWindow};return h;
 }
 function nodes(node,predicate){if(!node||typeof node!=='object')return[];if(Array.isArray(node))return node.flatMap(child=>nodes(child,predicate));return[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];}
@@ -42,7 +39,6 @@ const empty=tree=>nodes(tree,node=>node.props?.['data-empty']!==undefined).map(n
 const savedCategories=tree=>nodes(tree,node=>node.props?.['data-saved-categories']!==undefined)[0]?.props['data-saved-categories'];
 const roles=(tree,role)=>nodes(tree,node=>node.props?.role===role).length;
 /** The dealer nav link for a tab id, found by the shared tab definition rather than a copied label. */
-const tabLink=(links,id)=>links.find(link=>link.props.children===STUDIO_DEALER_TABS.find(tab=>tab.id===id).label);
 async function loaded(request=async()=>({items:[sample()],nextCursor:null}),p=props){const h=harness(request,p);h.render();h.effects();await settle();h.render();h.effects();return h;}
 
 test('reply list shows exact private dealer metadata and N1 media paths with the shared categories',async()=>{
@@ -92,7 +88,7 @@ test('uncertain save is reconciled by reading without repeating its write',async
 test('unsaved categories guard filters, dealer changes, leaving and browser history, with an Undo path',async()=>{
   const h=await loaded();let tree=h.render();category(tree,'player-help').props.onChange();tree=h.render();h.effects();
   select(tree,'category').props.onChange({target:{value:'game-win'}});select(tree,'dealer').props.onChange({target:{value:'elin'}});assert.equal(select(h.render(),'category').props.value,'');assert.equal(select(h.render(),'dealer').props.value,'astrid');
-  const nav=nodes(tree,node=>node.props?.active==='replies')[0],clipLink=tabLink(nodes(nav.type(nav.props),node=>node.type==='a'),'clips'),event={button:0,preventDefault(){this.blocked=true;}};clipLink.props.onClick(event);assert.equal(event.blocked,true);
+  const event={preventDefault(){this.blocked=true;}};h.listeners.get('studio:before-navigate')(event);assert.equal(event.blocked,true);
   const unload={preventDefault(){this.blocked=true;}};h.listeners.get('beforeunload')(unload);assert.equal(unload.blocked,true);
   h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(select(h.render(),'dealer').props.value,'astrid');assert.match(h.window.location.href,/\/admin\/dealers\/astrid\?/,'the vetoed traversal restores the dealer nav address');
   button(tree,'undo').props.onClick();tree=h.render();h.effects();select(tree,'dealer').props.onChange({target:{value:'elin'}});assert.equal(select(h.render(),'dealer').props.value,'elin');
@@ -125,35 +121,31 @@ test('a mismatched reconciliation item never replaces the original reply or clea
 });
 
 
-test('Admin replies component preserves exact Studio context through real navigation, filtering, dealer changes and history',async()=>{
+test('reply filters and history preserve exact dealer context without carrying credentials',async()=>{
   const query={dealer:'astrid',event:'speak.goodluck',variant:'astrid.goodluck.alt-2',situation:'goodluck',lane:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette',category:'player-question',token:'never-forward',tab:'private'};
   const p={...props,initialCategory:query.category,initialNavigationContext:studioNavigationContextFromQuery(new URLSearchParams(query))};
-  assert.deepEqual(p.initialNavigationContext,{dealerId:'astrid',eventId:query.event,variantId:query.variant,situation:query.situation,laneId:query.lane,operatorId:query.operator,tableId:query.table,game:query.game});
   const h=await loaded(async()=>({items:[],nextCursor:null}),p);
-  const links=()=>{const nav=nodes(h.render(),node=>node.props?.active==='replies')[0];return nodes(nav.type(nav.props),node=>node.type==='a');};
-  const clips=()=>tabLink(links(),'clips');
-  // The Klippkarta tab carries the exact Studio context; the token and the foreign tab never follow.
-  const context=href=>{const url=new URL(href,'https://local.test');assert.ok(url.pathname.startsWith('/admin/dealers'),href);return Object.fromEntries(url.searchParams);};
-  const full={dealer:'astrid',event:'speak.goodluck',variant:'astrid.goodluck.alt-2',situation:'goodluck',composition:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette'};
-  const withoutDealer=href=>{const value=context(href);delete value.dealer;delete value.flik;return value;};
-  assert.equal(links().some(link=>link.props.href.startsWith('/admin/compositions')),false);assert.deepEqual(withoutDealer(clips().props.href),(({dealer,...rest})=>rest)(full));
-  const event={button:0,preventDefault(){this.blocked=true;}};clips().props.onClick(event);assert.equal(event.blocked,undefined);
-  select(h.render(),'category').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;assert.ok(new URL(previousHref).pathname.startsWith('/admin/dealers'));assert.equal(new URL(previousHref).searchParams.get('category'),'game-win');
-  select(h.render(),'dealer').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.deepEqual(withoutDealer(clips().props.href),{composition:'studio/main',operator:'fixture-operator',table:'fixture-room',game:'roulette'});assert.ok(clips().props.href.includes('elin'),'the new dealer follows');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');assert.ok(h.window.location.pathname.startsWith('/admin/dealers'));for(const key of ['operator','table','game'])assert.equal(h.window.location.searchParams.get(key),query[key]);
-  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.deepEqual(withoutDealer(clips().props.href),(({dealer,...rest})=>rest)(full));assert.ok(clips().props.href.includes('astrid'));assert.equal(select(h.render(),'category').props.value,'game-win');
+  select(h.render(),'category').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();
+  const previousHref=h.window.location.href,first=new URL(previousHref);
+  assert.equal(first.pathname,'/admin/dealers/astrid');
+  for(const key of ['event','variant','situation','operator','table','game'])assert.equal(first.searchParams.get(key),query[key],key);
+  assert.equal(first.searchParams.get('composition'),query.lane);assert.equal(first.searchParams.get('category'),'game-win');
+  for(const key of ['token','tab'])assert.equal(first.searchParams.has(key),false,key);
+  assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');
+  select(h.render(),'dealer').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();
+  const next=new URL(h.window.location.href);assert.equal(next.pathname,'/admin/dealers/elin');
+  for(const key of ['event','variant','situation','token','tab'])assert.equal(next.searchParams.has(key),false,key);
+  for(const key of ['operator','table','game'])assert.equal(next.searchParams.get(key),query[key],key);
+  assert.equal(next.searchParams.get('composition'),'studio/main');assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');
+  h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();
+  assert.equal(select(h.render(),'dealer').props.value,'astrid');assert.equal(select(h.render(),'category').props.value,'game-win');
+  assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');
   for(const[url,init]of h.calls){assert.equal(parseStudioRepliesRequest(init.method??'GET',new URL(url,'https://local.test')).kind,'list');assert.deepEqual([...new URL(url,'https://local.test').searchParams.keys()],['dealer','category']);}
 });
 
-// Svarsbiblioteket is mounted inside the dealer nav (/admin/dealers/<d>?flik=tal). studioNavigationHref applies the dealer
-// before it canonicalizes the retired tab paths, so every tab link and every filter or dealer write stays a nav address.
-test('the embedded reply library links to its dealer nav tabs and filtering never leaves the nav',async()=>{
+// The owning dealer nav remains authoritative when embedded library filters change.
+test('embedded reply filtering and dealer changes stay in the owning dealer nav',async()=>{
   const h=await loaded(async()=>({items:[],nextCursor:null}),{...props,initialHref:'/admin/dealers/astrid?flik=tal'});
-  const nav=nodes(h.render(),node=>node.props?.active==='replies')[0],links=nodes(nav.type(nav.props),node=>node.type==='a');
-  const href=id=>new URL(tabLink(links,id).props.href,'https://local.test');
-  assert.equal(href('clips').pathname,'/admin/dealers/astrid');assert.equal(href('clips').searchParams.get('flik'),'klipp');
-  assert.equal(href('speech').searchParams.get('flik'),'tal');assert.equal(href('replies').searchParams.get('flik'),'tal');
-  assert.equal(href('settings').searchParams.get('flik'),'installningar');assert.equal(href('generate').searchParams.get('panel'),'generera');
-  for(const link of links){const url=new URL(link.props.href,'https://local.test');assert.equal(url.pathname,'/admin/dealers/astrid',link.props.href);assert.equal(url.searchParams.has('dealer'),false,link.props.href);}
   // The nav owns a dealer: the library offers no "no dealer" choice that would open the dealer list.
   assert.equal(nodes(select(h.render(),'dealer'),node=>node.type==='option'&&node.props.value==='').length,0);
   select(h.render(),'category').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();

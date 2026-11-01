@@ -24,10 +24,9 @@ function adminEndpoint(method, action) {
 }
 
 export const STUDIO_ADMIN_ENDPOINTS = Object.freeze([
-  ...['overview', 'config', 'clips', 'generations', 'gen-verdicts',
+  ...['overview', 'config',
     'apikeys', 'users', 'players', 'transactions','emails','shoes', 'room-game-config', 'room-release', 'shared-table-proof', 'presentation-room', 'resource-lifecycle', 'moving-drift'].map(action => adminEndpoint('GET', action)),
-  ...['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'clip-landing',
-    'clip-never', 'gen-landing', 'gen-verdict', 'players/create', 'players/status', 'players/password',
+  ...['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove', 'players/create', 'players/status', 'players/password',
     'users/invite', 'users/resend', 'users/role', 'users/remove', 'apikeys/create',
     'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit',
     'operator-package', 'room-game-config', 'presentation-room', 'operator-create', 'operator-role', 'operator-membership', 'operator-lifecycle', 'room-lifecycle', 'room-state', 'material-trash-check', 'material-trash', 'resource-delete-check', 'resource-delete', 'moving-drift']

@@ -2,6 +2,10 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Masskontroll: Admin 1 november
+
+Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-konsument är borttagna. Dealerverktygen använder hubbens navigation; den dubbla Studio-flikraden och dess förbrukade komponentkontrakt är borta. Filter, dealerbyte, historik, utkastskydd, CAS och scope verifieras fortfarande med beteendeprov. Studio-probe är oförändrad i väntan på avgränsad kontroll av dess externa användning; motorns probe är en separat aktiv tjänst. Exakta prov- och mergebevis hör till ändringens PR.
+
 ## Avvecklad K04-testkedja 1 november
 
 Den historiska mediekatalogen, revisionshjälparen och tre timingfixturer är

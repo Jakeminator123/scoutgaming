@@ -678,7 +678,7 @@ test('each request checks live identity, role floors and self-role/self-removal 
 test('all config mutations carry exact string revision; no numeric/missing/prototype CAS fallback', async () => {
   const h = harness(); let requests = [];
   const client = h.createStudioAdminClient({ apiBase: '/studio/api/admin', session: async () => actor('superadmin'), availableActions: allActions, fetchImpl: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return reply({ ok: true }); } });
-  const configActions = ['tier', 'clip-landing', 'clip-never', 'gen-landing', 'gen-verdict'];
+  const configActions = ['tier', 'game-lane', 'game-lanes/create', 'game-lanes/remove'];
   for (const action of configActions) {
     for (const expectedRevision of [undefined, null, 0, 1, [], {}, 'bad revision', '/external', 'x'.repeat(101)]) await assert.rejects(client.request('POST', action, { expectedRevision }), status(409));
     await client.request('POST', action, { expectedRevision: 'studio-91ba0c61-3f45-4e9e-9efe-b40a3b201234' });
