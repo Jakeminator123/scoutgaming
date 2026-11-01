@@ -4,6 +4,10 @@ En rad per dokument som raderats ur `main` efter att dess uppgift var klar. Inne
 
 Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökvägar nedan pekar på Git-versionen.
 
+## Raderade 2 november 2026
+
+- `services/openclaw/lab/deploy/runtime-bundle/roles/croupier-social.md`: förbrukat rollkontrakt för Eventstudios avvecklade social-/companionkedja. Sista main-version: `53efbaeb17af5bcb21cd6c1af3988f9e78e25f7f`; aktuellt ansvar finns i [AI-guiden](AI/README.md#avvecklad-labbchatt).
+
 ## Raderade 1 november 2026
 
 ### Avvecklad K04-testkedja
@@ -27,7 +31,7 @@ provar nu det publicerade native-film-kontraktet med syntetiskt material.
 
 | Fil | Ersättning och skäl; originalet läses med `git show e3dbed2c17afe91deb81ff9b9e9d88264958d38f:<fil>` |
 | --- | --- |
-| `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#pensionerad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [körplanen](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling) bär datauppdraget. |
+| `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#avvecklad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [körplanen](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling) bär datauppdraget. |
 
 Samma granskning ersatte förbrukade steg, gamla SQL-körlistor och daterade
 produktantal i REN-START, NYCKEL-BOLAG, STEG-F och TALKEDJA med aktuellt

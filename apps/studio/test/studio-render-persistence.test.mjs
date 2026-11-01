@@ -3,7 +3,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioRenderPersistence,assertRenderStudioWritable} from '../lib/studio-render-persistence.mjs';
 import {createSeedProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {createSocialPolicy} from './fixtures/social-store.mjs';
 import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from '../../../test/fixtures/studio-memory-pool.mjs';
 import {createNeonProjectStore} from '../lib/neon-project-store.mjs';
@@ -13,7 +12,6 @@ const env = {CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.ne
 async function fixture() {
   const pool = createStudioMemoryPool(),repository = createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{value:{...createSeedProject(),legacyClipPolicy:[]},actor:'migration'});
-  await repository.initializeDocument('social-policy',{value:createSocialPolicy(),actor:'migration'});
   const calls = [], source = 'explicit product SQL';let closed = 0;
   const connectionPool = {end:async () => closed++};
   const options = {env,poolFactory:async connection => {calls.push(['pool',connection]);return connectionPool;},
@@ -28,15 +26,14 @@ async function fixture() {
   };
   return {options,calls,pool,repository,closed:() => closed};
 }
-test('protected Render reads same committed project/social revisions, with no write actor or fallback',async () => {
+test('protected Render reads the committed project revision, with no write actor or fallback',async () => {
   const {options,calls,pool,repository,closed} = await fixture(),reader = await createStudioRenderPersistence(options);
-  const project = await reader.projectStore.load(),social = await reader.socialStore.load(),before = pool.snapshot();
+  const project = await reader.projectStore.load(),before = pool.snapshot();
   assert.equal(reader.configurationSource,'neon/croupier_studio');
   assert.equal(project.revision,(await repository.readDocument('project')).revision);
   assert.deepEqual(project.legacyClipPolicy,[]);
-  assert.equal(social.revision,(await repository.readDocument('social-policy')).revision);
   assert.equal((await reader.videoRegistry()).source,'neon');
-  for (const store of [reader.projectStore,reader.socialStore]) await assert.rejects(store.save({},'forged'),error => error.statusCode === 410);
+  await assert.rejects(reader.projectStore.save({},'forged'),error => error.statusCode === 410);
   assert.deepEqual(pool.snapshot(),before);assert.equal(closed(),0);
   assert.deepEqual(calls.map(call => call[0]),['pool','source','schema','studio-schema']);
   pool.failNext('read-document',new Error('DB unavailable'));

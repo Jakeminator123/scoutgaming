@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createNeonProjectStore, createNeonSocialStore } from '../lib/neon-project-store.mjs';
+import { createNeonProjectStore } from '../lib/neon-project-store.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { createSocialPolicy } from './fixtures/social-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../../test/fixtures/studio-memory-pool.mjs';
+import { validateDocumentValue } from '../../../packages/studio-registry/server/document-contract.mjs';
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'studio-test' });
 function fixture() {
@@ -12,6 +12,25 @@ function fixture() {
   const store = createNeonProjectStore({ repository, scope, actor: 'Operator' });
   return { pool, repository, store };
 }
+
+test('a persisted social-policy survives generic read, export and restore without the retired chat runtime', async () => {
+  const { repository } = fixture();
+  const policy = { schemaVersion: 1, revision: 'historical-policy-1',
+    trigger: { id: 'social.ledsen', label: 'Historical trigger', enabled: false, directive: 'Synthetic retained document.', threshold: 0.75 },
+    response: { mode: 'free', fixedText: 'Synthetic response.' }, cooldownMs: 10000 };
+  const saved = await repository.initializeDocument('social-policy', { value: policy, actor: 'migration' });
+  assert.deepEqual((await repository.readDocument('social-policy')).value, saved.value);
+  const snapshot = await repository.exportSnapshot();
+  assert.deepEqual(snapshot.documents.map(row => row.kind), ['social-policy']);
+  const restored = fixture().repository;
+  assert.deepEqual(await restored.importSnapshot(snapshot, { actor: 'restore', expectedTargetEmpty: true }), { imported: 1, replayed: false });
+  assert.deepEqual(await restored.exportSnapshot(), snapshot);
+  for (const invalid of [ { ...policy, unexpected: true }, { ...policy, cooldownMs: -1 },
+    { ...policy, trigger: { ...policy.trigger, id: 'unknown' } },
+    { ...policy, response: { mode: 'fixed', fixedText: '\u0001' } } ]) {
+    assert.throws(() => validateDocumentValue('social-policy', invalid, policy.revision), { code: 'studio_invalid_document' });
+  }
+});
 test('missing and unavailable Neon documents fail closed, never initialize a default project', async () => {
   const { pool, store } = fixture();
   await assert.rejects(store.load(), error => error.code === 'studio_document_missing' && error.statusCode === 503);
@@ -53,16 +72,4 @@ test('server-owned scope and read-only Render consumers cannot cross scopes or w
   const saved = await gameReader.load();
   await assert.rejects(gameReader.save(saved, saved.revision), error => error.statusCode === 403);
   assert.equal(pool.snapshot().audits.length, 1);
-});
-test('social policy keeps an independent revision stream and never substitutes companion memory/profile state', async () => {
-  const { pool, repository, store } = fixture();
-  await repository.initializeDocument('project', { value: createSeedProject(), actor: 'migration' });
-  await repository.initializeDocument('social-policy', { value: createSocialPolicy(), actor: 'migration' });
-  const project = await store.load(), social = createNeonSocialStore({ repository, scope, actor: 'Operator' });
-  const policy = await social.load(), next = structuredClone(policy); next.cooldownMs = 2000;
-  const saved = await social.save(next, policy.revision);
-  assert.notEqual(saved.revision, policy.revision); assert.deepEqual(await store.load(), project);
-  assert.equal((await repository.listDocumentHistory('social-policy')).length, 1);
-  assert.equal((await repository.listDocumentHistory('project')).length, 0);
-  assert.equal(pool.snapshot().documents.size, 2);
 });

@@ -213,7 +213,7 @@
           "target": "gateway",
           "kind": "HTTP",
           "label": "Modellanrop",
-          "explanation": "Director-tjänsten använder director-bibliotekets validering och Gateway-transport. Gateway avgör inte spelets kort eller saldo.",
+          "explanation": "Director-tjänstens aktiva modellvägar är presentationsråd, operatörschatt och produkttal via director-bibliotekets validering och Gateway-transport. Gateway avgör inte spelets kort eller saldo.",
           "conditional": false,
           "evidence": [
             {

@@ -1,3 +1,4 @@
+import { chatWithDirector } from '../../../../packages/director/openclaw.mjs';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -196,4 +197,24 @@ test('studio relay validates catalog and projects input before sending its own n
   assert.equal(captured.body.catalog.revision, input.catalog.revision);
   assert.deepEqual(await store.load(), before);
   assert.deepEqual(await readdir(directory), []);
+});
+
+test('operator chat retains its bounded personas and explicit comedy disablement', async () => {
+  const settings = { baseUrl: 'http://localhost:18789', gatewayKey: 'fixture-key' };
+  for (const message of ['Vem är John?', 'Vad ska han bygga?']) {
+    const operatorResult = await chatWithDirector({ message, conversationId: 'operator-fixture' }, settings, async (_url, options) => {
+      const body = JSON.parse(options.body), context = body.messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+      assert.match(context, /John should train/); assert.match(context, /man cave/);
+      assert.equal(body.tool_choice, 'none');
+      return Response.json({ choices: [{ message: { content: 'I vår labbsaga bygger John en man cave.' } }] });
+    });
+    if (message === 'Vem är John?') {
+      assert.equal(operatorResult.reply.split('\n').length, 4);
+      assert.match(operatorResult.reply, /加油/);
+    }
+  }
+  await chatWithDirector({ message: 'Vem är John?', conversationId: 'operator-disabled' }, { ...settings, companionFunEnabled: false }, async (_url, options) => {
+    assert.doesNotMatch(JSON.parse(options.body).messages.map(m => m.content).join('\n'), /John should train/);
+    return Response.json({ choices: [{ message: { content: 'Ingen beskrivning i katalogen.' } }] });
+  });
 });

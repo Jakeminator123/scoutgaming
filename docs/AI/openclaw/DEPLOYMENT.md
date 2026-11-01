@@ -69,7 +69,7 @@ byter rollmodeller med revisionskontroll.
 | --- | --- | --- |
 | `croupier-operator` | `gpt-6.1-sol` | `thinkingDefault: high` |
 | `croupier-chat` | `gpt-6.1-sol` | `thinkingDefault: medium` |
-| `croupier-director`, `croupier-social` | `gpt-6-luna` | `thinkingDefault: low` |
+| `croupier-director` | `gpt-6-luna` | `thinkingDefault: low` |
 | `croupier-speech` | Luna, högst en Sol 6.1-fördjupning | `models[ref].params.thinking`: `low` respektive `high` |
 
 Gateway 2026.9.5 tar inte emot `reasoning_effort` i sitt kompatibla HTTP-API.

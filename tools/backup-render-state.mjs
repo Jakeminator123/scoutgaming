@@ -5,7 +5,6 @@ import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseCompanionState, COMPANION_STORE_FILE } from '../packages/director/node/companion-store.mjs';
 import { parseSearchState, SEARCH_STORE_FILE } from '../services/openclaw/lab/deploy/companion-search-server.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,11 +15,11 @@ const PROFILES = {
   director: [],
   gateway: ['openclaw.json'],
 };
-// The companion stores are atomically replaced JSON files. A hash only proves the
+// The search store is an atomically replaced JSON file. A hash only proves the
 // copy; the owning module's parser proves the copy is a complete, usable store.
-// Every other file, including retired companion.sqlite files and their journals
+// Every other file, including retired companion.json / SQLite and their journals
 // left on a disk, is opaque: stopped writers make its exact bytes the state.
-const STORES = { director: { [COMPANION_STORE_FILE]: parseCompanionState }, gateway: { [SEARCH_STORE_FILE]: parseSearchState } };
+const STORES = { director: {}, gateway: { [SEARCH_STORE_FILE]: parseSearchState } };
 
 function fail(code) { const error = new Error(code); error.code = code; throw error; }
 function within(parent, target) {
@@ -128,7 +127,7 @@ async function removeOwnStage(stage, parent, prefix) {
 function checkProfile(profile, names) {
   if (!Object.hasOwn(PROFILES, profile)) fail('invalid_profile');
   if (!names.length || PROFILES[profile].some(name => !names.includes(name)) ||
-    (profile === 'director' && !names.some(name => name === 'catalog.json' || name === COMPANION_STORE_FILE || name.startsWith('history/')))) fail('required_state_missing');
+    (profile === 'director' && !names.some(name => name === 'catalog.json' || name === 'companion.json' || name.startsWith('history/')))) fail('required_state_missing');
 }
 function separate(a, b) {
   if (within(a, b) || within(b, a)) fail('paths_overlap');
