@@ -117,23 +117,26 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 @keyframes pjasUpp{0%{transform:none;opacity:1}100%{transform:translateY(-120px);opacity:0}}
 @keyframes skuggaIn{0%{opacity:0;transform:scale(2.4) translate(26px,18px);filter:blur(12px)}100%{opacity:1;transform:none;filter:blur(3px)}}
 @keyframes glint{0%{transform:skewX(-18deg) translateX(0)}100%{transform:skewX(-18deg) translateX(100px)}}
-/* vinstkortet */
-.vinstkort{left:40px;top:214px;width:430px;padding:22px 26px;animation:inGlid .5s cubic-bezier(.2,.8,.2,1) both}
+/* vinstkortet: litet (Emil 1 Nov), numret och egenskaperna på en rad, vinsten under, högst tre insatsrader */
+.vinstkort{left:40px;top:214px;width:236px;padding:12px 14px;border-radius:10px;animation:inGlid .5s cubic-bezier(.2,.8,.2,1) both}
 .vinstkort.bort{animation:utGlid .35s ease-in both}
-.vinstkort .hu{display:flex;gap:18px;align-items:center}
+.vinstkort .hu{display:flex;gap:11px;align-items:center}
 .nr{width:96px;height:96px;border-radius:12px;display:grid;place-items:center;font:700 56px var(--siffra);color:#fff;border:3px solid var(--guld);
   box-shadow:0 0 26px rgba(230,200,138,.6)}
 .nr.black{background:#120e0b}.nr.red{background:#a3141f}.nr.green{background:#0e6b43}
+.vinstkort .nr{width:50px;height:50px;flex:0 0 50px;border-radius:8px;font-size:30px;border-width:2px;box-shadow:0 0 14px rgba(230,200,138,.5)}
 .egen{font-size:15px;letter-spacing:.18em;color:var(--dov);text-transform:uppercase;line-height:1.65}
+.vinstkort .egen{font-size:11px;letter-spacing:.12em;line-height:1.55}
 .egen b{color:var(--ink);font-weight:600}
 .du{font-size:15px;letter-spacing:.3em;color:var(--guld);text-transform:uppercase}
-.vinstkort .du{margin-top:18px}
+.vinstkort .du{margin-top:10px;font-size:11px;letter-spacing:.24em}
 .summa{font:400 58px/1.05 var(--serif);color:#fff6df;white-space:nowrap;font-variant-numeric:tabular-nums}
-.vinstkort ul{list-style:none;margin-top:14px;border-top:1px solid var(--linje);padding-top:10px}
-.vinstkort li{display:flex;justify-content:space-between;gap:16px;font-size:18px;padding:3px 0;font-variant-numeric:tabular-nums}
+.vinstkort .summa{font-size:32px}
+.vinstkort ul{list-style:none;margin-top:8px;border-top:1px solid var(--linje);padding-top:6px}
+.vinstkort li{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:1px 0;font-variant-numeric:tabular-nums}
 .vinstkort li span{color:var(--dov)}
-.vinstkort .netto{margin-top:8px;font-size:15px;color:var(--dov);letter-spacing:.06em}
-.vinstkort.miste .summa{font-size:28px;color:var(--dov);margin-top:14px;white-space:normal}
+.vinstkort .netto{margin-top:5px;font-size:11px;color:var(--dov);letter-spacing:.05em}
+.vinstkort.miste .summa{font-size:16px;color:var(--dov);margin-top:8px;white-space:normal}
 @keyframes inGlid{0%{opacity:0;transform:translateX(-40px)}100%{opacity:1;transform:none}}
 @keyframes utGlid{0%{opacity:1;transform:none}100%{opacity:0;transform:translateX(-30px)}}
 /* ---------- hjulvyn: resultatbrickan och insatslisten ---------- */
@@ -288,13 +291,15 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 .chatt-rad input::placeholder{color:var(--dov)}
 .chatt-rad button{width:46px;border:0;border-radius:10px;background:var(--guld);color:#1d140a;font-size:18px;cursor:pointer}
 /* rundans vinnare till vänster (ATG/Evolution-standard): text direkt på bilden, ingen ruta */
-.rundvinnare{left:44px;top:566px;width:420px;z-index:24;color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 14px rgba(0,0,0,.55);animation:rundvinnareIn .45s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+.rundvinnare{left:44px;top:470px;width:420px;height:596px;display:flex;flex-direction:column;z-index:24;color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 14px rgba(0,0,0,.55);animation:rundvinnareIn .45s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
 .rundvinnare .v-topp{display:flex;align-items:center;gap:8px;font:600 26px var(--sans);letter-spacing:.04em}
 .rundvinnare .v-topp b{font-weight:700}
 .rundvinnare .v-topp svg{width:22px;height:22px;fill:currentColor;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 .rundvinnare .v-topp strong{color:var(--guld);font-weight:700;margin-left:4px}
-.rundvinnare i{display:block;height:1px;width:300px;margin:10px 0 9px;background:linear-gradient(90deg,rgba(247,240,226,.7),rgba(247,240,226,0))}
-.rundvinnare ol{list-style:none;display:flex;flex-direction:column;gap:4px;font:400 21px var(--sans)}
+.rundvinnare i{display:block;flex:none;height:1px;width:300px;margin:10px 0 0;background:linear-gradient(90deg,rgba(247,240,226,.7),rgba(247,240,226,0))}
+/* fönstret raderna rullar i: uppifrån botten, tonar ut uppåt under strecket */
+.rundvinnare .v-fonster{flex:1;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 56px,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(to bottom,transparent 0,#000 56px,#000 calc(100% - 20px),transparent)}
+.rundvinnare ol{list-style:none;display:flex;flex-direction:column;gap:7px;font:400 21px var(--sans);will-change:transform;transform:translateY(600px)}
 .rundvinnare ol b{font-weight:600}
 @keyframes rundvinnareIn{from{opacity:0;transform:translateX(-14px)}}
 .chatt-rad .chatt-namn{flex:0 0 132px;color:var(--guld);font-weight:600}

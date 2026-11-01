@@ -195,20 +195,25 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
   }
   function dolj() { beskedVarSlut = false; $(".besked").classList.add("dold"); }
   const sag = () => {};
-  // rundans vinnare till vänster (som ATG/Evolution): antal, total och en rad per vinnare; borta när nästa snurr börjar.
+  // rundans vinnare till vänster (som ATG): rubriken (antal, total) vid skärmens mitt och under den alla vinnare, störst först,
+  // som rullar upp från skärmens botten och försvinner uppåt ut ur fönstret under rubriken (Emil 1 Nov). Borta när nästa snurr börjar.
   // Bordet har i dag en spelare per webbläsare, så listan är spelaren själv; med delade bord fylls den med alla vid bordet.
+  const RULL = 70;                                                    // px per sekund
   function visaVinnare(lista) {
     rot.querySelector(".rundvinnare")?.remove();
     if (!lista.length) return;
     const e = document.createElement("div"), total = lista.reduce((a, v) => a + v.belopp, 0);
     e.className = "abs rundvinnare";
-    e.innerHTML = `<div class="v-topp"><b></b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.8-4.6 4.2-7 8.5-7s7.7 2.4 8.5 7z"/></svg><span></span><strong></strong></div><i></i><ol></ol>`;
+    e.innerHTML = `<div class="v-topp"><b></b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.8-4.6 4.2-7 8.5-7s7.7 2.4 8.5 7z"/></svg><span></span><strong></strong></div><i></i><div class="v-fonster"><ol></ol></div>`;
     e.querySelector("b").textContent = lista.length; e.querySelector("span").textContent = T.won; e.querySelector("strong").textContent = kort(total);
-    for (const v of [...lista].sort((a, b) => b.belopp - a.belopp).slice(0, 5)) {
+    const ol = e.querySelector("ol");
+    for (const v of [...lista].sort((a, b) => b.belopp - a.belopp)) {
       const li = document.createElement("li"), b = document.createElement("b"); b.textContent = kort(v.belopp);
-      li.append(b, document.createTextNode(" " + v.namn)); e.querySelector("ol").append(li);
+      li.append(b, document.createTextNode(" " + v.namn)); ol.append(li);
     }
     rot.append(e);
+    const H = e.querySelector(".v-fonster").clientHeight, h = ol.offsetHeight;
+    ol.animate([{ transform: `translateY(${H}px)` }, { transform: `translateY(${-h}px)` }], { duration: ((H + h) / RULL) * 1000, easing: "linear", fill: "forwards" });
   }
   // chattens namn (samma som blackjackens astrid.name), annars det sparade, annars "You"
   const spelarNamn = () => { try { return namn() || localStorage.getItem("astrid.name") || T.you; } catch { return T.you; } };
@@ -452,12 +457,12 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
   }
   function vinstkort(n, vinnare, vinst, insats) {
     const html = vinst > 0
-      ? `<div class="abs vinstkort glas"><div class="hu"><span class="nr ${pocketColor(n)}">${n}</span><div class="egen">${esc(bordVal.dealerNamn ?? "Astrid")}<br>${egenskaper(n)}</div></div>
+      ? `<div class="abs vinstkort glas"><div class="hu"><span class="nr ${pocketColor(n)}">${n}</span><div class="egen">${egenskaper(n)}</div></div>
         <div class="du">${T.youWin}</div><div class="summa">${fmt(vinst)}</div>
-        <ul>${vinnare.slice(0, 5).map(([id, b, r]) => `<li><span>${betNamn(id)} · ${kort(b)}</span>${fmt(r)}</li>`).join("")}</ul>
-        ${vinnare.length > 5 ? `<div class="netto">${T.more(vinnare.length - 5)}</div>` : ""}
+        <ul>${vinnare.slice(0, 3).map(([id, b, r]) => `<li><span>${betNamn(id)} · ${kort(b)}</span>${fmt(r)}</li>`).join("")}</ul>
+        ${vinnare.length > 3 ? `<div class="netto">${T.more(vinnare.length - 3)}</div>` : ""}
         <div class="netto">${T.stake} ${fmt(insats)} · ${T.net} ${vinst - insats >= 0 ? "+" : "−"}${fmt(Math.abs(vinst - insats))}</div></div>`
-      : `<div class="abs vinstkort glas miste"><div class="hu"><span class="nr ${pocketColor(n)}">${n}</span><div class="egen">${esc(bordVal.dealerNamn ?? "Astrid")}<br>${egenskaper(n)}</div></div>
+      : `<div class="abs vinstkort glas miste"><div class="hu"><span class="nr ${pocketColor(n)}">${n}</span><div class="egen">${egenskaper(n)}</div></div>
         <div class="summa">${T.noWin}</div><div class="netto">${T.stake} ${fmt(insats)}</div></div>`;
     $(".lagerVinst").innerHTML = html;
   }
@@ -482,7 +487,7 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
   };
 
   return {
-    S, passa,
+    S, passa, visaVinnare,
     // vy: "S1" (spelvyn med bordet) eller "hjul" (S3/närbild med insatslisten)
     vy(v) {
       rot.classList.toggle("hjulvy", v !== "S1");                       // satsbordet fälls bakåt och följer med till hjulet
