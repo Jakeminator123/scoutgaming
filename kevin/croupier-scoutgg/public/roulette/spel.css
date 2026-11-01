@@ -283,7 +283,7 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 .chatt-msg.skriver{color:var(--dov);animation:skriver 1.2s ease-in-out infinite}
 @keyframes skriver{50%{opacity:.35}}
 .chatt-rad{display:flex;gap:8px;margin-top:6px}
-.chatt-rad input{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--linje);border-radius:10px;padding:10px 12px;font:400 17px var(--sans);color:var(--ink);outline:none}
+.chatt-rad input{flex:1 1 auto;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--linje);border-radius:10px;padding:10px 12px;font:400 17px var(--sans);color:var(--ink);outline:none}
 .chatt-rad input:focus{border-color:var(--guld)}
 .chatt-rad input::placeholder{color:var(--dov)}
 .chatt-rad button{width:46px;border:0;border-radius:10px;background:var(--guld);color:#1d140a;font-size:18px;cursor:pointer}
@@ -297,3 +297,4 @@ button:focus-visible,.f:focus-visible{outline:2px solid #fff3cf;outline-offset:2
 .rundvinnare ol{list-style:none;display:flex;flex-direction:column;gap:4px;font:400 21px var(--sans)}
 .rundvinnare ol b{font-weight:600}
 @keyframes rundvinnareIn{from{opacity:0;transform:translateX(-14px)}}
+.chatt-rad .chatt-namn{flex:0 0 132px;color:var(--guld);font-weight:600}

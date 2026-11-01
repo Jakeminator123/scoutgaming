@@ -56,7 +56,7 @@ const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const egenskaper = (n) => { const [f, ...r] = T.props(n).split(" · "); return `<b>${f}</b>${r.length ? " · " + r.join(" · ") : ""}`; };
 
 // bordVal: gränser (min, maxPerBet, maxTotal), valörer, saldo vid påfyllning, bordets och dealerns namn (js/bord.mjs)
-export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalitet, pjasBild, bordVal = {} }) {
+export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalitet, pjasBild, bordVal = {}, namn = () => null }) {
   ({ t: T, fmt, kort, betNamn } = sprak(bordVal.lang ?? "en"));
   const LIMITS = bordVal.granser ?? MOTORNS, VALORER = (bordVal.chips ?? [1, 5, 25, 100, 500]).map((v) => [v, valorFarg(v)]);
   const PAFYLLNING = bordVal.balance ?? saldo;
@@ -210,7 +210,8 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
     }
     rot.append(e);
   }
-  const spelarNamn = () => { try { return localStorage.getItem("roulette_namn") || T.you; } catch { return T.you; } };
+  // chattens namn (samma som blackjackens astrid.name), annars det sparade, annars "You"
+  const spelarNamn = () => { try { return namn() || localStorage.getItem("astrid.name") || T.you; } catch { return T.you; } };
   function visaSaldo(v, upp = false) { const e = $(".saldo"); e.textContent = fmt(v); e.classList.toggle("upp", upp); }
   function ritaHistorik(ny = false) {
     $(".hn").innerHTML = S.historik.slice(0, 12).map((n, i) => `<i class="${pocketColor(n)}${ny && i === 0 ? " senast" : ""}">${n}</i>`).join("");

@@ -37,6 +37,7 @@ const OUT_SCHEMA = { type: 'OBJECT', properties: {
   lore_used: { type: 'STRING', description: 'The id of the YOUR LIFE entry you used, or "none".' },
 }, required: ['say', 'memory', 'lore_used'] };
 
+const DEFAULT_NAME = /^(guest|visitor|player|friend|newcomer|regular)\s*\d+$/i;
 const words = (s) => new Set(String(s).toLowerCase().match(/[\p{L}\p{N}]{4,}/gu) ?? []);
 const keyRe = (k) => new RegExp(`(?:^|[^\\p{L}\\p{N}])${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'iu');
 // a question about the dealer herself (then one general 'about' entry may be offered even without a topic word)
@@ -107,7 +108,9 @@ export function createRouletteChat({ personasDir, memoryFile, apiKey, model = 'g
   /** One player message -> the dealer's reply. state: { phase, last: [numbers], result: 'won'|'lost'|'none' } from the game. */
   async function reply({ dealer = 'astrid2', guest = null, name = '', text, tableId = 'default', lang = 'en', state = {} }) {
     const t0 = Date.now(), p = persona(dealer), t = table(`${dealer}:${tableId}`), said = String(text ?? '').normalize('NFKC').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').trim().slice(0, 280);
-    const who = String(name || 'Guest').slice(0, 24), visitor = guest ? memory.key(guest) : null;
+    const visitor = guest ? memory.key(guest) : null, me = player(visitor, dealer), asked = String(name ?? '').trim().slice(0, 24);
+    // a default name ("Guest 123", as the blackjack hands out) never overwrites the name the dealer remembers: she uses that one
+    const who = (!asked || DEFAULT_NAME.test(asked)) && me.row?.name && !DEFAULT_NAME.test(me.row.name) ? me.row.name : asked || 'Guest';
     const done = (say, extra = {}) => {
       t.history.push({ who, text: said }, { who: p.name, text: say }); t.history = t.history.slice(-12); t.turn++;
       if (visitor) memory.remember(visitor, dealer, { name: who, said, reply: say, note: extra.note });
@@ -119,7 +122,7 @@ export function createRouletteChat({ personasDir, memoryFile, apiKey, model = 'g
     const local = localCase(said);
     if (local) return done(FIXED[local], { fixed: local });
 
-    const me = player(visitor, dealer), notes = pickNotes(me.notes, said), lore = pickLore(p, t, said, me.heard);
+    const notes = pickNotes(me.notes, said), lore = pickLore(p, t, said, me.heard);
     const phase = { satsa: 'bets are open', klar: 'bets are open', las: 'no more bets, the ball is spinning', landat: 'the ball just landed', vinst: 'the round was just settled' }[state.phase] ?? 'between rounds';
     const last = (state.last ?? []).slice(0, 8).join(', ');
     const days = me.row ? Math.round((Date.now() - me.row.last_seen) / 86400000) : null;

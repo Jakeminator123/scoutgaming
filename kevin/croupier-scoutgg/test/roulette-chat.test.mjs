@@ -61,6 +61,17 @@ test('a failing main model falls back to the fallback model', async () => {
   chat.close();
 });
 
+test('a default guest name never overwrites the name the dealer remembers', async () => {
+  const { chat, sent } = setup();
+  await chat.reply({ guest, name: 'Anders', text: 'hi' });
+  await chat.reply({ guest, name: 'Guest 342', text: 'hello again' });
+  assert.match(sent.at(-1).contents[0].parts[0].text, /PLAYER: Anders\./);
+  assert.equal(chat.player(guest).row.name, 'Anders');
+  await chat.reply({ guest, name: 'Emil', text: 'call me Emil now' });
+  assert.equal(chat.player(guest).row.name, 'Emil');
+  chat.close();
+});
+
 test('forget me removes what the dealer remembers', async () => {
   const { chat } = setup();
   await chat.reply({ guest, name: 'Lina', text: 'tell me about sauna' });

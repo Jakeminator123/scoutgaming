@@ -214,11 +214,12 @@ const ROT = document.getElementById("ui");
 if (Q.get("ren") === "1") ROT.style.visibility = "hidden";             // ?ren=1: bara rum, hjul och dealer (studions förhandsbilder)
 const ljud = skapaLjud({ inspelning: INSPELNING, klocka });
 const pjasBild = renderaPjas(THREE, { rum: H.rumS1 });                  // guldpjäsen renderas en gång till en bild
-ui = skapaUI(ROT, { saldo: BORD.limit.balance, historik: K.START_HISTORIK, nar, klocka, ljud, pjasBild, spela: (insatser) => starta(insatser),
+let chatt = null;                                                      // chatten (nedan) äger spelarens namn
+ui = skapaUI(ROT, { namn: () => chatt?.namn() ?? null, saldo: BORD.limit.balance, historik: K.START_HISTORIK, nar, klocka, ljud, pjasBild, spela: (insatser) => starta(insatser),
   bordVal: { granser: BORD.granser, chips: BORD.limit.chips, balance: BORD.limit.balance, namn: BORD.namn, dealerNamn: BORD.dealer.namn, lang: BORD.lang },
   kvalitet: (niva) => satKvalitet(niva) });
 // chatten med dealern (text): bordets läge följer med varje rad, aldrig belopp
-if (!INSPELNING) skapaChatt(ROT, { dealer: BORD.dealer.namn, bord: Q.get("table") ?? "",
+if (!INSPELNING) chatt = skapaChatt(ROT, { dealer: BORD.dealer.namn, bord: Q.get("table") ?? "",
   lage: () => ({ phase: ui.S.fas, last: ui.S.historik.slice(0, 8), result: ui.S.utfall ?? "none" }) });
 await document.fonts.ready;
 ui.passa();
