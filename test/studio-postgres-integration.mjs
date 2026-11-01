@@ -283,7 +283,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     for(const original of RETAINED_BANK_VARIANTS){
       const record=createRetainedStudioMedia(original.id),first=await repository.registerMedia(record,{actor:'qa-explicit-retained-import'});
       assert.deepEqual(await repository.registerMedia(record,{actor:'qa-explicit-retained-import'}),{media:first.media,duplicate:true});
-      await assert.rejects(repository.classifyMedia(record.id,{sha256:record.sha256,expectedRevision:first.media.revision,metadata:record.classification,actor:'qa'}),hasCode('studio_retained_media_immutable'));
+      await assert.rejects(repository.classifyMedia(record.id,{sha256:record.sha256,expectedRevision:first.media.revision,metadata:{...record.classification,archived:true,label:'forged'},actor:'qa'}),hasCode('studio_retained_media_immutable'));
     }
     retained=await repository.listMedia();assert.equal(retained.length,6);
     assert.equal((await createStudioRepository({pool,scope:{...scope,workspaceId:'no-retained-sources'}}).listMedia()).length,0);

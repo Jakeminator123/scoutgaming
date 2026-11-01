@@ -2,6 +2,25 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Retained-originalens livscykel 2 november
+
+De sex befintliga retained-posterna kan arkiveras, återställas och uttryckligen
+raderas genom [medielivscykeln](storage/BLOB-NEON.md#radering). Grundidentitet,
+proveniens och originalklassificering består; bara arkivflagga och den gemensamt
+validerade tombstonen ändras. Dealerns cascade inkluderar originalen och flyttar
+Astrids globala legacy-grundloop även när dess ID saknar en medieregisterrad.
+Andra dealers policies och poster består; återställning öppnar inte tal eller rum.
+
+Referenser i runtimekatalogen, inklusive tolkad legacy-JSON, ingår i raderingskontrollen.
+Pending/deleted stoppar återimport över scopegränsen och bytehämtning. Arkiverade
+original återförs inte till aktiva familjevarianter. 192 riktade prov och ett
+PGlite-flöde med alla sex original passerar lokalt på Node 24.21.0, med fel/resume,
+alias, CAS, auth, referenser och oförändrade andra dealers/paket.
+
+Ingen produktdata, Blob-byte, DDL eller miljövariabel ändras av leveransen.
+Faktisk Astrid-avveckling följer [avvecklingsordningen](storage/BLOB-NEON.md#avveckling-av-produktdata-och-original)
+och separat uppdrag; kodprov är inte drift- eller produktdataacceptans.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.

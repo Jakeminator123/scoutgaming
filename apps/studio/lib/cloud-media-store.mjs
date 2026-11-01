@@ -11,7 +11,7 @@ import {validatePrivateMedia} from '../../../packages/studio-registry/server/pri
 export async function purgeManagedMedia(record, options = {}) {
   const {revision,updatedAt,...value}=record;
   const checked=validateStudioMedia(value);
-  if(checked.retainedBank || checked.deletion?.state!=='pending')throw Error('studio_media_deletion_pending');
+  if(checked.deletion?.state!=='pending')throw Error('studio_media_deletion_pending');
   const storage=validatePrivateMedia({provider:'vercel-blob',pathname:checked.pathname,sha256:checked.sha256,size:checked.size,contentType:checked.contentType});
   return mediaStore.deleteManagedMediaObject(storage,options);
 }

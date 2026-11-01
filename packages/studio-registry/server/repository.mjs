@@ -313,7 +313,10 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       }, async prepared => {
         if (prepared.record.deletion) fail('studio_media_deletion_pending');
         await lockMediaObject(prepared.record.pathname);
-        if (!prepared.record.retainedBank && (await mediaAliases(prepared.record)).length) fail('studio_media_owned_elsewhere');
+        const aliases = await mediaAliases(prepared.record);
+        // Existing exact originals may be shared, but no scope may reimport an
+        // object after another scope has committed its pending/deleted fence.
+        if (aliases.length && (!prepared.record.retainedBank || aliases.some(row => validateStudioMedia(row.record).deletion))) fail('studio_media_owned_elsewhere');
         const project = await loadDocument('project');
         if (project?.value.dealerTrash?.some(entry => entry.dealer.id === prepared.record.classification.dealerId)) fail('studio_dealer_archived');
         if (project && !project.value.dealers?.some(dealer => dealer.id === prepared.record.classification.dealerId)) fail('studio_dealer_inactive');
@@ -341,9 +344,13 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
         const metadata = prepared.metadata;
         const previous = await loadMedia(prepared.id);
         if (!previous) fail('studio_media_missing', 404);
-        if (previous.retainedBank) fail('studio_retained_media_immutable',410);
         if (previous.deletion) fail('studio_media_deletion_pending');
         if (previous.revision !== prepared.expectedRevision || previous.sha256 !== sha256) fail('studio_conflict');
+        if (previous.retainedBank) {
+          const {archived:beforeArchived,...before} = previous.classification;
+          const {archived,...after} = metadata ?? {};
+          if (typeof archived !== 'boolean' || canonicalStudioJson(before) !== canonicalStudioJson(after)) fail('studio_retained_media_immutable',410);
+        }
         const { revision: oldRevision, updatedAt, ...record } = previous;
         const project = await loadDocument('project');
         if (project && dealerSetsForClip(project.value, prepared.id).some(set => set.dealerId !== metadata?.dealerId || metadata?.archived)) fail('studio_media_in_use');
@@ -509,6 +516,20 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
           ) owners WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
           AND jsonb_path_exists(value,'$.** ? (@ == $id || @ == $pathname)',jsonb_build_object('id',$3::text,'pathname',$4::text))
           LIMIT 101`, [record.id,record.pathname])).rows;
+        // Runtime metadata also owns exact references. The SQL prefilter is
+        // conservative; parse legacy JSON before deciding, so prose and bare
+        // hashes do not become owners. Invalid/truncated candidates fail closed.
+        const catalogs = (await query(`/* studio:media-runtime-owners */
+          SELECT environment_id,workspace_id,revision,value FROM croupier_studio.runtime_media_catalogs
+          WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
+          AND (position($3::text in value::text)>0 OR position($4::text in value::text)>0) LIMIT 101`, [record.id,record.pathname])).rows;
+        if(catalogs.length>100)fail('studio_media_delete_coverage_incomplete',503);
+        for(const catalog of catalogs){
+          let value;try{value=validateRuntimeCatalogRecord(catalog).value;}catch{fail('studio_media_delete_coverage_incomplete',503);}
+          const bindings={...value,legacy:Object.values(value.legacy.entries).map(text=>JSON.parse(text))};
+          if(contains(bindings,record.id)||contains(bindings,record.pathname))references.push({source:'runtime-catalog',
+            environment_id:catalog.environment_id,workspace_id:catalog.workspace_id,owner_id:catalog.revision});
+        }
         // Optional schema: the feature cannot admit before 013, so an absent
         // table retains the legacy conservative coverage instead of breaking
         // feature-off deployments. Bound jobs retain exact inputs until BOTH
@@ -552,7 +573,7 @@ export function createStudioRepository({ pool, scope, contract, policy, runtimeC
       return operation(()=>({id:validateMediaId(id),expectedRevision:validateRevision(expectedRevision),actor:validateActor(actor)}),async checked=>{
         const previous=await loadMedia(checked.id);
         if(!previous||previous.revision!==checked.expectedRevision||previous.sha256!==sha256)fail('studio_conflict');
-        if(previous.retainedBank||previous.classification.archived!==true)fail('studio_media_archive_required');
+        if(previous.classification.archived!==true)fail('studio_media_archive_required');
         await lockMediaObject(previous.pathname);
         if(previous.deletion?previous.deletion.state!=='pending'||deletion?.state!=='deleted'||previous.deletion.requestedAt!==deletion.requestedAt:deletion?.state!=='pending')fail('studio_media_deletion_pending');
         const {revision:oldRevision,updatedAt,...record}=previous;
