@@ -5,8 +5,8 @@ import { createSharedRoomService } from '../services/game/shared-room-service.mj
 import { runPostgresTransactionOwner } from '../packages/storage/server/postgres-transaction-context.mjs';
 import { EventEmitter } from 'node:events';
 import { createPostgresTableRuntime } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 function fixture(t, hooks = {}) {

@@ -11,7 +11,7 @@ import { withPackagePresentation } from '../../packages/presentation/server/pres
 import { canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createPostgresTableStore } from '../../services/game/games/blackjack/table/postgres-store.mjs';
 import { createTableCoordinator } from '../../services/game/games/blackjack/table/coordinator.mjs';
-import { deterministicRandom } from './blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './blackjack/deterministic-random.mjs';
 import { openProof, replayShuffle } from '../../services/game/games/blackjack/shoe-proof.mjs';
 import { readRuntimeCatalogFixture } from './runtime-media-catalog.mjs';
 import { runtimeCatalogJson, runtimeCatalogRevision } from '../../packages/studio-registry/server/runtime-catalog.mjs';

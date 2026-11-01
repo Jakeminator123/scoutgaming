@@ -8,10 +8,10 @@ import { createSharedRoomPresentationPorts, mountSharedRoomPresentation } from '
 import { createSharedRoomCommandClient } from '../services/game/public/shared-room-command-client.mjs';
 import { createSharedRoomClient } from '../services/game/public/shared-room-client.mjs';
 import { mountSharedRoomApp } from '../services/game/public/shared-room-app.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { presentationForRow } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 import { DRAGAN_KEVIN_PROFILE as dragan } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const roomId='room-a',actor='alice';
 const deferred=()=>{let resolve;const promise=new Promise(done=>resolve=done);return{promise,resolve};};

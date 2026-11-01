@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPostgresTableRuntime, isSharedTableSystemFault, isSharedTableContention } from '../services/game/games/blackjack/table/postgres-runtime.mjs';
-import { createMemoryTableStore } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 import { runPostgresTransactionOwner } from '../packages/storage/server/postgres-transaction-context.mjs';
 
 const deferred = () => {

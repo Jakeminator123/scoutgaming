@@ -3,8 +3,8 @@
 // on success, so a throw is a full rollback and a savepoint is a copy of that working state.
 // The declared lock plan is enforced: touching a room or player outside it throws LockSetExceeded.
 // No SQL, no SQLite and never a production fallback: J07 owns the Postgres adapter.
-import { GENESIS, chainRow, verifyChain } from '../../services/game/games/blackjack/table/audit-chain.mjs';
-import { LockSetExceeded, WalletDenied } from '../../services/game/games/blackjack/table/ports.mjs';
+import { GENESIS, chainRow, verifyChain } from '../../../services/game/games/blackjack/table/audit-chain.mjs';
+import { LockSetExceeded, WalletDenied } from '../../../services/game/games/blackjack/table/ports.mjs';
 
 export const DEFAULT_CONFIG = Object.freeze({ limits: { min: 5, max: 2000, sideMax: 2000 }, chips: [1, 5, 10, 25, 100, 200, 500],
   refill: 1000, betMs: 20000, actionMs: 15000, leadMs: 700, cardMs: 500, language: 'en' });

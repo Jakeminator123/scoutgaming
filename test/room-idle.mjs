@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 const samples = deterministicRandom('room-idle');
 const random = () => samples.uint32() / 2 ** 32;
 import { layChain, waitClips, waitBoundary, waitClipAt, pickWeighted, restingPool } from '../services/game/games/blackjack/presentation/room-idle.mjs';

@@ -13,8 +13,8 @@ import { createPostgresPresentationReceiver } from '../services/game/games/black
 import { createSharedRoomPresentationAccess } from '../services/game/shared-room-presentation-access.mjs';
 import { createSharedCommandAuth } from '../services/game/storage/shared-command-auth.mjs';
 import { projectSharedRoomCommandResult } from '../services/game/shared-room-command-contract.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const deferred = () => {
   let resolve;

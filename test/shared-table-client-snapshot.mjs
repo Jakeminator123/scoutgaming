@@ -6,9 +6,9 @@ import { createTableCoordinator, TABLE_CONTRACT } from '../services/game/games/b
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createPostgresStore } from '../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
-import { createMemoryTableStore, DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
+import { createMemoryTableStore, DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
 import { createPglitePool } from './fixtures/pglite-pool.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 const roomId = 'party', actorId = 'alice';
 const clock = { now: () => 100000 };

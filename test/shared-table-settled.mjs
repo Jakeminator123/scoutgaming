@@ -4,8 +4,8 @@ import { createPglitePool } from './fixtures/pglite-pool.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { LockSetExceeded, TableError } from '../services/game/games/blackjack/table/ports.mjs';
-import { DEFAULT_CONFIG } from './fixtures/blackjack-table-memory-store.mjs';
-import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
+import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 // Preview 28 Oct 2026 (Johns Bet, Studion, audit seq 2786-3040): a player sat on boxes 3-5, played one round
 // and stayed online without pressing Nästa runda. From 19:37:46 to 20:43:02 the room stood in `settled`. A
