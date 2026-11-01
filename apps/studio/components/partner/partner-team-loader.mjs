@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { brandingApiBase } from './partner-appearance-loader.mjs';
-import { PartnerJournal } from './partner-journal-loader.mjs';
+import { brandingApiBase } from '../partner-appearance-loader.mjs';
+import { PartnerJournal } from '../partner-journal-loader.mjs';
 
 const h = React.createElement;
 const ids = value => Array.isArray(value) && value.every(item => typeof item === 'string');

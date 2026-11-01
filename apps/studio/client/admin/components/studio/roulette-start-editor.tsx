@@ -2,8 +2,8 @@
 import {useEffect,useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
-import {rouletteClipMatches,rouletteClipSlots} from '../../lib/roulette-clip-map.mjs';
-import {bindRouletteStart,removeRouletteStart,rouletteStartCompositions,rouletteStartForm,rouletteStartTables,type RouletteStartForm} from '../../lib/roulette-start-editor.mjs';
+import {rouletteClipMatches,rouletteClipSlots} from '../../lib/roulette/roulette-clip-map.mjs';
+import {bindRouletteStart,removeRouletteStart,rouletteStartCompositions,rouletteStartForm,rouletteStartTables,type RouletteStartForm} from '../../lib/roulette/roulette-start-editor.mjs';
 import {RouletteMediaReview} from './roulette-media-review';
 
 const slot=rouletteClipSlots().find(row=>row.eventId==='roulette.wheel-start')!;

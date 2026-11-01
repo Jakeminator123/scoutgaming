@@ -16,9 +16,10 @@ import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
-const sourceUrl = new URL('../components/partner-login.tsx', import.meta.url);
+const sourceUrl = new URL('../components/partner/partner-login.tsx', import.meta.url);
 
 function loadPartnerLogin(overrides = {}, globals = {}) {
+  const localRequire = createRequire(sourceUrl);
   const output = transformSync(readFileSync(sourceUrl, 'utf8'), {
     filename: fileURLToPath(sourceUrl),
     jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
@@ -30,7 +31,7 @@ function loadPartnerLogin(overrides = {}, globals = {}) {
     require: name => {
       if (Object.hasOwn(overrides, name)) return overrides[name];
       if (name.endsWith('.module.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
-      return require(name);
+      return localRequire(name);
     },
   });
   return module.exports;
@@ -43,7 +44,7 @@ function loadLoginPage(authBase) {
   const {code} = transformSync(readFileSync(file,'utf8'),{filename:fileURLToPath(file),
     jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}}, overrides={
-    '@/components/partner-login':{PartnerLogin},
+    '@/components/partner/partner-login':{PartnerLogin},
     '@/lib/partner-login-return.mjs':{partnerLoginReturnTo},
     '@/lib/studio-native-runtime.mjs':{nativeStudioAdminConfiguration:()=>({apiBase:authBase.replace('/partner','/admin')})},
   };
@@ -174,7 +175,7 @@ test('actual browser partner login returns to the authorized operator and room w
   const navigation = {...redirects,notFound:require('next/dist/client/components/not-found.js').notFound};
   const bundle = (await build({absWorkingDir:fileURLToPath(new URL('../',import.meta.url)),write:false,bundle:true,format:'iife',
     define:{'process.env.NODE_ENV':'"production"'},stdin:{resolveDir:fileURLToPath(new URL('../',import.meta.url)),loader:'tsx',
-      contents:'import React from "react";import {createRoot} from "react-dom/client";import {PartnerLogin} from "./components/partner-login";createRoot(document.getElementById("root")).render(React.createElement(PartnerLogin,JSON.parse(document.getElementById("props").textContent)));'},
+      contents:'import React from "react";import {createRoot} from "react-dom/client";import {PartnerLogin} from "./components/partner/partner-login";createRoot(document.getElementById("root")).render(React.createElement(PartnerLogin,JSON.parse(document.getElementById("props").textContent)));'},
     plugins:[{name:'fixture-css',setup(plugin){plugin.onLoad({filter:/\.module\.css$/},()=>({contents:'export default {}',loader:'js'}));}}],
   })).outputFiles[0].text;
   const origin = 'https://partner.fixture.invalid', password = 'Isolated-Partner-Return-Only';
@@ -215,7 +216,7 @@ test('actual browser partner login returns to the authorized operator and room w
           const overrides={
             'next/headers':{headers:async()=>request.headers},'next/navigation':navigation,
             '@/components/partner/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
-            '@/components/partner-workspace':{PartnerWorkspace:()=>null},
+            '@/components/partner/partner-workspace':{PartnerWorkspace:()=>null},
             '@/lib/partner-data.mjs':{partnerWorkspaceInitialData:(req,options)=>partnerWorkspaceInitialData(req,{...options,config,store})},
 
 

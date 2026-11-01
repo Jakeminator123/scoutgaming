@@ -40,7 +40,7 @@ import { isCompanyTeamReadQuery, isPresentationRoomReadQuery } from './studio-ad
 import { createOperatorPackageApi } from './operator-package-api.mjs';
 import { createOperatorMaterialStore } from './operator-material-store.mjs';
 import { createDesignCatalogReader } from './design-preview-catalog.mjs';
-import { movingDriftDealerIds } from '../../../packages/presentation/contracts/moving-drift.mjs';
+import { movingDriftDealerIds } from '../../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 import { createOperatorAdminApi } from './operator-admin-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import { createPermanentDeletionApi } from './permanent-deletion-api.mjs';

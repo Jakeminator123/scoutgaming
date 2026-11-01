@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { validateCloudConfig, resolveCloudConfig, inspectCloudBootstrap, childSpecifications } from '../ops/cloud/config.mjs';
-import { movingDriftConfiguration } from '../packages/presentation/contracts/moving-drift.mjs';
+import { movingDriftConfiguration } from '../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 // Never use real connections: generate an inert credential once per fixture.

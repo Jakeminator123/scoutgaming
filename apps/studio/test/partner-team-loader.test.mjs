@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import {
   PartnerTeamLoader, createPartnerTeamAdapter, createPartnerTeamClient, partnerTeamMessage,
   partnerTeamSnapshot, partnerTeamView, readPartnerTeam,
-} from '../components/partner-team-loader.mjs';
+} from '../components/partner/partner-team-loader.mjs';
 
 import { jsxRequire } from './fixtures/jsx-require.mjs';
 const require = createRequire(new URL('../package.json', import.meta.url));

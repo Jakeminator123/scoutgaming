@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
-import { usePartnerPreferences } from './partner/partner-copy.mjs';
+import { workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
+import { usePartnerPreferences } from './partner-copy.mjs';
 import { PartnerSessionActions } from './partner-session-actions';
 import styles from './partner-workspace.module.css';
 

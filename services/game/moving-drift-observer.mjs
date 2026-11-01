@@ -1,5 +1,5 @@
 import {verifyMovingWorkerRelease} from './moving-speech-transport.mjs';
-import {driftError,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 const WORKERS=['idle','running','initializing','ready','throttled','unhealthy'];
 const JOBS=['completed','failed','inProgress','inQueue','retried'];

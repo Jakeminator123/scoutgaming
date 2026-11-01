@@ -30,6 +30,12 @@ Motsvarande beteendeprov, inklusive dealergruppernas ägarskap och revisioner,
 finns i [`test/dealers/`](test/dealers/). Delade register- och presentationskontrakt
 ligger fortsatt i `packages/`.
 
+Partnerportalens inloggning, bolagslista, sessionsknappar och teamadapter ligger
+i [`components/partner/`](components/partner/README.md). Utseenderedigeraren och
+journaladaptern delas med Admin och ligger kvar direkt i `components/`.
+Roulettens klippbindning, startredigering och mediegranskning samlas med sina
+deklarationer och beteendeprov i [`client/admin/lib/roulette/`](client/admin/lib/roulette/).
+
 ## Starta och bygga
 
 ```powershell

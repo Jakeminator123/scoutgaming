@@ -48,7 +48,7 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
       return { bytes:Buffer.from(value[kind]), contentType:kind === 'audio' ? 'audio/wav' : 'video/mp4' };
     },
   };
-  const deps = { journal, journalRequired:true, now:() => time, workerState:() => ({ workers:Number(connected), busy:Number(busy), available:Number(connected && !busy) }),
+  const deps = { journal, now:() => time, workerState:() => ({ workers:Number(connected), busy:Number(busy), available:Number(connected && !busy) }),
     stopWorker:() => { connected = false; }, sleep:async ms => { time += ms; }, readyTimeoutMs:1000,
     fetchImpl:async (url, init) => {
       calls.push({ url, init });
@@ -112,9 +112,9 @@ test('longer startup allowance does not extend retirement of a lingering old dea
 
 test('Neon opt-in without journal fails before disk, relay or provider; no policy auto bootstrap', async t => {
   const f = await fixture(t, { initialPolicy:false }); let relay = 0;
-  assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journalRequired:true }), { code:'generated_speech_journal_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot }), { code:'generated_speech_journal_unavailable' });
   assert.throws(() => createSpeechSessionManager(f.config, { ...f.deps, journal:null }), { code:'generated_speech_journal_unavailable' });
-  await assert.rejects(createGeneratedSpeechStreamService({}, {}, { journalRequired:true, resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
+  await assert.rejects(createGeneratedSpeechStreamService({}, {}, { resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
   assert.equal(relay, 0); assert.equal(f.calls.length, 0); assert.deepEqual(await readdir(f.directory), []);
   await assert.rejects(f.manager().ensure(input()), { code:'generated_speech_budget_policy_missing' });
   assert.equal(f.pool.state.policies.size, 0); assert.equal(f.pool.state.sessions.size, 0); assert.equal(f.starts(), 0);
@@ -236,7 +236,7 @@ test('failed durable submit marker never reaches the provider and keeps reservat
 
 test('fullfile caller caches SQL identity on restart, preserves owned bytes and blocks capability replay', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, journalRequired:true, artifacts:f.artifacts,
+  const construct = () => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, artifacts:f.artifacts,
     provider:{ generate:async ({ text, beforeCostly }) => { await beforeCostly(); paid++; return generated(text); } } });
   const service = construct(), packageValue = await service.generate(input());
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'completed');
@@ -262,7 +262,7 @@ test('fullfile uncertainty and lost submit-marker commit never authorize a secon
 
 test('Neon fullfile requires private artifact adapter before any reservation or provider call', async t => {
   const f = await fixture(t);
-  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, journalRequired:true }), { code:'generated_speech_artifacts_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal }), { code:'generated_speech_artifacts_unavailable' });
   assert.equal(f.pool.state.requests.size, 0); assert.deepEqual(await readdir(f.directory), []);
 });
 
@@ -297,7 +297,7 @@ test('stream prepare remains unpaid, paid source uses SQL identity and cancellat
   const construct = async () => {
   const service = await createGeneratedSpeechStreamService({}, { workerSecret:f.config.workerSecret,
       ticketSecret:f.config.workerSecret, origin:f.config.origin, voiceId:'fixture-voice', modelId:'fixture-model' }, {
-      journal:f.journal, journalRequired:true, resolveOwner:async request => request.owner,
+      journal:f.journal, resolveOwner:async request => request.owner,
       attachRelay:(_, options) => { relayOptions = options; return relay; },
       pcmSource:async function*({ beforeCostly }) { await beforeCostly(); paid++; yield new Uint8Array(48); } });
     f.services.push(service); return service;
@@ -363,7 +363,7 @@ test('stream shutdown retains its shared SQL fence until preparation and cancell
     origin:'https://shutdown-fixture.invalid', voiceId:'fixture-voice', modelId:'fixture-model',
     session:{ apiKey:'fixture-only', endpointId:'fixture-endpoint', reserveUsd:'0.20', dailyBudgetUsd:'1' },
   }, {
-    journal, journalRequired:true, resolveOwner:async () => input().owner, attachRelay:() => relay,
+    journal, resolveOwner:async () => input().owner, attachRelay:() => relay,
     pcmSource:async function*() { paidTts++; },
     fetchImpl:async url => { if (url.endsWith('/run')) { paidRuns++; connected = true; }
       assert.ok(url.endsWith('/run') || url.includes('/status/'), 'natural retirement never submits cancellation');

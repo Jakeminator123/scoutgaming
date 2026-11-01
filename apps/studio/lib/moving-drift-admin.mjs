@@ -1,7 +1,7 @@
 import {createMovingDriftController} from '../../../services/game/moving-drift-controller.mjs';
 import {createPostgresMovingDriftStore} from '../../../services/game/postgres-moving-drift.mjs';
-import {driftError,movingDriftConfiguration} from '../../../packages/presentation/contracts/moving-drift.mjs';
-import {publicMovingDriftStatus} from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
+import {driftError,movingDriftConfiguration} from '../../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
+import {publicMovingDriftStatus} from '../../../packages/presentation/contracts/moving-drift/moving-drift-admin.mjs';
 import {validateStudioScope} from '../../../packages/studio-registry/server/document-contract.mjs';
 
 const path='/studio/api/admin/moving-drift';

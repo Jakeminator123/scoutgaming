@@ -1,6 +1,40 @@
 # Nästa agent
 
-Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
+Aktuell samordning 2 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
+
+## Återuppta arbete mellan IDE:er 2 november
+
+Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.
+
+Sex verkliga temporära Gitrepon provar ren/ändrad worktree, identitets- och ägarbyten, okänt metadataformat, sökvägsgränser och återupptagning från annan katalog utan ändringar av kod eller index. Dödhetsgranskning gäller aktuell main/preview och deras aktivt lästa fixerade refs; andra personers egna brancher lämnas orörda och låser inte mainstädning. Exakt huvud-/CI-bevis hör till PR:en; preview och driftacceptans samordnas separat.
+
+## Funktionsmappar för portal, roulette och drift 1 november
+
+Portalens sex skal-/teamfiler finns i [components/partner](../apps/studio/components/partner/README.md).
+Roulettens tre modul-/typpar och fyra befintliga beteendeprov ligger i
+[admin/lib/roulette](../apps/studio/client/admin/lib/roulette/); driftens tre kontraktsfiler
+i [contracts/moving-drift](../packages/presentation/contracts/moving-drift/).
+Importer, QA-kopiering, guider och explicit testregistrering följer de 19 flyttarna.
+Publika moduladresser och driftlägen är oförändrade.
+
+Lokalt passerar 269 riktade prov inklusive Chrome, Studio-/Admintyper och
+Atlas med strikta ankare enligt implementationens kvitto. Oberoende granskning
+bekräftar samma innehåll i 37 produktfiler efter normalisering av importmål.
+Testinventeringen är oförändrad: 587 filer, inga föräldralösa prov.
+Exakt PR-/hookbevis finns i det privata uppdragskvittot
+`.cache/gpt-auto-boundaries-1101/funktionsmappar.md`; CI och leverans följs av samordnaren.
+
+## Talets lagring och gamla QA-reservationer 1 november
+
+De tre taladaptrarna kräver nu alltid Neon-journal; förbrukade diskjournaler,
+lokala ljud-/videofiler och operatörs-QA:ns oanvända exklusivitets-API är borttagna.
+Fullfils-, ström- och sessionsproven använder journalen och behåller scope,
+budget, samtidighet, exakta artefakter, gamla svar och avbruten uppspelning.
+Filformat-/fillåsprov och fem rena QA-reservationsprov är avvecklade;
+dagens journalprov täcker dessutom återstart, kalla workers och osäkra submit.
+Den historiska ledgerimporten, SQL-migreringarna och lagrade data är oförändrade.
+Riktade prov passerar på Node 24.21.0; full CI hör till PR:en. Talet är fortsatt
+pausat och ingen drift-, provider- eller AV-acceptans ingår.
 
 ## CI-bas och historikprov 1 november
 
@@ -12,7 +46,7 @@ Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-k
 
 ## Klientens layout- och chattkontroller 1 november
 
-De tre första extraktionerna i chattavsnittets tabell nedan är genomförda:
+Tre extraktioner från chattavsnittets tidigare inventering är genomförda:
 `action-placement`, `game-overlay-layout` och `dealer-chat-visibility` importerar
 nu klientens [game-interface](../services/game/public/game-interface.mjs) och
 [dealer-chat-controls](../services/game/public/dealer-chat-controls.mjs).
@@ -26,13 +60,10 @@ hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
 Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
 
-Övriga granskade källsnitt kör verkligt beteende och ska behålla täckningen när följande kod flyttas till importerbara produktmoduler. De är bedömda men inte ändrade i denna leverans:
+De sju kvarvarande granskade källsnitten kör verkligt beteende och ska behålla täckningen när följande kod flyttas till importerbara produktmoduler. De är bedömda men inte ändrade i denna leverans:
 
 | Prov under `test/` | Nästa avgränsade extraktion |
 | --- | --- |
-| `action-placement.mjs` | `showActions`, `layoutDealControl` och kopplingen mellan första frame, layout och stängning. |
-| `game-overlay-layout.mjs` | Sittplatskontrollern runt `COMPACT_BOXES`/`layoutSeats`, inklusive återupptagen ytterhand. |
-| `dealer-chat-visibility.mjs` | `setChatOpen`/`noteChatMessage` och montering av röstkontroller efter readiness. |
 | `player-choices.mjs` | Dealerurval till spel/repetition samt lobby-/preview-retur. |
 | `studio-preview-client.mjs` | Insatskontroller, preview-notis och samma returkontroller som ovan; behåll maxgränser och sessionisolering. |
 | `dealer-version-switcher.mjs` | Repetitionspanelens byte, status, uppspelning, batchgranskning och readiness. |

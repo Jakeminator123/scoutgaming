@@ -2,7 +2,7 @@ import {defaultCompositionSettings} from '../../../../../packages/presentation/c
 import {effectiveDealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 import {layerAssetFitsGame} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {selectableLayerBases} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
-import {rouletteReferencePreview} from './roulette-clip-map.mjs';
+import {rouletteReferencePreview} from './roulette/roulette-clip-map.mjs';
 
 const previewTypes=new Set(['image/png','video/mp4','video/webm']);
 

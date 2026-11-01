@@ -1,4 +1,4 @@
-import type {MovingDriftAdminStatus,MovingDriftCommand,MovingDriftMode} from '../../../../../packages/presentation/contracts/moving-drift-admin.mjs';
+import type {MovingDriftAdminStatus,MovingDriftCommand,MovingDriftMode} from '../../../../../packages/presentation/contracts/moving-drift/moving-drift-admin.mjs';
 export interface DriftDraft {mode:MovingDriftMode;profileId:string;durationSeconds:1800|7200|86400;revision:number;dirty:boolean}
 export function readMovingDriftStatus(value:unknown):MovingDriftAdminStatus;
 export function driftModeLabel(mode:unknown):string;

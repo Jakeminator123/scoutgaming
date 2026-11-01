@@ -79,7 +79,7 @@ function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-cas
     addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(fn);},
     removeEventListener(type,fn){listeners.get(type)?.delete(fn);},
     dispatchEvent(event){for(const fn of listeners.get(event.type)??[])fn(event);return !event.defaultPrevented;}};
-  const stubs={react:hooks,'../partner-session-actions':{PartnerSessionActions:()=>null},'./partner-copy.mjs':{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}};
+  const stubs={react:hooks,'./partner-session-actions':{PartnerSessionActions:()=>null},'./partner-copy.mjs':{partnerNavigation,usePartnerPreferences:()=>({copy:partnerCopy('sv'),language:'sv',theme:'light'})}};
   const nested=jsxRequire(sourceUrl,stubs),module={exports:{}};
   require('node:vm').runInNewContext(code,{module,exports:module.exports,URL,URLSearchParams,structuredClone,window,Intl,
     require:name=>name.endsWith('.css')?{}:Object.hasOwn(stubs,name)?stubs[name]:nested(name)});

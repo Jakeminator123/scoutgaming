@@ -1,6 +1,6 @@
 import {StudioError} from '../../packages/shared/studio-error.mjs';
 import {exactPlatformOrigin} from '../../packages/navigation/server/platform-routing.mjs';
-import {movingDriftConfiguration, movingDriftDealerProfile, MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {movingDriftConfiguration, movingDriftDealerProfile, MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 // One budget for the complete optional bank set, leaving 25 s of the existing
 // 30 s child readiness window for mandatory game startup. Never extend that window.

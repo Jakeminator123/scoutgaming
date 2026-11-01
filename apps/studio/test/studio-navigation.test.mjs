@@ -33,7 +33,7 @@ function loadComponent(file, overrides = {}, browser) {
 }
 
 test('level-two entrance lists real supplied partners and preserves the administrator login', () => {
-  const { PartnerWorkspace } = loadComponent('partner-workspace.tsx');
+  const { PartnerWorkspace } = loadComponent('partner/partner-workspace.tsx');
   const operators = [{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }, { slug: 'sg-test', name: 'SG test game provider' }];
   const html = renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'jakob', operators, accessClass: 'internal-admin' }));
   const links = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map(match => match[1]);
@@ -44,7 +44,7 @@ test('level-two entrance lists real supplied partners and preserves the administ
 });
 
 test('level-two member entrance is scoped and empty access never selects a fixture', () => {
-  const { PartnerWorkspace } = loadComponent('partner-workspace.tsx');
+  const { PartnerWorkspace } = loadComponent('partner/partner-workspace.tsx');
   const render = operators => renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'john', operators, accessClass: 'partner' }));
   const member = render([{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }]);
   assert.match(member, /href="\/partner\/johnsspelbolag"/);

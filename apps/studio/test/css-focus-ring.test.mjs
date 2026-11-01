@@ -20,7 +20,7 @@ function menus() {
   })('./studio-sidebar.tsx');
   const partner = new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url);
   const { PartnerOperatorWorkspace } = jsxRequire(partner, {
-    '../partner-session-actions': jsxRequire(partner)('../partner-session-actions.tsx'),
+    './partner-session-actions': jsxRequire(partner)('./partner-session-actions.tsx'),
     './views/team.jsx': { TeamView: () => null },
   })('./partner-operator-workspace.jsx');
   const operator = { id: 'focus-fixture', slug: 'focus-fixture', name: 'Fokusprov' };

@@ -24,6 +24,11 @@ npm-beroenden vid behov och bygger klienten i Studios `dev` och `build`.
 Admin-paketet. Den publika lobbyn läser bara publicerad katalogdata via
 `runtime/public-lobby-catalog.mjs` och `packages/player-catalog`.
 
+[`admin/lib/roulette/`](admin/lib/roulette/) samlar klippbindning, startredigering
+och mediegranskning med deklarationer och fyra beteendeprov. Komponenterna i
+`admin/components/studio/` använder samma moduler; full regression registrerar
+proven på deras nya sökvägar.
+
 ## UI, tema och kontrakt
 
 Admin och lobbyn byggs med Tailwind 4. Delade färger och typsnitt definieras i
