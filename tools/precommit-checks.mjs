@@ -355,7 +355,7 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot, testWorke
   if (!Number.isInteger(testWorkers) || testWorkers < 1 || testWorkers > 4) throw Error('Focused test workers must be an integer from 1 to 4');
   const tests = focusedTests(changes, root);
   const commands = [committed ? ['git', 'diff', '--check', ...PR_DIFF] : ['git', 'diff', '--cached', '--check']];
-  // Repo growth (files over 1 MB, new media binaries, living-document limits) on the staged diff only.
+  // Repo growth (files over 1 MiB, new media binaries) on the staged diff only.
   if (changes.length && existsSync(resolve(root, 'tools/check-repo-limits.mjs'))) {
     commands.push([process.execPath, 'tools/check-repo-limits.mjs', ...(committed ? ['--tree', 'HEAD', '--changed-since', 'HEAD^1'] : ['--cached'])]);
   }
