@@ -28,8 +28,9 @@ film startar ingen 2D-renderare. Filmkvittot anger då `renderer: 'none'`;
 serverns kort visas separat av kortpresentationen och DOM-kontrollerna behålls.
 
 Den fristående BO-tal-QA-ytan är avvecklad. `/api/bo/*` har inget skrivundantag;
-gamla QA-adresser skapar inga sessioner eller betalda talförsök. Historiska
-SQL-migrationer och ledgerimportens bevarande av tidigare försök är oförändrade.
+gamla QA-adresser skapar inga sessioner eller betalda talförsök. Engångsimporten
+av diskjournaler är också avvecklad. Historiska SQL-migreringar samt tidigare
+försök och importkvitton i Neon bevaras.
 
 ## Bevara verifierad presentation
 

@@ -183,7 +183,7 @@ Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar.
 ## Historiska arkiv
 
 - SQLite-vägen är borttagen ur `main` (steg 1–7). Gamla SQLite-arkiv och product-snapshots läses bara i ett isolerat mål, med verktygen vid Git-SHA `89343a655a6a44dbe2553a83f02294312070dc01` (sista main före borttagningen) eller med `sqlite3`. De återställs aldrig över Neon och blir aldrig en andra skrivare.
-- Den avvecklade produktdisken och den första Neon-importen har verifierade externa backuper på Jakobs dator (`CroupierBackups/production-disk-retirement-20261004` och `neon-game-20261002-132437`). De är historiska källor.
+- Den avvecklade produktdisken och den första Neon-importen har verifierade externa backuper på Jakobs dator (`CroupierBackups/production-disk-retirement-20261004` och `neon-game-20261002-132437`). De är historiska källor. Engångsimporten av diskbaserade taljournaler är avvecklad; taljournaler, tidigare försök och importkvitton återställs med Neon-backupen enligt stegen ovan.
 - Git-historiken skrevs om en gång 12 oktober 2026 med Jakobs godkännande; originalet finns som verifierad bundle utanför Git. Klona den bara till en separat tom katalog och publicera aldrig gammal historik.
 
 ## Byggdelar och Node-versioner
