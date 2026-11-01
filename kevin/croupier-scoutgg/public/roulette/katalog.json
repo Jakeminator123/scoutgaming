@@ -4,8 +4,9 @@
  "dealers": {
   "astrid2": {
    "namn": "Astrid",
-   "vila": { "fil": "/media/dealers/astrid2/roulette/vila.png", "hojd": 1080, "beskarTopp": 0, "skarm": [34, 202, 68] },
-   "kast": "/media/dealers/astrid2/roulette/kast/kast_s7201.json",
+   "vila": { "fil": "/media/dealers/astrid2/roulette/vila.png", "hojd": 1080, "beskarTopp": 0, "skarm": [34, 202, 68],
+    "underlag": { "fil": "/media/dealers/astrid2/roulette/glapp_s3.png", "ruta": [764, 688, 1318, 880], "skarm": [34, 202, 68] } },
+   "kast": ["/media/dealers/astrid2/roulette/kast/kast_v13_s13104.json", "/media/dealers/astrid2/roulette/kast/kast_v13_s13108.json", "/media/dealers/astrid2/roulette/kast/kast_v7_s7204.json"],
    "idle": {
     "mapp": "/media/dealers/astrid2/roulette/idle/",
     "skarm": [33, 201, 68],

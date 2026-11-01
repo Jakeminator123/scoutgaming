@@ -1,0 +1,43 @@
+{
+ "namn": "v13 s13104",
+ "klipp": "kast_v13_s13104_gron.mp4",
+ "sparning": "kast_v13_s13104_kula.json",
+ "fps": 24,
+ "rutor": 90,
+ "bredd": 1920,
+ "hojd": 1088,
+ "beskarTopp": 4,
+ "skarm": [
+  33,
+  201,
+  68
+ ],
+ "kontrakt": {
+  "event": "roulette.wheel-start",
+  "durationMs": 3750,
+  "wheelImpulseMs": 2000,
+  "ballReleaseMs": 2208
+ },
+ "spel": {
+  "slappTheta": 150,
+  "slappFart": 300,
+  "inkast": {
+   "xy": [
+    588,
+    762
+   ],
+   "t": 2208,
+   "hojd": -0.04,
+   "ms": 150
+  },
+  "banFriktion": 0.5
+ },
+ "matning": {
+  "metod": "v13 (metodik/videoklipp/ROULETTE-KAST.md), startbild s3, pixellåst mot ren platta",
+  "plock": "fingrarna i fickan ruta 18, kulan borta ur fickan ruta 20",
+  "torn": "handen vid tornet ruta 48–50: rotorns impuls ruta 48",
+  "slapp": "kulan syns fri första gången ruta 54 vid [544.0, 771.9] (pixellåset tar bort den där); 3D-kulan tar över ruta 53 vid [588, 762] under fingertopparna",
+  "h3Kulan": "efter släppet ca [-1056, 235] px/s åt vänster längs övre kanten, sedan runt framsidan: moturs sett ovanifrån, som 3D-kulan",
+  "slappTheta": "banans vinkel vid släppets x (verktyg/bana-s1.mjs) minus 5°, som s7201"
+ }
+}

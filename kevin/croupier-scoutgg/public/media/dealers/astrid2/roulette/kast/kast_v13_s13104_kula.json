@@ -39,11 +39,8 @@
   },
   {
    "ruta": 7,
-   "kula": [
-    1052.4,
-    599.8
-   ],
-   "hand_avst": 8.6
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 8,
@@ -52,11 +49,8 @@
   },
   {
    "ruta": 9,
-   "kula": [
-    865.1,
-    804.3
-   ],
-   "hand_avst": 93.3
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 10,
@@ -180,8 +174,11 @@
   },
   {
    "ruta": 34,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    1076.3,
+    598.8
+   ],
+   "hand_avst": 3.7
   },
   {
    "ruta": 35,
@@ -275,98 +272,104 @@
   },
   {
    "ruta": 53,
-   "kula": [
-    442.0,
-    824.1
-   ],
-   "hand_avst": 186.0
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 54,
    "kula": [
-    398.1,
-    834.1
+    544.0,
+    771.9
    ],
-   "hand_avst": 246.3
+   "hand_avst": 30.9
   },
   {
    "ruta": 55,
    "kula": [
-    366.4,
-    847.3
+    499.6,
+    781.7
    ],
-   "hand_avst": 293.0
+   "hand_avst": 71.8
   },
   {
    "ruta": 56,
    "kula": [
-    346.8,
-    856.2
+    456.4,
+    787.8
    ],
-   "hand_avst": 523.1
+   "hand_avst": 115.1
   },
   {
    "ruta": 57,
    "kula": [
-    332.0,
-    866.7
+    416.3,
+    797.5
    ],
-   "hand_avst": 540.2
+   "hand_avst": 165.0
   },
   {
    "ruta": 58,
    "kula": [
-    329.4,
-    878.0
+    381.7,
+    805.4
    ],
-   "hand_avst": 11.1
+   "hand_avst": 208.1
   },
   {
    "ruta": 59,
    "kula": [
-    336.9,
-    890.4
+    346.8,
+    816.9
    ],
-   "hand_avst": 14.0
+   "hand_avst": 259.7
   },
   {
    "ruta": 60,
    "kula": [
-    352.6,
-    905.4
+    319.7,
+    830.3
    ],
-   "hand_avst": 535.9
+   "hand_avst": 312.3
   },
   {
    "ruta": 61,
    "kula": [
-    376.4,
-    918.0
+    298.3,
+    839.4
    ],
-   "hand_avst": 16.8
+   "hand_avst": 355.7
   },
   {
    "ruta": 62,
    "kula": [
-    407.2,
-    928.8
+    284.7,
+    854.4
    ],
-   "hand_avst": 416.1
+   "hand_avst": 397.0
   },
   {
    "ruta": 63,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    279.5,
+    867.7
+   ],
+   "hand_avst": 424.7
   },
   {
    "ruta": 64,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    287.5,
+    880.6
+   ],
+   "hand_avst": 436.2
   },
   {
    "ruta": 65,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    302.9,
+    897.0
+   ],
+   "hand_avst": 441.6
   },
   {
    "ruta": 66,
@@ -375,13 +378,19 @@
   },
   {
    "ruta": 67,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    361.2,
+    923.4
+   ],
+   "hand_avst": 431.4
   },
   {
    "ruta": 68,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    778.6,
+    599.0
+   ],
+   "hand_avst": 3.4
   },
   {
    "ruta": 69,
@@ -440,91 +449,82 @@
   },
   {
    "ruta": 80,
-   "kula": [
-    1021.9,
-    933.7
-   ],
-   "hand_avst": 227.6
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 81,
-   "kula": [
-    1039.1,
-    928.6
-   ],
-   "hand_avst": 221.6
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 82,
-   "kula": [
-    1054.6,
-    922.7
-   ],
-   "hand_avst": 214.1
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 83,
-   "kula": [
-    1070.0,
-    917.0
-   ],
-   "hand_avst": 211.9
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 84,
-   "kula": [
-    1081.9,
-    908.7
-   ],
-   "hand_avst": 6.8
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 85,
-   "kula": [
-    1100.8,
-    903.8
-   ],
-   "hand_avst": 11.6
+   "kula": null,
+   "hand_avst": null
   },
   {
    "ruta": 86,
    "kula": [
-    1109.2,
-    897.3
+    1139.7,
+    885.9
    ],
-   "hand_avst": 202.8
+   "hand_avst": 199.4
   },
   {
    "ruta": 87,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    1141.0,
+    880.9
+   ],
+   "hand_avst": 196.5
   },
   {
    "ruta": 88,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    1140.6,
+    874.4
+   ],
+   "hand_avst": 189.8
   },
   {
    "ruta": 89,
-   "kula": null,
-   "hand_avst": null
+   "kula": [
+    1137.8,
+    867.2
+   ],
+   "hand_avst": 183.1
   }
  ],
  "slapp": {
-  "ruta": 53,
-  "ms": 2208,
+  "ruta": 54,
+  "ms": 2250,
   "xy": [
-   442.0,
-   824.1
+   544.0,
+   771.9
   ],
   "xy_efter": [
-   366.4,
-   847.3
+   456.4,
+   787.8
   ],
   "dt_ms": 83,
   "fart_px_s": [
-   -907.2,
-   278.4
+   -1051.2,
+   190.8
   ]
  }
 }

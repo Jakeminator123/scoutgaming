@@ -7,15 +7,20 @@
 // Därefter rumsgraderingen F' = lift + F·(gain − lift), förmultiplicerat: lift·a + P·(gain − lift).
 // Klippen är 1920×1088: rad y i bilden (1080) hämtas från rad y + beskarTopp i klippet, pixel för pixel (texelFetch).
 // Två källor (A och B) blandas med uMix, så att byten vila ↔ kast kan tonas över några rutor.
+// Underlaget (Emil 1 nov): startbilden s3 fyller glappet mellan Astrid och hjulets bakkant (kroppen ned bakom kanten), och
+// kastklippen bygger på den. Vilan och idle-klippen har kvar den äldre kroppen; där de är genomskinliga inom glappets ruta
+// ritas s3-kroppen under dem (samma nyckel och gradering), så att bytet vila ↔ kast inte hoppar. Kastklippen har
+// utanUnderlag (kroppen finns redan i klippet).
 
 const FRAG = /* glsl */ `
 precision highp float;
 precision highp int;
-uniform sampler2D uA, uB;
+uniform sampler2D uA, uB, uU;
 uniform ivec2 uMaxA, uMaxB;
 uniform int uOffA, uOffB;
-uniform vec3 uSA, uSB, uLift, uGain;
-uniform float uMix, uSynlig;
+uniform vec3 uSA, uSB, uSU, uLift, uGain;
+uniform float uMix, uSynlig, uUA, uUB;
+uniform vec4 uURuta;                       // glappets ruta i gl_FragCoord (x0, y0, x1, y1)
 const float T0 = 0.03, T1 = 0.05;
 float dOf(vec3 c) { return c.g - max(c.r, c.b); }
 vec4 nyckel(sampler2D t, ivec2 p, ivec2 mx, vec3 S) {
@@ -40,10 +45,13 @@ void main() {
   vec4 c = vec4(0.0);
   if (uMix < 1.0) c += (1.0 - uMix) * nyckel(uA, q + ivec2(0, uOffA), uMaxA, uSA);
   if (uMix > 0.0) c += uMix * nyckel(uB, q + ivec2(0, uOffB), uMaxB, uSB);
+  float wU = (1.0 - uMix) * uUA + uMix * uUB;
+  if (wU > 0.0 && c.a < 1.0 && gl_FragCoord.x >= uURuta.x && gl_FragCoord.x <= uURuta.z && gl_FragCoord.y >= uURuta.y && gl_FragCoord.y <= uURuta.w)
+    c += (1.0 - c.a) * wU * nyckel(uU, q, ivec2(1919, 1079), uSU);
   gl_FragColor = c * uSynlig;
 }`;
 
-export function skapaDealer(H, GRAD) {                                  // GRAD: rummets {lift, gain}
+export function skapaDealer(H, GRAD, UNDERLAG) {                        // GRAD: rummets {lift, gain}; UNDERLAG: {fil, ruta, skarm} eller inget
   const { THREE } = H;
   const tom = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1); tom.needsUpdate = true;
   const u = {
@@ -51,7 +59,20 @@ export function skapaDealer(H, GRAD) {                                  // GRAD:
     uOffA: { value: 0 }, uOffB: { value: 0 }, uSA: { value: new THREE.Vector3(34 / 255, 202 / 255, 68 / 255) },
     uSB: { value: new THREE.Vector3(34 / 255, 202 / 255, 68 / 255) }, uLift: { value: new THREE.Vector3(...GRAD.lift) },
     uGain: { value: new THREE.Vector3(...GRAD.gain) }, uMix: { value: 0 }, uSynlig: { value: 1 },
+    uU: { value: tom }, uSU: { value: new THREE.Vector3(34 / 255, 202 / 255, 68 / 255) }, uUA: { value: 0 }, uUB: { value: 0 },
+    uURuta: { value: new THREE.Vector4(1, 1, 0, 0) },                    // tom ruta tills underlaget laddats
   };
+  let harUnderlag = false;
+  if (UNDERLAG?.fil) {                                                  // ruta [x0, y0, x1, y1] i bildens rader (y nedåt) -> gl_FragCoord (y uppåt)
+    const k = bildKalla(H, UNDERLAG.fil, { skarm: UNDERLAG.skarm ?? [34, 202, 68] });
+    k.klar.then(() => {
+      const [x0, y0, x1, y1] = UNDERLAG.ruta;
+      u.uU.value = k.tex; u.uSU.value.set(...k.skarm.map((v) => v / 255));
+      u.uURuta.value.set(x0, 1079 - y1, x1 + 1, 1080 - y0); harUnderlag = true;
+      for (const s of ["A", "B"]) if (sidor[s]) u["uU" + s].value = sidor[s].utanUnderlag ? 0 : 1;
+    }).catch((e) => console.warn("underlaget:", e.message));
+  }
+  const sidor = { A: null, B: null };
   // ivec2-uniformer: three skickar Vector2 som ivec2 när shadern deklarerar ivec2
   const mat = new THREE.ShaderMaterial({ uniforms: u, vertexShader: "void main(){ gl_Position = vec4(position.xy, 0.0, 1.0); }",
     fragmentShader: FRAG, depthTest: false, depthWrite: false, transparent: true, blending: THREE.CustomBlending,
@@ -67,6 +88,7 @@ export function skapaDealer(H, GRAD) {                                  // GRAD:
     u["uMax" + k].value.set(1919, kalla.hojd - 1);
     u["uOff" + k].value = kalla.hojd - 1080 - kalla.beskarTopp;   // flipY: texturens rad = gl_FragCoord.y + (hojd − 1080 − beskarTopp)
     u["uS" + k].value.set(...kalla.skarm.map((v) => v / 255));
+    sidor[k] = kalla; u["uU" + k].value = harUnderlag && !kalla.utanUnderlag ? 1 : 0;
   };
   return {
     material: mat, uniforms: u,

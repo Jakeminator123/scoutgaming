@@ -1,0 +1,43 @@
+{
+ "namn": "v7 s7204",
+ "klipp": "kast_v7_s7204_gron.mp4",
+ "sparning": "kast_v7_s7204_kula.json",
+ "fps": 24,
+ "rutor": 90,
+ "bredd": 1920,
+ "hojd": 1088,
+ "beskarTopp": 4,
+ "skarm": [
+  33,
+  201,
+  68
+ ],
+ "kontrakt": {
+  "event": "roulette.wheel-start",
+  "durationMs": 3750,
+  "wheelImpulseMs": 1958,
+  "ballReleaseMs": 2083
+ },
+ "spel": {
+  "slappTheta": 161,
+  "slappFart": 300,
+  "inkast": {
+   "xy": [
+    700,
+    795
+   ],
+   "t": 2083,
+   "hojd": -0.04,
+   "ms": 150
+  },
+  "banFriktion": 0.5
+ },
+ "matning": {
+  "metod": "v7 (metodik/videoklipp/ROULETTE-KAST.md), startbild s3, pixellåst mot ren platta",
+  "plock": "fingrarna i fickan ruta 16, kulan borta ur fickan ruta 20",
+  "torn": "handen vid tornet ruta 46–50: rotorns impuls ruta 47",
+  "slapp": "kulan syns fri första gången ruta 51 vid [663.5, 794.6] (pixellåset tar bort den där); 3D-kulan tar över ruta 50 vid [700, 795] under fingertopparna",
+  "h3Kulan": "efter släppet ca [-1150, 30] px/s åt vänster längs övre kanten, sedan runt framsidan: moturs sett ovanifrån, som 3D-kulan",
+  "slappTheta": "banans vinkel vid släppets x (verktyg/bana-s1.mjs) minus 5°, som s7201"
+ }
+}

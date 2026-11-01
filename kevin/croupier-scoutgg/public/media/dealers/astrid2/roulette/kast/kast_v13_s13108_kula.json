@@ -1,0 +1,572 @@
+{
+ "fps": 24,
+ "rutor": 90,
+ "spar": [
+  {
+   "ruta": 0,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 1,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 2,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 3,
+   "kula": [
+    864.6,
+    804.0
+   ],
+   "hand_avst": 102.0
+  },
+  {
+   "ruta": 4,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 5,
+   "kula": [
+    864.7,
+    804.2
+   ],
+   "hand_avst": 89.2
+  },
+  {
+   "ruta": 6,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 7,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 8,
+   "kula": [
+    864.8,
+    804.3
+   ],
+   "hand_avst": 93.4
+  },
+  {
+   "ruta": 9,
+   "kula": [
+    865.0,
+    804.9
+   ],
+   "hand_avst": 93.2
+  },
+  {
+   "ruta": 10,
+   "kula": [
+    865.2,
+    805.0
+   ],
+   "hand_avst": 92.2
+  },
+  {
+   "ruta": 11,
+   "kula": [
+    864.8,
+    804.5
+   ],
+   "hand_avst": 91.7
+  },
+  {
+   "ruta": 12,
+   "kula": [
+    864.8,
+    804.5
+   ],
+   "hand_avst": 91.5
+  },
+  {
+   "ruta": 13,
+   "kula": [
+    864.1,
+    804.4
+   ],
+   "hand_avst": 89.0
+  },
+  {
+   "ruta": 14,
+   "kula": [
+    864.3,
+    804.6
+   ],
+   "hand_avst": 59.2
+  },
+  {
+   "ruta": 15,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 16,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 17,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 18,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 19,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 20,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 21,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 22,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 23,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 24,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 25,
+   "kula": [
+    1106.3,
+    609.0
+   ],
+   "hand_avst": 4.1
+  },
+  {
+   "ruta": 26,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 27,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 28,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 29,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 30,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 31,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 32,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 33,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 34,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 35,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 36,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 37,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 38,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 39,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 40,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 41,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 42,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 43,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 44,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 45,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 46,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 47,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 48,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 49,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 50,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 51,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 52,
+   "kula": [
+    555.4,
+    787.5
+   ],
+   "hand_avst": 40.8
+  },
+  {
+   "ruta": 53,
+   "kula": [
+    515.4,
+    791.1
+   ],
+   "hand_avst": 76.2
+  },
+  {
+   "ruta": 54,
+   "kula": [
+    477.2,
+    795.7
+   ],
+   "hand_avst": 102.7
+  },
+  {
+   "ruta": 55,
+   "kula": [
+    442.6,
+    801.7
+   ],
+   "hand_avst": 132.0
+  },
+  {
+   "ruta": 56,
+   "kula": [
+    410.7,
+    805.4
+   ],
+   "hand_avst": 164.0
+  },
+  {
+   "ruta": 57,
+   "kula": [
+    382.7,
+    811.6
+   ],
+   "hand_avst": 194.7
+  },
+  {
+   "ruta": 58,
+   "kula": [
+    354.6,
+    816.7
+   ],
+   "hand_avst": 225.2
+  },
+  {
+   "ruta": 59,
+   "kula": [
+    332.8,
+    829.4
+   ],
+   "hand_avst": 255.9
+  },
+  {
+   "ruta": 60,
+   "kula": [
+    315.2,
+    840.2
+   ],
+   "hand_avst": 285.7
+  },
+  {
+   "ruta": 61,
+   "kula": [
+    302.7,
+    854.0
+   ],
+   "hand_avst": 313.7
+  },
+  {
+   "ruta": 62,
+   "kula": [
+    297.6,
+    867.6
+   ],
+   "hand_avst": 340.9
+  },
+  {
+   "ruta": 63,
+   "kula": [
+    301.9,
+    880.2
+   ],
+   "hand_avst": 361.0
+  },
+  {
+   "ruta": 64,
+   "kula": [
+    310.8,
+    894.0
+   ],
+   "hand_avst": 383.2
+  },
+  {
+   "ruta": 65,
+   "kula": [
+    325.4,
+    905.6
+   ],
+   "hand_avst": 404.8
+  },
+  {
+   "ruta": 66,
+   "kula": [
+    346.6,
+    918.1
+   ],
+   "hand_avst": 407.6
+  },
+  {
+   "ruta": 67,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 68,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 69,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 70,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 71,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 72,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 73,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 74,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 75,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 76,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 77,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 78,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 79,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 80,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 81,
+   "kula": null,
+   "hand_avst": null
+  },
+  {
+   "ruta": 82,
+   "kula": [
+    1098.7,
+    918.0
+   ],
+   "hand_avst": 215.1
+  },
+  {
+   "ruta": 83,
+   "kula": [
+    1122.9,
+    909.0
+   ],
+   "hand_avst": 215.0
+  },
+  {
+   "ruta": 84,
+   "kula": [
+    1141.4,
+    899.4
+   ],
+   "hand_avst": 213.0
+  },
+  {
+   "ruta": 85,
+   "kula": [
+    1154.2,
+    889.3
+   ],
+   "hand_avst": 209.6
+  },
+  {
+   "ruta": 86,
+   "kula": [
+    1161.0,
+    875.5
+   ],
+   "hand_avst": 203.5
+  },
+  {
+   "ruta": 87,
+   "kula": [
+    1159.7,
+    862.4
+   ],
+   "hand_avst": 13.3
+  },
+  {
+   "ruta": 88,
+   "kula": [
+    1153.4,
+    850.6
+   ],
+   "hand_avst": 12.1
+  },
+  {
+   "ruta": 89,
+   "kula": [
+    1144.5,
+    840.4
+   ],
+   "hand_avst": 12.4
+  }
+ ],
+ "slapp": {
+  "ruta": 11,
+  "ms": 458,
+  "xy": [
+   864.8,
+   804.5
+  ],
+  "xy_efter": [
+   864.1,
+   804.4
+  ],
+  "dt_ms": 83,
+  "fart_px_s": [
+   -8.4,
+   -1.2
+  ]
+ }
+}

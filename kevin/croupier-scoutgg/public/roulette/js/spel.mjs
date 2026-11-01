@@ -8,7 +8,10 @@
 //   ?inspelning=1   egen klocka: verktyg/spela-in.mjs stegar tiden och läser bilden ruta för ruta
 //   ?fps=1          visar bildtakten; ?idle=mapp/ tar idle-klippen ur en annan mapp; ?stilla=1 visar startbilden i stället
 //   ?slapp=ms&inkast=x,y&inkastMs=ms   provar en annan övertagning ur handen (annars kastklippets json)
+//   ?kastnr=N       tvingar kastklipp nr N i dealerns lista (annars slumpas ett per runda, aldrig samma två gånger i rad)
+//   ?format=av1|hevc|h264|orig   klippformatet (annars det bästa enheten avkodar i hårdvara, js/format.mjs)
 import * as K from "./konfig.mjs";
+import { formatKlart, formatAdress, formatFel } from "./format.mjs";
 import { laddaBord } from "./bord.mjs";
 import { laddaHjul, stallKamera, stallRum } from "./hjul.mjs";
 import { skapaDealer, videoKalla, bildKalla } from "./dealer.mjs";
@@ -70,16 +73,25 @@ steg("rum", 0.2, "Opening the studio");
 const BORD = await laddaBord(Q);                                       // katalogen + bordets val (dealer, hjul, rum, gränser)
 document.title = `${BORD.namn} · ${BORD.dealer.namn}`;
 console.log("bord:", JSON.stringify(BORD.val), BORD.slug ?? "(inget sparat bord)");
-const KASTFIL = Q.get("kast") ?? BORD.dealer.kast;                    // ?kast=/media/dealers/astrid2/roulette/kast/kast_s7104.json provar ett annat klipp
-const kastCfg = await (await fetch(KASTFIL)).json();
-const kastBas = new URL(KASTFIL, location.href);
+// kastklippen: dealern har en lista (Emil 1 nov: tre klipp som slumpas per runda); ?kast=<json> provar ett enda klipp
+const KASTFILER = Q.has("kast") ? [Q.get("kast")] : [].concat(BORD.dealer.kast);
+const FORMAT = await formatKlart;
+const kastCfgs = await Promise.all(KASTFILER.map(async (fil) => {
+  const c = await (await fetch(fil)).json();
+  c.url = new URL(c.klipp, new URL(fil, location.href)).href;          // originalet (kast/); formatet hämtas ur kast-<format>/
+  return c;
+}));
+console.log("kastklipp:", kastCfgs.map((c) => c.namn).join(", "), "format:", FORMAT);
 const IDLE = BORD.dealer.idle, idleBas = new URL(IDLE.mapp, location.href);
 const idleFiler = Q.has("stilla") ? [] : IDLE.klipp.filter((f) => !Object.hasOwn(IDLE.uteslutna ?? {}, f));   // ?stilla=1: bara startbilden (studions förhandsbilder)
 const klippUrl = {};
 const klippen = (async () => {                                         // parallellt med hjulets texturer
-  const lista = [[kastCfg.klipp, new URL(kastCfg.klipp, kastBas).href], ...idleFiler.map((f) => [f, new URL(f, idleBas).href])];
+  const lista = [...kastCfgs.map((c) => [c.url, formatAdress(c.url, FORMAT)]), ...idleFiler.map((f) => [f, new URL(f, idleBas).href])];
   let klara = 0;
-  await Promise.all(lista.map(async ([f, url]) => { klippUrl[f] = await hamta(url).catch(() => url); steg("klipp", ++klara / lista.length); }));
+  await Promise.all(lista.map(async ([f, url]) => {
+    klippUrl[f] = await hamta(url).catch(() => (url !== f ? hamta(f) : Promise.reject())).catch(() => f);   // formatet saknas: originalet
+    steg("klipp", ++klara / lista.length);
+  }));
 })();
 steg("hjul", 0.1, "Wheel");
 const H = await laddaHjul(BORD);
@@ -89,13 +101,32 @@ scen.prepend(renderer.domElement);
 renderer.domElement.style.width = "1920px"; renderer.domElement.style.height = "1080px";
 steg("astrid", 0.3, "Dealer");
 await klippen;
-const dealer = skapaDealer(H, BORD.room.grad);
-const kast = videoKalla(H, klippUrl[kastCfg.klipp], { hojd: kastCfg.hojd, beskarTopp: kastCfg.beskarTopp, skarm: kastCfg.skarm });
+const dealer = skapaDealer(H, BORD.room.grad, BORD.dealer.vila.underlag);
+// en videokälla per kastklipp; avkodas formatet inte (trots MediaCapabilities) spelas originalet och besöket byter till H.264
+const kastKallor = await Promise.all(kastCfgs.map(async (c) => {
+  const opt = { hojd: c.hojd, beskarTopp: c.beskarTopp, skarm: c.skarm };
+  let k = videoKalla(H, klippUrl[c.url], opt);
+  try { await k.klar; } catch { formatFel(); console.warn("kastklippet avkodas inte i", FORMAT, "– originalet:", c.klipp); k = videoKalla(H, c.url, opt); }
+  k.utanUnderlag = true;                                               // kastklippen bär själva kroppen i glappet vid hjulets bakkant
+  return k;
+}));
+// rundans kastklipp: källa, json och kontrakt (sätts av valjKast när en runda startar)
+const KS = kastCfgs.map((c) => {
+  const k = { ...c.kontrakt }, s = structuredClone(c.spel);
+  if (Q.has("slapp")) k.ballReleaseMs = +Q.get("slapp");
+  if (Q.has("inkast")) s.inkast.xy = Q.get("inkast").split(",").map(Number);
+  if (Q.has("inkastMs")) s.inkast.ms = +Q.get("inkastMs");
+  if (Q.has("inkastT")) s.inkast.t = +Q.get("inkastT");
+  return { k, s };
+});
+let kastNr = 0, kastCfg, kast, KONTRAKT, SP, sistaKast = -1;
+function valjKast(i) { kastNr = i; kastCfg = kastCfgs[i]; kast = kastKallor[i]; KONTRAKT = KS[i].k; SP = KS[i].s; }
+valjKast(0);
 // vilan: dealerns idle-klipp i följd, annars stillbilden
 const stillbild = bildKalla(H, new URL(BORD.dealer.vila.fil, location.href).href, BORD.dealer.vila);
 const slump = Q.has("seed") ? (() => { let a = +Q.get("seed") * 7919 >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })() : Math.random;
 const vila = skapaVila(H, { filer: idleFiler, bas: idleBas, adress: (f) => klippUrl[f], stillbild, inspelning: INSPELNING, slump, skarm: IDLE.skarm });
-await Promise.all([kast.klar, stillbild.klar]);
+await Promise.all([...kastKallor.map((k) => k.klar), stillbild.klar]);
 if (vila.finns) await vila.borja(klocka());
 dealer.visa(vila.kalla);
 console.log("idle-klipp:", idleFiler.length);
@@ -103,11 +134,6 @@ addEventListener("pointerdown", () => vila.vacka(), { capture: true });
 if (LOGGA) setInterval(() => { try { logga("status", { vila: vila.status(), visar: dealer.a?.typ ?? null, runda: R ? { t: Math.round(R.t), t0: R.t0 !== null } : null,
   kast: { t: +kast.video.currentTime.toFixed(2), paus: kast.video.paused, rs: kast.video.readyState, fel: kast.video.error?.code ?? null }, dold: document.hidden }); } catch {} }, 5000);
 steg("astrid", 1);
-const KONTRAKT = { ...kastCfg.kontrakt }, SP = structuredClone(kastCfg.spel);
-if (Q.has("slapp")) KONTRAKT.ballReleaseMs = +Q.get("slapp");
-if (Q.has("inkast")) SP.inkast.xy = Q.get("inkast").split(",").map(Number);
-if (Q.has("inkastMs")) SP.inkast.ms = +Q.get("inkastMs");
-if (Q.has("inkastT")) SP.inkast.t = +Q.get("inkastT");
 
 // ---------- fysiken i en worker ----------
 laddText.textContent = "Physics";
@@ -115,18 +141,26 @@ const worker = new Worker(new URL("./fysik-worker.mjs", import.meta.url), { type
 const vantar = new Map(); let planNr = 0;
 worker.onmessage = ({ data }) => { const v = vantar.get(data.id); vantar.delete(data.id); data.fel ? v.fel(Error(data.fel)) : v.ok(data); };
 worker.onerror = (e) => console.error("fysik-worker", e.message);
-function planera(mal, forra) {
+function planera(mal, forra, nr) {                                     // nr: kastklippet (dess släpp styr fysiken)
   const id = ++planNr, seed = Q.has("seed") ? +Q.get("seed") + id - 1 : (crypto.getRandomValues(new Uint32Array(1))[0] % 100000) + 1;
+  const { k, s } = KS[nr];
   return new Promise((ok, fel) => {
     vantar.set(id, { ok, fel });
-    worker.postMessage({ id, mal, forra, impulsMs: KONTRAKT.wheelImpulseMs, slappMs: KONTRAKT.ballReleaseMs, slappTheta: SP.slappTheta, slappFart: SP.slappFart, banFriktion: SP.banFriktion, seed });
+    worker.postMessage({ id, mal, forra, impulsMs: k.wheelImpulseMs, slappMs: k.ballReleaseMs, slappTheta: s.slappTheta, slappFart: s.slappFart, banFriktion: s.banFriktion, seed });
   });
+}
+// kastklippet för nästa runda: slumpat, aldrig samma två gånger i rad (?kastnr=N tvingar)
+function slumpaKast() {
+  if (Q.has("kastnr")) return Math.min(kastCfgs.length - 1, +Q.get("kastnr"));
+  if (kastCfgs.length < 2) return 0;
+  let i; do i = Math.floor(slump() * kastCfgs.length); while (i === sistaKast);
+  return (sistaKast = i);
 }
 // utfallet dras och planeras medan spelaren satsar (motorn drar sitt på servern vid spin; här finns inget svar att vänta på)
 let nasta = null;
 function forbered(forra) {
-  const mal = TVINGA ? TVINGA[rundNr++ % TVINGA.length] : dra();
-  nasta = { mal, forra, plan: planera(mal, forra) };
+  const mal = TVINGA ? TVINGA[rundNr++ % TVINGA.length] : dra(), nr = slumpaKast();
+  nasta = { mal, forra, nr, plan: planera(mal, forra, nr) };
   nasta.plan.then((p) => console.log(`plan ${mal}: ${p.planMs} ms`, p.info)).catch((e) => console.error("planera", e));
 }
 const rotorVid = (P, t) => { const x = Math.max(0, t) / 2, i = Math.floor(x); if (i >= P.rotor.length - 1) return P.rotor[P.rotor.length - 1]; const u = x - i; return P.rotor[i] * (1 - u) + P.rotor[i + 1] * u; };
@@ -252,8 +286,10 @@ async function starta(insatser) {
   const runda = nasta;
   let plan;
   try { plan = await runda.plan; } catch (e) {                         // ytterst ovanligt: planera om samma utfall
-    console.error(e); runda.plan = planera(runda.mal, runda.forra); plan = await runda.plan;
+    console.error(e); runda.plan = planera(runda.mal, runda.forra, runda.nr); plan = await runda.plan;
   }
+  valjKast(runda.nr);                                                  // rundans klipp: källa, kontrakt och övertagning
+  console.log("kastklipp", kastCfg.namn);
   R = { mal: runda.mal, plan, insatser, T: tider(plan), gjort: new Set(), t0: null, t: 0, studsar: studsar(plan), ljudT: -1 };
   ljud.spela("stopp");
   // Astrid avslutar en pågående gest (klippet slutar i vilan) innan hon kastar; andas/blinka bryts med en kort övertoning
@@ -422,7 +458,9 @@ const fpsEl = Q.get("fps") === "1" ? Object.assign(document.createElement("div")
 if (fpsEl) scen.append(fpsEl);
 const ftid = [];
 window.__spel = {
-  H, ui, dealer, kast, vila, kastCfg, KAM, BORD, handPunkt, KONTRAKT, SP, bild, ljud, hoppaTillResultat, satKvalitet, pjasBild,
+  H, ui, dealer, vila, KAM, BORD, handPunkt, bild, ljud, hoppaTillResultat, satKvalitet, pjasBild, kastCfgs, kastKallor, FORMAT,
+  get kast() { return kast; }, get kastCfg() { return kastCfg; }, get KONTRAKT() { return KONTRAKT; }, get SP() { return SP; }, get kastNr() { return kastNr; },
+  provSlump(n) { const s = sistaKast, ut = Array.from({ length: n }, slumpaKast); sistaKast = s; return ut; },   // prov av klippslumpen (påverkar inte spelet)
   // kulbanan i skärmkoordinater för en kamera (prov av att bordet inte skymmer kulan)
   banaPaSkarm(k, r = 0.866, yy = -0.038) { stallKamera(H, k); cam.updateMatrixWorld(); const ut = []; for (let th = 0; th < 360; th += 5) { const [x, z] = polar(r, th), p = new THREE.Vector3(x, yy, z).project(cam); ut.push([th, (p.x + 1) * 960, (1 - p.y) * 540]); } return ut; },
   get runda() { return R; }, get nasta() { return nasta; }, ftid,
