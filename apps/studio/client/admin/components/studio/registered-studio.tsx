@@ -185,8 +185,8 @@ export function RegisteredStudio({ operatorId, roomId = '', mode, section = 'app
   const nothingToPublish = assignmentUnchanged;
   const formStatus = operatorPackage.needsRefresh || disabled || roomDraftBlocks || retiredChosen ? publicationStatus
     : assignmentStale ? 'Läs in aktuell publicering' : assignmentIssue ? 'Rätta det bolaget får ändra först' : assignmentChanged ? 'Ändringarna är inte publicerade' : publicationStatus;
-  // `republish` names the button: the form publishes what changed (the selection first, then the assignment on the
-  // first receipt's revision), Avancerat re-freezes an unchanged selection.
+  // `republish` names the button: combined edits publish atomically in one
+  // revision; Avancerat re-freezes an unchanged selection.
   async function publishPackage(republish: boolean) {
     if (!operator || packageBlocked || publishLock.current) return;
     if (republish ? !assignmentUnchanged : nothingToPublish || Boolean(assignmentIssue) || assignmentStale) return;

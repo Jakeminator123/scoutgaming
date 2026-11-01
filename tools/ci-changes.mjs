@@ -14,11 +14,18 @@ import { isDocumentationPath } from './documentation-paths.mjs';
 // Each leg installs the toolchain once: shared setup (ffmpeg, npm, pnpm) costs
 // about as much as a small suite. Group by measured cost without freezing the count.
 export const REGRESSION_LEGS = Object.freeze([
-  { leg: 'studio-admin-contracts', suites: 'studio admin contracts', policy: true },
-  { leg: 'database-engine', suites: 'database', postgres: true },
+  { leg: 'studio', suites: 'studio' },
+  { leg: 'database-admin-contracts', suites: 'database admin contracts', postgres: true, policy: true },
   { leg: 'access-presentation', suites: 'access presentation', build: true },
   { leg: 'speech-gameplay', suites: 'speech gameplay', speech_node: true, lipsync: true },
 ].map(Object.freeze));
+// Full CI leaves Studio's long fixture tests on their own existing worker.
+// Narrow scopes retain their original suites and two-worker setup; moving
+// database acceptance into those scopes would add unrelated work.
+const UI_REGRESSION_LEGS = Object.freeze([
+  Object.freeze({ leg: 'studio-admin-contracts', suites: 'studio admin contracts', policy: true }),
+  REGRESSION_LEGS.find(({ leg }) => leg === 'access-presentation'),
+]);
 export const LIPSYNC_LEG = 'speech-gameplay';
 
 // Real-browser acceptance (Chrome) shares one step list across mutually exclusive
@@ -45,8 +52,8 @@ export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
 export const SCOPE_LEGS = Object.freeze({
   documentation: Object.freeze([]),
   integration: Object.freeze([]),
-  'openclaw-deploy': Object.freeze(['studio-admin-contracts', 'access-presentation']),
-  'admin-styles': Object.freeze(['studio-admin-contracts', 'access-presentation']),
+  'openclaw-deploy': Object.freeze(UI_REGRESSION_LEGS.map(({ leg }) => leg)),
+  'admin-styles': Object.freeze(UI_REGRESSION_LEGS.map(({ leg }) => leg)),
   full: Object.freeze(REGRESSION_LEGS.map(({ leg }) => leg)),
 });
 
@@ -96,8 +103,9 @@ export function scopeOf(changes) {
 }
 
 export function regressionLegs(scope) {
-  const names = SCOPE_LEGS[scope] ?? SCOPE_LEGS.full;
-  return REGRESSION_LEGS.filter(({ leg }) => names.includes(leg));
+  if (scope === 'documentation' || scope === 'integration') return [];
+  if (scope === 'openclaw-deploy' || scope === 'admin-styles') return [...UI_REGRESSION_LEGS];
+  return [...REGRESSION_LEGS];
 }
 
 function migrationSensitivePath(path) {

@@ -61,8 +61,8 @@ test('scope matrix: documentation, integration, openclaw-deploy and full select 
   assert.deepEqual(BROWSER_MODES, ['required', 'advisory', 'none']);
   // deploy/ is read only by the access and contracts suites; their legs also carry studio and presentation.
   assert.deepEqual(SCOPE_LEGS['openclaw-deploy'], DEPLOY_LEGS);
-  for (const leg of DEPLOY_LEGS) assert.ok(REGRESSION_LEGS.some(item => item.leg === leg), leg);
-  assert.ok(REGRESSION_LEGS.find(({ leg }) => leg === DEPLOY_LEGS[0]).suites.split(' ').includes('contracts'));
+  for (const leg of DEPLOY_LEGS) assert.ok(regressionLegs('openclaw-deploy').some(item => item.leg === leg), leg);
+  assert.ok(regressionLegs('openclaw-deploy').find(({ leg }) => leg === DEPLOY_LEGS[0]).suites.split(' ').includes('contracts'));
   assert.ok(REGRESSION_LEGS.find(({ leg }) => leg === DEPLOY_LEGS[1]).suites.split(' ').includes('access'));
   assert.ok(SCOPE_LEGS.full.includes(LIPSYNC_LEG));
   for (const path of ['services/openclaw/lab/deploy/Dockerfile.gateway', 'services/openclaw/lab/deploy/gateway-config.mjs',
@@ -257,6 +257,23 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
     'apps/studio/components/editor.tsx', 'apps/web/components/button.tsx',
     'test/fixtures/package.json', 'apps/studio/test/fixtures/schema.sql']) {
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
+  }
+});
+
+test('regression setup stays with its owning suite in full, narrow and unknown scopes', () => {
+  const owners = { policy: 'contracts', postgres: 'database', build: 'access', speech_node: 'speech', lipsync: 'speech' };
+  for (const scope of [...Object.keys(SCOPE_LEGS), 'unknown']) {
+    const legs = regressionLegs(scope);
+    assert.deepEqual(legs.map(({ leg }) => leg), SCOPE_LEGS[scope] ?? SCOPE_LEGS.full, scope);
+    const suites = legs.flatMap(({ suites }) => suites.split(' '));
+    assert.equal(new Set(suites).size, suites.length, `${scope}: no repeated suite`);
+    for (const leg of legs) for (const [flag, suite] of Object.entries(owners)) {
+      assert.equal(leg[flag] === true, leg.suites.split(' ').includes(suite), `${scope}/${leg.leg}: ${flag} belongs to ${suite}`);
+    }
+    if (scope === 'openclaw-deploy' || scope === 'admin-styles') {
+      assert.deepEqual([...suites].sort(), ['access', 'admin', 'contracts', 'presentation', 'studio'], scope);
+      assert.ok(legs.every(leg => !leg.postgres && !leg.speech_node && !leg.lipsync), `${scope}: no unrelated acceptance steps`);
+    }
   }
 });
 

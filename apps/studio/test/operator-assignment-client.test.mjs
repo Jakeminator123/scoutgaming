@@ -111,38 +111,39 @@ test('saving posts the whole assignment to the package path and checks the recei
   assert.equal(offline.ok, false);
 });
 
-// Bolag › Tilldelning: en knapp. Urvalet går först och tilldelningen sedan på revisionen ur första kvittot (CAS);
-// bara det som är ändrat skickas, och ett stopp (t.ex. 409) avbryter utan nytt försök.
-test('one Publicera sends the selection, then the assignment on the first receipt\'s revision, and stops at a conflict', async () => {
+// Combined edits are one request and one revision; separate edits keep their contracts.
+test('one Publicera publishes both edits atomically and keeps single-edit contracts', async () => {
   const draft = toggleAllow(assignmentDraft(view), 'pause', true);
-  const run = async (replies, { lanes = ['one', 'two'], withDraft = true } = {}) => {
+  const run = async (payload, status = 200, { lanes = ['one', 'two'], withDraft = true } = {}) => {
     const calls = [];
-    const fetchImpl = async (_url, init) => { calls.push(JSON.parse(init.body)); return replies.shift() ?? Response.json({ error: 'unexpected' }, { status: 500 }); };
-    const result = await publishCompanyAssignment({ endpoint: '/x', operatorId: 'north', revision: 4, lanes, draft: withDraft ? draft : null, fetchImpl });
+    const result = await publishCompanyAssignment({ endpoint: '/x', operatorId: 'north', revision: 4, lanes, draft: withDraft ? draft : null,
+      fetchImpl: async (_url, init) => { calls.push(JSON.parse(init.body)); return Response.json(payload, { status }); } });
     return { calls, result };
   };
-  const lanesReceipt = revision => Response.json({ ok: true, operatorId: 'north', packageRevision: revision, lanes: ['one', 'two'] });
-  const assignmentReceipt = revision => Response.json({ ok: true, operatorId: 'north', packageRevision: revision, assignment: view });
-  const both = await run([lanesReceipt(5), assignmentReceipt(6)]);
-  assert.deepEqual(both.calls.map(body => [body.action ?? 'lanes', body.expectedPackageRevision]), [['lanes', 4], ['publish-assignment', 5]]);
-  assert.deepEqual(both.calls[0], { operatorId: 'north', lanes: ['one', 'two'], expectedPackageRevision: 4 });
-  assert.deepEqual([both.result.ok, both.result.revision, both.result.done], [true, 6, ['lanes', 'assignment']]);
-  assert.match(both.result.message, /\b6\b/);
-  const onlyLanes = await run([lanesReceipt(5)], { withDraft: false });
-  assert.deepEqual([onlyLanes.calls.length, onlyLanes.result.revision, onlyLanes.result.done], [1, 5, ['lanes']]);
-  const onlyAssignment = await run([assignmentReceipt(5)], { lanes: null });
+  const receipt = { ok: true, operatorId: 'north', packageRevision: 5, lanes: ['one', 'two'], assignment: { ...view, ...draft } };
+  const both = await run(receipt);
+  assert.deepEqual(both.calls, [{ action: 'publish-company-assignment', operatorId: 'north', expectedPackageRevision: 4, lanes: ['one', 'two'], assignment: draft }]);
+  assert.deepEqual([both.result.ok, both.result.revision, both.result.done], [true, 5, ['lanes', 'assignment']]);
+  assert.match(both.result.message, /Version 5/);
+  const onlyLanes = await run(receipt, 200, { withDraft: false });
+  assert.deepEqual(onlyLanes.calls, [{operatorId: 'north', lanes: ['one', 'two'], expectedPackageRevision: 4}]);
+  assert.deepEqual([onlyLanes.result.ok, onlyLanes.result.done], [true, ['lanes']]);
+  const onlyAssignment = await run(receipt, 200, { lanes: null });
   assert.deepEqual(onlyAssignment.calls.map(body => [body.action, body.expectedPackageRevision]), [['publish-assignment', 4]]);
   assert.deepEqual([onlyAssignment.result.ok, onlyAssignment.result.done], [true, ['assignment']]);
-  // 409 på första anropet: inget andra anrop och inget nytt försök.
-  const first = await run([Response.json({ error: 'Conflict' }, { status: 409 })]);
-  assert.equal(first.calls.length, 1);
-  assert.deepEqual([first.result.ok, first.result.needsRefresh, first.result.revision, first.result.done], [false, true, 4, []]);
-  // 409 på andra anropet: urvalet är publicerat, tilldelningen stoppas med ett meddelande som säger båda.
-  const second = await run([lanesReceipt(5), Response.json({ error: 'Conflict' }, { status: 409 })]);
-  assert.equal(second.calls.length, 2);
-  assert.deepEqual([second.result.ok, second.result.needsRefresh, second.result.revision, second.result.done], [false, true, 5, ['lanes']]);
-  assert.ok(second.result.error.includes(assignmentPublishError(409)) && /version 5/.test(second.result.error));
-  // Ett kvitto för fel bolag på första anropet stoppar före tilldelningen.
-  const foreign = await run([Response.json({ ok: true, operatorId: 'south', packageRevision: 5, lanes: ['one', 'two'] })]);
-  assert.deepEqual([foreign.calls.length, foreign.result.error], [1, PACKAGE_RECEIPT_MISMATCH]);
+  for (const status of [403, 409, 422, 503]) {
+    const failed = await run({ error: 'rejected' }, status);
+    assert.equal(failed.calls.length, 1);
+    assert.deepEqual([failed.result.ok, failed.result.revision, failed.result.done, failed.result.needsRefresh], [false, 4, [], status === 409 || status >= 500]);
+    assert.doesNotMatch(failed.result.error, /Urvalet är publicerat/);
+  }
+  for (const patch of [{operatorId:'south'}, {packageRevision:6}, {package_revision:6}, {lanes:['one']}, {assignment:null}, {assignment:view}]) {
+    const wrong = await run({...receipt,...patch});
+    assert.deepEqual([wrong.calls.length, wrong.result.done, wrong.result.needsRefresh, wrong.result.error], [1, [], true, PACKAGE_RECEIPT_MISMATCH]);
+  }
+  const offline = await publishCompanyAssignment({endpoint:'/x',operatorId:'north',revision:4,lanes:['one','two'],draft,
+    fetchImpl:async()=>{throw Error('connection lost after commit');}});
+  assert.deepEqual([offline.ok,offline.done,offline.revision,offline.needsRefresh],[false,[],4,true]);
+  assert.match(offline.error,/kunde inte bekräftas/);
+  assert.doesNotMatch(offline.error,/Inget publicerades/);
 });

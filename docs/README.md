@@ -57,7 +57,7 @@ F11:s aktiva releasebevis och de beställda incidentunderlagen är kvar.
 - Uppdatera befintlig sakguide. Nya dokument får en tydlig ingång här eller i ett områdesindex.
 - Radera förbrukade planer, dubbletter och kvitton med uppdaterade länkar och en Git-hänvisning i [HISTORIK](HISTORIK.md). Skapa ingen historikmapp.
 - Ett aktivt kontrakt eller releasebeslut får behålla sitt nödvändiga bevis. En gammal länk ensam motiverar ingen dokumentdubblett.
-- Dokument under `docs/` får vara högst 100 kB (`tools/check-repo-limits.mjs`). Handoffens innehåll hålls aktuellt och kort; radbrytning är ingen leveransspärr.
+- Dokument följer den generella filgränsen 1 MiB och den exakta, krympande undantagslistan (`tools/check-repo-limits.mjs`). Aktualitet och lämpligt omfång granskas efter innehåll; håll överlämningar korta och ersätt inaktuella avsnitt.
 - Den som ändrar ett kontrakt ansvarar för dess sakguide i samma PR. Granskaren kontrollerar konsument, beteendeprov och kvarvarande påståenden; ingen fast personägare här ersätter uppdragets tilldelning.
 - Datum, gröna länkar och godkända storleksgränser bevisar inte att textens sakuppgifter stämmer. Daterade mätningar behåller datum och version; förnya underlaget före ett beslut som använder det.
 

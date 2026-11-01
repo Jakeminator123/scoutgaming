@@ -10,8 +10,7 @@
 //    granskas i PR:en.
 // 2. Ingen ny binär under media/ (bilder, video, ljud och annat Git klassar som binärt).
 //    Befintliga filer får ligga kvar, flyttas eller krympa men inte växa.
-// 3. Ingen fil under docs/ över 100 kB (102 400 byte). Handoffens omfång granskas
-//    efter innehåll, inte radbrytning. Det finns ingen historikmapp; äldre text läses ur Git.
+// Dokument följer samma filgräns. Aktualitet och omfång granskas efter innehåll.
 //
 // Lägen (alla läser Git-objekt, inte filsystemet):
 //   node tools/check-repo-limits.mjs                     hela HEAD-trädet (git ls-tree -r -l)
@@ -29,13 +28,11 @@ import { fileURLToPath } from 'node:url';
 
 export const ALLOWLIST = 'tools/repo-limits-allowlist.json';
 export const MAX_FILE_BYTES = 1024 * 1024;
-export const MAX_DOC_BYTES = 100 * 1024;
 export const MEDIA_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif', '.bmp', '.tif', '.tiff', '.ico', '.heic',
   '.mp4', '.mov', '.webm', '.mkv', '.avi', '.m4v', '.wav', '.mp3', '.m4a', '.ogg', '.oga', '.opus', '.flac', '.aac']);
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const mb = bytes => `${(bytes / MAX_FILE_BYTES).toFixed(2)} MB`;
-const kb = bytes => `${Math.ceil(bytes / 1024)} kB`;
 
 export function isMediaBinary({ path, binary }) {
   return path.startsWith('media/') && (binary || MEDIA_EXTENSIONS.has(posix.extname(path).toLowerCase()));
@@ -91,9 +88,6 @@ export function checkRepoLimits({ files, allowlist, complete = false }) {
       if (file.added && !file.moved) errors.push(`${file.path}: ny binär under media/. Lägg mediet i Blob via Admin; Git lagrar inte media.`);
       else if (Number.isSafeInteger(file.baseBytes) && file.bytes > file.baseBytes) errors.push(`${file.path}: binären under media/ växer från ${file.baseBytes} till ${file.bytes} byte. `
         + 'Lägg den nya versionen i Blob via Admin; Git lagrar inte media.');
-    }
-    if (file.path.startsWith('docs/') && file.bytes > MAX_DOC_BYTES) {
-      errors.push(`${file.path}: ${kb(file.bytes)}, över taket 100 kB för levande dokument. Radera äldre avsnitt; Git har dem (docs/HISTORIK.md).`);
     }
   }
   if (complete) for (const path of entries.keys()) if (!seen.has(path)) errors.push(`${path}: finns inte i trädet; ta bort posten ur ${ALLOWLIST}`);
@@ -399,7 +393,7 @@ export function inspectCi({ cwd = repository, env = process.env, event } = {}) {
     git(['fetch', '--no-tags', '--no-recurse-submodules', '--filter=blob:none', '--unshallow', 'origin', head]);
   }
   const result = inspectPush({ cwd, updates: `HEAD ${head} refs/heads/ci ${base}\n`, hydrate: true });
-  // Keep the final diff's media-growth, binary and document-line rules as well.
+  // Keep the final diff's media-growth, binary and exact-allowlist rules as well.
   if (!result.errors.length) result.errors.push(...checkRepoLimits(inspectChanges({ cwd, tree: head, base })));
   return { ...result, mode: 'range' };
 }

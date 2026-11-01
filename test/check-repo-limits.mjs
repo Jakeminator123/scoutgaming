@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  ALLOWLIST, MAX_DOC_BYTES, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectCi, inspectPush, inspectTree, parseArgs,
+  ALLOWLIST, MAX_FILE_BYTES, allowlistErrors, checkRepoLimits, inspectChanges, inspectCi, inspectPush, inspectTree, parseArgs,
 } from '../tools/check-repo-limits.mjs';
 
 const entry = (path, maxBytes, reason = 'fixture') => ({ path, maxBytes, reason });
@@ -48,10 +48,14 @@ test('media binaries: no additions, no growth, moves and shrinking allowed', () 
   assert.equal(errorsFor([{ path: 'apps/web/public/new.png', bytes: 100, added: true, binary: true }]), '', 'the media rule is limited to media/');
 });
 
-test('documents keep the byte limit without constraining their line wrapping', () => {
-  assert.equal(errorsFor([{ path: 'docs/NEXT-AGENT.md', bytes: 400, lines: 200 }]), '');
-  assert.match(errorsFor([{ path: 'docs/plans/BIG.md', bytes: MAX_DOC_BYTES + 1 }]), /över taket 100 kB för levande dokument\. Radera äldre avsnitt; Git har dem/);
-  assert.match(errorsFor([{ path: 'docs/history/OLD.md', bytes: MAX_DOC_BYTES * 3 }]), /över taket 100 kB/);
+test('documents use the general file limit and exact allowlist', () => {
+  for (const path of ['docs/NEXT-AGENT.md', 'docs/data.json']) {
+    assert.equal(errorsFor([{ path, bytes: 256 * 1024 }]), '');
+    assert.equal(errorsFor([{ path, bytes: MAX_FILE_BYTES }]), '');
+    assert.match(errorsFor([{ path, bytes: big }]), /över gränsen 1 MB och utan undantag/);
+    assert.equal(errorsFor([{ path, bytes: big }], [entry(path, big)]), '');
+    assert.match(errorsFor([{ path, bytes: big + 1 }], [entry(path, big)]), /växer från/);
+  }
 });
 
 test('arguments accept only the documented modes', () => {
@@ -136,13 +140,13 @@ test('Git modes: whole tree, staged index and a sparse commit diff all read obje
     git('reset', '-q', '--hard');
 
     // CI: a sparse checkout without the changed files still sees the merge diff.
-    git('checkout', '-qb', 'feature'); put('media/added.jpg', binary(20)); put('docs/plans/BIG.md', 'x'.repeat(MAX_DOC_BYTES + 1)); commit('feature');
+    git('checkout', '-qb', 'feature'); put('media/added.jpg', binary(20)); put('docs/plans/BIG.md', 'x'.repeat(big)); commit('feature');
     git('checkout', '-q', 'main'); git('merge', '-q', '--no-ff', 'feature', '-m', 'fixture merge');
     git('sparse-checkout', 'set', '--no-cone', `/${ALLOWLIST}`);
     assert.throws(() => readFileSync(join(root, 'media', 'added.jpg')), { code: 'ENOENT' });
     const ci = check(inspectChanges({ cwd: root, tree: 'HEAD', base: 'HEAD^1' }));
     assert.match(ci, /media\/added\.jpg: ny binär under media\//);
-    assert.match(ci, /docs\/plans\/BIG\.md: 101 kB, över taket 100 kB/);
+    assert.match(ci, /docs\/plans\/BIG\.md: 1\.00 MB, över gränsen 1 MB och utan undantag/);
     assert.doesNotMatch(ci, /assets\/big\.bin/, 'unchanged allowlisted files are not fetched or judged');
     assert.equal(check(inspectChanges({ cwd: root, tree: 'HEAD^1', base: base })), '', 'the move-only range is clean');
     assert.match(check(inspectTree({ cwd: root, tree: 'HEAD' })), /BIG\.md/);

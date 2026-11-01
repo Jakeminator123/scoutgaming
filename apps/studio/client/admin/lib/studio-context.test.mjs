@@ -773,7 +773,7 @@ test('the company nav opens on Spelbord with start addresses, keeps the journal 
   assert.ok(hrefs(list).includes('/admin/companies/a?flik=spelbord'),'a company without a tab opens on Spelbord');
 });
 
-test('Tilldelning publishes the selection and what the company may change with one button, in order and on the first receipt',async()=>{
+test('Tilldelning publishes the selection and what the company may change with one button, atomically on one revision',async()=>{
   const view={allow:{dealer:true,tableAsset:false,background:false,language:false,limit:true,pause:false},adjustable:{dealer:true,tableAsset:false,background:false},
     limitPresets:['casual'],languages:['sv'],options:{limitPresets:['casual','prive'],languages:['sv','en']}};
   const p=await publicationHarness({props:{operatorId:'a',mode:'package',assignment:view,assignmentRevision:4}});
@@ -783,20 +783,19 @@ test('Tilldelning publishes the selection and what the company may change with o
   assert.equal(walk(p.h.render(),node=>node.type==='button'&&node.props.type==='submit').length,1,'one publish button for both');
   assert.ok(walk(p.h.render(),node=>node.type==='form').flatMap(form=>walk(form,node=>typeof node.props?.onDraft==='function')).length,'the assignment is in the form');
   assert.equal(p.submit().props.disabled,true,'nothing changed');
-  // Both changed: the selection first, then the assignment on revision 5 from the first receipt.
+  // Both changed: one request publishes both on revision 5.
   p.checkbox('two').props.onChange({target:{checked:true}});setPause(true);
   assert.equal(p.submit().props.disabled,false);
-  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','two']}),Response.json({ok:true,operatorId:'a',packageRevision:6,assignment:view}));
+  p.replies.push(Response.json({ok:true,operatorId:'a',packageRevision:5,lanes:['one','two'],assignment:{...view,allow:{...view.allow,pause:true}}}));
   await p.publish();
-  assert.deepEqual(p.requests.map(row=>row.body),[{operatorId:'a',lanes:['one','two'],expectedPackageRevision:4},
-    {action:'publish-assignment',operatorId:'a',expectedPackageRevision:5,assignment:{allow:{...view.allow,pause:true},limitPresets:['casual'],languages:['sv']}}]);
-  assert.match(p.status(),/\b6\b/);assert.equal(p.submit().props.disabled,true,'the sent draft waits for the new catalog read');
-  // The catalog reads revision 6; only the assignment changes: one call, and a 409 stops with a message.
-  p.h.setProps({assignment:{...view,allow:{...view.allow,pause:true}},assignmentRevision:6});
-  p.lifecycle().props.onChanged(packageOperators({packageRevision:6,lanes:['one','two']}));
+  assert.deepEqual(p.requests.map(row=>row.body),[{action:'publish-company-assignment',operatorId:'a',lanes:['one','two'],expectedPackageRevision:4,assignment:{allow:{...view.allow,pause:true},limitPresets:['casual'],languages:['sv']}}]);
+  assert.match(p.status(),/\b5\b/);assert.equal(p.submit().props.disabled,true,'the sent draft waits for the new catalog read');
+  // The catalog reads revision 5; only the assignment changes: one call, and a 409 stops with a message.
+  p.h.setProps({assignment:{...view,allow:{...view.allow,pause:true}},assignmentRevision:5});
+  p.lifecycle().props.onChanged(packageOperators({packageRevision:5,lanes:['one','two']}));
   setPause(false);
   await p.publish();
-  assert.deepEqual(p.requests.slice(2).map(row=>[row.body.action,row.body.expectedPackageRevision]),[['publish-assignment',6]]);
+  assert.deepEqual(p.requests.slice(1).map(row=>[row.body.action,row.body.expectedPackageRevision]),[['publish-assignment',5]]);
   assert.ok(p.html().includes(escapeHtml(assignmentPublishError(409))));
-  await p.publish();assert.equal(p.requests.length,3,'no new attempt before the readback');
+  await p.publish();assert.equal(p.requests.length,2,'no new attempt before the readback');
 });
