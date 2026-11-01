@@ -1,5 +1,7 @@
 # Miljövariabler per tjänst
 
+Kodförteckning med daterade driftkvitton. Dokumentgranskningen 1 november 2026 ändrar inga värden och är ingen ny leverantörsinventering.
+
 Läsbar referens till [`environment-variables.json`](environment-variables.json), som är den maskinkontrollerade listan. Här står namn, krav, var värdet sätts och vad det gör, aldrig värden.
 
 `sources` för Render-spelmotorn och Studio följer den registrerade medieruntimen efter avvecklingen av legacy-klippinventeringen.
@@ -29,7 +31,7 @@ Ett projekt med tre tjänster (`vercel.json`). Registret delar upp dem som `verc
 
 | Namn | Krav | Tjänst | Syfte |
 | --- | --- | --- | --- |
-| `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | läses inte; fasta i koden | web, studio | Se [Fasta värden](#fasta-värden). Panelposterna tas bort efter deploy ([listan](#att-ta-bort-i-panelen)) |
+| `CROUPIER_VERCEL_UNIFIED_UI`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | läses inte; fasta i koden | web, studio | Se [Fasta värden](#fasta-värden). Panelposterna togs bort 30 oktober enligt [kvittot](#att-ta-bort-i-panelen) |
 | `CROUPIER_PUBLIC_ORIGIN` | krävs | web, studio, speech | `https://www.scoutgaming.tech`; även länkar i mejl |
 | `CROUPIER_BACKEND_ORIGIN` | krävs | web, studio, speech | Spelmotorns exakta origin, `https://croupier-v3.onrender.com`. Den aktiverar transporten i `packages/server-transport/configuration.mjs`. Saknad origin i Production fäller `apps/web`-bygget; lokalt och i CI ger den bara landningssidan och Studio-proxyn svarar 503. Om origin är satt men `CROUPIER_VERCEL_INGRESS_SECRET` saknas kastar konfigurationen ett fel; Studio-proxyn svarar då 500. Båda ska sättas tillsammans i den avsedda miljön |
 | `CROUPIER_VERCEL_INGRESS_SECRET` | krävs, Sensitive | web, studio, speech | Signerar anrop till spelmotorn; samma värde som på Render |
@@ -133,9 +135,9 @@ Registerposten är `render-game`. `ops/cloud/config.mjs` validerar processmiljö
 | `NODE_ENV` | krävs, `production` (imagen sätter) | Produktionsläge |
 | `CROUPIER_CLOUD_LAUNCH` | krävs, `pilot` | Tillåter `start.mjs --start` |
 | `CROUPIER_CLOUD_LAYOUT` | krävs, `single-origin` | En publik origin. Kodens standard `separate-hosts` används inte |
-| `CROUPIER_STREAM_LANE` | sätts inte; fast i starten | Anslutnings-ID `lissabon-stream-lane`, som `ops/cloud/config.mjs` sätter för spelprocessen. Panelposten läses inte längre och tas bort ([listan](#att-ta-bort-i-panelen)) |
-| `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | läses inte; fasta i koden | Neon och privat Blob är fasta ([Fasta värden](#fasta-värden)); panelposterna tas bort ([listan](#att-ta-bort-i-panelen)) |
-| `CROUPIER_DATABASE` | läses inte | PostgreSQL är enda databasvägen och fast i koden. Panelposten tas bort ([listan](#att-ta-bort-i-panelen)) |
+| `CROUPIER_STREAM_LANE` | sätts inte; fast i starten | Anslutnings-ID `lissabon-stream-lane`, som `ops/cloud/config.mjs` sätter för spelprocessen. Panelposten läses inte längre och togs bort 30 oktober ([kvittot](#att-ta-bort-i-panelen)) |
+| `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_MEDIA_STORAGE` | läses inte; fasta i koden | Neon och privat Blob är fasta ([Fasta värden](#fasta-värden)); panelposterna togs bort 30 oktober ([kvittot](#att-ta-bort-i-panelen)) |
+| `CROUPIER_DATABASE` | läses inte | PostgreSQL är enda databasvägen och fast i koden. Panelposten togs bort 30 oktober ([kvittot](#att-ta-bort-i-panelen)) |
 | `CROUPIER_GAME_DATABASE_URL` | krävs | Neon `croupier_game`; TLS `require`, `verify-ca` eller `verify-full` (produktionen `verify-full`) |
 | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID` | krävs | Samma register och scope som Vercel |
 | `BLOB_READ_WRITE_TOKEN` | krävs | Privat Blob; ingen diskreserv. Saknad token stoppar starten (utom i underhållsexporten) |
@@ -211,16 +213,16 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_SPEECH_AGENT` | valfri | OpenClaw-rollerna `openclaw/croupier-director`, `openclaw/croupier-chat`, `openclaw/croupier-speech` (Blueprint och kodens standard) |
 | `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_SPEECH_TIMEOUT_MS` | valfri | Råd 8000 ms; tal 20000 ms tillsammans med spelmotorn |
 | `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_DEEP_MODEL` | valfri | `adaptive` använder Luna för första svaret och tillåter högst en fördjupning med `gpt-6.1-sol` för alla dealerprofiler. Äldre uttryckliga `gpt-6-sol`-val stöds; kodens standard för routing är `fixed` |
-
-`fixed` är även återställningsläget för en enda modellpassering. Adaptiv
-JSON-transport kräver en fast JSON-instruktion i indata, eftersom den pinnade
-Gatewayen flyttar systemtexten till Responses `instructions`.
 | `OPENCLAW_DASHBOARD_ENABLED` | valfri | Gatewayns inloggning via Director |
 | `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` | valfri, hemlig | Ed25519-nyckel (base64 PKCS8) för Admins modellval; bara på Director |
 | `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Utan origin används `RENDER_EXTERNAL_URL` (värdhanterad) när `OPENCLAW_DASHBOARD_ENABLED=true`; loopback bara lokalt |
 | `LAB_COMPANION_ENABLED`, `LAB_COMPANION_FUN_ENABLED`, `LAB_COMPANION_WEB_ENABLED` | valfri | Följeslagarfunktionerna; bara `false` stänger av |
 | `OPENCLAW_PRODUCT_SPEECH_URL` | valfri, bara lokalt | Directors egen relämottagare i labbet; sätts inte på Render |
 | `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` | nekas | Lokalt fjärrläge som skickar vidare till en annan Director; stänger av Gateway-inloggningen och sätts aldrig på Render |
+
+`fixed` är även återställningsläget för en enda modellpassering. Adaptiv
+JSON-transport kräver en fast JSON-instruktion i indata, eftersom den pinnade
+Gatewayen flyttar systemtexten till Responses `instructions`.
 
 Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`). Blueprint deklarerar `OPENCLAW_PRODUCT_SPEECH_TOKEN` och `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` med `sync: false` och `OPENCLAW_SPEECH_TIMEOUT_MS` med `20000`; de hemliga värdena sätts bara i panelen.
 
@@ -252,7 +254,7 @@ Preview, den tidigare stagingen (se [START-HERE](../START-HERE.md#preview)), anv
 | Registerpost | Namn | Status |
 | --- | --- | --- |
 | `github-actions-tooling` | `CROUPIER_GAME_DATABASE_URL` och `CROUPIER_PREVIEW_DATABASE_URL` (repository secrets), `CROUPIER_MIGRATION_CONFIRM` | Jobbet `migration-readiness` i `.github/workflows/croupier.yml` kör `tools/check-migration-readiness.mjs`. Vid push eller manuell körning på branchen `preview` och PR med bas `preview` läser det previews migreringsledger med `CROUPIER_PREVIEW_DATABASE_URL` (befintlig roll `croupier_staging_app`; själva kontrollen använder lästransaktioner), som stegen ger skriptet som `CROUPIER_GAME_DATABASE_URL`; saknas den secreten fallerar jobbet i stället för att läsa produktionen. Alla andra körningar läser produktionens ledger med `CROUPIER_GAME_DATABASE_URL`. Preview-secreten sätts i GitHub mot avsedd stagingdatabas; ett befintligt secret-namn bevisar inte rätt anslutningsmål. `CROUPIER_MIGRATION_CONFIRM=apply-pending` sätts bara i den terminal där Jakob kör `--apply`, aldrig i CI eller Vercel |
-| `local-runtime-media-import` | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_RUNTIME_IMPORT_CONFIRM` | `ops/neon-studio/runtime-media-import-run.mjs` byter runtime-katalogen ([REN-START](plans/REN-START.md) steg 6–7). Scope krävs alltid; `prepare` läser ingen databas, `plan` läser och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Sätts bara i Jakobs terminal, aldrig i CI, Vercel eller Render |
+| `local-runtime-media-import` | `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_RUNTIME_IMPORT_CONFIRM` | `ops/neon-studio/runtime-media-import-run.mjs` byter runtime-katalogen ([REN-START](plans/REN-START.md#genomförande-och-återgång)). Scope krävs alltid; `prepare` läser ingen databas, `plan` läser och `apply` skriver bara när `CROUPIER_RUNTIME_IMPORT_CONFIRM` är den granskade planens `planHash`. Sätts bara i Jakobs terminal, aldrig i CI, Vercel eller Render |
 | `local-republish-rooms` | `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`; `CROUPIER_REPUBLISH_CONFIRM` krävs vid `--apply` | `tools/republish-rooms.mjs` (L3 PR 4) publicerar om bolag vars aktuella paket saknar `rooms` (pkg+1; kräver Studio 023 och kolumnen). Standard är provkörning, även utan `--dry-run`. Skrivning kräver `--apply` och exakt `<databas>/<environment>/<workspace>` i `CROUPIER_REPUBLISH_CONFIRM`; kontrolleras mot läst mål. Sätts bara i Jakobs terminal för körningen, aldrig i CI, Vercel eller Render; ta bort bekräftelsen efteråt. Mål och ordning finns i [återställningsguiden](ENVIRONMENT-RESTORATION.md) |
 | `render-gpu-relay` | `WORKER_SECRET`, `TICKET_SECRET`, `ALLOWED_ORIGINS`, `PORT` | Separat GPU-relä i `services/astrid-gpu-worker/gateway/server.mjs`; inte driftsatt |
 | `runpod-gpu-worker` | `AVATAR_ID`, `NVIDIA_DRIVER_CAPABILITIES`, `NVENC`, `MOVING_CALLBACK_ORIGIN`, `MOVING_BANK_STORE` | GPU-workrarna på RunPod (`services/astrid-gpu-worker`, `services/moving-gpu-worker`); endpoint, nyckel och mallens miljö hanteras i RunPod och läses inte härifrån. `MOVING_CALLBACK_ORIGIN` måste vara spelmotorns exakta origin (`https://croupier-v3.onrender.com`, i preview `https://croupier-k06-k07-staging.onrender.com`, alltså en mall per miljö); mall `5dkkc3wolw` är rättad och återläst mot `croupier-v3` den 30 oktober 16:46 UTC. Endpoints i Kevins RunPod-konto med våra images: se [TALKEDJA-RUNPOD](TALKEDJA-RUNPOD.md) |

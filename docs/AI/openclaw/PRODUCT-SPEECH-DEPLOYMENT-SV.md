@@ -50,8 +50,9 @@ väntande svar blockerar aldrig deal, hit, double eller dealerns kort.
 
 ## Gateway-rollen
 
-`croupier-speech` har egen `workspace` och `agentDir`, samma
-`model.primary` som `croupier-chat`, tom `fallbacks` och `skills`, avstängd
+`croupier-speech` har egen `workspace` och `agentDir`. När rollen skapas
+hämtas `model.primary` från `croupier-chat` (annars director); ett befintligt
+modellval får skilja sig från chatten. Rollen har tom `fallbacks` och `skills`, avstängd
 minnessökning och heartbeat (`0m`), `tools.profile=minimal`,
 `tools.deny=["*"]` och avstängd elevated. Gateway-starten lägger additivt till
 en saknad roll (`reconcile-speech` / `reconcile-roles`) och skriver aldrig över

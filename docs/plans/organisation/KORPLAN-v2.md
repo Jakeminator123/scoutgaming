@@ -4,12 +4,12 @@ Uppdaterad 31 oktober 2026 efter Jakobs nya beställning: tydliga satsningsrutor
 
 ## Utgångsläge och mandat
 
-- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Historiska S1–S3 utgick från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Förenklingsvåg 2 utgår från `53b57cb31f037433375c35b6053a21615f5c389b`; integrationen sker på `jakob/codex-wave2-integration-1031` med isolerade worktrees under `.claude/worktrees`.
+- Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Historiska S1–S3 utgick från `7589d2ba453346ce6fca33b3d53c541f72185138` efter #747–748. Förenklingsvåg 2 utgick från `53b57cb31f037433375c35b6053a21615f5c389b` och är avslutad enligt NEXT-AGENT. Nytt arbete använder aktuell tilldelning och isolerade worktrees under `.claude/worktrees`.
 - Jakob har gett MERGEAGENTEN fullt beslutsmandat för nödvändiga merges och kontrollerade releaser utan upprepade frågor. Exakt head, verifierad ägare, relevant granskning och grön CI krävs. Inga force-operationer, ingrepp i kollegors resurser eller RunPod-endpoints ingår. GitHubs normala auto-delete behålls vid godkända PR-merges; äldre brancher/worktrees har inte gallrats i denna leverans.
 - **Inga produktmappar, vyer, menynamn eller gamla implementationer är frysta.** Vi bevarar beteenden: serverägda kort och utfall, atomiska pengar, behörighet, bolags-/rumsisolering samt aktiva publicerade mediereferenser. Ersatt kod, dess förbrukade testlås och dokument tas bort tillsammans.
 - Rums-/materialpublicering och data-/historikradering har konkreta beroenden och återställningskrav. De är inte blanketförbud mot UI-, adapter- eller dokumentändringar. Inga env-, databas- eller betalda providerändringar behövs för den startade etappen.
 
-## Tre faser
+## Leveransens tre faser
 
 | Fas | Parallellt arbete | Färdigt när |
 | --- | --- | --- |

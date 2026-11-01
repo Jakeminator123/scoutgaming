@@ -11,7 +11,7 @@
       "CROUPIER_LAB_UI_ORIGIN",
       "CROUPIER_PUBLIC_GAME_PATH"
     ],
-    "note": "Miljövariabler 2: one value in production and preview, fixed in code. Miljövariabler 2b adds CROUPIER_LAB_UI_ORIGIN and CROUPIER_PUBLIC_GAME_PATH, which nothing reads since Miljövariabler 2. tools/check-environment-variables.mjs fails when any tracked file outside docs/, Markdown and .github/workflows/ names one of them (source, test, build script, vercel.json or Next config)."
+    "note": "Names retired into code constants. tools/check-environment-variables.mjs rejects environment reads/declarations of these names in its supported JS/TS, env, JSON-env and Render-blueprint inputs. Descriptive strings, comments and ordinary object fields may mention them; docs, Markdown and workflows are outside this audit. See ENVIRONMENT-VARIABLES.md for parser coverage."
   },
   "services": {
     "render-game": {
@@ -131,7 +131,7 @@
         "CROUPIER_GENERATED_SPEECH_DIR",
         "CROUPIER_DATA_DIR"
       ],
-      "constantsInCode_2026_10_29": "CROUPIER_DATABASE (always postgres) and CROUPIER_STREAM_LANE (always lissabon-stream-lane, set by ops/cloud/config.mjs childSpecifications for the game child) are no longer read from the Render panel; remove both from croupier-v3 after the main deploy, and from scoutgaming-preview-engine only once branch preview has #664 and is deployed (ENVIRONMENT-VARIABLES.md#att-ta-bort-i-panelen). Neither is listed here, so --compare render-game shows both as unlisted until they are removed. Miljövariabler 2: CROUPIER_STUDIO_NEON_POLICY (always 1) and CROUPIER_MEDIA_STORAGE (always blob) are fixed in ops/cloud/config.mjs, container-entry.mjs, storage-export.mjs, vercel-ingress.mjs and services/game; the starter no longer forwards them to the game child, and CROUPIER_PUBLIC_GAME_PATH (engine document fixed at /blackjack) is no longer read. Remove both from croupier-v3 after the main deploy and from scoutgaming-preview-engine once preview has the change and is deployed; --compare render-game shows them as unlisted until then."
+      "constantsInCode_2026_10_29": "Historical code migration: CROUPIER_DATABASE, CROUPIER_STREAM_LANE, CROUPIER_STUDIO_NEON_POLICY and CROUPIER_MEDIA_STORAGE became fixed values; CROUPIER_PUBLIC_GAME_PATH is no longer read. The production and preview Render panel entries were removed on 2026-10-30 after compatible deployments, as recorded in panelRemovals.completed and ENVIRONMENT-VARIABLES.md. This is not a pending removal instruction."
     },
     "vercel-entry": {
       "sources": [
@@ -546,14 +546,6 @@
         "afterDeployOfMiljovariabler2": [],
         "now": [
           {
-            "where": "render croupier-v3",
-            "names": [
-              "CROUPIER_MOVING_SPEECH_BANK_RECORD",
-              "CROUPIER_MOVING_SPEECH_ENDPOINT_ID"
-            ],
-            "reason": "Unread since T3."
-          },
-          {
             "where": "vercel scoutgaming (preview, development)",
             "names": [
               "CROUPIER_DEALER_IMPORT_AI"
@@ -655,6 +647,18 @@
             "afterCleanupCount": 26,
             "backup": "arkiv/2026-10-30/nattarbete/render-preview-retired-flags-2026-10-30T02-32-01-715Z.json",
             "verification": "Three retired plain service flags removed after the UI reviewer released preview and an empty-table check. Every unrelated value remained unchanged. Pinned redeployment is live; health and exact version returned HTTP 200, and post-deploy readback confirms all four retired names absent. No provider credentials or speech activation flags changed."
+          },
+          {
+            "where": "render croupier-v3",
+            "completedDate": "2026-10-30",
+            "names": [
+              "CROUPIER_MOVING_SPEECH_BANK_RECORD",
+              "CROUPIER_MOVING_SPEECH_ENDPOINT_ID"
+            ],
+            "beforeCount": 42,
+            "afterCleanupCount": 40,
+            "backup": ".cache/closeout-20261030/ (encrypted local backup)",
+            "verification": "Existing 16:50 UTC closeout receipt in revisionNote and ENVIRONMENT-VARIABLES.md: both unread names removed; unrelated values unchanged. Reclassified during documentation audit, no new provider call."
           }
         ]
       }
