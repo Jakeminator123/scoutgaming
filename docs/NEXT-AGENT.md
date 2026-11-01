@@ -10,6 +10,18 @@ Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och des
 
 Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-konsument är borttagna. Dealerverktygen använder hubbens navigation; den dubbla Studio-flikraden och dess förbrukade komponentkontrakt är borta. Filter, dealerbyte, historik, utkastskydd, CAS och scope verifieras fortfarande med beteendeprov. Den gamla Studio-probe-routen och dess adapter är avvecklade efter Jakobs uttryckliga godkännande; motorns probe är en separat aktiv tjänst. Exakta prov- och mergebevis hör till ändringens PR.
 
+## Klientens layout- och chattkontroller 1 november
+
+De tre första extraktionerna i chattavsnittets tabell nedan är genomförda:
+`action-placement`, `game-overlay-layout` och `dealer-chat-visibility` importerar
+nu klientens [game-interface](../services/game/public/game-interface.mjs) och
+[dealer-chat-controls](../services/game/public/dealer-chat-controls.mjs).
+Mobilplacering, lagliga knappar, första frame/stängning, återupptagen ytterhand
+och chatt-/röstreadiness har kvar beteendeprov. De sju övriga källsnitten är
+oförändrade och passerar i den angränsande klientkörningen. Endast konsumenter
+på main/preview styr fortsatt avveckling. Exakta lokala prov och leveransbevis
+hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
+
 ## Chattens beteendeprov 1 november
 
 Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
