@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import vm from 'node:vm';
+import {createGameInterface} from '../services/game/public/game-interface.mjs';
 import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
 import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry,defaultBlackjackAutoScale} from '../packages/presentation/contracts/composition-settings.mjs';
@@ -103,8 +102,6 @@ test('static geometry reports clipped or overlapping controls instead of silentl
 });
 
 test('actual seat layout handles compositor resize before the query change event and retains a resumed outer hand',()=>{
-  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const fragment=source.slice(source.indexOf('const COMPACT_BOXES ='),source.indexOf('layerComposition?.onGeometryChange(layoutSeats)'));
   const query={matches:false},geometry=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
   let width=1920,height=1080,projection;
   const node=()=>({dataset:{},style:{setProperty(){}},classList:{toggle(){}},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width,height})});
@@ -115,14 +112,20 @@ test('actual seat layout handles compositor resize before the query change event
     const scene=sceneForComposition(settings,layout),g=stageGeometry(scene);
     return projectTableGamePlane(g.dims,tableRect(scene,{width:1672,height:941},g),{width,height},geometry,layout);
   };
-  const context=vm.createContext({layoutDealControl(){},cardViewChoice:{hidden:true},cardView:'raised',registeredFilmedProfile:()=>null,dealerFilmedProfile:null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
-    $:selector=>nodes[selector],document:{createElement:node},layerComposition:{referencePlane:plane},localCards:{setProjection(value){projection=structuredClone(value);}}});
-  vm.runInContext(fragment,context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
-  width=390;height=844;query.matches=true;context.round={active:0,live:()=>[{box:6}]};
-  // No change event has updated the app's earlier compactSeats value yet.
-  vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[4,5,6]);
+  nodes['#deal-now']={disabled:true,style:{}};
+  const state={round:null,filmedProfile:null,localCards:{setProjection(value){projection=structuredClone(value);}}};
+  const viewport={get innerWidth(){return width;},get innerHeight(){return height;},matchMedia:queryText=>{assert.equal(queryText,BLACKJACK_COMPACT_QUERY);return query;}};
+  const seats=Array.from({length:7},node);
+  const controls=createGameInterface({document:{querySelector:selector=>nodes[selector],createElement:node},viewport,state,
+    seatEls:seats,layerComposition:{referencePlane:plane}});
+  controls.layoutSeats();assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
+  width=390;height=844;query.matches=true;state.round={active:0,live:()=>[{box:6}]};
+  // No change event has run yet; the current compositor format still wins.
+  controls.layoutSeats();assert.deepEqual(projection.boxes,[4,5,6]);assert.equal(controls.compactSeats,true);
+  state.round=null;controls.layoutSeats();assert.deepEqual(projection.boxes,[2,3,4]);
+  state.round={active:0,live:()=>[{box:0}]};controls.layoutSeats();assert.deepEqual(projection.boxes,[0,1,2]);
   width=900;height=1200;query.matches=false;
-  vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
+  controls.layoutSeats();assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);assert.equal(controls.compactSeats,false);
 });
 
 for(const width of [320,390,768,1440])test('linked bets clear the resting cards and totals in either view at '+width,()=>{
