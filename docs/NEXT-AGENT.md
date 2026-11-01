@@ -13,8 +13,8 @@ native-film-v2-resolver och medieselektorer med syntetiskt fryst material.
 
 Lokalt passerar de 16 bevarade presentationsproven, film-/material-/selektionsproven
 och resolverns negativa fall för mätning, språk, bolag och saknat fryst paket.
-Verkligt PostgreSQL-/restartprov återstår i obligatorisk CI; ingen ny drift-, data-
-eller AV-acceptans ingår. Ingen spelregel eller produktkonfiguration har ändrats.
+PostgreSQL-/restartproven passerade i [CI på `7d4a6931`](https://github.com/Jakeminator123/scoutgaming/actions/runs/41350833170).
+Slutligt leveransbevis finns i [PR #785](https://github.com/Jakeminator123/scoutgaming/pull/785). Ingen ny drift-, data- eller AV-acceptans ingår. Spelregler och produktkonfiguration är oförändrade.
 
 ## Dokumentkonsolidering 1 november
 
