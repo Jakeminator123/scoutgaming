@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
-import { readFile } from 'node:fs/promises';
 import { playGeneratedSpeech, validateGeneratedSpeechStream } from '../packages/presentation/runtime/generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from '../services/game/public/chat-playback-diagnostic.mjs';
+import { requestPlayerChat, createLinkedChatSubmit } from '../services/game/public/chat-requests.mjs';
+import { createStudioPreviewClient } from '../services/game/public/studio-preview-client.mjs';
 
 const text = 'Good evening. Your next hand is ready.';
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -261,12 +262,110 @@ test('abort during append or pending play prevents late start and frame reveal',
   }
 });
 
-test('normal chat advertises stream support while native lab bridge keeps finalized-byte contract', async () => {
-  const source = await readFile(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
-  const normal = source.slice(source.indexOf('async function sendChat('), source.indexOf('const labSpeechBridge'));
-  const bridge = source.slice(source.indexOf('const labSpeechBridge'), source.indexOf('if (localPresentationEnabled', source.indexOf('const labSpeechBridge')));
-  assert.match(normal, /acceptsSpeechStream: true/); assert.doesNotMatch(bridge, /acceptsSpeechStream: true/);
-  assert.match(normal, /chatPlaybackDiagnostic\.begin\(requestId\)/);
+const chatIdentity = { dealerId: 'astrid', sessionRevision: 'session-1', roundRevision: '7' };
+const chatEntry = { operator: 'sg-test', roomId: 'published-room', packageRevision: 15, dealer: 'astrid' };
+const chatContext = { operatorSlug: 'sg-test', roomId: 'published-room', packageRevision: 15, dealerId: 'astrid' };
+const chatDecision = { kind: 'generatedText', requestId: 'request-a', exactText: text };
+
+test('player chat posts stream capability through the game API and reads JSON or progress replies', async () => {
+  for (const progressEvents of [false, true]) {
+    const signal = new AbortController().signal, progress = [], previews = [], calls = [];
+    const images = progressEvents ? [{ id: 'reviewed-image', sha256: 'c'.repeat(64) }] : [];
+    const frames = [{ type: 'progress', stage: 'voice', elapsedMs: 42 }, { type: 'preview', exactText: text },
+      { type: 'result', decision: chatDecision }];
+    const request = createStudioPreviewClient({ fetchImpl: async (url, init) => {
+      calls.push({ url, ...init, body: JSON.parse(init.body) });
+      return progressEvents ? new Response(frames.map(frame => JSON.stringify(frame)).join('\n') + '\n',
+        { headers: { 'Content-Type': 'application/x-ndjson' } }) : Response.json(chatDecision);
+    } }).request;
+    assert.deepEqual(await requestPlayerChat({ request, requestId: 'request-a', message: 'Hello',
+      history: [{ role: 'user', text: 'Earlier' }], dealer: 'astrid', entrySelection: progressEvents ? chatEntry : {}, identity: chatIdentity,
+      signal, progressEvents, ...(progressEvents ? { presentationVersion: 9 } : {}), images, profileRevision: 'profile-3',
+      onProgress: value => progress.push(value), onPreview: value => previews.push(value) }), chatDecision);
+    assert.deepEqual(calls, [{ url: '/chat', method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', Accept: progressEvents ? 'application/x-ndjson' : 'application/json' },
+      body: { requestId: 'request-a', message: 'Hello', history: [{ role: 'user', text: 'Earlier' }], dealer: 'astrid',
+        sessionRevision: 'session-1', roundRevision: '7', acceptsSpeechStream: true,
+        ...(progressEvents ? { presentationContext: chatContext, presentationVersion: 9,
+          observation: { version: 1, turnId: 'request-a', consentTurnId: 'request-a', profileRevision: 'profile-3', images } } : {}) } }]);
+    assert.deepEqual(progress, progressEvents ? [frames[0]] : []);
+    assert.deepEqual(previews, progressEvents ? [text] : []);
+  }
+});
+
+test('player chat preserves API rejection and aborts the same in-flight request', async () => {
+  const input = { requestId: 'request-a', message: 'Hello', history: [], dealer: 'astrid', identity: chatIdentity };
+  await assert.rejects(requestPlayerChat({ ...input, request: async () => Response.json({ error: 'authentication_required' }, { status: 401 }) }), /authentication_required/);
+  const controller = new AbortController();
+  const pending = requestPlayerChat({ ...input, signal: controller.signal, request: (_url, { signal }) => new Promise((_resolve, reject) => {
+    assert.equal(signal, controller.signal);
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  }) });
+  const rejected = assert.rejects(pending, { name: 'AbortError' });
+  controller.abort(); await rejected;
+});
+
+function linkedChatFixture(overrides = {}) {
+  const state = { busy: false, identity: chatIdentity }, calls = [], ready = [], observed = [], busyStates = [];
+  const onSubmit = createLinkedChatSubmit({ tableReady: Promise.resolve(), isBusy: () => state.busy,
+    setBusy: value => { state.busy = value; busyStates.push(value); }, getIdentity: () => state.identity,
+    getContext: () => ({ dealer: 'astrid', entrySelection: chatEntry }), onChat: value => observed.push(value),
+    onReady: value => ready.push(value), request: createStudioPreviewClient({ fetchImpl: async (url, init) => {
+      calls.push({ url, ...init, body: JSON.parse(init.body) }); return Response.json(chatDecision);
+    } }).request, ...overrides });
+  return { state, calls, ready, observed, busyStates, onSubmit };
+}
+
+test('linked lab onSubmit posts only finalized-byte chat and holds ownership until ready completes', async () => {
+  const delivery = Promise.withResolvers(), signal = new AbortController().signal;
+  const h = linkedChatFixture({ onReady: async value => { h.ready.push(value); await delivery.promise; } });
+  const pending = h.onSubmit({ requestId: 'request-a', text: 'Hello', signal, acceptsSpeechStream: true });
+  await until(() => h.ready.length);
+  assert.equal(h.state.busy, true);
+  assert.deepEqual(h.calls, [{ url: '/chat', method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
+    body: { requestId: 'request-a', message: 'Hello', history: [], dealer: 'astrid', presentationContext: chatContext,
+      sessionRevision: 'session-1', roundRevision: '7' } }]);
+  assert.deepEqual(h.observed, [{ role: 'user', text: 'Hello', source: 'linked-lab-chat', requestId: 'request-a' }]);
+  assert.deepEqual(h.ready, [chatDecision]);
+  delivery.resolve(); await pending;
+  assert.deepEqual(h.busyStates, [true, false]);
+});
+
+test('linked chat checks busy state on both sides of table readiness and skips cancelled work', async () => {
+  for (const stage of ['before-ready', 'after-ready', 'aborted']) {
+    const table = Promise.withResolvers(), controller = new AbortController();
+    const h = linkedChatFixture({ tableReady: table.promise });
+    if (stage === 'before-ready') h.state.busy = true;
+    const pending = h.onSubmit({ requestId: 'request-a', text: 'Hello', signal: controller.signal });
+    const finished = stage === 'aborted' ? pending : assert.rejects(pending, /already active/);
+    if (stage === 'after-ready') h.state.busy = true;
+    if (stage === 'aborted') controller.abort();
+    table.resolve(); await finished;
+    assert.deepEqual(h.calls, []); assert.deepEqual(h.ready, []); assert.deepEqual(h.busyStates, []);
+  }
+});
+
+test('linked chat rejects stale or cancelled results and always releases request ownership', async () => {
+  for (const changed of ['dealerId', 'sessionRevision', 'roundRevision', 'aborted']) {
+    const reply = Promise.withResolvers(), controller = new AbortController();
+    const h = linkedChatFixture({ request: () => reply.promise });
+    const pending = h.onSubmit({ requestId: 'request-a', text: 'Hello', signal: controller.signal });
+    const rejected = assert.rejects(pending, /Stale linked chat/);
+    await until(() => h.state.busy);
+    if (changed === 'aborted') controller.abort();
+    else h.state.identity = { ...chatIdentity, [changed]: 'changed' };
+    reply.resolve(Response.json(chatDecision)); await rejected;
+    assert.deepEqual(h.ready, []); assert.deepEqual(h.busyStates, [true, false]);
+  }
+  for (const [overrides, error] of [
+    [{ request: async () => Response.json({}, { status: 401 }) }, /Linked chat unavailable/],
+    [{ request: async () => { throw Error('network unavailable'); } }, /network unavailable/],
+    [{ onReady: async () => { throw Error('delivery failed'); } }, /delivery failed/],
+  ]) {
+    const h = linkedChatFixture(overrides);
+    await assert.rejects(h.onSubmit({ requestId: 'request-a', text: 'Hello', signal: new AbortController().signal }), error);
+    assert.deepEqual(h.busyStates, [true, false]);
+  }
 });
 
 test('registered stream requires v2 exact profile/image binding and cannot borrow legacy Astrid descriptor',async()=>{
