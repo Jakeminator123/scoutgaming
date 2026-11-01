@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
   BASELINE_FOREIGN_BRANCHES, PR_FIELDS, REVIEW_MISSING, changedPaths, evaluateMerge, foreignBranchPatterns, freshnessVerdict, main,
-  matchesGlob, packageRoot, parseArgs, readCiBase, readFreshness, readIsolation, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
+  matchesGlob, packageRoot, parseArgs, readCiBase, readDocumentationMerge, readFreshness, readIsolation, readPrFiles, reviewVerdict, securityVerdict, SECURITY_RETRY_MS,
 } from '../tools/merge-pr.mjs';
 import { environmentBranches, featurePatterns } from '../tools/check-push-target.mjs';
 import { foreignBranchGuard } from '../tools/foreign-branch-guard.mjs';
@@ -273,7 +273,7 @@ test('readFreshness diffs origin/main against the CI base', () => {
   const git = ({ main = MAIN, ancestor = true, diff = 'docs/a.md\0packages/director/läs mig.mjs\0', count = '4\n', diffStatus = 0 } = {}) => argv => {
     if (argv[0] === 'rev-parse') return { status: 0, stdout: `${main}\n` };
     if (argv[0] === 'merge-base') return { status: ancestor ? 0 : 1, stdout: '' };
-    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/main']); return { status: diffStatus, stdout: diff }; }
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '-z', OLD_MAIN, MAIN]); return { status: diffStatus, stdout: diff }; }
     if (argv[0] === 'rev-list') return { status: 0, stdout: count };
     return { status: 1, stdout: '' };
   };
@@ -283,17 +283,155 @@ test('readFreshness diffs origin/main against the CI base', () => {
   assert.match(readFreshness(ciGh().gh, git({ ancestor: false }), args).reason, /ingår inte i origin\/main/);
   assert.match(readFreshness(ciGh({ fail: 'log' }).gh, git(), args).reason, /loggen/);
   assert.match(readFreshness(ciGh().gh, git({ diffStatus: 128 }), args).reason, /git diff mot CI-basen/);
+  assert.match(readFreshness(ciGh().gh, git({ diff: 'services/game/README.md' }), args).reason, /ofullständiga/);
+  assert.match(readFreshness(ciGh().gh, git({ count: '' }), args).reason, /oläsbara/);
   // With --base preview every ref is origin/preview; main is not consulted for the diff.
   const previewGit = argv => {
     assert.ok(!argv.includes('origin/main') && !argv.some(arg => String(arg).endsWith('..origin/main')), argv.join(' '));
     if (argv[0] === 'rev-parse') { assert.deepEqual(argv, ['rev-parse', 'origin/preview']); return { status: 0, stdout: `${MAIN}\n` }; }
-    if (argv[0] === 'merge-base') { assert.deepEqual(argv, ['merge-base', '--is-ancestor', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: '' }; }
-    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '-z', OLD_MAIN, 'origin/preview']); return { status: 0, stdout: 'docs/a.md\0' }; }
-    if (argv[0] === 'rev-list') { assert.deepEqual(argv, ['rev-list', '--count', `${OLD_MAIN}..origin/preview`]); return { status: 0, stdout: '1\n' }; }
+    if (argv[0] === 'merge-base') { assert.deepEqual(argv, ['merge-base', '--is-ancestor', OLD_MAIN, MAIN]); return { status: 0, stdout: '' }; }
+    if (argv[0] === 'diff') { assert.deepEqual(argv, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '-z', OLD_MAIN, MAIN]); return { status: 0, stdout: 'docs/a.md\0' }; }
+    if (argv[0] === 'rev-list') { assert.deepEqual(argv, ['rev-list', '--count', `${OLD_MAIN}..${MAIN}`]); return { status: 0, stdout: '1\n' }; }
     return { status: 1, stdout: '' };
   };
   assert.deepEqual(readFreshness(ciGh().gh, previewGit, { ...args, base: 'preview' }), { base: OLD_MAIN, main: MAIN, behind: 1, files: ['docs/a.md'] });
   assert.match(readFreshness(ciGh().gh, () => ({ status: 128, stdout: '' }), { ...args, base: 'preview' }).reason, /origin\/preview kunde inte läsas/);
+});
+
+test('reviewed docs and code require a safe combined tree; real Git histories keep all other gates', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'croupier-merge-docs-'));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null' };
+  for (const name of Object.keys(env)) if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES|CONFIG_COUNT|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/.test(name)) delete env[name];
+  const rawGit = (args, options = {}) => spawnSync('git', args, { cwd: temp, env, encoding: 'utf8', timeout: 10000, windowsHide: true, ...options });
+  const git = (...args) => {
+    const result = rawGit(args);
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout.trim();
+  };
+  const write = async (path, content) => {
+    await mkdir(dirname(join(temp, path)), { recursive: true });
+    if (content === null) await rm(join(temp, path));
+    else await writeFile(join(temp, path), content);
+  };
+  const commit = async changes => {
+    for (const [path, content] of Object.entries(changes)) await write(path, content);
+    git('add', '-A');
+    git('commit', '-q', '--allow-empty', '-m', 'fixture');
+    return git('rev-parse', 'HEAD');
+  };
+  git('init', '-q', '--initial-branch=main');
+  git('config', 'user.name', 'Fixture');
+  git('config', 'user.email', 'fixture@example.invalid');
+  git('config', 'core.autocrlf', 'false');
+  git('config', 'core.hooksPath', join(temp, 'no-hooks'));
+  const base = await commit({
+    'services/game/README.md': '# Game\n', 'services/game/table.mjs': 'export const table = 1;\n',
+    'services/game/rules.mjs': 'export const rules = 1;\n', 'services/game/contract.md': '# Existing\n',
+    'apps/web/README.md': '# Web\n', 'apps/web/view.mjs': 'export const view = 1;\n',
+    'packages/presentation/README.md': '# Presentation\n', 'packages/presentation/view.mjs': 'export const view = 1;\n',
+    'tools/check-documentation.mjs': "throw Error('PR code must never run');\n",
+    '.env': 'private fixture data\n', 'docs/arkiv/private.md': '# Private fixture\n',
+  });
+  let sequence = 0;
+  const history = async (mainChanges, prChanges) => {
+    git('switch', '-q', '-c', `main-${++sequence}`, base);
+    const main = await commit(mainChanges);
+    git('switch', '-q', '-c', `pr-${sequence}`, base);
+    const head = await commit(prChanges);
+    const paths = git('diff', '--name-only', '--no-renames', base, head).split('\n').filter(Boolean);
+    const freshness = { base, main, behind: 1, files: git('diff', '--name-only', '--no-renames', base, main).split('\n').filter(Boolean) };
+    const calls = [];
+    const runner = args => { calls.push(args); return rawGit(args); };
+    const snapshot = () => [git('rev-parse', 'HEAD'), git('write-tree'), git('status', '--porcelain')];
+    const before = snapshot();
+    const proof = readDocumentationMerge(runner, { main, head });
+    assert.deepEqual(snapshot(), before, 'no index, worktree or HEAD changes');
+    assert.ok(calls.some(args => args.join(' ') === `merge-tree --write-tree --no-messages -Xno-renormalize ${main} ${head}`));
+    for (const path of ['.env', 'docs/arkiv/private.md', 'tools/check-documentation.mjs']) {
+      const oid = git('rev-parse', `${head}:${path}`);
+      assert.ok(!calls.some(args => args[0] === 'cat-file' && args[1] === 'blob' && args[2] === oid), `must not read ${path}`);
+    }
+    freshness.documentation = proof;
+    return { freshness, paths, proof, verdict: freshnessVerdict(freshness, paths, true, 'main', head), head };
+  };
+  for (const [root, code] of [['services/game/', 'table.mjs'], ['apps/web/', 'view.mjs'], ['packages/presentation/', 'view.mjs']]) {
+    const doc = { [`${root}README.md`]: `# Updated\n[Code](${code})\n` };
+    const implementation = { [`${root}${code}`]: 'export const changed = true;\n' };
+    for (const [a, b] of [[doc, implementation], [implementation, doc]]) {
+      const h = await history(a, b);
+      assert.equal(h.verdict.ok, true, h.verdict.reason);
+      assert.match(h.verdict.reason, /oberoende dokument\/kod/);
+      assert.ok(h.verdict.reason.includes(`${root}README.md`) && h.verdict.reason.includes(`${root}${code}`));
+      assert.equal(freshnessVerdict({ ...h.freshness, documentation: undefined }, h.paths, true, 'main', h.head).ok, false);
+      assert.equal(freshnessVerdict(h.freshness, h.paths, false, 'main', h.head).ok, false, 'incomplete list');
+      assert.equal(freshnessVerdict(h.freshness, h.paths, true, 'main', OTHER).ok, false, 'proof bound to head');
+      assert.equal(freshnessVerdict({ ...h.freshness, main: MAIN }, h.paths, true, 'main', h.head).ok, false, 'proof bound to main');
+      const pr = goodPr({ headRefOid: h.head, changedFiles: h.paths.length });
+      const extra = { head: h.head, files: h.paths.map(filename => ({ filename, status: 'modified' })), freshness: h.freshness };
+      assert.equal(decide(pr, extra).ok, true);
+      assert.deepEqual(failed(decide({ ...pr, author: { login: 'invoicesolv' } }, extra)), ['author']);
+      assert.deepEqual(failed(decide({ ...pr, headRefOid: OTHER }, extra)), ['head']);
+      assert.deepEqual(failed(decide({ ...pr, statusCheckRollup: [ciRun({ conclusion: 'FAILURE' })] }, extra)), ['ci']);
+    }
+  }
+  const brokenLink = await history({ 'services/game/README.md': '# Game\n[Table](table.mjs)\n' }, { 'services/game/table.mjs': null });
+  assert.equal(brokenLink.verdict.ok, false);
+  assert.match(brokenLink.verdict.reason, /services\/game\/README.md:2: Target is not a tracked file/);
+  const brokenAnchor = await history({ 'services/game/README.md': '# Game\n[Contract](contract.md#existing)\n' }, { 'services/game/contract.md': '# Removed\n' });
+  assert.equal(brokenAnchor.verdict.ok, false);
+  assert.match(brokenAnchor.verdict.reason, /Markdown heading or explicit id does not exist/);
+  const unsafe = await history({ 'services/game/README.md': '# Game\n[Private](../../.env)\n' }, { 'services/game/table.mjs': 'changed\n' });
+  assert.equal(unsafe.verdict.ok, false);
+  assert.match(unsafe.verdict.reason, /Unsafe target/);
+  const same = await history({ 'services/game/README.md': '# Main\n' }, { 'services/game/README.md': '# PR\n' });
+  assert.equal(same.verdict.ok, false);
+  assert.match(same.verdict.reason, /ändrat 1 av PR:ens filer/);
+  assert.match(same.proof.reason, /konflikt/);
+  for (const path of ['services/game/rules.mjs', 'services/game/prompt.md', 'services/game/nested/README.md', 'services/game/contract.md']) {
+    const h = await history({ 'services/game/table.mjs': 'main\n' }, { [path]: '# New\n' });
+    assert.equal(h.verdict.ok, false, path);
+    assert.ok(h.verdict.reason.includes('services/game/table.mjs') && h.verdict.reason.includes(path), h.verdict.reason);
+  }
+  const rename = await history({ 'services/game/table.mjs': 'main\n' }, { 'services/game/table.mjs': null, 'services/game/new.mjs': 'export const table = 1;\n' });
+  const renamedPaths = changedPaths([{ filename: 'services/game/new.mjs', previous_filename: 'services/game/table.mjs', status: 'renamed' }]);
+  assert.equal(freshnessVerdict(rename.freshness, renamedPaths, true, 'main', rename.head).ok, false);
+  assert.match(freshnessVerdict(rename.freshness, renamedPaths, true, 'main', rename.head).reason, /ändrat 1 av PR:ens filer/);
+  assert.equal(freshnessVerdict({ reason: 'unknown' }, renamedPaths, true, 'main', rename.head).ok, false);
+  // Synthetic symlink without requiring Windows symlink privileges. Never dereference its contents.
+  git('switch', '-q', '-c', 'symlink', base);
+  const symlink = rawGit(['hash-object', '-w', '--stdin'], { input: '../../.env' }).stdout.trim();
+  git('update-index', '--cacheinfo', `120000,${symlink},services/game/README.md`);
+  git('commit', '-q', '-m', 'symlink');
+  assert.match(readDocumentationMerge(rawGit, { main: base, head: git('rev-parse', 'HEAD') }).reason, /ingen vanlig blob/);
+  await write('attributes', '* filter=fixture\n');
+  git('config', 'core.attributesFile', join(temp, 'attributes'));
+  git('config', 'filter.fixture.clean', 'echo unexpected > filter-ran');
+  git('config', 'merge.renormalize', 'true');
+  assert.match(readDocumentationMerge(rawGit, { main: same.freshness.main, head: same.head }).reason, /konflikt/);
+  assert.equal(existsSync(join(temp, 'filter-ran')), false, 'renormalization must never execute clean filters');
+  // Any configured external driver prevents merge-tree from running at all.
+  git('config', 'merge.fixture.driver', 'exit 0');
+  const calls = [];
+  assert.match(readDocumentationMerge(args => { calls.push(args); return rawGit(args); }, { main: base, head: base }).reason, /merge-drivrutiner/);
+  assert.deepEqual(calls.map(args => args[0]), ['config']);
+});
+
+test('unreadable merge trees and blobs fail closed without exposing their contents', () => {
+  for (const failure of ['merge-tree', 'ls-tree', 'cat-file', 'truncated-list']) {
+    const git = args => {
+      if (args[0] === 'config') return { status: 1, stdout: '' };
+      if (args[0] === 'cat-file' && args[1] === '-e') return { status: 0, stdout: '' };
+      if (args[0] === failure) return { status: 128, stdout: 'private output' };
+      if (args[0] === 'merge-tree') return { status: 0, stdout: MERGE + '\n' };
+      if (args[0] === 'ls-tree') return { status: 0, stdout: `100644 blob ${SECOND}\tservices/game/README.md${failure === 'truncated-list' ? '' : '\0'}` };
+      throw Error(args.join(' '));
+    };
+    const result = readDocumentationMerge(git, { main: MAIN, head: HEAD });
+    assert.equal(result.ok, false, failure);
+    assert.doesNotMatch(result.reason, /private output/);
+  }
 });
 
 test('review requires a non-empty Buggranskning line in the PR body', () => {
