@@ -3,9 +3,6 @@ description: "Scoutgaming: en ingång och ett regelverk"
 alwaysApply: true
 ---
 
-Läs `START-HERE.md` (produktväg, hur man testar och levererar), `docs/NEXT-AGENT.md` (läget) och `AGENTS.md` (regler) i repots rot innan du ändrar något. Jakobs aktuella instruktioner går före.
+Läs `START-HERE.md` och `AGENTS.md` före arbete; aktuellt gemensamt läge finns i `docs/NEXT-AGENT.md`. Jakobs aktuella instruktioner går före.
 
-- Egen branch `jakob/cursor-*` från färsk `origin/main`, PR mot `main`; aldrig `--no-verify`. Skriv exakt `#Jakobs agent` på en egen synlig rad i PR-beskrivningen för verkliga uppdrag från Jakob; märkningen bevisar inte ägarskap.
-- Alla verifierade Jakobs agenter får merga hans arbete inom sin tilldelning. Läs färskt PR-nummer, författare/konto (`Jakeminator123`), källrepo, headbranch och full SHA; verifiera ägare mot `inbox/people.json` från betrodd aktuell main samt känt Jakob-uppdrag och rapporterad SHA. Följ övriga grindar i `AGENTS.md` och använd endast `node tools/merge-pr.mjs <nr> --head <full-sha>` efter grön CI på exakt head (`--base preview` för preview). En avgränsad tilldelning kan begränsa leveransen till implementation och PR utan merge.
-- Rör aldrig `kevin*`, `codex/kevin-*`, `john*`, `codex/john-*`, `emil*`, `codex/emil-*`.
-- Ord: se `apps/studio/docs/TERMINOLOGI.md` (referens). Terminalens `rg` använder `.gitignore` och `.ignore`; Cursor använder även `.cursorignore` för AI-åtkomst. Inventera spårade filer med `git ls-files` och följ sekretessgränserna i AGENTS.md.
+Samma regler gäller i alla IDE:er. Nya worktrees ligger under `.worktrees/<uppdrag>`; Cursor använder `jakob/cursor-*`. Följ avsnittet "Byta IDE eller återuppta arbete" i START-HERE med valt uppdrags privata överlämning och färsk Git-status. Gemensamma leverans-, ägar-, underagents- och sekretessregler finns endast i AGENTS.md; skapa inga Cursor-specifika kopior av dem.
