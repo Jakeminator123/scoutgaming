@@ -1,8 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { constants } from 'node:fs';
-import { lstat, mkdir, open, readdir, realpath, unlink, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
+import { isAbsolute } from 'node:path';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 import { normalizeSpeechPackage } from '../contracts/speech-package.mjs';
 import { ASTRID_VOICE_PROFILE } from '../contracts/astrid-voice-profile.mjs';
@@ -11,16 +8,8 @@ import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal
 const digest = value => createHash('sha256').update(value).digest('hex');
 const PROFILE = ASTRID_VOICE_PROFILE.profileRevision;
 const AUDIO_LIMIT = 44 + 24000 * 2 * 25;
-const STORE_LIMIT = 256 * 1024 * 1024;
 const MEDIA_ID = /^[a-f0-9]{32}$/;
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
-const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-export const isPrivateGeneratedSpeechDirectory = (directory, repositoryRoot) => {
-  if (typeof directory !== 'string' || !isAbsolute(directory)) return false;
-  const path = resolve(directory), inside = relative(repositoryRoot, path);
-  return ![parse(path).root, homedir(), process.cwd()].some(value => equalPath(path, resolve(value)))
-    && (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside));
-};
 const ownerDigest = owner => {
   if (typeof owner !== 'string' || !owner || owner.length > 512 || /[\u0000-\u001f\u007f]/.test(owner)) fail('invalid_generated_speech_owner', 400);
   return digest(owner);
@@ -38,70 +27,22 @@ export function requireGeneratedSpeechArtifacts(artifacts) {
   if (!artifacts || typeof artifacts.save !== 'function' || typeof artifacts.get !== 'function') fail('generated_speech_artifacts_unavailable');
   return artifacts;
 }
-// Only an explicitly isolated, private preview store. Artifacts never enter the
-// dealer bank or inherit visual acceptance. Request reservations survive failed
+// Neon owns request identity and budget; the artifact adapter owns private bytes.
+// Artifacts never inherit visual acceptance. Request reservations survive failed
 // jobs/restarts: an uncertain paid request is not automatically charged again.
-export function createGeneratedSpeechService(config, { repositoryRoot, provider = null, journal = null, artifacts = null, fetchImpl = fetch,
-  journalRequired = true } = {}) {
+export function createGeneratedSpeechService(config, { repositoryRoot, provider = null, journal = null, artifacts = null, fetchImpl = fetch } = {}) {
   if (typeof repositoryRoot !== 'string' || !isAbsolute(repositoryRoot)) throw new TypeError('Explicit repositoryRoot required');
-  if (journalRequired || journal) requireSpeechJournal(journal);
-  if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
-  if (journal) requireGeneratedSpeechArtifacts(artifacts);
-  if (!config || (!journal && !isPrivateGeneratedSpeechDirectory(config.directory, repositoryRoot))) fail('generated_speech_invalid_directory');
-  const directory = journal ? null : resolve(config.directory);
+  requireSpeechJournal(journal);
+  if (typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
+  requireGeneratedSpeechArtifacts(artifacts);
+  if (!config) fail('generated_speech_not_configured');
   const voiceId = config.voiceId ?? GENERATED_SPEECH_DEFAULTS.voiceId;
   const modelId = config.modelId ?? GENERATED_SPEECH_DEFAULTS.modelId;
   if (voiceId !== GENERATED_SPEECH_DEFAULTS.voiceId || modelId !== GENERATED_SPEECH_DEFAULTS.modelId) fail('generated_speech_unknown_profile');
   let runtime = provider;
   const pending = new Map();
-  const ownership = journal ? createSpeechJournalLease({ journal, resource:'fullfile-provider' }) : null;
+  const ownership = createSpeechJournalLease({ journal, resource:'fullfile-provider' });
 
-  async function store() {
-    await mkdir(directory, { recursive: true, mode: 0o700 });
-    const info = await lstat(directory);
-    if (!info.isDirectory() || info.isSymbolicLink() || !equalPath(await realpath(directory), directory)) fail('generated_speech_invalid_directory');
-    return directory;
-  }
-  async function boundedFile(path, max) {
-    const info = await lstat(path);
-    if (!info.isFile() || info.isSymbolicLink() || info.size > max) fail('generated_speech_corrupt_artifact', 409);
-    const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-    try {
-      const opened = await handle.stat();
-      if (!opened.isFile() || opened.size > max) fail('generated_speech_corrupt_artifact', 409);
-      const bytes = await handle.readFile();
-      if (bytes.length > max) fail('generated_speech_corrupt_artifact', 409);
-      return bytes;
-    } finally { await handle.close(); }
-  }
-  async function json(path) {
-    const bytes = await boundedFile(path, 16384);
-    try { return JSON.parse(bytes.toString('utf8')); } catch { fail('generated_speech_corrupt_artifact', 409); }
-  }
-  async function artifact(id, ownerHash) {
-    if (!MEDIA_ID.test(id ?? '')) fail('generated_speech_not_found', 404);
-    const target = join(directory, id);
-    const info = await lstat(target);
-    if (!info.isDirectory() || info.isSymbolicLink() || !equalPath(await realpath(target), target)) fail('generated_speech_not_found', 404);
-    const record = await json(join(target, 'metadata.json'));
-    if (record.ownerHash !== ownerHash) fail('generated_speech_not_found', 404);
-    const speechPackage = normalizeSpeechPackage(record.speechPackage);
-    if (speechPackage.packageId !== `generated-${id}` || speechPackage.generation.textSha256 !== digest(speechPackage.exactText)) fail('generated_speech_corrupt_artifact', 409);
-    return { target, speechPackage };
-  }
-  async function assertCapacity() {
-    let bytes = 0, requests = 0;
-    for (const name of await readdir(directory)) {
-      if (/^[a-f0-9]{64}\.request\.json$/.test(name)) requests++;
-      if (!MEDIA_ID.test(name)) continue;
-      const target = join(directory, name), info = await lstat(target);
-      if (!info.isDirectory() || info.isSymbolicLink()) fail('generated_speech_corrupt_artifact', 409);
-      for (const file of ['audio.wav', 'video.mp4']) {
-        try { bytes += (await lstat(join(target, file))).size; } catch (error) { if (error.code !== 'ENOENT') throw error; }
-      }
-    }
-    if (requests >= GENERATED_SPEECH_LIMITS.requestLedger || bytes + AUDIO_LIMIT + GENERATED_SPEECH_LIMITS.videoBytes > STORE_LIMIT) fail('generated_speech_store_full', 503);
-  }
   function outputPackage(result, input, artifactId) {
     if (result?.exactText !== input.text || result?.voiceId !== voiceId || result?.modelId !== modelId || result?.provider?.kind !== ASTRID_VOICE_PROFILE.provider) fail('generated_speech_output_mismatch', 502);
     for (const [kind, max, contentType] of [['audio', AUDIO_LIMIT, 'audio/wav'], ['video', GENERATED_SPEECH_LIMITS.videoBytes, 'video/mp4']]) {
@@ -116,51 +57,6 @@ export function createGeneratedSpeechService(config, { repositoryRoot, provider 
       generation: { requestId: input.requestId, provider: ASTRID_VOICE_PROFILE.provider, modelId, avatarId: 'astrid_spel2x', profileRevision: PROFILE, textSha256: digest(input.text), audioSha256: result.audio.sha256 } });
   }
   async function execute(input, ownerHash, key, fingerprint) {
-    if (journal) return executeJournal(input, ownerHash, key, fingerprint);
-    await store();
-    const reservation = join(directory, `${key}.request.json`);
-    try {
-      const existing = await json(reservation);
-      if (existing.fingerprint !== fingerprint || existing.ownerHash !== ownerHash) fail('generated_speech_request_conflict', 409);
-      try {
-        const done = await json(join(directory, `${key}.done.json`));
-        const { speechPackage } = await artifact(done.id, ownerHash);
-        if (speechPackage.exactText !== input.text || speechPackage.generation.requestId !== input.requestId
-          || speechPackage.source.voiceId !== voiceId || speechPackage.generation.modelId !== modelId) fail('generated_speech_corrupt_artifact', 409);
-        return speechPackage;
-      } catch (error) { if (error.code !== 'ENOENT') throw error; }
-      fail('generated_speech_request_already_attempted', 409);
-    } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    // Lock covers the budget check and paid request across native/lab processes.
-    // A crashed lock intentionally needs operator recovery rather than a retry.
-    const lockPath = join(directory, 'provider.lock');
-    let lock;
-    try { lock = await open(lockPath, 'wx', 0o600); } catch (error) { if (error.code === 'EEXIST') fail('generated_speech_busy', 429); throw error; }
-    let reserved = false;
-    try {
-      await assertCapacity();
-      if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
-      await writeFile(reservation, JSON.stringify({ fingerprint, ownerHash }), { flag: 'wx', mode: 0o600 });
-      reserved = true;
-      runtime ??= createGeneratedSpeechProvider({ ...config, voiceId, modelId }, { fetchImpl });
-      const result = await runtime.generate({ requestId: `speech-${key}`, text: input.text, signal: input.signal, beforeCostly: input.beforeCostly, onProgress: input.onProgress });
-      if (input.signal?.aborted) fail('generated_speech_cancelled', 499);
-      const id = randomBytes(16).toString('hex');
-      const speechPackage = outputPackage(result, input, id);
-      const target = join(directory, id);
-      await mkdir(target, { mode: 0o700 });
-      await writeFile(join(target, 'audio.wav'), result.audio.bytes, { flag: 'wx', mode: 0o600 });
-      await writeFile(join(target, 'video.mp4'), result.video.bytes, { flag: 'wx', mode: 0o600 });
-      await writeFile(join(target, 'metadata.json'), JSON.stringify({ ownerHash, speechPackage }), { flag: 'wx', mode: 0o600 });
-      await writeFile(join(directory, `${key}.done.json`), JSON.stringify({ id }), { flag: 'wx', mode: 0o600 });
-      return speechPackage;
-    } catch (error) {
-      const safe = safeFailure(error);
-      if (reserved) { try { await writeFile(join(directory, `${key}.failed.json`), JSON.stringify({ code: safe.code }), { flag: 'wx', mode: 0o600 }); } catch {} }
-      throw safe;
-    } finally { await lock.close(); await unlink(lockPath); }
-  }
-  async function executeJournal(input, ownerHash, key, fingerprint) {
     const identity = { ownerHash, requestId:input.requestId, fingerprint, capability:'fullfile' };
     const existing = await journal.findRequest(identity);
     if (existing) {
@@ -226,21 +122,14 @@ export function createGeneratedSpeechService(config, { repositoryRoot, provider 
       try {
         const ownerHash = ownerDigest(owner);
         if (!['audio', 'video'].includes(kind)) fail('generated_speech_not_found', 404);
-        if (journal) {
-          if (!MEDIA_ID.test(id ?? '')) fail('generated_speech_not_found', 404);
-          const saved = await journal.getCompletedPackageById({ ownerHash, packageId:`generated-${id}` });
-          const speechPackage = normalizeSpeechPackage(saved.packageMetadata.speechPackage);
-          if (speechPackage.packageId !== saved.packageId) fail('generated_speech_corrupt_artifact', 409);
-          const media = await artifacts.get({ artifactId:id, kind, ownerHash, completedPackage:saved.packageMetadata, request });
-          if (!Buffer.isBuffer(media?.bytes) || digest(media.bytes) !== speechPackage[kind].sha256
-            || media.contentType !== (kind === 'audio' ? 'audio/wav' : 'video/mp4')) fail('generated_speech_corrupt_artifact', 409);
-          return media;
-        }
-        await store();
-        const { target, speechPackage } = await artifact(id, ownerHash);
-        const bytes = await boundedFile(join(target, kind === 'audio' ? 'audio.wav' : 'video.mp4'), kind === 'audio' ? AUDIO_LIMIT : GENERATED_SPEECH_LIMITS.videoBytes);
-        if (digest(bytes) !== speechPackage[kind].sha256) fail('generated_speech_corrupt_artifact', 409);
-        return { bytes, contentType: kind === 'audio' ? 'audio/wav' : 'video/mp4' };
+        if (!MEDIA_ID.test(id ?? '')) fail('generated_speech_not_found', 404);
+        const saved = await journal.getCompletedPackageById({ ownerHash, packageId:`generated-${id}` });
+        const speechPackage = normalizeSpeechPackage(saved.packageMetadata.speechPackage);
+        if (speechPackage.packageId !== saved.packageId) fail('generated_speech_corrupt_artifact', 409);
+        const media = await artifacts.get({ artifactId:id, kind, ownerHash, completedPackage:saved.packageMetadata, request });
+        if (!Buffer.isBuffer(media?.bytes) || digest(media.bytes) !== speechPackage[kind].sha256
+          || media.contentType !== (kind === 'audio' ? 'audio/wav' : 'video/mp4')) fail('generated_speech_corrupt_artifact', 409);
+        return media;
       } catch (error) {
         if (error.code === 'ENOENT') fail('generated_speech_not_found', 404);
         throw safeFailure(error);

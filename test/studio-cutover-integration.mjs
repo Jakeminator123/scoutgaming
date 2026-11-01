@@ -438,7 +438,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         workerSecret:'isolated-worker-no-live-secret-at-least-32', reserveUsd:'0.20', dailyBudgetUsd:'1' };
       const response = value => new Response(JSON.stringify(value), { headers:{ 'content-type':'application/json' } });
       const manager = (uncertain = false) => {
-        const value = createSpeechSessionManager(config, { journal, journalRequired:true, now:() => stamp,
+        const value = createSpeechSessionManager(config, { journal, now:() => stamp,
           workerState:() => ({ workers:Number(connected), available:Number(connected), busy:0 }), stopWorker:() => { connected = false; }, sleep:async ms => { stamp += ms; },
           fetchImpl:async (url) => {
             if (url.endsWith('/run')) { paid++; if (uncertain) throw Error('fixture lost paid response'); return response({ id:'known-fixture-job', status:'IN_QUEUE' }); }
@@ -465,7 +465,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         },
         del:async pathname => { artifactValues.delete(pathname); },
       } });
-      const files = () => createGeneratedSpeechService({ directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal, journalRequired:true, artifacts, provider:{
+      const files = () => createGeneratedSpeechService({ directory, reserveMicroUsd:200000,dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal, artifacts, provider:{
         generate:async ({ text, beforeCostly }) => {
           await beforeCostly(); packageCalls++;
           const audio = Buffer.from(`fixture-audio:${text}`), video = Buffer.from(`fixture-video:${text}`);
