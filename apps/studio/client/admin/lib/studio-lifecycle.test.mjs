@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createEmptyProject, defaultPresentationLane } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, clipLifecycleBlocker } from './studio-lifecycle.mjs';
+import {createRetainedStudioMedia,RETAINED_BANK_VARIANTS} from '../../../../../packages/studio-registry/server/document-contract.mjs';
 const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-222222222222';
 const sha256 = 'a'.repeat(64), token = 'b'.repeat(64);
 function fixture() {
@@ -32,7 +33,7 @@ test('exact usage includes another dealer, loops, policy and composition; same t
   assert.equal(clipLifecycleBlocker(f.project, f.video, 'paow-v2', 'archive'), 'studio_media_in_use');
 });
 test('batch preflight preserves every file if any selected clip belongs elsewhere or is protected', async () => {
-  for (const patch of [{ classification: { ...fixture().video.classification, dealerId: 'other' } }, { retainedBank: true }, { bindingScope: 'shared-local' }, { revision: undefined }, { sha256: undefined }]) {
+  for (const patch of [{ classification: { ...fixture().video.classification, dealerId: 'other' } }, { deletion: {state:'pending'} }, { bindingScope: 'shared-local' }, { revision: undefined }, { sha256: undefined }]) {
     const f = fixture(); f.inventory.videos.push({ ...f.video, id: b, ...patch });
     let calls = 0;
     const client = createLifecycleClient({ fetchImpl: async () => { calls++; return Response.json({}); } });
@@ -40,6 +41,26 @@ test('batch preflight preserves every file if any selected clip belongs elsewher
     assert.equal(calls, 0);
     assert.equal(f.video.classification.archived, undefined);
   }
+});
+
+test('registered retained media uses exact client archive, restore and delete requests without changing original metadata',async()=>{
+  const project=addDealer(createEmptyProject(),'astrid','Astrid');
+  const record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+  const video={...record,retainedBank:true,revision:'studio.retained.1',bindingScope:'shared-local'},inventory={videos:[video]},calls=[];
+  const client=createLifecycleClient({fetchImpl:async(url,init)=>{
+    const body=JSON.parse(init.body);calls.push({url,body});
+    if(url.endsWith('/archive'))return Response.json({videos:[{...video,classification:{...video.classification,archived:body.archived}}]});
+    if(url.endsWith('/delete-check'))return Response.json({allowed:true});
+    return Response.json({project,inventory:{videos:[]}});
+  }});
+  for(const archived of [true,false,true]){
+    assert.deepEqual(await client.archiveClips({project,inventory,dealerId:'astrid',ids:[video.id],archived}),[video.id]);
+    assert.deepEqual(calls.at(-1).body,{id:record.id,sha256:record.sha256,previous:video.classification,archived});
+    video.classification={...record.classification,archived};
+  }
+  assert.equal((await client.checkClipDeletion(project,inventory,'astrid',video.id)).allowed,true);
+  await client.deleteClip(project,inventory,'astrid',video.id);
+  for(const call of calls.slice(-2))assert.deepEqual(call.body,{id:record.id,sha256:record.sha256,expectedRevision:video.revision});
 });
 test('duplicate media IDs and a speech reference fail closed before archive requests', async () => {
   const f = fixture(); let calls = 0;

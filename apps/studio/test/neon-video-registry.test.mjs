@@ -2,6 +2,8 @@ import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {loadVideoRegistry,getVideoResponse} from './fixtures/local-video-registry.mjs';
+import {clipLifecycleBlocker} from '../client/admin/lib/studio-lifecycle.mjs';
+import {resolveMediaFamilySelection} from '../../../packages/presentation/runtime/media-family-resolver.mjs';
 
 test('retained originals join exact families beside current bank bytes without replacing standards',async t=>{
   const {registry,repository,items}=await fixture(t);
@@ -26,6 +28,40 @@ test('both registry and byte reader reject a substituted retained tuple before p
   const configured={...options,env,readUploads:async()=>[row],readClassifications:async()=>[],blobClient:{get:async()=>{reads++;throw Error('must not read');}}};
   await assert.rejects(loadVideoRegistry(configured),error=>error.status===503);
   assert.equal((await getVideoResponse(record.id,new Request(`https://studio.example.invalid/studio/api/videos/${record.id}`),configured)).status,503);
+  assert.equal(reads,0);
+});
+
+test('live and captured retained records keep archive/tombstone states and never read pending or deleted bytes',async t=>{
+  const f=await fixture(t),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
+  await f.repository.initializeDocument('administration',{value:{rooms:[]},actor:'fixture'});
+  let row=(await f.repository.registerMedia(record,{actor:'explicit-original-import'})).media;
+  const active=await f.registry.load(),video=active.videos.find(item=>item.id===record.id);
+  assert.equal(video.bindingScope,'shared-local');
+  assert.equal(clipLifecycleBlocker((await f.repository.readDocument('project')).value,video,'astrid','archive'),'');
+  for(const archived of [true,false,true]){
+    row=await f.repository.classifyMedia(row.id,{sha256:row.sha256,expectedRevision:row.revision,metadata:{...row.classification,archived},actor:'Admin'});
+    for(const inventory of [await f.registry.load(),await f.registry.loadCaptured(await f.repository.readPresentationSnapshot())]){
+      const video=inventory.videos.find(item=>item.id===record.id),family=inventory.families.find(item=>item.id===record.retainedBank.familyId);
+      assert.equal(video.classification.archived,archived);assert.equal(video.sha256,record.sha256);
+      assert.equal(family.variantIds.includes(record.id),!archived);
+      assert.equal(resolveMediaFamilySelection(inventory,family,record.id).selected?.id===record.id,!archived);
+    }
+  }
+  let reads=0;f.options.blobClient.get=async()=>{reads++;throw Error('must never read tombstoned bytes');};
+  const requestedAt='2026-11-02T10:00:00.000Z';
+  for(const deletion of [{state:'pending',requestedAt},{state:'deleted',requestedAt,completedAt:'2026-11-02T10:00:01.000Z'}]){
+    row=await f.repository.setMediaDeletion(row.id,{sha256:row.sha256,expectedRevision:row.revision,deletion,actor:'Admin'});
+    const snapshot=await f.repository.readPresentationSnapshot();
+    for(const inventory of [await f.registry.load(),await f.registry.loadCaptured(snapshot)]){
+      const video=inventory.videos.find(item=>item.id===record.id);
+      if(deletion.state==='pending'){assert.equal(video.deletion.state,'pending');assert.equal(video.available,false);assert.equal(video.previewUrl,null);}
+      else assert.equal(video,undefined);
+      assert.equal(inventory.families.find(item=>item.id===record.retainedBank.familyId).variantIds.includes(record.id),false);
+    }
+    const request=new Request(`https://studio.example.invalid/studio/api/videos/${record.id}`);
+    assert.equal((await f.registry.response(record.id,request)).status,410);
+    assert.equal((await f.registry.responseCaptured(record.id,request,snapshot)).status,410);
+  }
   assert.equal(reads,0);
 });
 import assert from 'node:assert/strict';

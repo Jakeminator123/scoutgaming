@@ -107,15 +107,12 @@ export function createRetainedStudioMedia(mediaId) {
   };
 }
 
-// Review uploads plus an explicit, bounded retention of six exact bank originals.
+// Existing bank originals keep their exact identity while sharing the normal
+// archive/deletion lifecycle. No permanent retention rule is implied by provenance.
 // No provider I/O, automatic import or alternate source selection occurs here.
 export function validateStudioMedia(record) {
   const copy = cloneStudioJson(record);
-  if (copy && !Array.isArray(copy) && (Object.hasOwn(copy,'retainedBank') || RETAINED_BANK_VARIANTS.some(row => row.id === copy.id))) {
-    const expected = createRetainedStudioMedia(copy.id);
-    if (canonicalStudioJson(copy) !== canonicalStudioJson(expected)) throw new StudioStorageError('studio_invalid_retained_media',422);
-    return copy;
-  }
+  const retained = copy && !Array.isArray(copy) && (Object.hasOwn(copy,'retainedBank') || RETAINED_BANK_VARIANTS.some(row => row.id === copy.id));
   try {
     const deletion = copy?.deletion;
     if (deletion !== undefined) {
@@ -125,8 +122,17 @@ export function validateStudioMedia(record) {
       for (const key of deletion.state === 'deleted' ? ['requestedAt','completedAt'] : ['requestedAt']) {
         if (typeof deletion[key] !== 'string' || !Number.isFinite(Date.parse(deletion[key])) || new Date(deletion[key]).toISOString() !== deletion[key]) throw Error();
       }
-      if (deletion.completedAt && deletion.completedAt < deletion.requestedAt) throw Error();
+      if (deletion.completedAt && Date.parse(deletion.completedAt) < Date.parse(deletion.requestedAt)) throw Error();
       delete copy.deletion;
+    }
+    if (retained) {
+      const expected = createRetainedStudioMedia(copy.id);
+      if (Object.hasOwn(copy.classification ?? {}, 'archived')) {
+        if (typeof copy.classification.archived !== 'boolean') throw Error();
+        expected.classification.archived = copy.classification.archived;
+      }
+      if (canonicalStudioJson(copy) !== canonicalStudioJson(expected)) throw Error();
+      return deletion === undefined ? copy : {...copy,deletion};
     }
     const checked = validateManagedStudioMedia(copy);
     if(checked.mediaTiming) {
@@ -137,7 +143,7 @@ export function validateStudioMedia(record) {
     }
     return deletion === undefined ? checked : {...checked,deletion};
   }
-  catch { throw new StudioStorageError('studio_invalid_media', 422); }
+  catch { throw new StudioStorageError(retained ? 'studio_invalid_retained_media' : 'studio_invalid_media', 422); }
 }
 
 export function validateMediaId(value) {

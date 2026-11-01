@@ -14,12 +14,11 @@ function validateInput(body){
 function withoutTrashMembership(value,id){
  const next=structuredClone(value);
  // This list is lifecycle bookkeeping, not a playable binding. Permanent
- // deletion explicitly relinquishes restoration of this one unused upload.
+ // deletion explicitly relinquishes restoration of this one unused media record.
  if(next.dealerTrash)for(const entry of next.dealerTrash)entry.activeMediaIds=entry.activeMediaIds.filter(value=>value!==id);
  return next;
 }
 async function eligibility(repository,row,{indexVerified=false,now=Date.now,ignoreTrashDealer=null}={}){
- if(row.retainedBank)return denied('studio_retained_media_immutable');
  if(row.deletion?.state==='deleted')return denied('studio_media_already_deleted');
  if(row.classification.archived!==true)return denied('studio_media_archive_required');
  if(!row.deletion){
@@ -100,7 +99,6 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
   catch(error){if(error?.code!=='studio_invalid_document')throw error;return result(denied('studio_dealer_in_use'));}
   try{assertLifecyclePackages(await repository.listLifecyclePackages(),{dealerId:body.dealerId});}catch(error){if(error.code==='studio_dealer_published')return result(denied(error.code));throw error;}
   for(const row of rows){
-    if(row.retainedBank)return result(denied('studio_retained_media_immutable'));
     if(row.deletion?.state==='deleted')continue;
     const check=await eligibility(repository,row,{indexVerified,now,ignoreTrashDealer:body.dealerId});
     if(!check.allowed)return result(check);

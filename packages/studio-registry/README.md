@@ -18,6 +18,13 @@ och dess cache. `apps/studio/lib/cloud-media-store.mjs` och `services/game/blob-
 injicerar appägda lazy SDK-provideradaptrar. Lokala uppladdnings- och
 klassificeringsskrivare, deras lås och auktoriserade purgeflöden stannar appägda.
 
+De sex äldre `retainedBank`-identiteterna är övergångskompatibilitet för sparade
+poster, inte ett bevarandekrav. `storage-contract.mjs` kontrollerar deras exakta
+grundidentitet och samma arkiv-/tombstonekontrakt som övriga medier. Repositoryt
+tillåter endast arkivflaggan i deras klassificering och stoppar återimport över
+ett annat scopes tombstone under objektlåset. Arkiv, återställning och permanent
+radering följer [lagringsguiden](../../docs/storage/BLOB-NEON.md#radering).
+
 `server/media-runtime.mjs` äger medieorkestreringen med explicita portar för
 register, metadata, layout, Blob och legacykontroller. Studio komponerar den i
 `apps/studio/lib/studio-media-runtime.mjs`; spelservern i

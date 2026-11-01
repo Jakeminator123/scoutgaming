@@ -11,9 +11,9 @@ import {createStudioDealerApi} from '../../lib/studio-dealer-api.mjs';
 import {createStudioMediaApi} from '../../lib/studio-media-api.mjs';
 import {checkPermanentMediaDeletion,createStudioMediaDeletion} from '../../lib/studio-media-deletion.mjs';
 import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
-import {validateStudioMedia} from '../../../../packages/studio-registry/server/document-contract.mjs';
+import {validateStudioMedia,createRetainedStudioMedia,RETAINED_BANK_VARIANTS,StudioStorageError} from '../../../../packages/studio-registry/server/document-contract.mjs';
 import {createStudioMemoryPool} from '../../../../test/fixtures/studio-memory-pool.mjs';
-import {readRuntimeCatalogFixture} from '../../../../test/fixtures/runtime-media-catalog.mjs';
+import {readRuntimeCatalogFixture,runtimeCatalogJsonFixture} from '../../../../test/fixtures/runtime-media-catalog.mjs';
 import {fileURLToPath} from 'node:url';
 import {seedSavedVideoProject} from '../fixtures/video-dealer-project.mjs';
 import {savedVideoDealerOwnership} from '../../../../packages/studio-registry/server/video-dealer-registration.mjs';
@@ -48,6 +48,42 @@ async function fixture({bind=false,categories=false}={}){
  const archiveBody={...operation(true),impactToken:(await checkDealerArchive({repository,body:{dealerId:'paow',expectedRevision:project.revision}})).impact.token};
  return {pool,repository,project,context,operation,change,archiveBody};
 }
+
+async function retainedFixture({bind=false}={}){
+ const f=await fixture(),project=structuredClone(f.project),records=RETAINED_BANK_VARIANTS.map(row=>createRetainedStudioMedia(row.id));
+ records.at(-1).classification.archived=true;
+ // The legacy fallback's exact ID deliberately has no media_records row.
+ project.idlePolicy={schemaVersion:1,familyId:'astrid/idle.ready/ready',base:[{videoId:'11111111-1111-4111-8111-111111111111',weight:100,durationMs:1000}],variants:[]};
+ project.lines.find(row=>row.dealerId==='astrid'&&row.eventId==='idle.ready').variants[0].videoGenerationId=project.idlePolicy.base[0].videoId;
+ project.dealerIdlePolicies=[{dealerId:'paow',policy:{...structuredClone(project.idlePolicy),familyId:'paow/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}]}}];
+ if(bind)project.lines.find(row=>row.dealerId==='astrid'&&row.eventId===records[0].classification.eventId).variants[0].videoGenerationId=records[0].id;
+ seedSavedVideoProject(f.pool,scope,project);
+ for(const row of records)await f.repository.registerMedia(row,{actor:'explicit-original-import'});
+ const operation=(archived,expectedRevision=project.revision)=>({dealerId:'astrid',archived,expectedRevision});
+ return {...f,project,records,operation,change:(body=operation(true),extras={})=>f.change(body,extras)};
+}
+
+test('retained dealer archive/restore preserves exact originals and moves the legacy fallback without touching other policies',async()=>{
+ const f=await retainedFixture({bind:true}),before=structuredClone(f.project),descriptors=[];
+ const archived=await f.change(undefined,{mutationTransaction:async(work,options)=>{descriptors.push(...options.presentationMutation);return work();}});
+ const entry=archived.dealerTrash[0];assert.equal(archived.idlePolicy,undefined);assert.deepEqual(entry.globalIdlePolicy,before.idlePolicy);
+ assert.deepEqual(archived.dealerIdlePolicies,before.dealerIdlePolicies);assert.deepEqual(entry.activeMediaIds.sort(),f.records.filter(row=>!row.classification.archived).map(row=>row.id).sort());
+ assert.equal(descriptors.filter(row=>row.metadata?.dealerId==='astrid').length,6);
+ const restored=await f.change(f.operation(false,archived.revision));
+ assert.deepEqual(restored.idlePolicy,before.idlePolicy);assert.deepEqual(restored.dealerIdlePolicies,before.dealerIdlePolicies);
+ const byDealer=rows=>[...rows].sort((a,b)=>`${a.dealerId??a.id}/${a.eventId??''}`.localeCompare(`${b.dealerId??b.id}/${b.eventId??''}`));
+ assert.deepEqual(byDealer(restored.lines),byDealer(before.lines));assert.deepEqual(byDealer(restored.dealers),byDealer(before.dealers));
+ for(const original of f.records){const {revision,updatedAt,...row}=await f.repository.getMedia(original.id);assert.deepEqual(row,{...original,classification:{...original.classification,archived:original.classification.archived??false}});}
+ assert.equal((await f.repository.getMedia(id)).classification.archived,undefined);
+});
+
+test('a retained cascade failure or stale restore rolls back the document, every media row and audit',async()=>{
+ const f=await retainedFixture(),before=f.pool.snapshot();f.pool.failNext('classify-media');
+ await assert.rejects(f.change());assert.deepEqual(f.pool.snapshot(),before);
+ const archived=await f.change(),snapshot=f.pool.snapshot();
+ await assert.rejects(f.change(f.operation(false)),{code:'studio_conflict'});assert.deepEqual(f.pool.snapshot(),snapshot);
+ f.pool.failNext('classify-media');await assert.rejects(f.change(f.operation(false,archived.revision)));assert.deepEqual(f.pool.snapshot(),snapshot);
+});
 test('dealer archive and restore preserve own exact lines/settings and only restore previously active uploads',async()=>{
  const f=await fixture({bind:true,categories:true}),before=structuredClone(f.project);
  const archived=await f.change();
@@ -167,6 +203,44 @@ function deletionFixture(f,{now=Date.now,del=async()=>{},readIndex=()=>new Map()
   env:{BLOB_READ_WRITE_TOKEN:'fake-fixture-token'},options:{blobClient:{del}}});
 }
 const deletionInput=row=>({id:row.id,sha256:row.sha256,expectedRevision:row.revision});
+
+test('retained single-media purge keeps authorization, CAS, aliases and exact reference ownership gates',async()=>{
+ for(const guard of ['authorization','revision','hash','alias','document-id','document-path','package','journal','catalog-id','catalog-path','coverage','grant']){
+  const f=await retainedFixture(),original=f.records[0];let row=await f.repository.getMedia(original.id),calls=0;
+  row=await f.repository.classifyMedia(row.id,{...deletionInput(row),metadata:{...row.classification,archived:true},actor:'Admin'});
+  const other=createStudioRepository({pool:f.pool,scope:{...scope,workspaceId:'other'}});
+  if(guard==='alias')await other.registerMedia(original,{actor:'other-import'});
+  if(guard.startsWith('document-'))await other.initializeDocument('administration',{value:{genLandings:{file:guard==='document-id'?row.id:row.pathname}},actor:'other'});
+  if(guard==='package')f.pool.packages=[{environment_id:'other',workspace_id:'elsewhere',lanes:'[]',branding:JSON.stringify({logo:row.pathname})}];
+  if(guard==='journal')f.pool.journalOwners=[{source:'forge-profile',environment_id:'other',workspace_id:'elsewhere',value:{referenceMediaId:row.id}}];
+  if(guard.startsWith('catalog-'))f.pool.seedRuntimeCatalog(other.scope,runtimeCatalogJsonFixture({media:guard==='catalog-id'?row.id:row.pathname}));
+  if(guard==='coverage')f.pool.speechActivity={live_lease:true};
+  const service=deletionFixture(f,{del:async()=>calls++,...(guard==='grant'?{now:()=>Date.parse(row.updatedAt)+1}:{})});
+  const before=f.pool.snapshot(),body={...deletionInput(row),...(guard==='revision'?{expectedRevision:'stale'}:{}),...(guard==='hash'?{sha256:'f'.repeat(64)}:{})};
+  const code=({authorization:'studio_request_rejected',revision:'studio_conflict',hash:'studio_conflict',alias:'studio_media_owned_elsewhere',
+   'document-id':'studio_media_in_use','document-path':'studio_media_in_use',package:'studio_media_published',journal:'studio_media_in_use',
+   'catalog-id':'studio_media_in_use','catalog-path':'studio_media_in_use',coverage:'studio_media_delete_coverage_incomplete',grant:'studio_media_upload_grant_active'})[guard];
+  await assert.rejects(service.remove(body,{stillAuthorized:async()=>{if(guard==='authorization')throw new StudioStorageError('studio_request_rejected',403);return 'Admin';}}),{code},guard);
+  assert.equal(calls,0,guard);assert.deepEqual(f.pool.snapshot(),before,guard);
+ }
+});
+
+test('retained pending commit fences cross-scope reimports and restore even when authorization disappears before Blob',async()=>{
+ const f=await retainedFixture(),original=f.records[0];let row=await f.repository.getMedia(original.id),calls=0,auth=0;
+ row=await f.repository.classifyMedia(row.id,{...deletionInput(row),metadata:{...row.classification,archived:true},actor:'Admin'});
+ const service=deletionFixture(f,{del:async path=>{calls++;assert.equal(path,original.pathname);assert.equal((await f.repository.getMedia(row.id)).deletion.state,'pending');}});
+ await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=>{if(++auth>1)throw Object.assign(Error('revoked'),{code:'revoked',statusCode:403});return 'Admin';}}),{code:'revoked'});
+ assert.equal(calls,0);
+ const pending=await f.repository.getMedia(row.id);assert.equal(pending.deletion.state,'pending');
+ const other=createStudioRepository({pool:f.pool,scope:{...scope,workspaceId:'late-import'}});
+ for(const state of ['pending','deleted']){
+  const current=await f.repository.getMedia(row.id);assert.equal(current.deletion.state,state);
+  await assert.rejects(other.registerMedia(original,{actor:'late-import'}),{code:'studio_media_owned_elsewhere'});
+  await assert.rejects(f.repository.classifyMedia(row.id,{...deletionInput(current),metadata:{...original.classification,archived:false},actor:'Admin'}),{code:'studio_media_deletion_pending'});
+  if(state==='pending')await service.remove(deletionInput(pending),{stillAuthorized:async()=> 'Admin'});
+ }
+ assert.equal(calls,1);
+});
 test('real deletion adapter commits tombstone and project fence before fakeBlob, then completes without deleting the row',async()=>{
  const f=await fixture(),row=await f.repository.getMedia(oldId),projectRevision=f.project.revision;let deletes=0;
  const service=deletionFixture(f,{del:async path=>{
@@ -321,6 +395,27 @@ test('pending deletion blocks dealer archive until its provider operation has be
 
 const dealerDeleteInput=(project,dealerId='paow')=>({dealerId,expectedRevision:project.revision});
 const afterArchive=project=>Date.parse(project.dealerTrash[0].archivedAt)+16*60*1000;
+
+test('whole retained dealer purge resumes a partial Blob failure and leaves six durable tombstones with other dealers intact',async()=>{
+ const f=await retainedFixture({bind:true}),archived=await f.change(),paths=[];
+ const service=deletionFixture(f,{now:()=>afterArchive(archived),del:async path=>{
+  paths.push(path);
+  const rows=(await f.repository.listMedia()).filter(row=>row.classification.dealerId==='astrid');assert.ok(rows.every(row=>row.deletion));
+  assert.equal(rows.find(row=>row.pathname===path).deletion.state,'pending');
+  assert.equal((await f.repository.readDocument('project')).value.dealerTrash[0].deletion.state,'pending');
+  if(paths.length===2)throw Error('fixture provider failure');
+ }});
+ assert.deepEqual(await service.checkDealer(dealerDeleteInput(archived,'astrid')),{allowed:true,count:6});
+ await assert.rejects(service.removeDealer(dealerDeleteInput(archived,'astrid'),{stillAuthorized:async()=> 'Admin'}),{code:'studio_dealer_delete_pending'});
+ const pending=(await f.repository.readDocument('project')).value;
+ await assert.rejects(f.change(f.operation(false,pending.revision)),{code:'studio_dealer_delete_pending'});
+ const removed=await service.removeDealer(dealerDeleteInput(pending,'astrid'),{stillAuthorized:async()=> 'Admin'});
+ assert.equal(paths.length,7);assert.deepEqual([...new Set(paths)].sort(),f.records.map(row=>row.pathname).sort());
+ assert.equal(removed.dealers.some(row=>row.id==='astrid'),false);assert.deepEqual(removed.dealerTrash,[]);assert.equal(removed.idlePolicy,undefined);
+ assert.deepEqual(removed.dealerIdlePolicies,f.project.dealerIdlePolicies);
+ for(const original of f.records){const {revision,updatedAt,deletion,...row}=await f.repository.getMedia(original.id);assert.equal(deletion.state,'deleted');assert.deepEqual(row,{...original,classification:{...original.classification,archived:true}});}
+ assert.equal((await f.repository.getMedia(id)).classification.archived,undefined);assert.equal((await f.repository.getMedia(id)).deletion,undefined);
+});
 test('whole dealer purge removes its saved bindings and all own uploads, keeping durable media tombstones',async()=>{
  const f=await fixture({bind:true}),archived=await f.change();let calls=0;
  const service=deletionFixture(f,{now:()=>afterArchive(archived),del:async()=>{
@@ -437,11 +532,7 @@ test('shared archived compositions validate against history but restore waits fo
  project=lifecycleProject(project,{dealerId:'elin',archived:false,records:[]});project=lifecycleProject(project,{dealerId:'linnea',archived:false,records:[]});assert.deepEqual(project.lanes,[lane]);
 });
 
-test('explicit baseline dealer archive preserves retained clips and inactive legacy dealers cannot reactivate',()=>{
- const project=createSeedProject(),dealer=project.dealers.find(row=>row.id==='astrid');assert.ok(dealer);
- const retained={id,classification:{dealerId:'astrid'},retainedBank:{immutable:true}};
- const archived=lifecycleProject(project,{dealerId:'astrid',archived:true,records:[retained]});assert.deepEqual(archived.dealerTrash[0].activeMediaIds,[]);
- assert.equal(lifecycleProject(archived,{dealerId:'astrid',archived:false,records:[retained]}).dealers.some(row=>row.id==='astrid'),true);
+test('inactive legacy dealers cannot reactivate',()=>{
  const historical=createLegacyProject();
  const retired=lifecycleProject(historical,{dealerId:'amira',archived:true,records:[]});assert.throws(()=>lifecycleProject(retired,{dealerId:'amira',archived:false,records:[]}),{code:'studio_dealer_inactive'});
 });

@@ -21,14 +21,16 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
     const entry={schemaVersion:2,dealer:speechOff(dealer),lines:next.lines.filter(row=>row.dealerId===dealerId),
       idlePolicy:next.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy??null,
       compositions:(next.lanes??[]).filter(row=>compositionIds.has(row.id)),
-      activeMediaIds:owned.filter(row=>!row.retainedBank&&!row.classification.archived).map(row=>row.id),archivedAt:now};
+      activeMediaIds:owned.filter(row=>!row.classification.archived).map(row=>row.id),archivedAt:now};
     const categories=next.dealerSets?.filter(row=>row.dealerId===dealerId)??[];
     if(categories.length){entry.dealerSets=categories;next.dealerSets=next.dealerSets.filter(row=>row.dealerId!==dealerId);if(!next.dealerSets.length)delete next.dealerSets;}
     if(next.mediaPolicy){
       entry.mediaPolicy=next.mediaPolicy.map(row=>({...row,variants:row.variants.filter(variant=>mediaIds.has(variant.videoId))})).filter(row=>row.variants.length);
       next.mediaPolicy=next.mediaPolicy.map(row=>({...row,variants:row.variants.filter(variant=>!mediaIds.has(variant.videoId))})).filter(row=>row.variants.length);
     }
-    if(next.idlePolicy&&owns(next.idlePolicy)){entry.globalIdlePolicy=next.idlePolicy;delete next.idlePolicy;}
+    // The global policy is Astrid's legacy fallback; its bank IDs need not have
+    // media_records rows. Other dealers' own policies stay in dealerIdlePolicies.
+    if(next.idlePolicy&&(dealerId==='astrid'||owns(next.idlePolicy))){entry.globalIdlePolicy=next.idlePolicy;delete next.idlePolicy;}
     next.dealerTrash=[...(next.dealerTrash??[]),entry];
     next.dealers=next.dealers.filter(row=>row.id!==dealerId);
     next.lines=next.lines.filter(row=>row.dealerId!==dealerId);
@@ -43,7 +45,7 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
     if(!isActiveDealerId(dealerId))fail('studio_dealer_inactive');
     if(entry.deletion)fail('studio_dealer_delete_pending');
     const owned=new Map(records.filter(row=>row.classification.dealerId===dealerId).map(row=>[row.id,row]));
-    for(const id of entry.activeMediaIds){const row=owned.get(id);if(!row||row.deletion||row.retainedBank||row.classification.archived!==true)fail('studio_dealer_restore_conflict');}
+    for(const id of entry.activeMediaIds){const row=owned.get(id);if(!row||row.deletion||row.classification.archived!==true)fail('studio_dealer_restore_conflict');}
     const compositions=entry.compositions??[],activeIds=new Set((next.lanes??[]).map(row=>row.id));
     if(compositions.some(row=>activeIds.has(row.id)))fail('studio_dealer_restore_conflict');
     for(const lane of compositions)for(const role of ['background','table'])for(const id of lane.layers[role].allowed){
@@ -105,7 +107,7 @@ export async function changeDealerLifecycle({repository,mutationTransaction,stil
       const presentation=readPackagePresentation(change);
       return [...nativeFilmedPlanningMutations(change),...(presentation?[{kind:'presentation-package',value:presentation}]:[])];
     }),
-    ...records.filter(row=>row.classification.dealerId===body.dealerId&&!row.retainedBank).map(row=>({metadata:row.classification}))];
+    ...records.filter(row=>row.classification.dealerId===body.dealerId).map(row=>({metadata:row.classification}))];
   return mutationTransaction(()=>repository.transaction(async()=>{
     const actor=await stillAuthorized();
     const current=await repository.readDocument('project');

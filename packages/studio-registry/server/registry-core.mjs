@@ -182,10 +182,10 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
   async function validateRetainedEntry(entry) {
     if (!Object.hasOwn(entry,'retainedBank')) return;
     try {
-      // Conditional import preserves legacy fixture dependencies when no retained
-      // Neon record is in use. Both list and byte readers enforce the same tuple.
+      // Both list and byte readers enforce the same identity and lifecycle state.
       validateStudioMedia({id:entry.id,sha256:entry.sha256,size:entry.size,contentType:`video/${entry.extension}`,
-        pathname:entry.storage?.pathname,classification:entry.classification,retainedBank:entry.retainedBank});
+        pathname:entry.storage?.pathname,classification:entry.classification,retainedBank:entry.retainedBank,
+        ...(entry.deletion !== undefined ? {deletion:entry.deletion} : {})});
       if (entry.storage?.provider !== 'vercel-blob' || entry.storage.sha256 !== entry.sha256
         || entry.storage.size !== entry.size || entry.storage.contentType !== `video/${entry.extension}`) throw Error('mismatch');
     } catch {throw new RegistryError(503,'Retained original media identity is unavailable.');}
@@ -267,7 +267,7 @@ export function createVideoRegistry({repositoryRoot:defaultRepositoryRoot,previe
       // bank uploads remain lab-only, and standards are never replaced by intake.
       const uploadFamily = entry.classification?.familyId && familyById.get(entry.classification.familyId);
       if (uploadFamily) {
-        uploadFamily.variantIds.push(entry.id);
+        if (!entry.classification.archived && !entry.deletion) uploadFamily.variantIds.push(entry.id);
         Object.assign(video, {
           familyId: uploadFamily.id, role: 'variant', eventId: uploadFamily.eventId,
           situation: uploadFamily.situation, playbackType: uploadFamily.playbackType,

@@ -58,7 +58,7 @@ export function clipLifecycleBlocker(project, video, dealerId, operation) {
   const archivedDealer = project.dealerTrash?.find(row => row.dealer.id === dealerId);
   if (!project.dealers.some(row => row.id === dealerId) && !archivedDealer) return 'studio_dealer_not_registered';
   if (archivedDealer?.deletion) return 'studio_dealer_delete_pending';
-  if (video.retainedBank || video.bindingScope === 'shared-local' || !uuid(video.id)) return 'studio_retained_media_immutable';
+  if (video.bindingScope === 'shared-local' && !video.retainedBank || !uuid(video.id)) return 'studio_media_ownership_unknown';
   if (!hash(video.sha256) || !text(video.revision)) return 'studio_media_snapshot_incomplete';
   if (video.deletion?.state === 'deleted') return 'studio_media_already_deleted';
   if (operation !== 'delete' && video.deletion) return 'studio_media_deletion_pending';
@@ -81,7 +81,7 @@ export function lifecycleMessage(cause) {
   return ({
     studio_media_ownership_unknown: 'Filens exakta ägare saknas. Den kan inte ändras här.',
     studio_media_snapshot_incomplete: 'Filens hash eller revision saknas. Läs om registret.',
-    studio_retained_media_immutable: 'Delad originalmedia är skyddad och bevaras.',
+    studio_retained_media_immutable: 'Originalets identitet och klassificering kan inte ändras här.',
     studio_dealer_not_registered: 'Återställ dealern innan du återställer enskilda klipp.',
     studio_dealer_archived: 'Dealern är arkiverad. Använd dealerns återställning.',
     studio_dealer_inactive: 'Den historiska dealeridentiteten kan inte återställas som aktiv.',
