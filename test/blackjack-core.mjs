@@ -7,6 +7,7 @@ import { handValue } from '../services/game/games/blackjack/round.mjs';
 import { digest, verifyShoe } from '../services/game/games/blackjack/shoe-proof.mjs';
 import { secureRandom } from '../services/game/games/blackjack/secure-random.mjs';
 import { deterministicRandom } from './fixtures/blackjack-deterministic-random.mjs';
+import { behaviorObservation, moneyObservation } from './fixtures/blackjack-behavior.mjs';
 
 const EMPTY = { main: 0, pp: 0, tp: 0 };
 const ONE_BOX = [{ main: 5, pp: 0, tp: 0 }, ...Array.from({ length: 6 }, () => ({ ...EMPTY }))];
@@ -340,10 +341,12 @@ test('shoe exhaustion fails without a quiet replacement', () => {
   assert.equal(publicView(t.state).shoe.remaining, 0);
 });
 
-// The fixed signatures were captured from the independently frozen migration engine,
-// not from the core under test. They cover every round/card/effect through two cut cards.
-test('fixed migration vectors preserve cards, outcomes, money and closed proofs across two shoes', () => {
-  const expected = JSON.parse(readFileSync(new URL('./fixtures/blackjack-regression.json', import.meta.url)));
+// These vectors come from the historical sourceBlobs in the fixture, not the
+// implementation under test. The old raw-state trace authenticated that capture;
+// only explicit behavioral observations constrain the current implementation.
+const migration = JSON.parse(readFileSync(new URL('./fixtures/blackjack-regression.json', import.meta.url)));
+function migrationRun(decorate = () => {}) {
+  const expected = migration;
   const samples = deterministicRandom(expected.seed);
   let shuffling = true, shoes = 0, roundIds = 0;
   const random = {
@@ -354,21 +357,19 @@ test('fixed migration vectors preserve cards, outcomes, money and closed proofs 
       : `10000000-0000-4000-8000-${String(++roundIds).padStart(12, '0')}`,
   };
   const opened = newGame({ random });
-  let state = opened.state, rounds = 0, steps = 0, offers = 0, net = 0;
-  const trace = createHash('sha256'), log = [...opened.events], proofs = [], actions = new Set();
+  let state = opened.state, rounds = 0, offers = 0;
+  const log = [...opened.events], proofs = [], records = [];
   const send = command => {
     shuffling = command.op === 'start' && state.shoe.cutReached;
     const out = step(state, command, {}, { random, funding: { available: 1e9, reserved: reservationsFor(state, command) } });
-    state = out.state; log.push(...out.events); steps++;
-    const delta = out.effects.reduce((sum, e) => sum + (e.direction === 'debit' ? -e.amount : e.amount), 0);
-    net += delta;
-    trace.update(JSON.stringify({ round: state.round, paid: state.paid, shoe: state.shoe.cards, dealt: state.shoe.dealt, delta }) + '\n');
+    decorate(out);
+    state = out.state; log.push(...out.events); records.push({ ...out, command });
     for (const event of out.events.filter(e => e.type === 'shoe.closed')) {
       const p = event.payload.proof;
       const commandDraws = log.filter(e => e.type.startsWith('engine.') && e.payload.shoeId === p.shoeId).flatMap(e => e.payload.draws);
       const proof = { ...p, commandDraws };
-      assert.equal(verifyShoe(proof).status, 'verified');
-      proofs.push({ commitment: p.commitment, digest: digest(proof), draws: p.draws.length });
+      const commitment = log.find(e => e.type === 'shoe.opened' && e.payload.shoeId === p.shoeId).payload.commitment;
+      proofs.push({ proof, commitment });
     }
   };
   while (proofs.length < 2) {
@@ -380,12 +381,84 @@ test('fixed migration vectors preserve cards, outcomes, money and closed proofs 
       }
       const r = state.round, h = r.hands[r.active], legal = publicView(state).round.legalActions, total = handValue(h.cards).total;
       const action = legal.includes('split') ? 'split' : legal.includes('double') && total >= 9 && total <= 11 ? 'double' : total < 17 ? 'hit' : 'stand';
-      actions.add(action);
       send({ op: 'act', action, roundId: state.roundId, turnSeq: state.turnSeq, handIndex: r.active, box: h.box });
     }
     send({ op: 'collect', roundId: state.roundId }); rounds++;
     assert.ok(rounds <= expected.rounds, 'the second cut card must be reached');
   }
-  assert.deepEqual({ rounds, steps, net, actions: [...actions].sort(), insuranceOffers: offers, trace: trace.digest('hex'), proofs },
-    { rounds: expected.rounds, steps: expected.steps, net: expected.net, actions: expected.actions, insuranceOffers: expected.insuranceOffers, trace: expected.trace, proofs: expected.proofs });
+  return { records, proofs };
+}
+
+const moneyDelta = record => record.effects.reduce((sum, e) => sum + (e.direction === 'debit' ? -e.amount : e.amount), 0);
+const traceOf = (records, observe) => {
+  const hash = createHash('sha256');
+  for (const record of records) hash.update(JSON.stringify(observe(record)) + '\n');
+  return hash.digest('hex');
+};
+function assertMigration({ records, proofs }) {
+  assert.equal(traceOf(records, behaviorObservation), migration.behaviorTrace, 'migration behavior: cards, decisions and outcomes');
+  assert.equal(traceOf(records, moneyObservation), migration.moneyTrace, 'migration money: amount, direction, recipient and funding source');
+  assert.deepEqual({
+    rounds: records.filter(r => r.command.op === 'collect').length,
+    steps: records.length, net: records.reduce((sum, r) => sum + moneyDelta(r), 0),
+    actions: [...new Set(records.filter(r => r.command.op === 'act').map(r => r.command.action))].sort(),
+    insuranceOffers: records.filter(r => r.command.op === 'insurance').length,
+  }, { rounds: migration.rounds, steps: migration.steps, net: migration.net, actions: migration.actions, insuranceOffers: migration.insuranceOffers });
+  // Do NOT project or canonicalize proofs: their historical TEXT serialization
+  // is a cryptographic contract, unlike the private round's object layout.
+  for (const { proof, commitment } of proofs) assert.equal(verifyShoe(proof, commitment).status, 'verified', 'migration proof verifies against its opening commitment');
+  assert.deepEqual(proofs.map(({ proof, commitment }) => ({ commitment, digest: digest(proof), draws: proof.draws.length })), migration.proofs, 'migration proofs retain their historical bytes');
+}
+
+test('fixed migration vectors preserve cards, outcomes, money and closed proofs across two shoes', async t => {
+  const baseline = migrationRun();
+  assertMigration(baseline);
+
+  await t.test('round field order and private diagnostics can change without changing behavior', () => {
+    const decorated = migrationRun(out => {
+      // This also flows into the next step's input state: it is a real internal
+      // representation change, not only a different display of the final hash.
+      out.state.round = { debug: { trace: 'internal-only' }, ...Object.fromEntries(Object.entries(out.state.round).reverse()) };
+      out.state.round.events = [];
+      for (const h of [...out.state.round.hands, ...out.state.round.boxes]) h.debug = 'internal-only';
+      out.effects = out.effects.map(e => ({ debug: 'internal-only', ...Object.fromEntries(Object.entries(e).reverse()) }));
+    });
+    const legacyObservation = ({ state, effects }) => ({ round: state.round, paid: state.paid, shoe: state.shoe.cards, dealt: state.shoe.dealt, delta: moneyDelta({ effects }) });
+    assert.notEqual(traceOf(decorated.records, legacyObservation), traceOf(baseline.records, legacyObservation), 'the retired raw-state hash rejects this harmless change');
+    assertMigration(decorated);
+  });
+
+  const first = () => true;
+  const settled = r => r.command.op === 'collect';
+  const mutations = [
+    ['player card rank', first, r => { const c = r.state.round.hands[0].cards[0]; c.r = c.r === 'A' ? 'K' : 'A'; }, 'behavior'],
+    ['public card suit', first, r => { const c = r.view.round.hands[0].cards[0]; c.s = c.s === '♠' ? '♥' : '♠'; }, 'behavior'],
+    ['shoe physical identity', first, r => { r.state.shoe.cards[0].serial += 1; }, 'behavior'],
+    ['hole-card draw position', first, r => { r.state.round.holeCard.shoeDraw += 1; }, 'behavior'],
+    ['hand outcome', settled, r => { r.state.round.hands[0].result += 1; }, 'behavior'],
+    ['side-bet return', settled, r => { r.state.round.hands[0].sideReturn += 1; }, 'behavior'],
+    ['legal decision', r => r.view.round?.legalActions.length > 0, r => { r.view.round.legalActions.pop(); }, 'behavior'],
+    ['paid marker', settled, r => { r.state.paid = false; }, 'behavior'],
+    ['payout amount', settled, r => { r.effects[0].amount += 1; }, 'money'],
+    ['payout recipient with unchanged net', settled, r => { r.effects[0].box = 6; }, 'money'],
+    ['payout hand with unchanged net', settled, r => { r.effects[0].hand = 99; }, 'money'],
+    ['debit direction', first, r => { r.effects[0].direction = 'credit'; }, 'money'],
+    ['debit source', first, r => { r.effects[0].source = 'available'; }, 'money'],
+  ];
+  for (const [name, where, mutate, category] of mutations) await t.test(`rejects changed ${name}`, () => {
+    const records = [...baseline.records], index = records.findIndex(where);
+    assert.ok(index >= 0, `mutation exercised: ${name}`);
+    records[index] = structuredClone(records[index]); mutate(records[index]);
+    assert.throws(() => assertMigration({ ...baseline, records }), error => error.code === 'ERR_ASSERTION' && error.message.startsWith(`migration ${category}:`));
+  });
+  for (const [name, mutate, message] of [
+    ['commitment', p => { p.commitment = 'f'.repeat(64); }, 'migration proof verifies'],
+    ['draw', p => { p.draws[1].card.serial += 1; }, 'migration proof verifies'],
+    ['historical serialization', p => { p.rules = { cutAfter: 312, decks: 8, total: 416, burn: 1 }; }, 'migration proof verifies'],
+    ['historical proof key order', p => Object.fromEntries(Object.entries(p).reverse()), 'migration proofs retain'],
+  ]) await t.test(`rejects changed proof ${name}`, () => {
+    const proofs = structuredClone(baseline.proofs);
+    proofs[0].proof = mutate(proofs[0].proof) ?? proofs[0].proof;
+    assert.throws(() => assertMigration({ ...baseline, proofs }), error => error.code === 'ERR_ASSERTION' && error.message.startsWith(message));
+  });
 });

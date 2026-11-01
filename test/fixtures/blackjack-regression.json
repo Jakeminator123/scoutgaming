@@ -30,5 +30,8 @@
     "public/blackjack.mjs": "5ce0fe431186bd11c2a893766a2ce6c63b1cc6dc",
     "shoe-proof.mjs": "54e9737a3d89fe763d907f20282bd298480b7f35"
   },
-  "capture": "SHA-256 of newline-separated JSON {round,paid,shoe:cards,dealt,delta} after every command; separate fixed shoe UUIDs, nonce, uint32 seed; split first, double on 9-11, hit below 17, otherwise stand; alternating insurance boxes [0,3]/[]"
+  "capture": "SHA-256 of newline-separated JSON {round,paid,shoe:cards,dealt,delta} after every command; separate fixed shoe UUIDs, nonce, uint32 seed; split first, double on 9-11, hit below 17, otherwise stand; alternating insurance boxes [0,3]/[]",
+  "behaviorTrace": "ce3cd184fb92ae1141c918692da5b8a2e0f19c7613916f7b3262d2d07a57241d",
+  "moneyTrace": "ce8b16bda3c8cfa0fc473df1f8fc3a619484e36802a662fdf8ce82cd8545ee8f",
+  "behaviorCapture": "Derived only from the three sourceBlobs, after reproducing trace, summaries and proof digests above. Apply behaviorObservation/moneyObservation from blackjack-behavior.mjs after each command. Mock global crypto uint32/UUID and node:crypto randomBytes with this seed, sequential shoe UUIDs and nonce. Wallet effects use historical pre-command hands and the coordinator funding contract; their sum must equal the original command delta. The legacy trace is provenance only, not a current state-layout requirement."
 }
