@@ -96,9 +96,36 @@ Två miljöer räcker (Jakobs beslut 2026-10-29): `main` är produktion och bran
 4. Pre-commit (`.githooks/pre-commit`) kör riktade kontroller på ändrade filer; `node tools/precommit-checks.mjs --plan` visar urvalet. Full regression och isolerad Postgres körs i CI (`.github/workflows/croupier.yml`) på PR:er som är klara för granskning, vid push till `preview`, nattligen på `main` (02:00 UTC) och manuellt, eller lokalt med `sh .githooks/pre-commit --full`. Push till `main` kör bara dokumentationskontroller, migreringsberedskap och Gateway-containern när dess indata ändrats; PR:ens egen CI har redan kört regressionen. Chrome-jobbet `Regression (browser)` körs på PR och krävs för `CI` när PR:en ändrar `services/game/public/**`, `apps/studio/client/**` eller `apps/studio/components/**` (`browserAcceptanceRequired` i `tools/ci-changes.mjs`); på andra PR:er blockerar det inte `CI`. Nattkörningen och push till `preview` kräver det alltid. En utkast-PR (draft) kör bara klassificering och `node tools/precommit-checks.mjs --pr-diff` (samma riktade kontroller på merge-diffen) och får ingen kontroll med namnet `CI` förrän den markeras klar; CI väljer dessutom regressionsben efter ändringens omfång (matrisen står i `tools/ci-changes.mjs`).
 5. Prova det ändrade beteendet i preview när det behövs. För ett ändrat publicerings-/spelflöde följs Admin → spara → publicera → lobby → `/game?game=blackjack` → spelad hand → omladdning. Dokumentstädning kräver länkkontroll och dokumenthook. Ändrade talmedier behöver Jakobs ljud-/läppsynkacceptans; orelaterade godkända medier spelas inte om som generell grind.
 
+## Byta IDE eller återuppta arbete
+
+Samma Git-worktree kan öppnas i Claude, Codex, Cursor eller valfri IDE. Git visar koden; en kort privat överlämning visar uppdraget. Ingen gammal chatthistorik, global installation eller personlig konfiguration behövs. Nya worktrees ligger under `.worktrees/<uppdrag>`; överlämningen ligger utanför själva worktreen i huvudcheckoutens ignorerade `.worktrees/.handoffs/<uppdrag>.json`.
+
+Kör från valfri katalog, med huvudcheckoutens absoluta sökväg som `--repo`:
+
+```powershell
+$repo = 'C:/Users/jakob/dev/scoutgaming'
+$cli = Join-Path $repo 'tools/portable-workflows.mjs'
+node $cli list --repo $repo
+node $cli resume --repo $repo --task admin-edit
+```
+
+`list` visar Git-worktrees och uppdragsnamn utan att läsa överlämningarnas innehåll. `resume` läser bara valt uppdrag, jämför repo, branch och HEAD och visar aktuell staged/unstaged/untracked-status. Ändrad HEAD/branch, aktiv ägare eller saknad worktree ger varning och exitkod 2; ogiltigt underlag ger 1. Ren eller ändrad worktree med pausat uppdrag ger 0. Ingen checkout, reset, stash, clean, merge eller verktygsstart utförs.
+
+Spara en kort överlämning vid paus, före IDE-byte och när nästa steg ändras:
+
+```powershell
+node $cli record --repo $repo --task admin-edit --worktree "$repo/.worktrees/admin-edit" --owner 'Jakob / Codex' --status paused --goal 'Färdigställ adminändringen' --scope 'apps/studio/client' --verified 'Riktat prov passerade på aktuell HEAD; CI återstår' --next 'Granska diffen och öppna PR'
+```
+
+Alla fält i exemplet krävs; upprepa `--scope` för fler filer eller mappar. Branch och full HEAD läses från Git. Status är `active`, `paused` eller `done`; ägare/status är uppgiftsinformation, inte ett lås eller ett nytt mandat. Samordna en aktiv ägare innan övertagande. En uttrycklig `record` kan byta ägare och bevarar föregående ägarvärde; byte från aktiv ägare sparas med varning och exitkod 2. Skriv inga hemligheter eller chattkopior. Verktyget vägrar länkar/junctions för metadata, okända format och oregistrerade worktrees och kräver att metadata är Git-ignorerad.
+
+Öppna den worktree som resultatet anger i den nya IDE:n. Starta en tom session med exempelvis: **Läs AGENTS.md och START-HERE.md. Kör `resume` för uppdraget `admin-edit` med repo-sökvägen ovan. Kontrollera aktuell diff och ägare, läs bara filer inom uppdragets scope och fortsätt från nästa steg.** Rätta underlaget när Git-status eller uppdraget har ändrats; `resume` tar inget ägarskap automatiskt.
+
+För ett annat repo: kör samma [fristående skript](tools/portable-workflows.mjs) via absolut sökväg eller kopiera bara det till repots verktygsmapp, använd det repots `--repo` och lägg `/.worktrees/` i dess `.gitignore`. Endast Node och Git krävs. Flytt till en annan dator kräver att kod och ocommittade ändringar överförs separat och en ny överlämning registreras med de nya sökvägarna.
+
 ## Leverera
 
-1. `git fetch`, sedan egen branch `jakob/*` från färsk `origin/main` (Claude-underagenter: `jakob/claude-*` i en worktree under `.claude/worktrees`).
+1. `git fetch`, sedan egen branch `jakob/*` från färsk `origin/main`, i egen worktree under `.worktrees/<uppdrag>` oavsett IDE (t.ex. `jakob/claude-*`, `jakob/codex-*` eller `jakob/cursor-*`).
 2. Committa med repots hookar, aldrig `--no-verify`. Läs `node tools/security-status.mjs` före push och merge.
 3. `node tools/push-github-work.mjs` pushar och skriver PR-kommandot (eller `git push -u origin <branch>` och `gh pr create`). PR mot `main`, öppnad som klar (inte draft). Jakobs agenter skriver exakt `#Jakobs agent` på en egen synlig rad för sina verkliga uppdrag från Jakob; märkningen ersätter inte verifierat ägarskap. Ange också raden `Buggranskning: <verktyg/modell>, <nivå>, <fynd>` efter egen granskning av diffen ([AGENTS.md](AGENTS.md#leverans-och-merge)).
 4. Den obligatoriska kontrollen heter `CI` och gäller PR:ens head; branchen behöver inte vara à jour med `main`. Vänta på grön CI, merga. Vem som får merga står i [AGENTS.md](AGENTS.md#leverans-och-merge); alla verifierade Jakobs agenter får inom sin tilldelning merga hans arbete med `node tools/merge-pr.mjs <nr> --head <full-sha>`. Samma ändrade filer, inklusive namnbyten, och kod på båda sidor i samma paket kräver ny CI mot aktuell main. En överlappning som enbart beror på granskade dokumentvägar kan passera först när den betrodda länkkontrollen godkänt det kombinerade trädet för exakt main/head. Okänd CI-bas eller ofullständigt underlag nekas; merga då in `origin/main` och låt CI köra om.

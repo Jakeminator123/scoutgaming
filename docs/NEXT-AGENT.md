@@ -2,6 +2,12 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Återuppta arbete mellan IDE:er 2 november
+
+Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.
+
+Verkliga temporära Gitrepon provar ren/ändrad worktree, identitets- och ägarbyten, okänt metadataformat, sökvägsgränser och återupptagning från annan katalog utan ändringar av kod eller index. Normal hook och exakt verifiering hör till ändringens PR; CI och merge följs av integrationens ägare. Dödhetsgranskning gäller aktuell main/preview och deras aktivt lästa fixerade refs; andra personers egna brancher lämnas orörda och låser inte mainstädning.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.
