@@ -41,14 +41,17 @@ Kontrollera kvarvarande delar mot aktuell kod före start. Genomförda steg och 
 | Bolagsbindning för nycklar och spelare | [NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md), [STEG-F](plans/STEG-F.md) | Koden har fortfarande toleranta läsvägar. Full kravhöjning och driftacceptans är inte verifierade av dokumentgranskningen. |
 | Tal, röst och läppsynk | [TALKEDJA](plans/TALKEDJA.md), [RunPod-underlag](TALKEDJA-RUNPOD.md) | Pausat uppdrag. Daterade prov är underlag, inte aktuell molnstatus eller godkänd läppsynk. |
 | Selektiva presentationsförslag | [KEVIN-PORT](plans/KEVIN-PORT.md) | Daterat jämförelseunderlag med kvarvarande förslag. Kontrollera varje förslag mot aktuell main före nytt arbete. |
-| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md) | Återgångs- och referensvillkor inför eventuell dataåtgärd. Den gamla objektlistan är ingen aktuell raderingslista. |
+| Kontrollerad avveckling av data och media | [REN-START](plans/REN-START.md) | Återgångs- och referensvillkor inför eventuell dataåtgärd. Den gamla objektlistan och SQL-körlistan är ersatta med aktuell beroende- och återgångsordning. |
 | Beställd Git-utredning och möjligt repo-byte | [historikmätning](incidents/2026-10-31-repository-history.md), [övergångsplan](incidents/2026-10-31-clean-repository-plan.md) | Beslutsunderlag för ett fortfarande separat repo-byte, inte en utförd flytt. |
 
-Granskning 31 oktober 2026 mot `c0150add62fd9e4b39fd31a7e0127406ca860007`:
-sex ersatta Admin-/design-/verktygs-/partner-/läppsynkplaner är borttagna.
-Användbar vägledning finns i sakguiderna ovan och återstående arbete i körplanen.
-[HISTORIK](HISTORIK.md) anger Git-versionerna. Detta är en kontroll av dokumentens
-syfte och kodreferenser, inte en ny moln- eller AV-acceptans.
+Granskning 1 november 2026 mot
+`e3dbed2c17afe91deb81ff9b9e9d88264958d38f` omfattar samtliga 39 då spårade
+och fysiska filer under `docs/`. Astrids förbrukade labbguide är borttagen;
+aktuella gränser finns i AI-index. Sakguiderna rättar schema/readiness,
+publicering, talstart och API-exempel. Aktiva planer är kortade till
+verifierat kodläge och kvarvarande arbete. [HISTORIK](HISTORIK.md) anger
+originalversionen. Daterade drift- och AV-kvitton har inte gjorts om till
+nya acceptanspåståenden.
 
 ## Underhåll
 

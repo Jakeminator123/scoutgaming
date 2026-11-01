@@ -4,6 +4,17 @@ En rad per dokument som raderats ur `main` efter att dess uppgift var klar. Inne
 
 Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökvägar nedan pekar på Git-versionen.
 
+## Raderade 1 november 2026
+
+| Fil | Ersättning och skäl; originalet läses med `git show e3dbed2c17afe91deb81ff9b9e9d88264958d38f:<fil>` |
+| --- | --- |
+| `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#pensionerad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [REN-START](plans/REN-START.md) bär datauppdraget. |
+
+Samma granskning ersatte förbrukade steg, gamla SQL-körlistor och daterade
+produktantal i REN-START, NYCKEL-BOLAG, STEG-F och TALKEDJA med aktuellt
+kodläge och kvarstående uppdrag. Originalen finns i Git-versionen ovan;
+inga produktdata, providerinställningar eller scheman ändrades.
+
 ## Raderade 31 oktober 2026
 
 Migreringen avslutades 28 oktober: 20/20 aktiviteter verifierade, O03 via [PR #527](https://github.com/Jakeminator123/scoutgaming/pull/527). Den återstående projektadministrationen och dess statuskontroller avvecklades på Jakobs begäran. Aktuella driftkontrakt finns i START-HERE, CLOUD-MIGRATION och ENVIRONMENT-RESTORATION; SQL och readiness i `ops/neon-*` och `tools/check-migration-readiness.mjs` består. Sista main-version före avvecklingen: `86913d79cdf5643070decbc3e604c7aaee5c6819`.

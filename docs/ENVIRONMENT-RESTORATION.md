@@ -2,7 +2,7 @@
 
 Hur produktens data skyddas och hur man går tillbaka, för den enda produktvägen Vercel + Render + Neon + Blob. Identiteter står i [START-HERE](../START-HERE.md#identiteter), miljövariabler i [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md), driften i [CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [RENDER-V3](../ops/cloud/RENDER-V3.md).
 
-Allt här som rör produktionen (backup, restore, DDL, stopp av tjänster, radering, flaggor) kräver Jakobs uttryckliga beslut. Agenter läser, provar i preview och förbereder. Stående undantag: orkestratorn deployar `croupier-v3` med låst SHA efter grön main-CI (Jakob 2026-10-28).
+Åtgärder följer Jakobs aktuella mandat och [AGENTS](../AGENTS.md). Läsning och återställningsförberedelse kräver inget nytt generellt godkännande. Destruktiv DDL, dataradering och produktionsåterställning måste omfattas av det uttryckliga uppdraget och ha återgångsunderlag. Redan auktoriserade releaser genomförs med låst SHA och ordinarie kontroller.
 
 ## Vad som ska skyddas
 
@@ -10,7 +10,7 @@ Allt här som rör produktionen (backup, restore, DDL, stopp av tjänster, rader
 | --- | --- | --- |
 | Konton, saldo, ledger, spel | Neon `croupier_game`, scheman `croupier_auth`, `croupier_game` | Backupgren före varje schemaändring och `pg_dump` enligt nedan; aldrig äldre backup över nyare plånbokstransaktioner |
 | Admin-data: dealers, bolag, rum, mallar, paket, spelinställningar, mediekatalog, talrepliker | Neon, schema `croupier_studio` | Samma backup; publicerade paket är frysta och ändras aldrig |
-| Mediebytes (original, banker, tagningar) | Privat Blob `croupier-media-private` | Original raderas inte; Git är ingen backup av molnmedia |
+| Mediebytes (original, banker, tagningar) | Privat Blob `croupier-media-private` | Vanlig livscykel bevarar original; uttrycklig avveckling följer [REN-START](plans/REN-START.md). Git är ingen backup av molnmedia |
 | Director-katalog och historik | Render-disk `/data/catalog` på `croupier-lab-director` | `tools/backup-render-state.mjs --profile director` |
 | Gateway-konfiguration och sessioner | Render-disk `/data/openclaw` på `croupier-lab-openclaw` | `tools/backup-render-state.mjs --profile gateway` |
 | Kod | GitHub `Jakeminator123/scoutgaming`, `main` | Ordinarie PR/CI; ingen force-push |
@@ -25,7 +25,7 @@ Kodåtergång, när en deploy är fel:
 1. Frys läget: aktuell `main`-SHA, Vercels produktionsdeploy (`dpl_…` och dess commit) och spelmotorns `GET https://croupier-v3.onrender.com/__cloud/version` och `/__cloud/health`. Grön CI bevisar inte att båda kör samma version.
 2. Välj en granskad tidigare SHA och kontrollera att den förstår installerat Neon-schema, frysta paket och sparade medieformat. Schema går inte tillbaka med koden.
 3. Spelmotorn: deploya SHA:n låst med Render REST, `POST /v1/services/srv-dbd6nfon74is73aiblf0/deploys` med `{"commitId":"<40 hex>"}`. Render MCP `trigger_deploy` tar branchens senaste commit och duger inte för återgång. Vercel: befordra en tidigare READY-deploy (panelens Instant Rollback eller `POST /v10/projects/<prj>/promote/<dpl_…>`); därefter får nya main-deployer inte produktionsdomänerna förrän en deploy befordras igen. Den varaktiga återgången är en revert-PR med full CI. Director och Gateway deployas bara om deras kod ändrats.
-4. Läs om `/__cloud/version`, `/__cloud/health` och det berörda flödet (med delat bord på: en spelad hand, eftersom `/__cloud/shared-room-health` inte är publikt nåbar): Admin → publicering → lobby → spel. Render låter den gamla instansen svara i ungefär tre minuter efter bytet; mät först när versionen är stabil.
+4. Läs om `/__cloud/version`, `/__cloud/health` och det berörda flödet (med delat bord på: en spelad hand, eftersom `/__cloud/shared-room-health` inte är publikt nåbar): Admin → publicering → lobby → spel. Render kan låta gammal och ny instans överlappa. Verifiera stabil full SHA och berört beteende; en fast väntetid är inget bevis för att bytet är klart.
 
 **Deploy med delat bord på (F11).** [Driftkvittot](plans/organisation/F11-DRIFTKVITTO.md) verifierar gamla och nya Render-instansen genom 169 s verkligt överlapp, pengar och återanslutning på runtime e8d0b935. F11:s generella tomt-bord-spärr är hävd för kod- och schemakompatibla releaser; bedöm kompatibilitet och återgång separat. Provet är inte generell produktionslast- eller AV-acceptans. Vid flaggbyte, eller publicering/konfigurationsbyte som kräver tomma bord, gäller fortfarande: `SELECT count(*) FROM croupier_game.shared_table_members WHERE active` och `SELECT count(*) FROM croupier_game.shared_wallet_reservations` ska båda vara 0, annars vänta en runda.
 
@@ -103,8 +103,8 @@ Läst 28 oktober 2026 före O03 och 14:21Z efter 011, och 29 oktober 2026 efter 
 | Spel-ledger `croupier_game.storage_migrations` | `product-v1` och `sqlite-import-v1` (checksumman i `ops/neon-game/product-schema.sql`), sedan O03 `game-011-retire-lissabon` (2026-10-28 14:21:48Z) och `game-012-api-key-operator` (2026-10-29 01:46:30Z, efter backupgrenen `backup-api-key-operator-20261029`): `api_keys.operator_id` är `NOT NULL` med index och oföränderlighetstrigger ([NYCKEL-BOLAG](plans/NYCKEL-BOLAG.md)). Samma checksummor som filerna i `ops/neon-game` | Motorn och Studio kontrollerar `product-v1`:s checksumma vid start; 011 och 012 skriver sina egna rader (`tools/prepare-lissabon-retirement.mjs`, `tools/prepare-api-key-operator.mjs`); readiness läser hela ledgern |
 | Delat bord 008–010 | Applicerade 27 oktober utan ledgerrad; 15 tabeller `croupier_game.shared_*`. Efterhandsraderna skrivs med 013 ovan | `tools/prepare-shared-schema.mjs` skriver granskad SQL, applicerar inget |
 | Katalog | 74 tabeller efter 011 (`croupier_auth` 7, `croupier_game` 39, `croupier_studio` 28; 76 före), 4 sekvenser, 2 vyer | `tools/db-snapshot.mjs` |
-| Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Flyttas eller tas bort efter O03 |
-| Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` är kvarlämnade QA-roller som tas bort efter O03 | Inventeras före restore i ett annat projekt |
+| Tillägg | `pg_stat_statements` i schemat `croupier_game` (de två vyerna är dess), ägt av `croupier_game`; `plpgsql` | Historisk inventering; flytt/radering avgörs av aktuell konsument och uppdrag |
+| Roller | `croupier_game` äger databasen, schemana och alla tabeller utom `moving_drift_control` och är runtime-roll för motorn och Vercel. `kevin_migration_readonly` läser. `neondb_owner` är Neons standardroll. `croupier_game_qa` och `croupier_studio_qa_abc92154cb15` var QA-roller i inventeringen; aktuellt ägarskap och beroenden måste verifieras före radering | Inventeras före restore i ett annat projekt |
 
 **Förkontroll inför Studio 023 i en äldre återställning.** Frågan listar bord i varje bolags senaste paket vars miljö saknas i paketets `lanes`; tomt svar krävs. Kontrollera också fullständig matchning av bord, rum, ägare och frysta presentationsmiljöer. Den strikta skrivaren nekar en ofullständig rumslista; den lämnar aldrig nya `rooms` NULL.
 ```sql
@@ -218,7 +218,7 @@ En `--single-branch`-klon hämtar bara `main`; lägg till den egna branchen med 
 
 ## Preview
 
-Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com`) byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert-commit på `preview`, eller merga in `origin/main` så att `preview` åter följer produktionen), aldrig med force-push. Neon-projektet heter `scoutgaming-preview` (`red-violet-36066351`); databas-, roll- och Render-värdnamn behåller sina staging-identiteter. Kvarvarande restoremål bedöms separat enligt nedan. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
+Den tidigare stagingen behålls efter O03 som preview, se [START-HERE](../START-HERE.md#preview). Sedan 2026-10-29 är branchen `preview` källan: Vercel-projektet `scoutgaming-preview` (preview.scoutgaming.tech) deployar den automatiskt och Render-tjänsten `scoutgaming-preview-engine` (adressen `croupier-k06-k07-staging.onrender.com`) byggs från den; pre-push-hooken tillåter bara fast-forward av `preview`, så en kodåtergång där görs framåt (revert på en `jakob/*`-branch med PR mot `preview`, eller synk från `main` enligt leveransreglerna), aldrig med force-push. Neon-projektet heter `scoutgaming-preview` (`red-violet-36066351`); databas-, roll- och Render-värdnamn behåller sina staging-identiteter. Kvarvarande restoremål bedöms separat enligt nedan. Nästa restoreprov görs mot ett nytt tomt mål; produktionsdata kopieras aldrig till preview.
 
 ## Kvar att bedöma för gallring
 

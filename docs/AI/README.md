@@ -10,7 +10,6 @@ gränser.
 | Spelarens tal: Director → Gateway → `croupier-speech` | [Produkttal](openclaw/PRODUCT-SPEECH-DEPLOYMENT-SV.md) |
 | Director, Gateway, nycklar och Render-drift | [Drift](openclaw/DEPLOYMENT.md) |
 | OpenClaws egen dashboard | [Dashboard](openclaw/DASHBOARD-SV.md) |
-| Astrids labbchatt, profil och minne | [Astrids labbchatt](openclaw/ASTRID-LABBCHATT.md) (avvecklas) |
 | Runtimepaketet som Gateway-rollerna får | [Runtime-bundle](../../services/openclaw/lab/deploy/runtime-bundle/README.md) |
 | Medier och uppspelning | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Miljövariabler | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
@@ -29,7 +28,7 @@ gränser.
 
 Gatewayn har fem roller, inte fem servrar: `croupier-director` (väljer
 kompatibel presentationsvariant), `croupier-chat` (förklarar konfiguration),
-`croupier-operator` (dashboarden), `croupier-social` (Astrids labbchatt) och
+`croupier-operator` (dashboarden), `croupier-social` (pensionerad labbyta) och
 `croupier-speech` (spelarens tal). Repots konfiguration har heartbeat `0m`,
 nekade verktyg och avstängd cron och webbläsare, så ingen roll arbetar i
 bakgrunden. Effektiv modell per roll ligger i Gatewayns beständiga
@@ -46,5 +45,16 @@ modellbyte.
   vid containerstart; webbchatten får sitt sammanhang från serveradaptern.
 - Ändringar i `packages/director` eller `services/openclaw/lab` når drift först
   när Director respektive Gateway har deployats om.
-- Astrid tas bort vid ren start. Hennes labbchatt och companion finns kvar i
-  koden tills dess.
+## Pensionerad labbchatt
+
+Eventstudio, Astrids labbchatts enda produktklient, togs bort i #468.
+Kvarvarande social-/companion-routrar och adaptrar är avvecklingskandidater
+enligt [REN-START](../plans/REN-START.md), inte ett krav att bevara Astrid.
+Spelarens tal använder det separata produkttalkontraktet ovan.
+Följ `apps/studio/app/api/social/`, `apps/studio/lib/social-server.mjs` och
+`packages/director/{social,companion}.mjs` vid kodavvecklingen. Hjälptjänsten
+`services/openclaw/lab/deploy/companion-search-server.mjs` används även av
+dashboardinloggning (`services/openclaw/lab/src/studio-admin.mjs`) och
+måste bedömas med den konsumenten. Variabelregistret
+beskriver kvarvarande avstängningsflaggor; den borttagna labbguidens
+historiska detaljkontrakt finns via [HISTORIK](../HISTORIK.md).

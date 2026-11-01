@@ -46,7 +46,7 @@ Delat bord (`table/coordinator.mjs`) samordnar platser, insatsfönster, turer, d
 
 ## Varför nativeadaptern inte raderas ännu
 
-Admins Provspel använder `preview-table.mjs`; partnerintegration, nativa presentations-/talkonsumenter och sparade `blackjack_tables` har andra kontrakt än delade bord. Överlämningen beskriver också en tidigare rapporterad oavslutad nativerunda vars aktuella läge måste kontrolleras. Kontrollera aktuellt läge före avveckling; en tom tabell eller genomförd Neon-migrering räcker inte som bevis.
+Admins Provspel använder `preview-table.mjs`; partnerintegration, nativa presentations-/talkonsumenter och sparade `blackjack_tables` har andra kontrakt än delade bord. Kontrollera aktuellt läge före avveckling; en tom tabell eller genomförd Neon-migrering räcker inte som bevis.
 
 Native och V3 delar nu handregler genom `round.mjs`. Kompatibilitetsmodulen behåller bara den tidigare konstruktorns standardsko och utelämnar V3:s `sideResults` ur nativehänder. Båda skornas slumpanrop, sparformat, API:er, plånboksadaptrar och V3:s commit/reveal-bevis är oförändrade. Reglerna för split och utbetalning ska inte återinföras i kompatibilitetsmodulen.
 
@@ -59,7 +59,7 @@ Nästa avveckling kräver att provspel och partnerflöden har ersättningar, att
 | [shoe-game](../../../test/shoe-game.mjs) | Nativekommandon, JSON-återläsning, handregelkompatibilitet, oförändrad svarform och skydd mot dubbel utbetalning. Registrerat i gameplay-sviten. |
 | [split-rules](../../../test/split-rules.mjs) | Fasta splitfall och seedad simulering genom kompatibilitetsmodulen och därmed samma handregler. Körs uttryckligen av `Game rules split check` i CI. |
 | [fuzz-blackjack](../../../test/fuzz-blackjack.mjs) | Den kvarvarande nativekommandovägen (`shoe-game.mjs`), inte V3:s funding-, outbox- eller låskontrakt. Inte ett statistiskt certifieringstest. |
-| [blackjack-core](../../../test/blackjack-core.mjs), [blackjack-sidebets](../../../test/blackjack-sidebets.mjs) | V3:s effekter, finansiering, dolda kort, skobevis och utbetalningstabell. Frysta Kevin-fixturer är testorakel, inte ytterligare en produktväg. |
+| [blackjack-core](../../../test/blackjack-core.mjs), [blackjack-sidebets](../../../test/blackjack-sidebets.mjs) | V3:s effekter, finansiering, dolda kort, skobevis och utbetalningstabell. Regressionsdata och beteendeorakel hör till `test/fixtures/blackjack/`; de är testunderlag, inte ytterligare en produktväg. |
 | [blackjack-table](../../../test/blackjack-table.mjs), [postgres-shared-table](../../../test/postgres-shared-table.mjs) | Delade bord, samtidighet och lagringskontrakt; riktig PostgreSQL körs via den isolerade CI-harnessen. |
 | [table-http](../../../test/table-http.mjs), [postgres-native-table](../../../test/postgres-native-table.mjs), [preview-table](../../../test/preview-table.mjs) | Fortfarande använda native- och provspelsadaptrar; behåll tills konsumenterna avvecklats. |
 

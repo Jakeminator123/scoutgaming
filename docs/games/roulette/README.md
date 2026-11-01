@@ -1,6 +1,6 @@
 # Roulette
 
-Europeisk roulette med enkel nolla, spelbar i publicerade rum via `/play/roulette`. Spelmotorn (`services/game`, Render `croupier-v3`) äger dragning, saldo och kvitton. Det enda rouletterum som byggts är demorummet *Anna · Roulette · Demo* hos bolaget `scoutgaming-demo`; det tas bort vid ren start (clean slate), när bara Johns Bet blir kvar. Ingen komplett dealer- eller utfallsbank är godkänd.
+Europeisk roulette med enkel nolla, spelbar i publicerade rum via `/play/roulette`. Spelmotorn (`services/game`, Render `croupier-v3`) äger dragning, saldo och kvitton. Aktuella rum kommer från publicerade paket. Ingen komplett dealer- eller utfallsbank är godkänd enligt dokumentationens underlag; äldre demorumslistor är ingen aktuell datainventering.
 
 [Teknisk referens](TEKNIK.md) · [Klippkarta och signaler](KLIPPKARTA.md) · [Krav på utfallsbank](UTFALLSFILMER.md) · [Klipp och format](../KLIPP-OCH-FORMAT.md)
 
@@ -13,7 +13,7 @@ Europeisk roulette med enkel nolla, spelbar i publicerade rum via `/play/roulett
 
 ## Kommandon
 
-`POST /api/roulette/table` tar `op: 'state'` eller `op: 'spin'`. Spin anger `requestId`, aktuell `version`, `bets` och `context: {operator, table, dealer?}`; sessionen äger spelar-ID och valuta. [room.mjs](../../../services/game/games/roulette/room.mjs) validerar och avräknar, och [storage.mjs](../../../services/game/games/roulette/storage.mjs) skriver saldo, bokföring och kvitto atomärt i PostgreSQL. Exakt återförsök ger samma sparade kvitto, aldrig en ny dragning; de senaste 20 kvittona sparas per spelare, bolag och rum.
+`POST /api/roulette/table` tar `op: 'state'` eller `op: 'spin'`. Spin anger `requestId`, aktuell `version`, `playerId`, `currency`, `bets` och `context: {operator, table, dealer?}`. Servern kräver att spelar-ID och valuta stämmer med den autentiserade sessionen. [room.mjs](../../../services/game/games/roulette/room.mjs) validerar och avräknar, och [storage.mjs](../../../services/game/games/roulette/storage.mjs) skriver saldo, bokföring och kvitto atomärt i PostgreSQL. Exakt återförsök ger samma sparade kvitto, aldrig en ny dragning; de senaste 20 kvittona sparas per spelare, bolag och rum.
 
 Spelingång: `/play/roulette?operator=<slug>&table=<rum-id>&dealer=<dealer-id>`. Inloggning och demosaldo delas med blackjack. Partner-launch-konton är spärrade tills deras plånbokskontrakt stöder roulette.
 

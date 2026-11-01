@@ -2,6 +2,27 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Dokumentgranskning 1 november
+
+Samtliga 39 ursprungliga filer under `docs/` är innehållsbedömda mot
+`e3dbed2c17afe91deb81ff9b9e9d88264958d38f` och relevanta kodkonsumenter.
+Astrids förbrukade labbguide är raderad med länkar och HISTORIK i samma
+leverans. Lagrings-/driftguiderna rättar 023:s krav, game-readiness,
+OpenClaw-nycklar, valfri talstart och API-kontrakt. REN-START, NYCKEL-BOLAG,
+STEG-F och TALKEDJA beskriver genomförda delar och verkligt restarbete utan
+gamla produktionsantal eller förbrukade körlistor.
+
+Blackjacks historiska fixturer hör till `test/fixtures/blackjack/` enligt
+den samordnade teststädningen. K04-testkatalogerna kräver ingen ompublicering
+av rum; den riktiga publiceringskedjan använder registrerad filmprofil och
+`native-room-game-material.mjs`. Nödvändiga F11-/repo-/talbevis är kvar.
+Talet är fortsatt pausat. Ingen ny moln-, data- eller AV-acceptans ingår.
+
+Verifiering: dokumentlänkar/ankare, miljöregister och commitens riktade
+hookar redovisas i ändringens PR. Den lokala 39-filersmatrisen finns i
+dokumentagentens `.cache/docs-audit-coverage.md`; den är arbetsunderlag,
+inte ytterligare en produktguide.
+
 ## Organisationsarbete
 
 **Beteenden framför struktur, 1 november:** [#777](https://github.com/Jakeminator123/scoutgaming/pull/777) tar bort den oanvända importplanen och dess 14 planprov. Aktiva API-/panelprov använder importkällmodulen direkt; Dragan-provet behåller plats/pose, exakt taltext, playback/preload och granskningskrav. [#778](https://github.com/Jakeminator123/scoutgaming/pull/778) ersätter blackjackprovets råstate-hash med historiskt härledda observationer av kort, beslut, utfall och betalningar. Historiska skobevis behåller exakta digester; spelmotorn är orörd. [#779](https://github.com/Jakeminator123/scoutgaming/pull/779) tillåter dokumentorsakad paketöverlapp först efter länkkontroll i ett kombinerat, fryst main/head-träd. Samma filer, två kodändringar i samma paket samt ägar-/head-/CI-skydd kvarstår.

@@ -45,7 +45,7 @@ En ny design behåller serverns regler, RNG, inloggning, plånbok och publicerin
 
 ## Drift
 
-Tabellen `croupier_game.roulette_tables` skapas av den additiva `ops/neon-game/007-roulette-tables.sql` och refererar befintliga spelare; inga konton eller saldon ändras av den. Motorn svarar inte redo för roulette innan tabellen finns, och Admin vägrar publicera roulette mot äldre motorer. Ingen egen tjänst, hemlighet eller miljövariabel behövs; `ops/cloud/Dockerfile` kopierar `services/game/` som för blackjack. Återställning sker genom att avpublicera rouletterummen; tabellen och bokförda kvitton behålls. Certifiering och riktiga pengar ingår inte.
+Tabellen `croupier_game.roulette_tables` skapas av den additiva `ops/neon-game/007-roulette-tables.sql` och refererar befintliga spelare; inga konton eller saldon ändras av den. Motorn svarar inte redo för roulette innan tabellen finns, och Admin vägrar publicera roulette mot äldre motorer. Ingen egen tjänst, hemlighet eller miljövariabel behövs; `ops/cloud/Dockerfile.game` kopierar `services/game/` som för blackjack. Återställning sker genom att avpublicera rouletterummen; tabellen och bokförda kvitton behålls. Certifiering och riktiga pengar ingår inte.
 
 ## Verifiering
 

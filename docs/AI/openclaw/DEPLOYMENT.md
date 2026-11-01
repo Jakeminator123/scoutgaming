@@ -19,7 +19,10 @@ identiteter i [START-HERE](../../../START-HERE.md#identiteter).
 - `croupier-v3` (spelmotorn): har `OPENCLAW_PRODUCT_SPEECH_URL`, speech-token
   och `OPENCLAW_SPEECH_AGENT`, aldrig Gatewayns nyckel. Den validerar session,
   kort, saldo och modellens svar.
-- Vercel behöver ingen av OpenClaw-hemligheterna.
+- Produkttalets token används av motorn och Director. Vercels serverkod
+  för Admins modellhantering använder däremot `OPENCLAW_API_KEY` enligt
+  `apps/studio/lib/openclaw-admin.mjs` och variabelregistret; nyckeln når
+  aldrig webbläsaren.
 
 Kedjan: spelmotorn skickar en avgränsad projektion via Director till
 Gatewayn. Svaret är `recordedLine`, `generatedText` eller `silence` och ekar

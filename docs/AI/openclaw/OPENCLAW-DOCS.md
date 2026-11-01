@@ -94,5 +94,3 @@ node /app/openclaw.mjs config validate --json
 | Ren konfigurationsprojektion, alias och loopback-regler | [configuration.mjs](../../../packages/director/configuration.mjs) |
 | HTTP-klient för råd och operatörssamtal | [openclaw.mjs](../../../packages/director/openclaw.mjs) |
 | Linjer, varianter och triggers | [catalog.json](../../../services/openclaw/lab/config/catalog.json) |
-
-Astrids labbfunktioner (avvecklas) står i [ASTRID-LABBCHATT](ASTRID-LABBCHATT.md).

@@ -14,7 +14,7 @@ Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegr
 | Frysta paket och spelinställningar | Det spelet läser; ändras aldrig efter publicering |
 | `operator_materials`, `operator_material_policies`, `operator_ai_attempts` (migrering 021, valfri) | Bolagets eget material: en journal per bakgrund eller bordsgrafik (väntar, godkänt, avslaget, återkallat; ett nytt läge är en ny rad) med exakt lagerfil och, för bordsgrafik, dealerns landningsmall; bolagets AI-dagstak (standard 0 = av) och spärr; AI-försök per bolag och UTC-dygn |
 
-Bolagets eget material hamnar bara i bolagets eget frysta paket, aldrig i någon annans. Publicerare som bygger om presentationen sammanfogar, övriga bevarar. Sammanfogar gör Admins paketpublicering, publicering av scenlayout och viloklipp, nytt spelbord och bolagets brandingpublicering, via `packages/presentation/server/operator-material-merge.mjs` och `apps/studio/lib/operator-material-publication.mjs`. Godkända bakgrunder hamnar på mallar som låser upp en bildbakgrund och har ett av bolagets spelbord. Bordsgrafik hamnar bara på sin egen mall, och bara när landningsmallen fortfarande stämmer med mallens dealer och placering. Bevarar gör rummets livscykel, materialpapperskorgen, dealerarkivet och rummets spelinställningar: de skriver om det frysta paketet som det är, så återkallat material försvinner först vid nästa sammanfogande publicering, och därför måste ett återkallande publicera om direkt. Ett materialid tillhör ett enda bolag per workspace och kan aldrig vara ett av Admins egna. Utan 021 läses inget material, skrivningar ger `operator_materials_unavailable` och varje publicering är exakt som förut. 021 körs först efter Jakobs uttryckliga "ja 021".
+Bolagets eget material hamnar bara i bolagets eget frysta paket, aldrig i någon annans. Publicerare som bygger om presentationen sammanfogar, övriga bevarar. Sammanfogar gör Admins paketpublicering, publicering av scenlayout och viloklipp, nytt spelbord och bolagets brandingpublicering, via `packages/presentation/server/operator-material-merge.mjs` och `apps/studio/lib/operator-material-publication.mjs`. Godkända bakgrunder hamnar på mallar som låser upp en bildbakgrund och har ett av bolagets spelbord. Bordsgrafik hamnar bara på sin egen mall, och bara när landningsmallen fortfarande stämmer med mallens dealer och placering. Bevarar gör rummets livscykel, materialpapperskorgen, dealerarkivet och rummets spelinställningar: de skriver om det frysta paketet som det är, så återkallat material försvinner först vid nästa sammanfogande publicering, och därför måste ett återkallande publicera om direkt. Ett materialid tillhör ett enda bolag per workspace och kan aldrig vara ett av Admins egna. Utan 021 läses inget material, skrivningar ger `operator_materials_unavailable` och varje publicering är exakt som förut. DDL följer aktuellt uppdrag, readiness och återställningsunderlag; en äldre planfras skapar inget nytt godkännandekrav.
 
 Repo-JSON (`media/layout.json`, `media/blob-index.json`, importfiler) och äldre Blob-JSON är authoring- och importunderlag, aldrig runtime-reserv. Saknad eller felaktig katalog ger 503, inte en lokal fallback.
 
@@ -33,10 +33,23 @@ Schemat följer alltså inte skrivaren. Båda tjänsterna ansluter med rollen `c
 
 Det finns två migreringsledgrar med krockande nummer: `ops/neon-game/011` och `012` är inte samma sak som `ops/neon-studio/011` och `012`. Ange alltid ledgern (`game-012`, Studio 012).
 
-- **Studio**, `croupier_studio.storage_migrations`: registret är listan i `ops/neon-studio/migrations.mjs`, och `tools/check-migration-readiness.mjs` (som CI kör) läser den. Produktionen har 001–008 och 011–020; 021 och 022 är valfria och inte körda. 022 vidgar bara bolagsjournalens action-CHECK (`operator_audit_events`, 006) med partnerns egna åtgärder (spelbordens läge, spelinställningsutkast och begäran om material eller nyckelrotation); utan den svarar de partnervägarna 503 `studio_migration_required` och skriver ingenting. 022 körs först efter Jakobs uttryckliga "ja 022". 023 lägger bara till kolumnen `operator_packages.rooms` (text, NULL eller 2–20000 tecken): paketets egna spelbord som kanonisk JSON, skriven av `publishWithin` ur administrationsdokumentets `rooms[]` i dokumentets ordning (plan L3). Utan 023 skrivs paketen som förut och läsarna använder dokumentet; äldre paket behåller `rooms` NULL. 023 körs först när L3 PR 3 är ute i samma miljö, preview före produktion.
-- **Spel**, `croupier_game.storage_migrations`: motorn och Studio kontrollerar bara `product-v1`:s checksumma mot `ops/neon-game/product-schema.sql` vid start (`packages/storage/server/postgres-store.mjs:159`). Senare spelversioner är granskade engångstransaktioner som `tools/prepare-*.mjs` renderar och som själva skriver sin ledgerrad. Produktionen har `product-v1`, `sqlite-import-v1`, `game-011-retire-lissabon` (2026-10-28) och `game-012-api-key-operator` (2026-10-29 01:46Z). 008–010 (delat bord) applicerades utan ledgerrad, och readiness läser inte den här ledgern.
+Kodavstämning 1 november 2026:
 
-Preview avviker: Studio saknar 016, 018 och 019, och spel-ledgern har `product-v1` och `game-012` men inte 011 ([ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen)).
+- **Studio**, `croupier_studio.storage_migrations`: manifestet
+  `ops/neon-studio/migrations.mjs` styr readiness. 021 (bolagsmaterial) och
+  022 (partneråtgärder i journalen) är valfria kodkontrakt. 023 och paketets
+  `operator_packages.rooms` krävs nu; `packages/operators/server/operator-store.mjs`
+  läser paketets rum och använder inte administrationsdokumentet som reserv.
+  Äldre instruktioner om att vänta på L3 eller publicera utan 023 är förbrukade.
+- **Spel**, `croupier_game.storage_migrations`: `product-v1` kontrolleras
+  vid start. `ops/neon-game/migrations.mjs` listar även 006–014 som
+  `deploymentOptional`; senare funktioner kan ha egna readinesskrav.
+  `tools/check-migration-readiness.mjs` läser **båda** ledgrarna och använder
+  `planGameMigrations`. Nummer måste alltid anges med rätt ledger.
+- Den daterade molninventeringen och senare migrationskvitton finns i
+  [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen).
+  Tabellantal ovan beskriver 29 oktober, inte en ny molnkontroll. Läs aktuell
+  ledger i varje miljö inför schemaändring eller kravhöjning.
 
 ## Sökvägar i Blob
 
@@ -101,7 +114,7 @@ Frysta importkällor i `apps/studio/lib/dealer-import-sources.mjs` används av A
 
 ## Radering
 
-Permanent radering är det sista steget och kräver att originalbytes är bevarade. Skydden som finns i koden ska återanvändas, inte byggas om:
+Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryckligt beställd avveckling av original, som Astrid, följer [REN-START](../plans/REN-START.md) och dess referens-/återställningskontroller. Skydden som finns i koden ska återanvändas, inte byggas om:
 
 - Arkivering före permanent radering, revisions- och hashkontroll, objektlås och sekvensen `pending → radera Blob → deleted` med förnyad behörighetskontroll (`apps/studio/lib/studio-media-deletion.mjs`).
 - `inspectMediaDeletion` (`packages/studio-registry/server/repository.mjs`) läser dokument, paket, alias, Forge-profiler och icke-avslutade Forge-jobb, sparade talrepliker och talpaketens metadata, och kontrollerar Neons runtimeindex. Saknade tabeller, fler sidor eller okända svar stoppar raderingen.
@@ -118,7 +131,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 - Workern ligger i `services/moving-gpu-worker/` (versionslåst motor, modellhashar, bank- och sessionsvalidering). `moving-gpu-build.yml` bygger och provar imagen utan nät och GPU; `moving-gpu-publish.yml` publicerar.
 - `services/game/moving-speech-transport.mjs` kräver en GHCR-image med SHA-256-digest och workerintyg för release, dealer, bank, session och accepterat RunPod-jobb innan första PCM skickas.
 - Varje session binds till exakta bankoriginal, profilrevision, publicerat paket och eget jobb (Studio-migrering 013), med beständig budget.
-- Funktionen är av (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftväljarens-api)). Varje betalt prov kräver Jakobs budgetbeslut, och bara Jakob godkänner läppsynk.
+- Senast dokumenterade talstatus är av; uppdraget är pausat (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftväljarens-api)). Betalda prov följer uppdragets uttryckliga budget, och bara Jakob godkänner läppsynk.
 - Bildruteplanen räknar hela ljudsamplingar: `floor((pcmBytes / 2 + 18000) / 1000)` rutor vid 24 fps, med 220 ms inledande och 530 ms avslutande tystnad. Vila använder alltid källruta 0.
 
 ## Var koden finns

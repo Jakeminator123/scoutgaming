@@ -32,7 +32,7 @@ async function call(path, payload) {
 console.log(await call('/api/v1/ping'));
 ```
 
-Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404/503. Key scopes: `launch`, `play`, `wallet`, `history`, `lobby`.
+Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404/503. Key scopes: `launch`, `play`, `events`, `wallet`, `history`, `lobby`.
 
 ## 2. Endpoints
 
@@ -40,18 +40,15 @@ Errors are JSON `{ "error": "…" }` with HTTP 400/401/403/404/503. Key scopes: 
 Returns `{ ok, key, scopes, serverTime }`. Use to verify signing.
 
 ### POST /api/v1/lobby (scope: lobby)
-Lists tables, dealers, limits and rules. In the cloud runtime this legacy list answers **410** `{ "error": "legacy_lobby_retired", "url": "/lobby" }`; published rooms are listed in `/lobby`.
-```json
-{ "tables": [{ "id": "astrid-blackjack", "game": "blackjack", "dealer": "astrid", "decks": 8, "cutAfter": 312, "boxes": 7, "minBet": 5, "maxBet": 2000, "sideBets": ["perfectPairs","21+3"], "blackjackPays": "3:2", "dealerStandsSoft17": true, "aiDealer": true }] }
-```
+The retired cloud list answers **410** { "error": "legacy_lobby_retired", "url": "/lobby" }. Published rooms are listed in `/lobby`.
 
 ### POST /api/v1/launch (scope: launch)
-Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours.
+Get a game URL for one of your players. Open it in an iframe or a new tab. The session lasts 6 hours. For a bound key, the server puts that key's operator in the signed claims and URL; use the returned URL unchanged.
 ```json
 // request
 { "playerId": "your-player-123", "displayName": "Jakob", "currency": "EUR", "language": "sv", "returnUrl": "https://your-site/lobby" }
 // response
-{ "url": "https://bettalotto.se/?dealer=astrid&…&launch=<token>", "expiresIn": 21600, "playerRef": "…" }
+{ "url": "https://bettalotto.se/game?operator=<operator-slug>&launch=<token>", "expiresIn": 21600, "playerRef": "…" }
 ```
 `playerId` is your stable technical identifier. We map it to an internal player on first use; changing `displayName` never opens another profile, wallet or memory. Optional `displayName` is untrusted presentation data only: it is normalized, limited to 40 characters and never used for authentication. If it is omitted, the dealer uses the neutral name `spelaren` ("the player"). Do not put instructions or secrets in this field.
 
@@ -112,14 +109,14 @@ Each non-`state` `table` response includes `presentation`: an ordered list of wh
 
 Cards are ordered by `shoeDraw` (server draw order), so the sequence is exactly what a real table would do.
 
-### GET /api/v1/events (scope: play) — server-sent events
+### GET /api/v1/events (scope: events or play) — server-sent events
 Live stream of presentation events for one player, for clients that render in real time (bots, second screens, or your own UI driven by another process).
 
 ```
 GET /api/v1/events?playerId=<id>&key=<X-Api-Key>&ts=<unix seconds>&sig=<hex>
 sig = HMAC-SHA256( `${ts}.GET./api/v1/events.${playerId}` , secret )
 ```
-Events: `hello` on connect, then `round` with `{ op, requestId, version, phase, balance, events:[…presentation] }` after every `table` call for that player. Keep-alive comment every 25 s. Reconnect with a fresh `ts`/`sig` (5-minute window).
+Events: `hello` on connect, then `round` with `{ op, requestId, version, phase, balance, events:[…presentation] }` after a newly committed non-`state` `table` call with presentation events for that player. State reads and idempotent replays do not publish another event. Keep-alive comment every 25 s. Reconnect with a fresh `ts`/`sig` (5-minute window).
 
 ### POST /api/v1/balance (scope: wallet)
 `{ playerId }` → `{ playerId, balance, currency }` from the internal demo wallet. Keys with a wallet URL receive HTTP 503; no external wallet is contacted.
@@ -135,12 +132,11 @@ External wallet integration is disabled in the current PostgreSQL runtime. If a 
 
 External wallet support requires a separate implementation and verification of reservations and recovery. There is currently no supported debit/credit callback contract or real-money integration to enable.
 
-## 4. Regulatory notes
+## 4. Engine boundaries
 
 - Game engine and AI dealer are separate. The dealer layer has no write access to shoe, outcomes, payouts or balances.
 - RNG: cryptographic OS random (`crypto.getRandomValues`), Fisher-Yates shuffle without modulo bias, 8 decks, cut card at 312, one burn card, no mid-round shuffle.
-- Rounds are ≥ 3 seconds and every state transition is logged (see history).
-- Clear "AI DEALER" label in the UI.
+- This API guide does not establish certification or real-money acceptance.
 
 ## 5. Support
 
@@ -148,4 +144,4 @@ Scout Gaming Group, Kevin Negash — kevin.negash@scoutgaminggroup.com
 
 ## 6. Retired generations endpoints
 
-`GET /api/v1/generations` and `/api/v1/generations/:id/video` belong to the retired generation catalogue and answer **410** after bearer authentication. `GET /api/v1/generations/mapping` answers **404** in the cloud runtime. The published game plays only the registered presentation package.
+`GET /api/v1/generations` and `/api/v1/generations/:id/video` belong to the retired generation catalogue and answer **410** after bearer authentication. Authenticated `GET /api/v1/generations/mapping` answers **404** in the cloud runtime. Without an accepted bearer, authentication returns **401** first. The published game plays only the registered presentation package.
