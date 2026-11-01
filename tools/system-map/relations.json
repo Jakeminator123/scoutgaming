@@ -3,6 +3,60 @@
   "origin": "Handgranskade samband från ARKITEKTEN; varje kodankare återkontrolleras vid generering. Textens innebörd kräver mänsklig granskning.",
   "graphs": [
     {
+      "id": "delivery-checks",
+      "category": "verktyg",
+      "title": "Leverans och verifiering",
+      "note": "Körbara kontrollkedjor. Omfördelade sviter ger ingen belagd tidsvinst förrän jämförbar CI har mätts. Kartan ger inget kod/kod-undantag från paketspärren.",
+      "nodes": [
+        { "id": "scope", "label": "CI-urval", "place": "regressionLegs · tools/ci-changes.mjs", "col": 1, "row": 0 },
+        { "id": "matrix", "label": "Jobbmatris till CI", "place": "ciOutputs · tools/ci-changes.mjs", "col": 2, "row": 0 },
+        { "id": "suites", "label": "Urvals- och partitionsprov", "place": "test/ci-changes.mjs", "col": 0, "row": 0 },
+        { "id": "objects", "label": "Exakt Git-intervall", "place": "CI-event + Git-objekt", "col": 0, "row": 1 },
+        { "id": "limits", "label": "Fil- och mediegrind", "place": "tools/check-repo-limits.mjs", "col": 1, "row": 1 },
+        { "id": "freshness", "label": "Testad bas / aktuell main", "place": "Frysta SHA + komplett fillista", "col": 0, "row": 2 },
+        { "id": "merge", "label": "Integrationsgrind", "place": "tools/merge-pr.mjs", "col": 1, "row": 2 }
+      ],
+      "edges": [
+        {
+          "id": "scope-matrix", "source": "scope", "target": "matrix", "kind": "Körkommando",
+          "label": "Scope → jobbmatris", "conditional": false,
+          "explanation": "Klassificeraren skriver sviter och stegflaggor till workflowens matris. Full scope och snäva UI-scope grupperar samma relevanta sviter olika.",
+          "evidence": [
+            { "path": "tools/ci-changes.mjs", "match": "const legs = regressionLegs(selection.scope);" },
+            { "path": "tools/ci-changes.mjs", "match": "legs: JSON.stringify(legs.map(({ leg }) => leg)), matrix: JSON.stringify({ include: legs })," }
+          ]
+        },
+        {
+          "id": "tests-selection", "source": "suites", "target": "scope", "kind": "Funktionsanrop",
+          "label": "Verifiera sviter och steg", "conditional": false,
+          "explanation": "Urvalsprovet anropar regressionLegs för varje scope och verifierar sviternas stegflaggor. Partitionsprovet jämför full CI med hookens svitregister. Det är provkod, inte bevis för ett faktiskt godkänt CI-resultat.",
+          "evidence": [
+            { "path": "test/ci-changes.mjs", "match": "const legs = regressionLegs(scope);" },
+            { "path": "test/ci-changes.mjs", "match": "assert.deepEqual([...matrixSuites, 'container', 'engine'].sort(), [...hookSuites].sort(), 'every suite runs exactly once');" }
+          ]
+        },
+        {
+          "id": "objects-limits", "source": "objects", "target": "limits", "kind": "Funktionsanrop",
+          "label": "Alla nya objekt", "conditional": true,
+          "explanation": "Verifierade push-/PR-event ger det exakta Git-intervallet. inspectPush granskar även stora mellanobjekt som saknas i slutdiffen; slutdiffens medie- och allowlistkontroll består.",
+          "evidence": [
+            { "path": "tools/check-repo-limits.mjs", "match": "const result = inspectPush({ cwd, updates: `HEAD ${head} refs/heads/ci ${base}\\n`, hydrate: true });" },
+            { "path": "tools/check-repo-limits.mjs", "match": "if (!result.errors.length) result.errors.push(...checkRepoLimits(inspectChanges({ cwd, tree: head, base })));" }
+          ]
+        },
+        {
+          "id": "freshness-merge", "source": "freshness", "target": "merge", "kind": "Villkor",
+          "label": "Kod/kod-överlapp → ny CI", "conditional": true,
+          "explanation": "När basen flyttat stoppar samma fil eller två kodändringar i samma paketrot merge. Endast dokumentkombinationer har ett bundet separat bevis; ingen importgraf ersätter integrationsprov.",
+          "evidence": [
+            { "path": "tools/merge-pr.mjs", "match": "const contracts = shared.filter(entry => entry.code);" },
+            { "path": "tools/merge-pr.mjs", "match": "const bound = fullSha(head) && proof?.head === head && proof?.main === freshness.main;" }
+          ]
+        }
+      ],
+      "defaultEdge": "scope-matrix"
+    },
+    {
       "id": "runtime",
       "category": "runtime",
       "title": "Anrop och data",

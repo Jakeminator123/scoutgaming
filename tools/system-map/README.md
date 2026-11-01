@@ -27,6 +27,42 @@ antal samband och kräver inte att pensionerad implementation återinförs.
 
 ## Underlag och underhåll
 
+### Leveranskontroller
+
+Atlas-grafen **Leverans och verifiering** följer dessa körbara samband:
+
+```text
+CI-klassificerare → jobbmatris → svitregistret → beteendeprov
+Git-event/objekt → storleksgrind
+exakt PR-head + testad bas + aktuell main → mergegrind
+```
+
+[CI-klassificeraren](../ci-changes.mjs) väljer fyra befintliga ben i full scope.
+Studio kör sin svit ensam; Admin och contracts kör på databasbenet.
+CSS och OpenClaw-deploy behåller två ben och samma sviter som tidigare:
+Studio/Admin/contracts samt access/presentation. Provfiler och upptäckt kommer
+fortsatt från [svitregistret](../../.githooks/pre-commit-full); bygg-, PostgreSQL-,
+policy- och talsteg följer sina sviter. [Urvalsproven](../../test/ci-changes.mjs)
+kontrollerar partitionen, stegens ägare och fallback vid okända indata.
+Omfördelningen är inte i sig en uppmätt tidsvinst. Jämför CI:s jobbtider och
+grupptider på jämförbara körningar; lokala Git-fixturprov mäter inte denna effekt.
+
+[Storleksgrinden](../check-repo-limits.mjs) läser Git-objekt: dokument har den
+generella gränsen 1 MiB, med exakt krympande undantagslista. Push och CI granskar
+även mellanliggande objekt; ett raderat stort mellanobjekt försvinner inte ur
+kontrollen. Nya/växande mediebinärer och okända eventintervall stoppas fortsatt.
+
+[Mergegrinden](../merge-pr.mjs) nekar samma ändrade fil och kod/kod i samma
+paketrot när main har flyttat sedan testad bas. Den skyddar integration som
+PR:ens CI ännu inte har provat. Dokument/kod kan passera först efter den
+betrodda kontrollen av det kombinerade trädet, bunden till full main- och head-SHA.
+Ingen ny kod/kod-lättnad har belagts: Atlas saknar fullständig upplösning av
+dynamiska imports, HTTP/SQL, filinläsning och gemensamt tillstånd. Använd därför
+normal uppdatering från main och ny CI vid paketöverlapp; en utebliven grafkant
+är inget oberoendebevis.
+
+### Kartans källor
+
 - `START-HERE.md`, avsnitt Systemkarta: fyra tabellkolumner anger ansvar,
   kodingångar, drift/data och beteenden att verifiera. Uppdatera sakunderlaget
   där när kontraktet ändras. Markdownlänkar verifieras som Git-spårade sökvägar.
