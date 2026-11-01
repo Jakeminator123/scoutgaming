@@ -53,7 +53,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       'frontend-preview/blackjack/index.html', 'frontend-preview/game/index.html',
       'blackjack-entry.mjs', 'app.mjs', 'styles.css', 'vendor/three/three.module.js',
       'vendor/three/three.core.min.js',
-      'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
+      'presentation-runtime/live-idle.mjs', 'packages/presentation/contracts/policies/idle-policy.seed.json',
       'astrid-camera-audio-worklet.mjs', 'dealer-identity.mjs',
       'packages/presentation/contracts/game-lane-id.mjs', 'packages/navigation/game-entry.mjs',
     ]) assert.ok(names.includes(required), `missing ${required}`);

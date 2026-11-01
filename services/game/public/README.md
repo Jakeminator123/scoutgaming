@@ -12,6 +12,11 @@ presentationsmodulerna används även från andra produktdelar.
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
 
+Filmens kantshader används av `performance-player.mjs`; ljuskanterna följer
+fasta vägg- och filtfärger samt bordets bakre kant. En saknad eller misslyckad
+film startar ingen 2D-renderare. Filmkvittot anger då `renderer: 'none'`;
+serverns kort visas separat av kortpresentationen och DOM-kontrollerna behålls.
+
 Den fristående BO-tal-QA-ytan är avvecklad. `/api/bo/*` har inget skrivundantag;
 gamla QA-adresser skapar inga sessioner eller betalda talförsök. Historiska
 SQL-migrationer och ledgerimportens bevarande av tidigare försök är oförändrade.

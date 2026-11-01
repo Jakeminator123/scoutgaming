@@ -5,7 +5,6 @@ html[data-presentation="local"] #room2,
 html[data-presentation="local"] #dealer-wrap,
 html[data-presentation="local"] #dealer-hands-wrap,
 html[data-presentation="local"] #tableimg,
-html[data-presentation="local"] #table-canvas,
 html[data-presentation="local"] #shoe2d,
 html[data-presentation="local"] #felt-brand,
 html[data-presentation="local"] #supervisor { visibility: hidden !important; }
