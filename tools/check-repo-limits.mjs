@@ -361,7 +361,8 @@ export function inspectPush({ cwd = repository, updates, remote, branch = 'main'
 }
 
 // GitHub supplies a JSON file, not shell text. Bind every interval to the exact
-// checkout and event; never substitute HEAD^1 for an unknown push/PR base.
+// checkout and event. PR ranges use the parents of GitHub's exact merge object;
+// an unknown push base is never replaced with HEAD^1.
 export function inspectCi({ cwd = repository, env = process.env, event } = {}) {
   const git = (args) => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0' },
@@ -383,8 +384,10 @@ export function inspectCi({ cwd = repository, env = process.env, event } = {}) {
       || !oid(pr?.head?.sha) || !oid(pr?.base?.sha)) throw Error('CI-gränser: ogiltig PR-identitet.');
     // Read raw parent headers: a shallow boundary must not hide a parent.
     const parents = git(['cat-file', 'commit', head]).split('\n\n')[0].split('\n').filter(line => line.startsWith('parent ')).map(line => line.slice(7));
-    if (parents.length !== 2 || parents[0] !== pr.base.sha || parents[1] !== pr.head.sha) throw Error('CI-gränser: PR-bas/head matchar inte mergeföräldrarna.');
-    base = pr.base.sha;
+    if (parents.length !== 2 || parents[1] !== pr.head.sha) throw Error('CI-gränser: PR-head matchar inte mergeföräldrarna.');
+    // Event metadata can name an older base than GitHub's merge object. Inspect
+    // the exact tree tested, as ci-changes and merge-pr do; never guess a base.
+    base = parents[0];
   } else {
     if (payload.after !== head || !oid(payload.before) || payload.deleted || payload.created
       || !/^refs\/heads\/[A-Za-z0-9_./-]+$/.test(payload.ref ?? '') || payload.ref !== env.GITHUB_REF) throw Error('CI-gränser: okänt eller ogiltigt pushintervall.');
