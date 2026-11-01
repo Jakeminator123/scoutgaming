@@ -2,6 +2,10 @@
 
 Aktuell samordning 2 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Leveranskontroller 2 november
+
+Dokument följer samma gräns på 1 MiB och exakta krympande undantagslista som andra filer. Git-objekt-/eventkontrollen och medieskyddet består. Full CI kör samma sviter på fyra befintliga ben: Studio ensam, Admin/contracts på databasbenet, access/presentation och speech/gameplay. CSS och OpenClaw-deploy behåller sina två tidigare ben och stegflaggor. Ingen uppmätt tidsvinst hävdas; mergegrindens paketspärr är oförändrad. [Kontrollguiden](../tools/system-map/README.md#leveranskontroller) och Atlas visar körbara samband. Exakt-head CI och faktiskt mergekvitto hör till PR:en.
+
 ## Återuppta arbete mellan IDE:er 2 november
 
 Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.
