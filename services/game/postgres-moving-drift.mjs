@@ -1,4 +1,4 @@
-import {driftError,MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,MOVING_DRIFT_DEALER_ID} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 // The configuration admits at most eight profiles, one per dealer.
 export const MOVING_DRIFT_MAX_DEALERS=8;

@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {createSeedProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
-import {groupSlots,slotCaption,slotExplanation,isRenderedOutcome} from './studio-layout.mjs';
+import {createSeedProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from '../connected-studio.mjs';
+import {groupSlots,slotCaption,slotExplanation,isRenderedOutcome} from '../studio-layout.mjs';
 import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';
-import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
+import {mediaClassification} from '../../../../lib/dealers/dealer-media-library.mjs';
 const project=createSeedProject(),dealer='astrid';
 const slots=clipSlots(project,{videos:[]},dealer,'roulette');
 const file=(name)=>({name,size:128});
@@ -127,8 +127,8 @@ test('native upload rereads exact roulette metadata and rejects changed dealer/g
 });
 test('roulette cards allow explicit idle binding while reference and planned cards remain honest',()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
-  const componentRequire=createRequire(new URL('../components/studio/connected-clip-card.tsx',import.meta.url));
-  const source=readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
+  const componentRequire=createRequire(new URL('../../components/studio/connected-clip-card.tsx',import.meta.url));
+  const source=readFileSync(new URL('../../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
     {module,exports:module.exports,require:name=>{
@@ -137,7 +137,7 @@ test('roulette cards allow explicit idle binding while reference and planned car
       if(name==='../../lib/clip-intake.mjs')return {INTAKE_DRAG_TYPE:'application/x-scout-intake'};
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
-      if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
+      if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../../components/clip-pose-chain.mjs');
       return componentRequire(name);
     }});
   const render=(slot,component=module.exports.ConnectedClipDetails)=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(component,{data:{

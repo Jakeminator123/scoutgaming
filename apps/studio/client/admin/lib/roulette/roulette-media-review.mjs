@@ -1,5 +1,5 @@
-import {validateVideoMetadata} from '../../../../../packages/presentation/contracts/video-intake.mjs';
-import {validateDealerFraming} from '../../../../../packages/presentation/contracts/dealer-framing.mjs';
+import {validateVideoMetadata} from '../../../../../../packages/presentation/contracts/video-intake.mjs';
+import {validateDealerFraming} from '../../../../../../packages/presentation/contracts/dealer-framing.mjs';
 import {rouletteClipSlots,rouletteClipMatches} from './roulette-clip-map.mjs';
 
 export function rouletteReviewForm(video) {

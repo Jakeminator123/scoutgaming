@@ -9,7 +9,7 @@ import { createPostgresStore } from '../../services/game/storage/postgres-store.
 import { validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../packages/studio-registry/server/private-media-contract.mjs';
-import { movingDriftConfiguration, MOVING_DRIFT_DEALER_ID } from '../../packages/presentation/contracts/moving-drift.mjs';
+import { movingDriftConfiguration, MOVING_DRIFT_DEALER_ID } from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;

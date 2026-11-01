@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
-import styles from './studio-administration.module.css';
+import { partnerLoginReturnTo } from '../../lib/partner-login-return.mjs';
+import styles from '../studio-administration.module.css';
 
 type AuthBase = '/api/partner' | '/studio/api/partner';
 

@@ -1,4 +1,4 @@
-import {MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 const safeTime=value=>Number.isSafeInteger(value)&&value>=0;
 export function driftAgeClass(stamp,now) {

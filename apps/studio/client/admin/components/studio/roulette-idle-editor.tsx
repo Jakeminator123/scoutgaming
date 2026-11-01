@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import {validateProject,type StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoEntry,VideoInventory} from '../../lib/connected-studio.mjs';
-import {setRouletteIdleForeground} from '../../lib/roulette-clip-map.mjs';
+import {setRouletteIdleForeground} from '../../lib/roulette/roulette-clip-map.mjs';
 import {RouletteMediaReview} from './roulette-media-review';
 
 export function RouletteIdleEditor({project,inventory,video,dealerId,blocked,onEdit,onSaved,onBusyChange,onDirtyChange}:{

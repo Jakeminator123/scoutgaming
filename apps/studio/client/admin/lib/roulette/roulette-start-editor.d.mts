@@ -1,5 +1,5 @@
-import type {StudioProject,StudioLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import type {VideoInventory} from './connected-studio.mjs';
+import type {StudioProject,StudioLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import type {VideoInventory} from '../connected-studio.mjs';
 export type RouletteStartForm={videoId:string;tableDesignId:string;durationMs:string;wheelImpulseMs:string;ballReleaseMs:string;foregroundPolygons:string};
 export function rouletteStartTables(project:StudioProject,laneId:string):{assetId:string;designId:string;label:string}[];
 export function rouletteStartCompositions(project:StudioProject,dealerId:string):StudioLane[];

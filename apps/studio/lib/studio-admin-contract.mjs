@@ -1,5 +1,5 @@
 import { studioAdminSectionPolicy, studioAdminActionPolicy } from './studio-access-policy.mjs';
-import { MOVING_DRIFT_DEALER_ID } from '../../../packages/presentation/contracts/moving-drift.mjs';
+import { MOVING_DRIFT_DEALER_ID } from '../../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 // Future-only addresses, not active routes or an automatic proxy/redirect.
 // Descriptors never perform session, Origin/CSRF, input or revision/CAS checks.

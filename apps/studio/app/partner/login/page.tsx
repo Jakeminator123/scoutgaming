@@ -1,4 +1,4 @@
-import { PartnerLogin } from '@/components/partner-login';
+import { PartnerLogin } from '@/components/partner/partner-login';
 import { nativeStudioAdminConfiguration } from '@/lib/studio-native-runtime.mjs';
 import { notFound } from 'next/navigation';
 import { partnerLoginReturnTo } from '@/lib/partner-login-return.mjs';

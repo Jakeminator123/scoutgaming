@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {createSeedProject,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {materialById} from '../../../../../packages/presentation/contracts/material-catalog.mjs';
-import {layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
-import {createStudioClient,currentClipId} from './connected-studio.mjs';
+import {createSeedProject,defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {materialById} from '../../../../../../packages/presentation/contracts/material-catalog.mjs';
+import {layerAssetPath} from '../../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {mediaClassification} from '../../../../lib/dealers/dealer-media-library.mjs';
+import {createStudioClient,currentClipId} from '../connected-studio.mjs';
 import * as slots from './roulette-clip-map.mjs';
 import * as editor from './roulette-start-editor.mjs';
 const dealerId='astrid',startId='11111111-1111-4111-8111-111111111111',idleId='22222222-2222-4222-8222-222222222222';
@@ -77,7 +77,7 @@ test('start composition choices require the dealer and an allowed registered rou
 });
 test('start editor exposes saved values, missing-data errors and separate metadata review',()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
-  const module={exports:{}},source=readFileSync(new URL('../components/studio/roulette-start-editor.tsx',import.meta.url),'utf8');
+  const module={exports:{}},source=readFileSync(new URL('../../components/studio/roulette-start-editor.tsx',import.meta.url),'utf8');
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
     require:name=>name.endsWith('/roulette-clip-map.mjs')?slots:name.endsWith('/roulette-start-editor.mjs')?editor:name==='./roulette-media-review'?{RouletteMediaReview:()=>null}:require(name)});
   const f=fixture();f.project=editor.bindRouletteStart(f.project,f.inventory,dealerId,f.laneId,f.form);

@@ -6,7 +6,7 @@ import {createMovingSpeechSession} from './moving-speech-session.mjs';
 import {createMovingDriftObserver} from './moving-drift-observer.mjs';
 import {driftReadDurationClass} from './moving-drift-diagnostics.mjs';
 import {validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
-import {driftError,movingDriftDealerProfile} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,movingDriftDealerProfile} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 /**
  * One existing min0/max1 endpoint, read-only control plane. Off closes admission
