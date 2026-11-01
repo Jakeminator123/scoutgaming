@@ -18,10 +18,10 @@ import { TeamView } from './views/team.jsx';
 import { Btn, Card, Badge, PortalRoot, TechnicalDetails, count } from './views/ui.tsx';
 import { createPartnerWorkspaceContext, operatorPackageRevision, validatePartnerSnapshot } from './partner-workspace-context.mjs';
 import { partnerView, resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
-import { partnerTeamView } from '../partner-team-loader.mjs';
+import { partnerTeamView } from './partner-team-loader.mjs';
 import { partnerNavigation, usePartnerPreferences } from './partner-copy.mjs';
 import { partnerPermissionWord } from '../../lib/partner-words.mjs';
-import { PartnerSessionActions } from '../partner-session-actions';
+import { PartnerSessionActions } from './partner-session-actions';
 import { createPartnerLeaveGuard } from './partner-navigation-guard.mjs';
 import './partner-portal.css';
 

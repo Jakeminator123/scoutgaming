@@ -26,7 +26,7 @@ import { RouletteIdleEditor } from './roulette-idle-editor';
 import { registerCompositionLayer } from '../../../../lib/studio-composition.mjs';
 import { rebaseProjectDraft } from '../../../../lib/project-rebase.mjs';
 import { validateProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import {rouletteReferencePreview,unbindRouletteClip} from '../../lib/roulette-clip-map.mjs';
+import {rouletteReferencePreview,unbindRouletteClip} from '../../lib/roulette/roulette-clip-map.mjs';
 import { studioContext } from '../../lib/studio-context.mjs';
 import { environmentHref } from '../../../../../../packages/navigation/admin-navigation.mjs';
 import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';

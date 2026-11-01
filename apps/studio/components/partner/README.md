@@ -16,6 +16,10 @@ rollen saknar enligt `PARTNER_VIEW_PERMISSIONS`) → `partner-operator-workspace
   vyväxlingen; navigering, rumsval och utkastvakt (`partner-navigation-guard.mjs`).
 - `partner-copy.mjs`: orden (TERMINOLOGI), menyn per behörighet, rollorden, preferenser.
 - `partner-workspace-context.mjs`: validerar snapshoten mot fel bolag och fixturer.
+- `partner-login.tsx`, `partner-workspace.tsx` och `partner-session-actions.tsx`:
+  inloggning, bolagslista och sessionsknappar med sina lokala CSS-moduler.
+- `partner-team-loader.mjs`: kopplar teamvyn till det behörighetskontrollerade
+  team-API:t och de delade utseende- och journaladaptrarna.
 - `partner-portal.css`: alla stilar, fästa under `.partner-portal`; färgerna är `--sg-*` ur
   `packages/ui/tokens.css`, och de få egna namnen (diagram, mjuk lime, skugga) heter också `--sg-*`.
   Typsnittet är `--sg-font-body` (`--sg-next-body`, annars Inter) och `--sg-font-mono`; den

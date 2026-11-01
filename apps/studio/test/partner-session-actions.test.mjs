@@ -103,11 +103,11 @@ function loadComponent(relative, { hooks = React, context = {}, dependencies = {
 }
 
 test('both live directory identities expose explicit localized auth buttons', () => {
-  const actions = loadComponent('../components/partner-session-actions.tsx');
+  const actions = loadComponent('../components/partner/partner-session-actions.tsx');
   for (const language of ['sv', 'en']) {
     const preferences = { usePartnerPreferences: () => ({ language, theme: 'dark', copy: partnerCopy(language), setLanguage() {}, setTheme() {} }) };
-    const { PartnerWorkspace } = loadComponent('../components/partner-workspace.tsx', { dependencies: {
-      './partner-session-actions': actions, './partner/partner-copy.mjs': preferences,
+    const { PartnerWorkspace } = loadComponent('../components/partner/partner-workspace.tsx', { dependencies: {
+      './partner-session-actions': actions, './partner-copy.mjs': preferences,
     } });
     for (const accessClass of ['internal-admin', 'partner']) {
       const html = renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'john', operators: [], accessClass, apiBase: defaults.apiBase }));
@@ -128,8 +128,8 @@ test('auth actions remain clickable on mobile and show localized failure without
     };
     const calls = [], destinations = []; let fail = true;
     const fetchImpl = async url => { calls.push(url); return response(fail ? 500 : 200); };
-    const { PartnerSessionActions } = loadComponent('../components/partner-session-actions.tsx', { hooks, dependencies: {
-      '../lib/partner-session-actions.mjs': { endPartnerSession: options => endPartnerSession({ ...options, fetchImpl }) },
+    const { PartnerSessionActions } = loadComponent('../components/partner/partner-session-actions.tsx', { hooks, dependencies: {
+      '../../lib/partner-session-actions.mjs': { endPartnerSession: options => endPartnerSession({ ...options, fetchImpl }) },
     }, context: {
       window: { location: { assign: destination => destinations.push(destination) } },
     } });
@@ -154,7 +154,7 @@ test('declined draft warning prevents session mutation and a failed logout resto
   const slots=[];let cursor=0,allow=false,resets=0;
   const hooks={...React,useRef:value=>{const index=cursor++;return slots[index]??={current:value};},useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=value;return [slots[index],next=>{slots[index]=next;}];}};
   const calls=[],destinations=[];
-  const {PartnerSessionActions}=loadComponent('../components/partner-session-actions.tsx',{hooks,dependencies:{'../lib/partner-session-actions.mjs':{endPartnerSession:async()=>{calls.push('logout');throw Error('offline');}}},context:{window:{location:{assign:path=>destinations.push(path)}}}});
+  const {PartnerSessionActions}=loadComponent('../components/partner/partner-session-actions.tsx',{hooks,dependencies:{'../../lib/partner-session-actions.mjs':{endPartnerSession:async()=>{calls.push('logout');throw Error('offline');}}},context:{window:{location:{assign:path=>destinations.push(path)}}}});
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
   const buttons=()=>{cursor=0;return walk(PartnerSessionActions({...defaults,language:'sv',beforeNavigate:()=>allow,onNavigationCancelled:()=>resets++})).filter(row=>row.type==='button');};
   buttons()[0].props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,0);assert.deepEqual(destinations,[]);

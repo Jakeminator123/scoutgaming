@@ -3,7 +3,7 @@ import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../../pac
 import { createRegisteredIdlePolicy } from '../../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES, addVariant } from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import { uploadNativeVideo } from '../../../lib/upload-native-video.mjs';
-import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
+import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette/roulette-clip-map.mjs';
 import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
 import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {bindFilmedBank,filmedBankState,hasEmbeddedShoeTransitions,hasSeparateShoeTransitions} from '../../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';

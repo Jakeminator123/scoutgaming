@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
-import type {MovingDriftAdminStatus,MovingDriftMode} from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
+import type {MovingDriftAdminStatus,MovingDriftMode} from '../../../packages/presentation/contracts/moving-drift/moving-drift-admin.mjs';
 import type {StudioAdminActor} from './studio-administration';
 import {readMovingDriftStatus,driftDraft,driftView,driftCommand,driftModeLabel,type DriftDraft} from '../client/admin/lib/moving-drift-ui.mjs';
 import styles from './moving-drift-controls.module.css';

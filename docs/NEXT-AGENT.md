@@ -2,6 +2,20 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Funktionsmappar för portal, roulette och drift 1 november
+
+Portalens sex skal-/teamfiler finns i [components/partner](../apps/studio/components/partner/README.md).
+Roulettens tre modul-/typpar och fyra befintliga beteendeprov ligger i
+[admin/lib/roulette](../apps/studio/client/admin/lib/roulette/); driftens tre kontraktsfiler
+i [contracts/moving-drift](../packages/presentation/contracts/moving-drift/).
+Importer, QA-kopiering, guider och explicit testregistrering följer de 19 flyttarna.
+Publika moduladresser och driftlägen är oförändrade.
+
+Lokalt passerar 269 riktade prov inklusive Chrome, Studio-/Admintyper och
+Atlas med strikta ankare. Testinventeringen är oförändrad: 587 filer, inga
+föräldralösa prov. Exakt PR-/hookbevis finns i det privata uppdragskvittot
+`.cache/gpt-auto-boundaries-1101/funktionsmappar.md`; CI och leverans följs av samordnaren.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.

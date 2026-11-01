@@ -30,9 +30,9 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'services/game/moving-drift-executor.mjs','services/game/moving-drift-observer.mjs',
   'services/game/moving-drift-diagnostics.mjs',
   'test/fixtures/moving-drift-executor-sql-checks.mjs',
-  'packages/presentation/contracts/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
+  'packages/presentation/contracts/moving-drift/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
   'apps/studio/test/moving-drift-admin.test.mjs',
-  'packages/presentation/contracts/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
+  'packages/presentation/contracts/moving-drift/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
   'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',
   'packages/presentation/server/studio-policy-runtime.mjs',
@@ -209,7 +209,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const restart = async () => { await pool.end(); await stop(); await start(); pool = open(); return pool; };
     if (movingDriftOnly) {
       const {loadStudioMigrations,planStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
-      const driftSources = [...STUDIO_ISOLATED_QA_SOURCES,'packages/presentation/contracts/moving-drift.mjs','services/game/moving-drift-controller.mjs',
+      const driftSources = [...STUDIO_ISOLATED_QA_SOURCES,'packages/presentation/contracts/moving-drift/moving-drift.mjs','services/game/moving-drift-controller.mjs',
         'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
         'tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
         ...(await loadStudioMigrations()).map(row=>'ops/neon-studio/'+row.file)];

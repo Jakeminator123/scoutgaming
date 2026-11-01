@@ -1,6 +1,6 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {driftAgeClass,driftLeaseClass,sanitizeDriftGuardDiagnostic} from './moving-drift-diagnostics.mjs';
-import {driftError,parseMovingDriftCommand,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift.mjs';
+import {driftError,parseMovingDriftCommand,MOVING_DRIFT_OBSERVATION_MAX_AGE_MS as MAX_AGE} from '../../packages/presentation/contracts/moving-drift/moving-drift.mjs';
 
 const fail=(code,status)=>{throw driftError(code,status);};
 const integer=value=>Number.isSafeInteger(value)&&value>=0;

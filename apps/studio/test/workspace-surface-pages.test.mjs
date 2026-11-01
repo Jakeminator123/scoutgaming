@@ -33,7 +33,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
     '@/components/partner/partner-operator-workspace': { PartnerOperatorWorkspace },
-    '@/components/partner-workspace': { PartnerWorkspace },
+    '@/components/partner/partner-workspace': { PartnerWorkspace },
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
     '@/lib/partner-session.mjs': { internalSessionPresent },

@@ -8,7 +8,7 @@ import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-pol
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
-import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift-admin.mjs';
+import { publicMovingDriftError } from '../../../packages/presentation/contracts/moving-drift/moving-drift-admin.mjs';
 import { StudioStorageError } from '../../../packages/studio-access/studio-scope.mjs';
 import { logStudioServerFailure } from './studio-error-log.mjs';
 import { aiTableMisfitBody } from './ai-table-publication-guard.mjs';

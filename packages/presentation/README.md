@@ -14,6 +14,11 @@ uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTI
 - `public-modules.mjs` — explicit lista över browserfiler och deras kanoniska/äldre URL:er. HTTP-server, Vercelroutning, statiska byggkopior och isolerade källfixturer delar listan. Serverfabriker, projektseed och privata appar ingår aldrig.
 - `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
 
+[`contracts/moving-drift/`](contracts/moving-drift/) innehåller driftkommandot
+och Admins säkra statusprojektion med typer. Studio, driftkonfiguration och
+spelserver importerar kontrakten direkt. De ingår inte i `public-modules.mjs`;
+flytten ändrar inga publika moduladresser eller driftlägen.
+
 Dessa läser paketet:
 
 - `apps/web/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/web/public/composition-runtime/`.

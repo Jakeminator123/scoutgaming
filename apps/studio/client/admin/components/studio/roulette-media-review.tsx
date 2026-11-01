@@ -1,7 +1,7 @@
 "use client"
 import {useEffect,useRef,useState} from 'react';
 import type {VideoEntry,VideoInventory} from '../../lib/connected-studio.mjs';
-import {rouletteReviewForm,rouletteReviewMetadata,saveRouletteReview,type RouletteReviewForm} from '../../lib/roulette-media-review.mjs';
+import {rouletteReviewForm,rouletteReviewMetadata,saveRouletteReview,type RouletteReviewForm} from '../../lib/roulette/roulette-media-review.mjs';
 
 export function RouletteMediaReview({video,dealerId,blocked,onSaved,onBusyChange,onDirtyChange}:{video:VideoEntry;dealerId:string;blocked:boolean;
   onSaved:(inventory:VideoInventory)=>void;onBusyChange:(busy:boolean)=>void;onDirtyChange:(dirty:boolean)=>void}) {

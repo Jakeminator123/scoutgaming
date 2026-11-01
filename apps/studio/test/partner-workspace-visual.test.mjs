@@ -13,13 +13,13 @@ import { defaultPresentationLane } from '../../../packages/presentation/contract
 import { jsxRequire } from './fixtures/jsx-require.mjs';
 
 const sourceUrl = new URL('../components/partner/partner-operator-workspace.jsx', import.meta.url);
-const actions = jsxRequire(sourceUrl)('../partner-session-actions.tsx');
+const actions = jsxRequire(sourceUrl)('./partner-session-actions.tsx');
 const DAY = 24 * 60 * 60 * 1000, today = Date.UTC(2026, 9, 28, 12);
 const roleOf = id => STANDARD_OPERATOR_ROLES.find(role => role.id === id);
 
 function components({ language = 'sv', theme = 'light', hooks } = {}) {
   const overrides = {
-    '../partner-session-actions': actions,
+    './partner-session-actions': actions,
     './views/team.jsx': { TeamView: () => React.createElement('section', { 'data-team': 'stub' }) },
     './partner-copy.mjs': { partnerNavigation, usePartnerPreferences: () => ({ language, theme, copy: partnerCopy(language), setLanguage() {}, setTheme() {} }) },
     ...(hooks ? { react: hooks } : {}),
