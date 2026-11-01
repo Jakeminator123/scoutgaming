@@ -6,6 +6,3 @@
 # Keep the same bytes on Linux and Windows checkouts.
 media/** -text
 media/layout.json text eol=lf
-
-# Historical timing fixtures retain the K04 contract's exact byte hashes.
-test/fixtures/blackjack/media-timing/** text eol=lf

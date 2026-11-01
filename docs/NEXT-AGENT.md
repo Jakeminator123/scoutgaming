@@ -2,6 +2,20 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Avvecklad K04-testkedja 1 november
+
+Den historiska mediekatalogen, revisionshjälparen och tre timingfixturer är
+borttagna efter konsumentkontroll; de lästes bara av tester. [HISTORIK](HISTORIK.md#avvecklad-k04-testkedja)
+anger sista Git-versionen. De blandade presentationsproven behåller kortordning,
+idle, återanslutning och isoleringen av pengar/utfall från presentationsfel.
+[Postgres-flödet](../test/postgres-presentation-flow.mjs) använder nu produktens
+native-film-v2-resolver och medieselektorer med syntetiskt fryst material.
+
+Lokalt passerar de 16 bevarade presentationsproven, film-/material-/selektionsproven
+och resolverns negativa fall för mätning, språk, bolag och saknat fryst paket.
+Verkligt PostgreSQL-/restartprov återstår i obligatorisk CI; ingen ny drift-, data-
+eller AV-acceptans ingår. Ingen spelregel eller produktkonfiguration har ändrats.
+
 ## Dokumentkonsolidering 1 november
 
 Fem plan-/loggfiler efter #782 är avvecklade: KEVIN-PORT, NYCKEL-BOLAG,

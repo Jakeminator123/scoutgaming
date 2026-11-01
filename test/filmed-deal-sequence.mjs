@@ -114,7 +114,7 @@ test('opening reveal follows the hole while resumed action groups still end in V
 // from the profile's frame counts at its fps, joins are back to back, the game window is never moved.
 const fps=profile.plane.fps,frameMs=frames=>frames*1000/fps,takeOf=key=>profile.takes.find(t=>t.key===key);
 const timeline=(events,timing={})=>planFilmedTimeline({profile,dealerId:'dragan',events,...timing});
-// material-revision.mjs on this profile: cardMs = longest deal take + 80, leadMs = 1500 + longest flip + 80.
+// Conservative test window from the profile: longest deal take + gap per card, plus the opening lead and longest flip.
 const materialCardMs=Math.ceil(Math.max(...profile.takes.filter(t=>t.target!=='flip').map(t=>frameMs(t.frames))))+80;
 const materialLeadMs=1500+Math.ceil(Math.max(...profile.takes.filter(t=>t.target==='flip').map(t=>frameMs(t.frames))))+80;
 
@@ -149,7 +149,7 @@ test('a plan that opens on the flip leads 1500 ms, a VILA take leaves the 80 ms 
   assert.ok(window.deviationMs<=0,'flip + one dealer take fit the material window exactly');
 });
 
-test('the full seven-box opening never exceeds the window material-revision derives from the same takes (G3)',()=>{
+test('the full seven-box opening fits a conservative window derived from the same profile takes',()=>{
   const events=[{type:'speak',line:'goodluck'}];let draw=1;
   for(let box=0;box<7;box++)events.push({type:'deal',to:'box',box,shoeDraw:draw++});events.push(dealer(draw++));
   for(let box=0;box<7;box++)events.push({type:'deal',to:'box',box,shoeDraw:draw++});events.push(dealer(draw++,true));

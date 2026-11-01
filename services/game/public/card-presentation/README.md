@@ -69,11 +69,10 @@ reference is `test/fixtures/blackjack/regression.json`; duplicate executable eng
 and browser snapshots have been removed. Its source blob IDs and cryptographic
 digests are historical evidence, not requirements on the current state layout.
 
-`test/fixtures/blackjack/media-timing/` contains byte-exact historical timing
-documents for dragge, marten and paow. Only `test/blackjack-presentation.mjs` and
-`test/postgres-k04-flow.mjs` read them, to exercise the historical K04 binding and
-planning contract against `k04-media.tsv`. Neither those fixtures nor the K04
-catalogue modules are loaded by today's publication path; they do not describe
-or verify every production clip. Current publication uses the frozen package's
-registered dealer, filmed profile and per-media `mediaTiming` through
-`packages/presentation/server/native-room-game-material.mjs`.
+`test/postgres-presentation-flow.mjs` exercises the coordinator, durable receiver,
+restart/replay and exact media selection against a synthetic frozen native-film
+publication on the QA runner's isolated PostgreSQL cluster. Current publication
+uses the frozen package's registered dealer, filmed profile and per-media
+`mediaTiming` through `packages/presentation/server/native-room-game-material.mjs`.
+The historical K04 catalogue, revision helper and timing fixtures have been removed;
+they had no product consumer. These tests do not approve real production media.

@@ -1,37 +1,42 @@
-// K04 mounted flow proof through J07, invoked only by tools/run-shared-table-qa.mjs on its owned
-// loopback cluster after the receiver checks (010 applied there, nowhere else). The real K03
-// coordinator runs on J07's PostgreSQL store with two players; every committed outbox row goes
-// through K04's outbox-presentation, main's presentationEvents and the durable receiver. The
-// clock and the random port are explicit; nothing reads Date.now or Math.random.
+// Shared-table presentation flow, invoked by tools/run-shared-table-qa.mjs on its owned
+// loopback cluster after the receiver checks. The real coordinator and PostgreSQL store
+// use a synthetic frozen native-film publication with two players. Committed outbox rows
+// pass through the durable receiver and the product's filmed/speech selectors.
+// The clock and random port are explicit; no production data or media bytes are used.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { createTableCoordinator } from '../services/game/games/blackjack/table/coordinator.mjs';
 import { createPostgresTableStore } from '../services/game/games/blackjack/table/postgres-store.mjs';
 import { createPostgresPresentationReceiver } from '../services/game/games/blackjack/presentation/postgres-receiver.mjs';
 import { reconnectPresentation } from '../services/game/games/blackjack/presentation/outbox-presentation.mjs';
-import { bindDeal, bindLine, isDeferred, loadCatalogue } from '../services/game/games/blackjack/presentation/media-catalogue.mjs';
-import { PlanningRefused, assertPublishable, planningRevision, timingSourceOf } from '../services/game/games/blackjack/presentation/material-revision.mjs';
+import { withFilmedSteps, withSpeechTakes } from '../services/game/shared-room-filmed-steps.mjs';
+import { canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
+import { resolveNativeRoomGameMaterial } from '../packages/presentation/server/native-room-game-material.mjs';
+import { nativeRoomSpeechClips } from '../packages/presentation/server/native-room-speech-clips.mjs';
+import { readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
+import { validateRoomGameMaterial } from '../packages/presentation/contracts/room-game-config.mjs';
 import { DEFAULT_CONFIG } from './fixtures/blackjack/table-memory-store.mjs';
 import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
+import { nativeRoomMaterialFixture } from './fixtures/native-room-game-material.mjs';
 
-const ROOM = 'k04-flow', P1 = 'k04-flow-p1', P2 = 'k04-flow-p2', DEALER = 'dragge', LANGUAGE = 'sv';
+const ROOM = 'presentation-flow', P1 = 'presentation-flow-p1', P2 = 'presentation-flow-p2', DEALER = 'dragan', LANGUAGE = 'sv';
 const RECEIVER = 'croupier_game.shared_table_presentation_receiver';
 const order = events => events.filter(e => ['deal', 'reveal'].includes(e.type))
   .map(e => `${e.type === 'reveal' ? 'reveal' : e.to === 'dealer' ? (e.faceDown ? 'hole' : 'dealer') : `box${e.box}`}#${e.shoeDraw}`);
 const kinds = rows => rows.map(r => [r.payload.presentation.kind, r.payload.presentation.op, r.payload.presentation.action]);
 
-export async function runK04MountedFlowChecks({ pool, restart }) {
+export async function runPostgresPresentationFlowChecks({ pool, restart }) {
   let time = 900000, n = 0, generation = 0;
   const clock = { now: () => time }, checks = [];
   let store, table, receiver;
   const reopen = () => {
     store = createPostgresTableStore({ pool, walletMode: 'demo' });
-    table = createTableCoordinator({ store, clock, random: deterministicRandom(`k04-flow-${++generation}`) });
+    table = createTableCoordinator({ store, clock, random: deterministicRandom(`presentation-flow-${++generation}`) });
     receiver = createPostgresPresentationReceiver({ pool });
   };
   reopen(); await receiver.assertInstalled();
   const check = async (name, work) => { await work(); checks.push(name); console.log(`ok - ${name}`); };
-  const send = (who, op, fields = {}) => table.command({ actorId: who }, { roomId: ROOM, commandId: `k04-flow-${++n}`, op, ...fields });
+  const send = (who, op, fields = {}) => table.command({ actorId: who }, { roomId: ROOM, commandId: `presentation-flow-${++n}`, op, ...fields });
   const snap = (who = P1) => table.snapshot(ROOM, who);
   const pending = async () => (await store.outbox.pending()).filter(r => r.roomId === ROOM);
   const rowXmin = async () => (await pool.query(`SELECT xmin::text AS x FROM ${RECEIVER} WHERE room_id=$1`, [ROOM])).rows[0]?.x;
@@ -78,33 +83,37 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     if (holeSerial !== undefined) assert.ok(!text.includes(`"serial":${holeSerial}`), 'hidden hole card not in the row');
   };
 
-  // K04 planning gate first: the config carries leadMs/cardMs only from a verified binding.
-  const catalogue = loadCatalogue();
-  const observed = new Map(catalogue.filter(r => !isDeferred(r)).map(r => [r.path, r.sha256]));
-  const documents = new Map([[timingSourceOf(DEALER), readFileSync(new URL(`./fixtures/blackjack/media-timing/${DEALER}.json`, import.meta.url))]]);
-  const binding = planningRevision({ catalogue, dealer: DEALER, language: LANGUAGE, observed, documents });
-  const planned = new Set(binding.media.map(([path]) => path));
-  const config = { ...structuredClone(DEFAULT_CONFIG), language: LANGUAGE, leadMs: binding.leadMs, cardMs: binding.cardMs };
+  // Use the product publication resolver and exact registered profile with declared synthetic
+  // records. The frozen material reaches the coordinator's real native sequence guard.
+  const fixture = nativeRoomMaterialFixture({ dealerId: DEALER, language: LANGUAGE });
+  fixture.input.room.id = ROOM;
+  fixture.input.package.tables = [ROOM];
+  fixture.input.package.rooms = [structuredClone(fixture.input.room)];
+  const resolveMaterial = input => resolveNativeRoomGameMaterial(input, { version: 2 });
+  const material = resolveMaterial(fixture.input);
+  const config = { ...structuredClone(DEFAULT_CONFIG), language: LANGUAGE, leadMs: material.leadMs, cardMs: material.cardMs,
+    material, operatorId: fixture.input.package.operatorId, packageRevision: fixture.input.package.revision,
+    presentationHash: createHash('sha256').update(canonicalStudioJson(readPackagePresentation(fixture.input.package))).digest('hex') };
 
-  await check('k04-flow-planning-gate-refuses-missing-binding-and-publishes-only-bound-timing', async () => {
-    assert.equal(binding.ok, true); assert.deepEqual([binding.leadMs, binding.cardMs], [3205, 3539]);
-    const pub = { dealer: DEALER, language: LANGUAGE, leadMs: config.leadMs, cardMs: config.cardMs };
-    const refused = reason => e => e instanceof PlanningRefused && e.refusal.reason === reason;
-    assert.throws(() => assertPublishable({ ...pub }), refused('planning_binding_missing'));
-    const missing = new Map(observed); missing.delete('media/dealers/dragge/v2/pos2.mp4');
-    const noMedia = planningRevision({ catalogue, dealer: DEALER, language: LANGUAGE, observed: missing, documents });
-    assert.deepEqual([noMedia.ok, noMedia.missing], [false, ['media/dealers/dragge/v2/pos2.mp4']]);
-    assert.throws(() => assertPublishable({ binding: noMedia, ...pub }), refused('media_set_not_verified'));
-    assert.throws(() => assertPublishable({ binding, ...pub, leadMs: DEFAULT_CONFIG.leadMs }), refused('planning_timing_not_from_binding'));
-    assert.throws(() => assertPublishable({ binding, ...pub, language: 'en' }), refused('planning_binding_other_material'));
-    assert.equal(assertPublishable({ binding, ...pub, revision: binding.revision }), binding.revision);
-    await store.config.publish(ROOM, 'k04-flow-v1', config);
+  await check('presentation-flow-native-material-requires-measurements-language-and-room-ownership', async () => {
+    assert.deepEqual(validateRoomGameMaterial(material, { dealerId: DEALER, language: LANGUAGE }), material);
+    assert.match(material.revision, /^native-film-v2-[a-f0-9]{64}$/);
+    assert.equal(material.film.profileId, fixture.profile.id);
+    const refused = reason => error => error?.code === 'studio_room_game_material_unavailable' && error.reason === reason;
+    assert.throws(() => resolveMaterial({ ...fixture.input, language: 'en' }), refused('native_material_speech_unbound'));
+    assert.throws(() => resolveMaterial({ ...fixture.input, room: { ...fixture.input.room, operatorId: 'another-operator' } }), refused('native_material_room_mismatch'));
+    assert.throws(() => resolveMaterial({ ...fixture.input, package: { ...fixture.input.package, branding: {} } }), refused('native_material_frozen_v3_required'));
+    const unmeasured = nativeRoomMaterialFixture({ dealerId: DEALER, language: LANGUAGE, capture: false });
+    delete unmeasured.records.find(row => row.classification.kind === 'action').mediaTiming;
+    unmeasured.recapture();
+    assert.throws(() => resolveMaterial(unmeasured.input), refused('native_material_measurement_missing'));
+    await store.config.publish(ROOM, 'presentation-flow-v1', config);
     for (const [id, name] of [[P1, 'Synthetic flow player 1'], [P2, 'Synthetic flow player 2']])
       await pool.query('INSERT INTO croupier_game.players(id,name,balance,created_at) VALUES($1,$2,$3,$4)', [id, name, 1000, '2026-10-22T00:00:00.000Z']);
   });
 
   let round1;
-  await check('k04-flow-two-players-join-bet-ready-start-plan-sanitized-and-accepted', async () => {
+  await check('presentation-flow-two-players-join-bet-ready-start-plan-sanitized-and-accepted', async () => {
     await send(P1, 'join', { seats: [1], seatGens: { 1: 0 }, memberGen: 0 });
     await send(P2, 'join', { seats: [4], seatGens: { 4: 0 }, memberGen: 0 });
     assert.deepEqual(await pending(), [], 'join opens the room without a presentation row');
@@ -118,7 +127,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.equal((await send(P2, 'ready', { windowId })).result.started, true);
     const s = await snap(); round1 = s.roundId;
     assert.equal(s.round.phase, 'insurance');
-    assert.equal(s.plan.endAt - s.plan.startAt, binding.leadMs + 6 * binding.cardMs, 'plan timing from the bound config');
+    assert.equal(s.plan.endAt - s.plan.startAt, material.leadMs + 6 * material.cardMs, 'spoken opening uses the frozen material budget');
     const rows = await pending();
     assert.deepEqual(kinds(rows), [['plan', 'start', null]]);
     const p = rows[0].payload.presentation;
@@ -136,7 +145,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.deepEqual([resumed.apply, resumed.presentation.ver], [true, s.presentationVer]);
   });
 
-  await check('k04-flow-insurance-split-21-hit-stand-reveal-after-trigger-before-dealer-cards', async () => {
+  await check('presentation-flow-insurance-split-21-hit-stand-reveal-after-trigger-before-dealer-cards', async () => {
     time = (await snap()).plan.turnAt;
     const s = await snap();
     await send(P1, 'insurance', { take: true, roundId: s.roundId, phase: 'insurance' });
@@ -164,7 +173,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.ok(!ev.some(e => e.line === 'blackjack'));
   });
 
-  await check('k04-flow-receiver-higher-applied-identical-applied-without-rewrite-lower-stale', async () => {
+  await check('presentation-flow-receiver-higher-applied-identical-applied-without-rewrite-lower-stale', async () => {
     const all = (await pool.query("SELECT body FROM croupier_game.shared_table_outbox WHERE room_id=$1 AND status='delivered' ORDER BY ver", [ROOM])).rows
       .map(r => (typeof r.body === 'string' ? JSON.parse(r.body) : r.body));
     assert.deepEqual(all.map(r => r.ver), [1, 2, 3, 4, 5]);
@@ -177,7 +186,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.equal(await receiver.lastAccepted(ROOM), 5);
   });
 
-  await check('k04-flow-settle-collect-row-then-next-window-row-triggers-placebets', async () => {
+  await check('presentation-flow-settle-collect-row-then-next-window-row-triggers-placebets', async () => {
     const before = await snap();
     time = before.plan.endAt; await runTicks(['round.settle']);
     const settled = await snap();
@@ -200,7 +209,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.deepEqual(reconnectPresentation({ ...opened, presentationVer: opened.presentationVer + 1 }, current), { apply: false, reason: 'stale_presentation' });
   });
 
-  await check('k04-flow-crash-rollback-and-lost-ack-leave-outbox-pending-redelivery-applies-once', async () => {
+  await check('presentation-flow-crash-rollback-and-lost-ack-leave-outbox-pending-redelivery-applies-once', async () => {
     const windowId = (await snap()).windowId;
     await send(P1, 'bet', { seat: 1, field: 'main', chip: 10, windowId });
     await send(P2, 'bet', { seat: 4, field: 'main', chip: 10, windowId });
@@ -239,7 +248,7 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.deepEqual(order(current.events), ['box4#12', 'box1#13', 'dealer#14', 'box4#15', 'box1#16', 'hole#17']);
   });
 
-  await check('k04-flow-hit-to-21-presents-player-card-then-reveal-then-dealer-card', async () => {
+  await check('presentation-flow-hit-to-21-presents-player-card-then-reveal-then-dealer-card', async () => {
     await act(P2, 'stand');      // 10+9 = 19
     await act(P1, 'hit');        // 6+5 -> +10 = 21 ends the last hand: reveal the 10, the dealer draws the 8 (6+10+8 bust)
     const { rows, current } = await deliverAll(['plan', 'plan']);
@@ -257,31 +266,40 @@ export async function runK04MountedFlowChecks({ pool, restart }) {
     assert.equal(await receiver.lastAccepted(ROOM), vers.at(-1));
   });
 
-  await check('k04-flow-media-binding-resolves-only-accepted-non-deferred-media-by-sha256-dragge-sv', async () => {
-    const byPath = new Map(catalogue.map(r => [r.path, r]));
-    const bound = [];
+  await check('presentation-flow-accepted-events-select-only-frozen-native-media-by-identity', async () => {
+    const records = new Map(fixture.records.map(row => [row.id, row]));
+    const listed = new Map(material.media.map(row => [row.id, row.sha256]));
+    const clips = nativeRoomSpeechClips({ package: fixture.input.package, config });
+    assert.ok(clips);
+    const bound = new Set();
     for (const presentation of accepted) {
       assert.equal(presentation.language, LANGUAGE);
-      for (const e of presentation.events) {
-        if (!e.family) continue;
-        const take = e.type === 'speak' ? bindLine(catalogue, { dealer: DEALER, line: e.line, take: 1, language: LANGUAGE })
-          : e.type === 'idle' ? null : bindDeal(catalogue, { dealer: DEALER, slot: e.family, variant: 'bas' });
-        if (!take) continue;
-        const row = byPath.get(take.path);
-        assert.ok(row && !isDeferred(row), take.path);
-        assert.equal(take.sha256, observed.get(take.path), `${take.path} by sha256`);
-        assert.ok(planned.has(take.path), `${take.path} is in the planning revision's media set`);
-        if (e.type === 'speak') assert.equal(take.slot, e.family);
-        bound.push(`${e.family}=${take.path.split('/').at(-1)}`);
+      const enriched = withSpeechTakes(withFilmedSteps(presentation, material), clips);
+      for (const event of enriched.events) {
+        if (!['deal', 'reveal', 'speak'].includes(event.type)) continue;
+        const take = event.type === 'speak' ? event.speechTake : event.filmedTake;
+        assert.ok(take, `${event.type}: ${event.family}`);
+        const row = records.get(take.id);
+        assert.ok(row);
+        assert.equal(row.classification.dealerId, DEALER);
+        assert.equal(take.sha256, row.sha256);
+        assert.equal(listed.get(take.id), take.sha256, 'selected bytes belong to the frozen material');
+        if (event.type === 'speak') {
+          assert.equal(row.classification.recordedSpeech.lineId, event.line);
+          assert.equal(row.classification.recordedSpeech.language, LANGUAGE);
+        } else {
+          assert.equal(take.profileId, fixture.profile.id);
+          assert.equal(fixture.profile.takes.find(item => item.key === take.takeKey)?.sha256, take.sha256);
+        }
+        bound.add(event.family);
       }
     }
-    for (const want of ['speak.goodluck/goodluck=goodluck_1.mp4', 'speak.insurance/insurance=insurance_1.mp4', 'speak.other/win=win_1.mp4',
-      'speak.other/dealerbust=dealerbust_1.mp4', 'speak.other/placebets=placebets_1.mp4', 'deal.player.left/box1=pos2.mp4',
-      'deal.player.centre/box4=pos5.mp4', 'deal.dealer/dealer-up=posdealer.mp4', 'deal.dealer/dealer-hole=hole.mp4', 'reveal.dealer/dealer-hole=flip.mp4'])
-      assert.ok(bound.includes(want), want);
-    // A deferred G13 line is never bound, even with its row and hash present in the catalogue.
-    assert.ok(byPath.get('media/dealers/dragge/repliker/sv/twentyone_1.mp4'));
-    assert.throws(() => bindLine(catalogue, { dealer: DEALER, line: 'twentyone', take: 1, language: LANGUAGE }), /No media binding/);
+    for (const family of ['speak.goodluck/goodluck', 'speak.insurance/insurance', 'speak.other/win',
+      'speak.other/dealerbust', 'speak.other/placebets', 'deal.player.left/box1',
+      'deal.player.centre/box4', 'deal.dealer/dealer-up', 'deal.dealer/dealer-hole', 'reveal.dealer/dealer-hole'])
+      assert.ok(bound.has(family), family);
+    assert.equal(nativeRoomSpeechClips({ package: { ...fixture.input.package, operatorId: 'another-operator' }, config }), null);
+    assert.equal(nativeRoomSpeechClips({ package: fixture.input.package, config: { ...config, language: 'en' } }), null);
   });
   return { pool, checks };
 }

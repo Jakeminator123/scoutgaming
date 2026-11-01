@@ -5,9 +5,8 @@ import { createMemoryTableStore } from './fixtures/blackjack/table-memory-store.
 import { deterministicRandom } from './fixtures/blackjack/deterministic-random.mjs';
 
 // K07 port of Kevin's agent's test/table-behaviours-kevin.mjs from origin/codex/kevin-k07-tester @ c17cdba2 (stacked on his K04 branch).
-// Runs unchanged against main as it is: K02 core.mjs, the K03 coordinator.mjs/ports.mjs and the memory-store fixture
-// test/fixtures/blackjack/table-memory-store.mjs. Nothing here depends on K04-only code (outbox payload.presentation, media
-// catalogue, material-revision), so no assertion was dropped. Required by .githooks/pre-commit-full in gameplay/shared-blackjack. Kevin's original notes follow.
+// Runs against the current core, table coordinator/ports and the test-only memory store.
+// Registered by .githooks/pre-commit-full in gameplay/shared-blackjack. Historical test rationale follows.
 
 // K07 gap (K06-K07-forberedelse §2.1): five table behaviours Kevin's test/shared-table.test.mjs @ 5aa7ed10 covers and the
 // K03 suite did not name: repeat bet, a returning player sitting down mid-hand, changing boxes mid-round, dropping an

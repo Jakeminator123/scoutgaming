@@ -4,9 +4,8 @@
 // sequence is byte-for-byte the same function so viewers and Kevin's worker map agree.
 // Main's live-idle controller keeps its own per-viewer random base (policy base 1-4) for every
 // existing caller; shared rooms use its explicit mode 'server-chain' (packages/presentation/runtime/
-// live-idle.mjs), fed by serverChainEntry below (mapping gap I2), with each clip bound to its exact
-// catalogue file through media-catalogue.mjs bindIdle. The dealer's whole calm pool is followed;
-// nothing is trimmed to four.
+// live-idle.mjs), fed by serverChainEntry below. Callers supply the room's bound idle takes;
+// the dealer's whole calm pool is followed, with nothing trimmed to four.
 const FPS = 24, WAIT_MAX = 400, LEAD = 100;
 
 export function pickWeighted(pool, last, rnd, idOf = x => x.id) {

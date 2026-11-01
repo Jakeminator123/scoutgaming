@@ -41,8 +41,8 @@ daterat prov; den visar inte dagens provideråtkomst eller ny AV-acceptans.
   `packages/presentation/server/native-room-game-material.mjs`, via
   `apps/studio/lib/studio-native-runtime.mjs` och `room-release.mjs`.
   Den binder fryst paket, registrerad filmprofil och media-id/hash/timing.
-  K04:s `media-catalogue.mjs` och `material-revision.mjs` var testhjälpare,
-  inte en allmän produktionsgrind.
+  Den historiska K04-katalogen och revisionshjälparen är avvecklade;
+  den kvarvarande testkedjan använder detta publiceringskontrakt.
 - Callbackrättningen för produktionsmallen är kvitterad 30 oktober 16:46 UTC
   i [miljöguiden](../ENVIRONMENT-VARIABLES.md). Kör inte den historiska
   fixern igen utan en aktuell felbild. Previews separata bindning måste

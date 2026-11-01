@@ -6,6 +6,25 @@ Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökväga
 
 ## Raderade 1 november 2026
 
+### Avvecklad K04-testkedja
+
+Sista main-version med filerna: `c52368b2f547b83b8e32938c6a8a9eb1618f4d34`.
+Katalog-/revisionskoden hade bara testkonsumenter; inga aktiva produktidentiteter
+eller mediebytes raderades. De blandade testen behåller spel-, penga- och
+presentationsbeteenden, och [Postgres-flödet](../test/postgres-presentation-flow.mjs)
+provar nu det publicerade native-film-kontraktet med syntetiskt material.
+
+| Fil | Vad som avvecklats |
+| --- | --- |
+| `services/game/games/blackjack/presentation/media-catalogue.mjs` | Historisk K04-bindning mot en lokal TSV. |
+| `services/game/games/blackjack/presentation/material-revision.mjs` | Historisk revision och planering över katalogens metadata. |
+| `services/game/games/blackjack/presentation/k04-media.tsv` | Katalogens förbrukade testunderlag. |
+| `test/fixtures/blackjack/media-timing/dragge.json` | Historisk timingfixtur för katalogens hashprov. |
+| `test/fixtures/blackjack/media-timing/marten.json` | Historisk timingfixtur för katalogens hashprov. |
+| `test/fixtures/blackjack/media-timing/paow.json` | Historisk timingfixtur för katalogens hashprov. |
+
+### Labbguide
+
 | Fil | Ersättning och skäl; originalet läses med `git show e3dbed2c17afe91deb81ff9b9e9d88264958d38f:<fil>` |
 | --- | --- |
 | `docs/AI/openclaw/ASTRID-LABBCHATT.md` | Eventstudio, den enda produktklienten, är borta sedan #468. Guiden duplicerade den avvecklade labbens källförteckning. [AI-index](AI/README.md#pensionerad-labbchatt) behåller aktuell avvecklingsgräns och pekar ut dashboardens delade sökhjälpare; [körplanen](plans/organisation/KORPLAN-v2.md#data-och-medieavveckling) bär datauppdraget. |
@@ -102,7 +121,7 @@ Alla fanns i `main` på `6f2d8236` (läs: `git show 6f2d8236:<sökväg>`). Ingen
 
 ## Raderade 29 oktober 2026: sista kvittona, O02-planerna och oläst proveniens
 
-Alla fanns i `main` på `6942432d` (läs: `git show 6942432d:<sökväg>`). Alla 20 aktiviteter är VERIFIED, och `git grep -F <filnamn> 6942432d -- apps packages services ops tools .github .githooks` gav ingen levande läsare. `tools/o02-freeze-check.mjs` läser kvitton ur kandidatens träd (`git ls-tree <sha> docs/`), inte ur `main`; dess kommentarer och `how`-texter som nämner O02-PLAN och O02-RESTORE-REPLAY pekar på Git-versionen. Proveniensens sökvägar och hashar i `CATALOGUE_SOURCE` och `dealer-import-kevin-source-paow.json` gäller fortfarande; ingen kod läste filerna.
+Alla fanns i `main` på `6942432d` (läs: `git show 6942432d:<sökväg>`). Alla 20 aktiviteter är VERIFIED, och `git grep -F <filnamn> 6942432d -- apps packages services ops tools .github .githooks` gav ingen levande läsare. `tools/o02-freeze-check.mjs` läser kvitton ur kandidatens träd (`git ls-tree <sha> docs/`), inte ur `main`; dess kommentarer och `how`-texter som nämner O02-PLAN och O02-RESTORE-REPLAY pekar på Git-versionen. De dåvarande proveniensfälten i `CATALOGUE_SOURCE` och `dealer-import-kevin-source-paow.json` finns i Git-versionerna; ingen kod läste dokumentfilerna. K04:s testkatalog avvecklades också 1 november, enligt avsnittet ovan.
 
 | Datum | Fil | Vad det var | PR |
 | --- | --- | --- | --- |
@@ -116,7 +135,7 @@ Alla fanns i `main` på `6942432d` (läs: `git show 6942432d:<sökväg>`). Alla 
 | 2026-10-28 | `docs/2026-10-28-K07-STAGING-RERUN-2-ACCEPTANCE.json` | K07-omprov 2 på `f3780593` | #525 |
 | 2026-10-27 | `docs/plans/O02-PLAN.md` | O02: frysregler F1–F8, restore-replay variant B, Jakobs ögon V1–V7, negativa fall (avsnitten som `status.json` och `tools/o02-*.mjs` citerar) | `430a87c9`, använd i #523 |
 | 2026-10-28 | `docs/plans/O02-RESTORE-REPLAY.md` | O02: kommandolistan D1–D3 och R0–R10 för restore-replay på staging | `75a08629`, körd i #523 |
-| 2026-10-21 | `migrering/kevin-ks-migrering/K04/K04-medie-fack.tsv` | K04: Kevins mediefack från `codex/kevin-k01-underlag` `6bd92d05`; spelet läser den härledda `k04-media.tsv` | `6bd92d05` |
+| 2026-10-21 | `migrering/kevin-ks-migrering/K04/K04-medie-fack.tsv` | K04: Kevins mediefack från `codex/kevin-k01-underlag` `6bd92d05`; historiskt underlag till den nu avvecklade testkatalogen `k04-media.tsv` | `6bd92d05` |
 | 2026-10-22 | `migrering/kevin-ks-migrering/K05/K05-matris.tsv` | K05: urvalsmatrisen för PAOW; urvalet bärs av `dealer-import-kevin-source-paow.json`, vars läsare `tools/k05-import-plan.mjs` redan var borttagen | `4fbd5467` |
 | 2026-10-02 | `media/site/source/design-kit/` (8 filer: `prive-blackjack-ui-kit.html`, `BettingRail`, `Feedback`, `HandBar`, `Main`, `ScoutBrand`, `Seats` `.dc.html`, `canvas.json`) | Gammalt designkit utan läsare; raderna i `media/layout.json` (roten `design-kit` och åtta filer), `media/blob-index.json` (`canvas.json`) och `tools/repo-limits-allowlist.json` togs bort samtidigt. Blob-objektet för `canvas.json` ligger kvar i Blob | `d706dea0` |
 

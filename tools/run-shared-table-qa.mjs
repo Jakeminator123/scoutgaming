@@ -114,8 +114,8 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
       const receiverGuard = await checkPresentationReceiverGuard({ pool });
       await pool.query(await readFile(join(repository, 'ops/neon-game', '010-presentation-receiver.sql'), 'utf8'));
       const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
-      const { runK04MountedFlowChecks } = await import('../test/postgres-k04-flow.mjs');
-      const flow = await runK04MountedFlowChecks({ pool, restart }); pool = flow.pool;
+      const { runPostgresPresentationFlowChecks } = await import('../test/postgres-presentation-flow.mjs');
+      const flow = await runPostgresPresentationFlowChecks({ pool, restart }); pool = flow.pool;
       const { runPostgresSharedCommandChecks } = await import('../test/postgres-shared-command.mjs');
       const commands = await runPostgresSharedCommandChecks({pool,createPool}); pool = commands.pool;
       checks = [...guards.checks, ...wallet.checks, ...table.checks, ...receiverGuard.checks, ...receiver.checks, ...flow.checks, ...commands.checks];
