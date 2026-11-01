@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import vm from 'node:vm';
+import {createGameInterface} from '../services/game/public/game-interface.mjs';
 import {placeActions,placeDealControl,placeChat} from '../services/game/public/action-placement.mjs';
 import {createPresentationStartup} from '../services/game/public/presentation-startup.mjs';
 const box=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height});
@@ -58,8 +57,6 @@ test('action panels too large for the available viewport have no out-of-bounds p
 });
 
 function actionControlsFixture(){
-  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-  const fragment=source.slice(source.indexOf('function showActions(seat)'),source.indexOf("$('#deal-now').onclick"));
   const classes=()=>{const values=new Set();return {contains:key=>values.has(key),add:key=>values.add(key),remove:key=>values.delete(key),toggle:(key,on)=>on?values.add(key):values.delete(key)};};
   const node=(selectors,rect,opacity='1')=>({selectors,rect,opacity,style:{},getClientRects(){return [this.rect];},getBoundingClientRect(){return {...this.rect,width:this.rect.right-this.rect.left,height:this.rect.bottom-this.rect.top};}});
   const panel=()=>({hidden:false,classList:classes(),style:{left:'60.99px',top:'560.98px',bottom:'auto',position:'fixed',setProperty(key,value){this[key]=value;}},
@@ -75,33 +72,42 @@ function actionControlsFixture(){
   obstacles.push(...visibleCards,activeTotal,
     node(['.seat .sidearcs'],box(14.05,271.47,95.08,74.45)),node(['.seat .sidearcs'],box(112.46,280.92,95.08,74.45)),node(['.seat .sidearcs'],box(210.86,271.47,95.08,74.45)),
     node(['#wallet'],box(10.99,446.34,213.76,58.86)),node(['#player-choices'],box(157.13,413.81,68.42,14.54)),node(['#bottom-right'],box(233.74,465.2,137.95,40)),node(['#game-title'],box(0,0,320,60.88)));
-  const activeSeat={getBoundingClientRect:()=>({x:160,y:319}),querySelectorAll:()=>[hiddenTotal]};
+  const activeSeat={style:{},classList:classes(),getBoundingClientRect:()=>({x:160,y:319}),querySelectorAll:()=>[hiddenTotal]};
   let pickerTop=521.28;
-  nodes['#table2d']={getBoundingClientRect:()=>({top:193.18})};nodes['#dealer-picker']={getBoundingClientRect:()=>({top:pickerTop})};
-  nodes['#scene']={append:element=>{nodes['#'+element.id]=element;}};
-  const context=vm.createContext({layoutChat(){},layerComposition:null,innerWidth:320,innerHeight:568,$:selector=>nodes[selector],balance:5,
-    round:{active:0,legal:()=>['hit','stand','double'],live:()=>[{stake:10,box:3}]},seatOfLive:()=>activeSeat,placeActions,
+  nodes['#table2d']={getBoundingClientRect:()=>({left:0,top:193.18})};nodes['#dealer-picker']={getBoundingClientRect:()=>({top:pickerTop})};
+  const events=new Map(),frames=new Map(),queryEvents=new Map(),imageEvents=new Map(),geometryListeners=new Set();let nextFrame=0,disconnects=0;
+  const query={matches:true,addEventListener:(type,callback)=>queryEvents.set(type,callback),removeEventListener:type=>queryEvents.delete(type)};
+  const context={innerWidth:320,innerHeight:568,balance:5,
+    round:{active:0,legal:()=>['hit','stand','double'],live:()=>[{stake:10,box:3}]},
+    matchMedia:()=>query,addEventListener:(type,callback)=>events.set(type,callback),removeEventListener:type=>events.delete(type),
+    requestAnimationFrame:callback=>{frames.set(++nextFrame,callback);return nextFrame;},cancelAnimationFrame:id=>frames.delete(id),
+    ResizeObserver:class {observe(){}disconnect(){disconnects++;}},
     getComputedStyle:element=>({display:element.display??(element===bar?'none':'block'),visibility:'visible',opacity:element.opacity??'1'}),
-    document:{documentElement:{dataset:{gameDealer:'dragan'}},querySelector:selector=>nodes[selector],querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}});
-  vm.runInContext(fragment,context);
+    document:{body:{classList:classes()},documentElement:{dataset:{gameDealer:'dragan'}},querySelector:selector=>nodes[selector],querySelectorAll:query=>obstacles.filter(element=>query.split(',').some(selector=>element.selectors.includes(selector.trim()))),createElement:()=>({setAttribute(){},style:{}})}};
+  nodes['#scene']={dataset:{},getBoundingClientRect:()=>({left:0,top:0,width:context.innerWidth,height:context.innerHeight}),append:element=>{nodes['#'+element.id]=element;}};
+  nodes['#banner']={style:{}};nodes['#dealer-cards']={style:{}};nodes['#deal-now']={disabled:true,style:{}};
+  nodes['#tableimg']={addEventListener:(type,callback)=>imageEvents.set(type,callback),removeEventListener:type=>imageEvents.delete(type)};
+  const controls=createGameInterface({document:context.document,viewport:context,state:context,
+    layerComposition:{referencePlane:()=>null,onGeometryChange:callback=>{geometryListeners.add(callback);return()=>geometryListeners.delete(callback);}},
+    seatEls:Array.from({length:7},()=>activeSeat),seatOfLive:()=>activeSeat,activeBoxHighlight:()=>context.activeBoxHighlight?.()});
   const bounds=()=>box(parseFloat(top.style.left),parseFloat(top.style.top),top.offsetWidth,top.offsetHeight);
-  return {source,context,bar,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,setPickerTop:value=>{pickerTop=value;}};
+  return {context,controls,bar,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,events,frames,queryEvents,imageEvents,geometryListeners,get disconnects(){return disconnects;},setPickerTop:value=>{pickerTop=value;}};
 }
 
 test('actual action controls recover from a stale phone position using visible cards and a touch-sized compact row',()=>{
-  const {context,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
-  vm.runInContext('showActions()',context);
+  const {context,controls,top,node,nodes,obstacles,hiddenTotal,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
+  controls.showActions();
   assert.ok(bounds().bottom<=568&&bounds().right<=320,'resizing must replace stale offscreen coordinates');
   assert.equal(top.classList.contains('action-compact'),true,'the full panel does not fit in the measured gap');
   assert.notEqual(top.style.visibility,'hidden');assert.ok(top.offsetHeight>=44);
   assert.ok(obstacles.filter(element=>element.opacity!=='0'&&element.rect.right>element.rect.left&&element.rect.bottom>element.rect.top).every(element=>!overlaps(bounds(),element.rect)));
   assert.deepEqual(top.buttons.map(button=>button.disabled),[true,false,false,true],'layout cannot enable an illegal or unaffordable move');
   context.innerWidth=180;context.innerHeight=160;setPickerTop(160);
-  obstacles.push(node(['#wallet'],box(0,0,180,160)));vm.runInContext('showActions()',context);
+  obstacles.push(node(['#wallet'],box(0,0,180,160)));controls.showActions();
   assert.equal(top.style.visibility,'hidden');assert.equal(top.style.left,'');assert.equal(top.style.top,'');
   assert.equal(nodes['#action-placement-warning'].hidden,false,'a genuinely impossible viewport is disclosed');
   obstacles.pop();context.innerWidth=390;context.innerHeight=844;setPickerTop(797);
-  vm.runInContext('showActions()',context);
+  controls.showActions();
   assert.notEqual(top.style.visibility,'hidden');assert.equal(top.classList.contains('action-compact'),false);
   assert.equal(nodes['#action-placement-warning'].hidden,true);assert.ok(bounds().bottom<=797&&bounds().right<=390);
 
@@ -110,7 +116,7 @@ test('actual action controls recover from a stale phone position using visible c
   visibleCards[1].rect=box(10,480,360,180);activeTotal.rect=box(145,430,40,30);
   hiddenTotal.opacity='1';hiddenTotal.parentElement={opacity:'0'};hiddenTotal.rect=box(0,300,390,497);
   obstacles.splice(0,obstacles.length,...visibleCards,activeTotal,hiddenTotal);
-  vm.runInContext('showActions()',context);
+  controls.showActions();
   assert.ok(bounds().top>=activeTotal.rect.bottom+12,'the active SVG total anchors the controls');
   assert.ok([...visibleCards,activeTotal].every(element=>!overlaps(bounds(),element.rect)),'visible SVG cards remain unobstructed');
   assert.notEqual(top.style.visibility,'hidden','an invisible ancestor cannot reserve a false obstacle');
@@ -119,13 +125,13 @@ test('actual action controls recover from a stale phone position using visible c
   // above it, while preserving the header and the overflowing chat panel.
   const hud=node(['#game-title'],box(0,0,390,60.88)),chat=node(['#chat'],box(220,64,170,114));
   obstacles.splice(0,obstacles.length,hud,chat,node(['#wallet'],box(0,193.18,390,650.82)));
-  vm.runInContext('showActions()',context);
+  controls.showActions();
   assert.equal(top.classList.contains('action-compact'),true);assert.notEqual(top.style.visibility,'hidden');
   assert.ok(bounds().bottom<193.18&&obstacles.every(element=>!overlaps(bounds(),element.rect)));
 });
 
 test('actual actions fit the measured 320px open-chat gap without covering sign-out and recover when inactive choices disappear',()=>{
-  const {context,top,node,nodes,obstacles,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
+  const {context,controls,top,node,nodes,obstacles,visibleCards,activeTotal,bounds,setPickerTop}=actionControlsFixture();
   setPickerTop(521);
   const choices=node(['#player-choices'],box(157,435,68,15),'.3');
   const signOut=node(['#sign-out'],box(250,390,50,30));
@@ -134,11 +140,11 @@ test('actual actions fit the measured 320px open-chat gap without covering sign-
     ...[[14,297],[112,306],[211,297]].map(([x,y])=>node(['.seat .sidearcs'],box(x,y,95,75))),
     node(['#wallet'],box(11,459,289,46)),signOut];
   obstacles.splice(0,obstacles.length,...protectedNodes,choices);
-  vm.runInContext('showActions()',context);
+  controls.showActions();
   assert.equal(top.style.visibility,'hidden','the still visible choices strip really leaves no complete touch row');
   assert.equal(nodes['#action-placement-warning'].hidden,false);
 
-  choices.display='none';vm.runInContext('showActions()',context);
+  choices.display='none';controls.showActions();
   assert.equal(top.classList.contains('action-compact'),true);assert.equal(top.offsetWidth,198);assert.equal(top.offsetHeight,50);
   assert.notEqual(top.style.visibility,'hidden','hiding the inactive choices frees a playable action row');
   assert.equal(nodes['#action-placement-warning'].hidden,true);
@@ -146,29 +152,25 @@ test('actual actions fit the measured 320px open-chat gap without covering sign-
   for(const element of protectedNodes)assert.ok(!overlaps(bounds(),element.rect),'actions must clear '+element.selectors[0]);
   assert.deepEqual(top.buttons.map(button=>button.disabled),[true,false,false,true],'fitting controls cannot change legal or affordable moves');
 
-  choices.display='block';vm.runInContext('showActions()',context);
+  choices.display='block';controls.showActions();
   assert.equal(top.style.visibility,'hidden');assert.equal(top.style.left,'');assert.equal(top.style.top,'');
   assert.equal(nodes['#action-placement-warning'].hidden,false,'a later genuine no-fit must not retain the previous position');
 });
 
 test('fresh phone entry places restored actions after both the selected first frame and layout initialization',async()=>{
   for(const firstFrameBeforeLayout of [false,true]){
-    const {source,context,top,nodes,obstacles,bounds}=actionControlsFixture();
+    const {context,controls,top,nodes,obstacles,bounds}=actionControlsFixture();
     for(const obstacle of obstacles)obstacle.parentElement=nodes['#scene'];
     const computed=context.getComputedStyle;
     context.getComputedStyle=element=>element===nodes['#scene']&&context.document.documentElement.dataset.presentationStartup!=='ready'
       ? {...computed(element),visibility:'hidden',opacity:'0'}:computed(element);
     const startup=createPresentationStartup({document:context.document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
-    context.presentationStartup=startup;
     let layoutInitialized=false,refreshes=0;
-    context.layoutSeats=()=>{assert.ok(layoutInitialized,'ready must not touch uninitialized round/seat layout');};
-    context.activeBoxHighlight=()=>{refreshes++;context.layoutSeats();context.showActions();};
-    context.layerComposition={onGeometryChange(){}};context.compactQuery={addEventListener(){}};context.addEventListener=()=>{};
-    const layoutStart=source.indexOf('\nlayoutSeats();\nlayerComposition?.onGeometryChange(layoutSeats);');
-    assert.ok(layoutStart>=0,'the actual layout initialization must be included');
-    const layoutInitialization=source.slice(layoutStart,source.indexOf("\ndocument.querySelector('#tableimg')",layoutStart));
+    const measure=nodes['#scene'].getBoundingClientRect;
+    nodes['#scene'].getBoundingClientRect=()=>{assert.ok(layoutInitialized,'ready must not touch uninitialized round/seat layout');return measure();};
+    context.activeBoxHighlight=()=>{refreshes++;controls.showActions();};
     if(firstFrameBeforeLayout){startup.ready('dragan');await Promise.resolve();assert.equal(refreshes,0);}
-    layoutInitialized=true;vm.runInContext(layoutInitialization+'\nshowActions();',context);
+    layoutInitialized=true;controls.start({startup,onCompactChange(){}});controls.showActions();
     if(!firstFrameBeforeLayout){
       assert.equal(top.classList.contains('action-compact'),false,'the hidden scene initially reports no obstacles');
       assert.equal(startup.ready('other'),false);await Promise.resolve();assert.equal(refreshes,0);
@@ -183,20 +185,34 @@ test('fresh phone entry places restored actions after both the selected first fr
 });
 
 test('queued first-frame layout cannot run after page close or navigation',async()=>{
-  for(const stop of ['close','navigate']){
-    const {source,context}=actionControlsFixture();
+  for(const stop of ['close','navigate','pagehide']){
+    const {context,controls,events}=actionControlsFixture();
     const startup=createPresentationStartup({document:context.document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
-    context.presentationStartup=startup;
     let refreshes=0;
-    context.layoutSeats=()=>{};context.activeBoxHighlight=()=>{refreshes++;};
-    context.layerComposition={onGeometryChange(){}};context.compactQuery={addEventListener(){}};context.addEventListener=()=>{};
-    const layoutStart=source.indexOf('\nlayoutSeats();\nlayerComposition?.onGeometryChange(layoutSeats);');
-    assert.ok(layoutStart>=0,'the actual layout initialization must be included');
-    vm.runInContext(source.slice(layoutStart,source.indexOf("\ndocument.querySelector('#tableimg')",layoutStart)),context);
+    context.activeBoxHighlight=()=>{refreshes++;};
+    controls.start({startup,onCompactChange(){}});
     startup.ready('dragan');
-    if(stop==='close')startup.close();else startup.navigate('/other',()=>{});
+    if(stop==='close')startup.close();else if(stop==='navigate')startup.navigate('/other',()=>{});else events.get('pagehide')();
     await Promise.resolve();assert.equal(refreshes,0);
   }
+});
+
+test('interface updates share a frame and pagehide disconnects observation and cancels queued layout',()=>{
+  const fixture=actionControlsFixture(),{context,controls,frames,events}=fixture;
+  const startup=createPresentationStartup({document:context.document,dealerId:'dragan',setTimer:()=>1,clearTimer(){}});
+  let refreshes=0;context.activeBoxHighlight=()=>{refreshes++;};
+  controls.start({startup,onCompactChange(){}});
+  assert.deepEqual([fixture.queryEvents.size,fixture.imageEvents.size,fixture.geometryListeners.size],[1,1,1]);
+  controls.scheduleInterfaceLayout();controls.scheduleInterfaceLayout();
+  assert.equal(frames.size,1);
+  const run=()=>{const [id,frame]=frames.entries().next().value;frames.delete(id);frame();};
+  run();assert.equal(refreshes,1);
+  context.busy=true;controls.scheduleInterfaceLayout();run();assert.equal(refreshes,1,'busy rounds cannot expose actions during relayout');
+  context.busy=false;controls.scheduleInterfaceLayout();const queued=[...frames.values()][0];
+  events.get('pagehide')();assert.equal(frames.size,0);assert.equal(fixture.disconnects,1);
+  assert.deepEqual([fixture.queryEvents.size,fixture.imageEvents.size,fixture.geometryListeners.size],[0,0,0]);
+  queued();controls.scheduleInterfaceLayout();assert.equal(refreshes,1);assert.equal(frames.size,0);
+  assert.equal(events.has('resize'),false);
 });
 
 test('a deal button moved above the bets still clears the remove-stake control',()=>{
@@ -207,30 +223,26 @@ test('a deal button moved above the bets still clears the remove-stake control',
 });
 
 test('the actual deal control warns only for an enabled button and recovers after a no-fit layout',()=>{
-  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const fragment=source.slice(source.indexOf('function layoutDealControl()'),source.indexOf('// ---------- demo cashier'));
   const control={disabled:true,offsetWidth:171,offsetHeight:47,style:{}};
-  const target={getClientRects:()=>[{}],getBoundingClientRect:()=>box(603,449,73,57)};
+  let measurements=0;
+  const target={getClientRects:()=>[{}],getBoundingClientRect:()=>{measurements++;return box(603,449,73,57);}};
   const nodes={'#deal-now':control,'#dealer-picker':{getBoundingClientRect:()=>({top:682})}};
   nodes['#scene']={dataset:{betPlacement:'under-cards'},append:notice=>{nodes['#'+notice.id]=notice;}};
-  let measurements=0;
-  const context=vm.createContext({layoutChat(){},innerWidth:1280,$:selector=>nodes[selector],
-    seatEls:[{classList:{contains:()=>false},querySelectorAll:()=>[target]}],
-    getComputedStyle:()=>({display:'block',visibility:'visible'}),
-    document:{querySelectorAll:()=>[],createElement:()=>({setAttribute(){}})},
-    placeDealControl:input=>{measurements++;return placeDealControl(input);}});
-  vm.runInContext(fragment+';layoutDealControl()',context);
+  const viewport={innerWidth:1280,matchMedia:()=>({matches:false}),getComputedStyle:()=>({display:'block',visibility:'visible'})};
+  const controls=createGameInterface({viewport,state:{},document:{querySelector:selector=>nodes[selector],querySelectorAll:()=>[],createElement:()=>({setAttribute(){}})},
+    seatEls:[{classList:{contains:()=>false},querySelectorAll:()=>[target]}]});
+  controls.layoutDealControl();
   assert.equal(measurements,0,'an unavailable button cannot produce a placement warning');
   assert.equal(nodes['#deal-placement-warning'],undefined);
-  control.disabled=false;context.innerWidth=190;
-  vm.runInContext('layoutDealControl()',context);
+  control.disabled=false;viewport.innerWidth=190;
+  controls.layoutDealControl();
   assert.equal(control.style.visibility,'hidden');
   assert.equal(nodes['#deal-placement-warning'].hidden,false,'a genuinely impossible active button still warns');
   control.disabled=true;
-  vm.runInContext('layoutDealControl()',context);
+  controls.layoutDealControl();
   assert.equal(nodes['#deal-placement-warning'].hidden,true);
-  control.disabled=false;context.innerWidth=1280;
-  vm.runInContext('layoutDealControl()',context);
+  control.disabled=false;viewport.innerWidth=1280;
+  controls.layoutDealControl();
   assert.equal(control.style.visibility,'');
   assert.equal(control.style.position,'fixed');
   assert.equal(nodes['#deal-placement-warning'].hidden,true);

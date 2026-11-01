@@ -8,9 +8,19 @@ presentationsmodulerna används även från andra produktdelar.
 | Del | Ansvar och status |
 | --- | --- |
 | [card-presentation/](card-presentation/README.md) | Aktiv kortprojektion, handocklusion och kalibrering från granskad GitLab-kod. `local-card-overlay.mjs` är produktadaptern. |
+| [game-interface.mjs](game-interface.mjs) | Sittplatser, action-/givknappar och chattplacering för `app.mjs`. Läser serverrundan; samordnar första synliga frame, resize och stängning. |
+| [dealer-chat-controls.mjs](dealer-chat-controls.mjs) | Chattens öppning/oläststatus och montering av röstkontroller efter kamerakontrollens servervaliderade readiness. Provspel exponerar inte chatt/röst. |
 | `performance-player.mjs`, `local-film-player.mjs`, `speech-*`, `astrid-*` | Filmuppspelning, tal, kamerafunktioner och Astrids presentation. |
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
+
+[Placeringsproven](../../../test/action-placement.mjs),
+[sittplatsproven](../../../test/game-overlay-layout.mjs) och
+[chattproven](../../../test/dealer-chat-visibility.mjs) importerar samma moduler
+som klienten. De mäter mobilernas hinder, återupptagna ytterhänder, start/stängning
+och röstberedskap med DOM-fixturer. Det är kodprov, inte ny visuell driftacceptans.
+Modulerna levereras från den publika mappen; webbens importföljande byggsteg
+inkluderar dem utan nya alias i det delade publika modulregistret.
 
 Filmens kantshader används av `performance-player.mjs`; ljuskanterna följer
 fasta vägg- och filtfärger samt bordets bakre kant. En saknad eller misslyckad

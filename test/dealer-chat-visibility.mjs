@@ -1,20 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
-
-const app = readFileSync(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
-const visibility = app.slice(app.indexOf('function setChatOpen(open)'), app.indexOf('\n}', app.indexOf('function setChatOpen(open)')) + 2);
+import { createDealerChatVisibility, mountDealerVoiceControl } from '../services/game/public/dealer-chat-controls.mjs';
 
 function harness(studioPreview = null) {
   let open = false, layouts = 0;
   const chatToggle = { dataset: { unread: '1' }, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; } };
-  const context = vm.createContext({ studioPreview, chatToggle, scheduleInterfaceLayout:()=>{layouts++;},
-    $: () => ({ classList: { contains:()=>open, toggle: (_name, value) => { open = value; } } }) });
-  vm.runInContext(visibility, context);
-  const start=app.indexOf('function noteChatMessage(role)');
-  vm.runInContext(app.slice(start,app.indexOf('\n}',start)+2),context);
-  return { set: value => vm.runInContext(`setChatOpen(${value})`, context), isOpen: () => open, message:role=>vm.runInContext(`noteChatMessage(${JSON.stringify(role)})`,context), chatToggle, get layouts(){return layouts;} };
+  const controls = createDealerChatVisibility({ studioPreview, getToggle:()=>chatToggle, scheduleInterfaceLayout:()=>{layouts++;},
+    document:{querySelector:() => ({ classList: { contains:()=>open, toggle: (_name, value) => { open = value; } } })} });
+  return { set: controls.setChatOpen, isOpen: () => open, message:controls.noteChatMessage, chatToggle, get layouts(){return layouts;} };
 }
 
 test('conversation opens and closes on request with accessible state and cleared unread status', () => {
@@ -40,18 +33,21 @@ test('Studio preview cannot expose chat through ordinary open or close controls'
 });
 
 test('public dealer presentations prepare voice controls and wait for server readiness before changing the shell',()=>{
-  const start=app.indexOf('const astridCamera ='),end=app.indexOf(' : null;',start)+8;
-  const setup=app.slice(start,end);
-  for(const dealer of ['astrid','vera','amira','mei','paow','dragge'])for(const local of [false,true])for(const preview of [null,{sessionId:'preview'}]){
+  for(const dealer of ['vera','amira','mei','paow','dragge'])for(const preview of [null,{sessionId:'preview'}]){
     let mounted; const classes=[],styles=[],chatStates=[];
-    const context=vm.createContext({document:{body:{classList:{add:name=>classes.push(name)}},createElement:()=>({}),head:{append:node=>styles.push(node)}},setChatOpen:value=>chatStates.push(value),studioPreview:preview,localPresentationEnabled:local,DEALER:{key:dealer,name:dealer.toUpperCase()},$:(selector)=>({selector}),createAstridCameraControl:options=>{mounted=options;return {};}});
-    vm.runInContext(setup,context);
-    if(preview){assert.equal(mounted,undefined);continue;}
+    const chatState={busy:false,speaking:false},identity=()=>({dealerId:dealer}),send=()=>{},container={};
+    const control=mountDealerVoiceControl({document:{body:{classList:{add:name=>classes.push(name)}},createElement:()=>({}),head:{append:node=>styles.push(node)},querySelector:()=>container},
+      setChatOpen:value=>chatStates.push(value),studioPreview:preview,dealer:{key:dealer,name:dealer.toUpperCase()},getChatState:()=>chatState,identity,send},
+      options=>{mounted=options;return {ready:Promise.resolve(false)};});
+    if(preview){assert.equal(control,null);assert.equal(mounted,undefined);continue;}
     assert.deepEqual(classes,[]);assert.deepEqual(styles,[]);assert.deepEqual(chatStates,[]);
     mounted.onReady();assert.deepEqual(classes,['astrid-voice-ui']);assert.equal(styles[0].href,'/astrid-voice-shell.css');assert.deepEqual(chatStates,[false]);
     assert.equal(mounted.dealerName,dealer.toUpperCase());assert.ok(mounted.wakeNames.includes(dealer));
-    context.chatBusy=false;context.speaking=false;context.busy=true;assert.equal(mounted.canStart(),true);
-    context.speaking=true;assert.equal(mounted.canStart(),false);
+    assert.equal(mounted.identity,identity);assert.equal(mounted.send,send);assert.equal(mounted.container,container);
+    assert.equal(mounted.canStart(),true);
+    chatState.busy=true;assert.equal(mounted.canStart(),false);
+    chatState.busy=false;chatState.speaking=true;assert.equal(mounted.canStart(),false);
+    chatState.speaking=false;assert.equal(mounted.canStart(),true);
   }
 });
 
