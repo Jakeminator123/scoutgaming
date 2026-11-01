@@ -12,7 +12,7 @@ import {withPackagePresentation,publicPackageBranding,readPackagePresentation} f
 import {readOperatorLifecycle,withOperatorLifecycle,OPERATOR_LIFECYCLE_KEY} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {lifecycleSnapshotKey} from '../client/admin/lib/studio-resource-lifecycle.mjs';
 import {listPackageRooms} from '../../../packages/presentation/server/package-rooms.mjs';
-import {assertLifecyclePackages} from '../lib/dealer-lifecycle.mjs';
+import {assertLifecyclePackages} from '../lib/dealers/dealer-lifecycle.mjs';
 import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
 import {createNativePresentationMutationTransaction} from '../lib/studio-native-runtime.mjs';
 import {presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';

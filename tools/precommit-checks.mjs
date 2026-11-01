@@ -320,7 +320,7 @@ export function focusedTests(changes, root = repositoryRoot) {
       'private-media-contract': ['apps/studio/test/cloud-media-store.test.mjs'],
       'video-manifest': ['apps/studio/test/lab-video-manifest.test.mjs'],
       'storage-contract': ['test/studio-repository.mjs'],
-      'video-dealer-registration': ['apps/studio/test/dealer-video-registration.test.mjs'],
+      'video-dealer-registration': ['apps/studio/test/dealers/dealer-video-registration.test.mjs'],
     };
     if (path.startsWith('packages/studio-registry/server/')) {
       for (const candidate of registryTests[basename(path, '.mjs')] ?? []) add(candidate);
@@ -332,6 +332,7 @@ export function focusedTests(changes, root = repositoryRoot) {
       `${directory}/test/${stem}.test.mjs`, `${directory}/test/${stem}.mjs`,
       `test/${stem}.mjs`,
       ...(path.startsWith('apps/studio/') ? [`apps/studio/test/${stem}.test.mjs`] : []),
+      ...(path.startsWith('apps/studio/lib/') ? [`apps/studio/test${directory.slice('apps/studio/lib'.length)}/${stem}.test.mjs`] : []),
       ...(path.startsWith('apps/') ? [`${path.split('/').slice(0, 2).join('/')}/test/${stem}.mjs`] : []),
     ]) add(candidate);
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {

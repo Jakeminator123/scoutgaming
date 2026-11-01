@@ -13,7 +13,7 @@ import {readClassifications} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from './fixtures/local-video-registry.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../../packages/studio-registry/server/video-manifest.mjs';
 import {ROULETTE_MEDIA_EVENTS} from '../../../packages/presentation/contracts/roulette-media.mjs';
-import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealer-media-library.mjs';
+import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealers/dealer-media-library.mjs';
 import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 

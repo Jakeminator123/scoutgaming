@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseClipFilename, clipNamingGuide, clipPosesForVariant, clipVariantForPoses, CLIP_POSE_VARIANTS, SPEECH_LINE_IDS } from '../../../packages/presentation/contracts/clip-naming.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { dealerImportCatalog } from '../lib/dealer-import-catalog.mjs';
+import { dealerImportCatalog } from '../lib/dealers/dealer-import-catalog.mjs';
 
 const slot = name => parseClipFilename(name).slotId;
 const chain = name => { const { poses } = parseClipFilename(name); return poses ? `${poses.start}>${poses.end}` : null; };

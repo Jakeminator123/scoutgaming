@@ -1,13 +1,13 @@
 // HTTP surface for Dealer Forge. Same N1 admin session, scope, origin and
 // CSRF rules as the other native Studio routes; forge-specific errors keep a
 // readable message because operators act on them (credits, missing anchor…).
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
-import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
-import { readStudioDocumentJson } from './studio-document-api.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../../../packages/studio-registry/server/document-contract.mjs';
+import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from '../studio-native-runtime.mjs';
+import { normalizeNativeStudioRequest } from '../studio-native-request.mjs';
+import { readStudioDocumentJson } from '../studio-document-api.mjs';
 import { createDealerForgeService, ForgeError } from './dealer-forge-service.mjs';
-import { RunwayError } from './runway-client.mjs';
-import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { RunwayError } from '../runway-client.mjs';
+import { isDealerId } from '../../../../packages/presentation/contracts/dealer-identity.mjs';
 
 const headers = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 const json = (value, status = 200) => Response.json(value, { status, headers });

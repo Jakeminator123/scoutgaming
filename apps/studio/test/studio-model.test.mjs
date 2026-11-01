@@ -395,7 +395,7 @@ test('retired policy rejects populated or malformed data without modifying the s
 });
 
 test('dealer trash accepts an empty retired field but cannot restore a hidden retired binding',async()=>{
-  const {lifecycleProject} = await import('../lib/dealer-lifecycle.mjs');
+  const {lifecycleProject} = await import('../lib/dealers/dealer-lifecycle.mjs');
   const project = addDealer(createStudioSeed(),'nora','Nora');
   const archived = lifecycleProject(project,{dealerId:'nora',archived:true,records:[]});
   archived.dealerTrash[0].legacyClipPolicy = [];

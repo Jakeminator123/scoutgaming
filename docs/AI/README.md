@@ -23,7 +23,7 @@ gränser.
 | Spelaren talar med dealern | spelmotorn (`croupier-v3`) → Director `croupier-lab-director` `/api/product/speech` → privat Gateway `croupier-lab-openclaw` → `croupier-speech` | Svaret är `recordedLine`, `generatedText` eller `silence`. Kort, sko, saldo och utfall ägs av spelmotorn. |
 | Adminroboten (`/studio/api/assistant`) | Vercel → modelladapter i `apps/studio/lib/assistant-*.mjs`; OpenClaw-läget går via Director | Kräver aktuell N1-session. Högst tre paginerade registerläsningar per svar; skrivning bara efter granskning och separat bekräftelse. Ingen fri SQL, shell, signerad URL eller nyckel. |
 | Scoutguiden (`/studio/api/public-assistant`) | Vercel → modell, svaret kan läsas upp av D-ID (`speak` med färdig text) | Fast publik sajtinformation. Ingen databas, inga interna verktyg. D-ID:s nyckel stannar på servern. |
-| Klippassistenten (`POST /api/dealers/import-proposal`) | Vercel → modell i `apps/studio/lib/dealer-import-model.mjs` | Föreslår klippfack efter klippkartan. Inga verktyg, inga bildrutor, kan inte spara; servern räknar `role` och validerar alternativen. |
+| Klippassistenten (`POST /api/dealers/import-proposal`) | Vercel → modell i `apps/studio/lib/dealers/dealer-import-model.mjs` | Föreslår klippfack efter klippkartan. Inga verktyg, inga bildrutor, kan inte spara; servern räknar `role` och validerar alternativen. |
 | OpenClaws dashboard | Director `/openclaw/` → Gatewayns Control UI → `croupier-operator` | Separat administrativ konversation; styr inte webbchatten. |
 
 Gatewayn har fem roller, inte fem servrar: `croupier-director` (väljer

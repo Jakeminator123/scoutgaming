@@ -141,7 +141,7 @@ Alla fanns i `main` på `6942432d` (läs: `git show 6942432d:<sökväg>`). Alla 
 
 ## Raderade 29 oktober 2026: Admin-kod utan route och Astrid-media
 
-Kod och media utan läsare i Admin eller lobbyn. API-routen `apps/studio/app/api/forge/**` och `lib/dealer-forge-*` står kvar; dealerfabriken bygger på Runway.
+Kod och media utan läsare i Admin eller lobbyn. API-routen `apps/studio/app/api/forge/**` och `lib/dealers/dealer-forge-*` står kvar; dealerfabriken bygger på Runway.
 
 | Datum | Fil | Vad det var | Läses med |
 | --- | --- | --- | --- |

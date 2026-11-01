@@ -7,7 +7,7 @@ import {createSeedProject} from '../../../../../packages/presentation/contracts/
 import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
 import {groupSlots,slotCaption,slotExplanation,isRenderedOutcome} from './studio-layout.mjs';
 import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';
-import {mediaClassification} from '../../../lib/dealer-media-library.mjs';
+import {mediaClassification} from '../../../lib/dealers/dealer-media-library.mjs';
 const project=createSeedProject(),dealer='astrid';
 const slots=clipSlots(project,{videos:[]},dealer,'roulette');
 const file=(name)=>({name,size:128});

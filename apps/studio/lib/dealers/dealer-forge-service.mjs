@@ -7,19 +7,19 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { StudioStorageError, validateActor, canonicalStudioJson } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { validateLayerAsset, layerAssetPath } from '../../../packages/presentation/contracts/layer-asset-contract.mjs';
-import { SPEECH_LINES } from '../../../packages/presentation/contracts/speech-lines.mjs';
-import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
-import { getPrivateMedia, mediaBlobPath, putPrivateMedia, validatePrivateMedia } from './cloud-media-store.mjs';
-import { mediaHeaderMatches } from '../../../packages/shared/media-file-types.mjs';
+import { StudioStorageError, validateActor, canonicalStudioJson } from '../../../../packages/studio-registry/server/document-contract.mjs';
+import { validateLayerAsset, layerAssetPath } from '../../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import { SPEECH_LINES } from '../../../../packages/presentation/contracts/speech-lines.mjs';
+import { isDealerId } from '../../../../packages/presentation/contracts/dealer-identity.mjs';
+import { getPrivateMedia, mediaBlobPath, putPrivateMedia, validatePrivateMedia } from '../cloud-media-store.mjs';
+import { mediaHeaderMatches } from '../../../../packages/shared/media-file-types.mjs';
 import { dealerLibraryVideos, mediaClassification, mediaMatchesSlot } from './dealer-media-library.mjs';
-import { addDealer, normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { validateVideoMetadata } from '../../../packages/presentation/contracts/video-intake.mjs';
+import { addDealer, normalizeProject } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { validateVideoMetadata } from '../../../../packages/presentation/contracts/video-intake.mjs';
 import { anchorsFor, forgeSlots, slotById, slotPlan, slotPrompt, validateProfile, FORGE_GROUPS, speechTextFor } from './dealer-forge-catalog.mjs';
 import { backgroundGuide, backgroundLayer, markCardTarget, normalizeAnchor, poseFromGenerated, tableGuide, tableLayerFromMagenta } from './dealer-forge-images.mjs';
 import { createDealerForgeStore, ACTIVE_STATUSES } from './dealer-forge-store.mjs';
-import { createRunwayClient, runwayConfigured, RunwayError, TASK_ID } from './runway-client.mjs';
+import { createRunwayClient, runwayConfigured, RunwayError, TASK_ID } from '../runway-client.mjs';
 
 export class ForgeError extends Error {
   constructor(message, { status = 422, code = 'forge_invalid_request' } = {}) { super(message); this.name = 'ForgeError'; this.statusCode = status; this.code = code; }

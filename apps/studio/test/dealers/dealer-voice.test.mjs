@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
-import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
-import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
-import {addDealer,createSeedProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
-import {dealerVoiceFromRequest,dealerVoiceProfileView} from '../../../packages/presentation/contracts/dealer-voice-profile.mjs';
-import {createDealerSpeechRuntime} from '../../../services/game/dealer-speech-runtime.mjs';
+import {createPglitePool} from '../../../../test/fixtures/pglite-pool.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../../ops/neon-studio/migrations.mjs';
+import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
+import {addDealer,createSeedProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {createStudioDealerApi} from '../../lib/studio-dealer-api.mjs';
+import {dealerVoiceFromRequest,dealerVoiceProfileView} from '../../../../packages/presentation/contracts/dealer-voice-profile.mjs';
+import {createDealerSpeechRuntime} from '../../../../services/game/dealer-speech-runtime.mjs';
 
 // Röstprofil per dealer on real PostgreSQL SQL (PGlite with the Studio
 // migrations): read/write, Admin-only, journalled, and the speech chain reads
@@ -111,6 +111,6 @@ test('request normalizer refuses unknown fields and keeps tuning only for the sa
   assert.deepEqual(dealerVoiceFromRequest({provider:'elevenlabs',voiceId:PAOW,modelId:'eleven_multilingual_v2'},current),
     {provider:'elevenlabs',voiceId:PAOW,modelId:'eleven_multilingual_v2',settings:{stability:0.38,similarity_boost:0.8,style:0.3,use_speaker_boost:true}});
   assert.deepEqual(dealerVoiceFromRequest({provider:'elevenlabs',voiceId:OTHER}),{provider:'elevenlabs',voiceId:OTHER,modelId:'eleven_multilingual_v2'});
-  for(const input of [null,{provider:'elevenlabs',voiceId:OTHER,settings:{stability:2}},{provider:'elevenlabs',voiceId:OTHER+'x'},{provider:'elevenlabs',voiceId:'../'+OTHER.slice(3)}])
+  for(const input of [null,{provider:'elevenlabs',voiceId:OTHER,settings:{stability:2}},{provider:'elevenlabs',voiceId:OTHER+'x'},{provider:'elevenlabs',voiceId:'../../'+OTHER.slice(3)}])
     assert.throws(()=>dealerVoiceFromRequest(input),{code:'studio_dealer_voice_invalid'});
 });

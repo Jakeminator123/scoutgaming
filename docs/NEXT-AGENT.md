@@ -2,6 +2,22 @@
 
 Aktuell samordning 1 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+## Funktionsmappar för dealers 1 november
+
+Dealerns import, fabrik, filmprofil, röst, mediebibliotek och livscykel ligger
+nu i [lib/dealers](../apps/studio/lib/dealers/), med sina frysta importmanifest.
+De 15 befintliga dealerproven, inklusive dealergruppers CAS och medieägarskap,
+ligger i [test/dealers](../apps/studio/test/dealers/). [Utvecklarguiden](../apps/studio/README.md#funktionsmappar)
+beskriver gränsen. Importer, filankare, `.ignore` och källhänvisningar följer flytten;
+de båda JSON-manifesten har oförändrade bytes och Git-blobbar.
+
+Studio-kommandot och full regression hittar tester rekursivt med citerade
+Node-globbar. Inventeringen går från 202 till 203 filer utan bortfall: tillägget
+är dealergruppsprovet som tidigare låg i `lib` och kördes i adminsviten.
+Orphan-audit, Studio-/klienttyper, miljöregister, dokumentlänkar och Atlas passerar.
+Detaljer och slutligt PR-/hookbevis finns i det privata uppdragskvittot
+`.cache/gpt-auto-boundaries-1101/mappstruktur.md`. CI och driftsättning följs av samordnaren.
+
 ## Avvecklad K04-testkedja 1 november
 
 Den historiska mediekatalogen, revisionshjälparen och tre timingfixturer är

@@ -1,6 +1,6 @@
-import {validateProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {applyDealerVoiceProfile} from '../../../packages/presentation/contracts/dealer-voice-profile.mjs';
-import {StudioStorageError,validateRevision} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {validateProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {applyDealerVoiceProfile} from '../../../../packages/presentation/contracts/dealer-voice-profile.mjs';
+import {StudioStorageError,validateRevision} from '../../../../packages/studio-registry/server/document-contract.mjs';
 
 const fail=(code,status=409)=>{throw new StudioStorageError(code,status);};
 // Admin › Dealers › Röst och tal: writes only dealers[].speechProfile.voice in

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { auditOrphanTests } from '../tools/check-orphan-tests.mjs';
 
 function fixture(t, files) {
@@ -13,7 +14,7 @@ function fixture(t, files) {
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, content);
   }
-  return () => auditOrphanTests({ root });
+  return Object.assign(() => auditOrphanTests({ root }), { root });
 }
 
 test('discovers uncovered domains without mistaking a direct glob or printed command for recursive coverage', t => {
@@ -67,6 +68,46 @@ test('follows the invoked package test in its own directory and keeps manual hel
   assert.equal(result.covered[0].file, 'services/worker/gateway/test/relay.test.mjs');
   assert.equal(result.covered[0].kind, 'ci');
   assert.deepEqual(result.exceptions.map(item => item.kind), ['helper', 'opt-in']);
+});
+
+test('quoted recursive globs agree with actual Node discovery at zero, one and several directory levels', t => {
+  const included = ['test/root.test.mjs', 'test/dealers/lifecycle.test.mjs', 'test/dealers/import/ownership.test.mjs',
+    'components/root.test.mjs', 'components/dealers/panel.test.mjs'];
+  const source = "import test from 'node:test'; test('discovered', () => {});\n";
+  const audit = fixture(t, {
+    '.githooks/pre-commit-full': 'run_node_tests studio tests "apps/studio/test/**/*.test.mjs" "apps/studio/components/**/*.test.mjs"\n',
+    'apps/studio/package.json': JSON.stringify({ scripts: { test: 'node --test --test-concurrency=4 "test/**/*.test.mjs" "components/**/*.test.mjs"' } }),
+    ...Object.fromEntries(included.map(path => [`apps/studio/${path}`, source])),
+    'apps/studio/test/fixtures/helper.mjs': "throw Error('helpers are not test entries');\n",
+    'apps/studio/lib/outside.test.mjs': '',
+  });
+  const result = audit();
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.covered.map(item => item.file), included.map(path => `apps/studio/${path}`).sort());
+  assert.ok(result.covered.every(item => item.kind === 'full-regression'));
+  assert.deepEqual(result.orphans, ['apps/studio/lib/outside.test.mjs']);
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const execution = spawnSync(process.execPath, ['--test', '--test-concurrency=4', '--test-reporter=tap',
+    'test/**/*.test.mjs', 'components/**/*.test.mjs'], { cwd: join(audit.root, 'apps/studio'), env, encoding: 'utf8' });
+  assert.equal(execution.status, 0, execution.stderr || execution.stdout);
+  assert.match(execution.stdout, /# tests 5\b/);
+});
+
+test('npm passes quoted recursive globs to Node while unquoted shell globs stay unverified', t => {
+  const audit = fixture(t, {
+    '.github/workflows/check.yml': 'steps:\n  - run: npm --prefix apps/studio test\n  - run: node --test apps/studio/components/**/*.test.mjs\n',
+    'apps/studio/package.json': JSON.stringify({ scripts: { test: "node --test 'test/**/*.test.mjs'" } }),
+    'apps/studio/test/root.test.mjs': '',
+    'apps/studio/test/dealers/nested.test.mjs': '',
+    'apps/studio/components/nested/view.test.mjs': '',
+  });
+  const result = audit();
+  assert.deepEqual(result.covered.map(item => item.file), ['apps/studio/test/dealers/nested.test.mjs', 'apps/studio/test/root.test.mjs']);
+  assert.ok(result.covered.every(item => item.kind === 'ci'));
+  assert.deepEqual(result.orphans, ['apps/studio/components/nested/view.test.mjs']);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0], /unsupported recursive glob/);
 });
 
 test('unknown recursive globs and invalid or stale classifications cannot produce a clean audit', t => {
