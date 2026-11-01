@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, frozenImportNoteRepairs, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
+import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, frozenDealerImportMatches, frozenImportNoteRepairs, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
 import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
@@ -526,6 +526,34 @@ test('request cancellation before or during either role never becomes a successf
       assert.equal(calls, phase === 'before' ? 0 : 1); assert.equal(active, 0);
       if (phase === 'during') assert.equal(providerSignal.aborted, true);
     }
+  }
+});
+
+test('frozen Dragan import keeps seat, pose and source speech without granting playback acceptance', () => {
+  const source = frozenImportSource('dragge');
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'dragan', 'Dragan'));
+  const files = ['v2/pos4-iv.mp4', 'repliker/en/goodluck_1.mp4', 'repliker/en/goodluck_2.mp4'].map((tail, index) => {
+    const entry = source.files.find(row => row.path.endsWith('/' + tail));
+    return { id: `dragan${index}`, name: tail.split('/').at(-1), size: entry.size, type: 'video/mp4' };
+  });
+  const body = validateDealerImportInput({ dealerId: 'dragan', files, context: '' }, catalog);
+  const matches = frozenDealerImportMatches(body, catalog);
+  const played = matches.get(files[1].id).placement, warmed = matches.get(files[2].id).placement;
+  assert.ok(played.runtimeUses.includes('playback'));
+  assert.deepEqual(warmed.runtimeUses, ['worker-preload']);
+  assert.ok(source.texts.en.goodluck_1);
+  assert.equal(played.speech.exactText, source.texts.en.goodluck_1);
+  const rows = finishDealerImportRows(filenameDealerImportRows(body, catalog), body, catalog);
+  assert.equal(rows[0].slotId, 'deal.player.centre/box3');
+  assert.deepEqual(rows[0].poses, { start: 'VILA', end: 'VILA' });
+  assert.equal(rows[0].classification.startPose, 'VILA');
+  assert.equal(rows[0].classification.endPose, 'VILA');
+  for (const [index, row] of rows.slice(1).entries()) {
+    assert.equal(row.slotId, 'speak.goodluck/goodluck');
+    assert.equal(row.language, 'en'); assert.equal(row.take, index + 1);
+    assert.match(row.warnings.join(' '), /Kontrollera exakt manus, ljud, läppsynk/);
+    assert.equal(row.classification.role, 'alternative');
+    assert.equal(row.classification.recordedSpeech, undefined);
   }
 });
 
