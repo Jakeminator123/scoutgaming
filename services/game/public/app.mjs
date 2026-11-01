@@ -215,7 +215,7 @@ if (localPresentationEnabled) {
     console.error('[presentation]', error.message);
     const status = document.createElement('div'); status.className = 'local-presentation-status'; status.setAttribute('role', 'status');
     if(error.code==='studio_presentation_idle_package_changed'){ status.textContent=error.message+' '; const reload=document.createElement('button');reload.type='button';reload.textContent='Ladda om';reload.onclick=()=>location.reload();status.append(reload); }
-    else status.textContent = 'Lokal video kunde inte startas · 2D-reserv';
+    else status.textContent = 'Lokal video kunde inte startas.';
     $('#scene').append(status);
   }
 }

@@ -269,7 +269,7 @@ const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
   mapping: () => null });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: publicGamePath(), root,
-  nativeMode:true, operatorById: partnerOperatorById,
+  operatorById: partnerOperatorById,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
 // ---------- native Studio identity and retained BO handoff/session ----------

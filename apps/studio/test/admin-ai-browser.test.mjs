@@ -107,10 +107,10 @@ const roomButton=f=>f.page.getByRole('button',{name:'Öppna spelbord',exact:true
 const modelSelect=f=>f.page.getByRole('combobox',{name:/^Modell för croupier-director/});
 const saveModel=f=>f.page.getByRole('button',{name:'Spara modell för croupier-director',exact:true});
 const labels={elin:'Elin',lina:'Lina'};
-// Deterministiskt: adressen, Dialogtests rubrik, dess navigering för just den dealern, regionen och meddelandefältet.
+// Deterministiskt: adressen, Dialogtests rubrik, dealernavets rubrik, regionen och meddelandefältet.
 async function dialogReady(f,id){
   await f.page.waitForURL(url=>url.pathname==='/admin/dealers/'+id&&url.searchParams.get('flik')==='tal'&&url.searchParams.get('verktyg')==='dialog');
-  await f.page.getByRole('heading',{level:1,name:'Dialogtest',exact:true}).waitFor();await f.page.getByRole('navigation',{name:'Studio för '+labels[id],exact:true}).waitFor();
+  await f.page.getByRole('heading',{level:1,name:'Dialogtest',exact:true}).waitFor();await f.page.getByRole('heading',{level:1}).filter({hasText:labels[id]}).waitFor();
   await dialogRegion(f).waitFor();await chatInput(f).waitFor();
 }
 // System › AI-agenter: fliken är vald och modellistan är hämtad.
@@ -123,7 +123,7 @@ async function move(f,target){assert.equal(await f.page.evaluate(target=>window.
 const contextOf=href=>{const query=new URL(href,origin).searchParams;return Object.fromEntries(['operator','table','composition','game','event','variant','room'].map(key=>[key,query.getAll(key)]));};
 const reply=(f,dealer,text)=>dialogRegion(f).getByText('Svar för '+dealer+': '+text,{exact:true});
 async function sendChat(f,text){await chatInput(f).fill(text);await sendButton(f).click();}
-const studioLink=f=>f.page.getByRole('navigation',{name:/^Studio för /}).getByRole('link',{name:'Röst & tal',exact:true});
+const studioLink=f=>f.page.getByRole('navigation',{name:'Flikar',exact:true}).getByRole('link',{name:'Röst och tal',exact:true});
 const savedNotice=(f,primary)=>f.page.getByRole('status').filter({hasText:'croupier-director: '+primary+' sparad och bekräftad i AI-agenternas inställningar.'});
 const roomDocument=f=>f.documents.filter(path=>/^\/admin\/(?:rooms(?:[/?]|$)|companies(?:\?|$))/.test(path));
 
