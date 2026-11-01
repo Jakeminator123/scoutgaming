@@ -28,6 +28,7 @@ import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodK
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createRouletteRoutes } from "./roulette-routes.mjs";
+import { createRouletteChat } from "./roulette-chat.mjs";
 import { createBoSession } from "./bo-session.mjs";
 import { createDemoGate } from "./demo-gate.mjs";
 import { createStudioActivity, sidOf } from "./studio-activity.mjs";
@@ -697,9 +698,15 @@ const strictDenied = res => { res.writeHead(401, { "Content-Type": "text/html; c
   res.end(`<!doctype html><meta charset="utf-8"><title>Sign in</title><p>Enter the demo password first: <a href="${href}">${href}</a></p>`); };
 // Roulette (Emil 30 Oct): its own Table Studio, tables (roulette-tables.json beside studio-tables.json), share links and
 // game page, all in server/roulette-routes.mjs; the blackjack's routes, tables and page policy are untouched.
+// Its dealer chat (Emil 1 Nov): Gemini with the roulette personas (server/roulette-personas/), the memory in the same
+// dealer-memory.sqlite as the blackjack chat, so a dealer remembers a guest across both games. Off without a key.
+const rouletteChat = (() => { if (!process.env.GEMINI_API_KEY) return null; try { return createRouletteChat({ personasDir: path.join(ROOT, "server", "roulette-personas"),
+  memoryFile: path.join(path.dirname(tableDb), "dealer-memory.sqlite"), apiKey: process.env.GEMINI_API_KEY, model: process.env.ROULETTE_CHAT_MODEL ?? "gemini-3.6-flash" }); }
+  catch (e) { console.error("roulette chat off:", e.message); return null; } })();
 const roulette = createRouletteRoutes({ publicDir: PUBLIC, tablesFile: path.join(path.dirname(tableDb), "roulette-tables.json"),
   reserved: slug => slug === "astrid" || shared.hasRoom(slug) || Boolean(studioTables.get(slug)), isOtherTable: slug => Boolean(studioTables.get(slug)),
   sendFile, json, body, bo, sameOrigin, apiLimit, clientAddress, gate: demoGate, strict: DEMO_GATE_STRICT, denied: strictDenied,
+  chat: rouletteChat, guest: req => guestToken(req.headers),
   onCreated: (req, who, t) => activity.log({ user: who.user, sid: sidOf(req.headers), ip: clientAddress(req), ua: req.headers["user-agent"], kind: "table.created", table: t.slug, detail: { name: t.name, dealer: t.dealer, room: t.room, game: "roulette", wheel: t.wheel } }) });
 const MEDIA_ORIGIN = /^https:\/\/[a-z0-9.-]+$/.test(process.env.MEDIA_BASE_URL ?? "") ? " " + process.env.MEDIA_BASE_URL : "";
 const http = createServer((req, res) => {

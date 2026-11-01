@@ -5,10 +5,11 @@
 //   POST /api/studio/roulette-table         builds a table (signed in, same origin, rate limited, like /api/studio/table)
 //   /t/<slug>                         302 to the game when the slug is a roulette table (blackjack tables are matched first)
 //   /roulette/                        the game page, behind the same demo gate as the blackjack page
+//   POST /api/roulette/chat           the dealer's chat reply (roulette-chat.mjs, when a chat is given), 8 messages/min per guest
 // The game page gets its own Content-Security-Policy: the global one plus the hash of its inline import map (three.js)
 // and blob: for the wheel module (js/hjul.mjs runs the wheel file's module as a blob). Every other page keeps the global one.
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import path from "node:path";
 import { createRouletteTables } from "./roulette-tables.mjs";
 
@@ -19,7 +20,8 @@ export function createRouletteRoutes(opts) {
 }
 
 function rouletteRoutes({ publicDir, tablesFile, reserved = () => false, isOtherTable = () => false, sendFile, json, body, bo,
-  sameOrigin = () => true, apiLimit = () => true, clientAddress = () => "", onCreated = () => {}, gate = null, strict = false, denied = null }) {
+  sameOrigin = () => true, apiLimit = () => true, clientAddress = () => "", onCreated = () => {}, gate = null, strict = false, denied = null,
+  chat = null, guest = () => null, onChat = () => {} }) {
   const katalog = JSON.parse(readFileSync(path.join(publicDir, "roulette", "katalog.json"), "utf8"));
   const tables = createRouletteTables(tablesFile, katalog, { reserved });
   const index = path.join(publicDir, "roulette", "index.html");
@@ -33,8 +35,33 @@ function rouletteRoutes({ publicDir, tablesFile, reserved = () => false, isOther
   const user = async req => { try { return await bo.user(req.headers); } catch { return null; } };
   const gateOn = () => Boolean(gate?.on);
 
+  // the dealer chat (text): POST /api/roulette/chat {table, text, name, lang, state} -> {text}; /forget clears what the dealer remembers
+  const chatTimes = new Map();
+  async function chatApi(req, res, route) {
+    if (req.method !== "POST") { json(res, 405, { error: "Use POST" }); return true; }
+    if (!sameOrigin(req)) { json(res, 403, { error: "Invalid origin" }); return true; }
+    if (!chat) { json(res, 503, { error: "Chat is not available" }); return true; }
+    const had = guest(req); let g = had;
+    // the dealer remembers a guest by the blackjack's guest cookie; a roulette-only visitor gets it here, in the same format
+    if (!g) { g = randomBytes(32).toString("hex"); res.setHeader("Set-Cookie", `astrid_guest=${g}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000${req.headers?.["x-forwarded-proto"] === "https" ? "; Secure" : ""}`); }
+    const who = had ?? clientAddress(req), now = Date.now();   // without a cookie yet: limited by address
+    if (route === "roulette/chat/forget") { chat.forget(g); json(res, 200, { ok: true }); return true; }
+    const times = (chatTimes.get(who) ?? []).filter((t) => now - t < 60000);
+    if (times.length >= 8) { json(res, 429, { error: "Slow down a little" }); return true; }
+    chatTimes.set(who, [...times, now]);
+    let input;
+    try { input = await body(req); } catch { json(res, 400, { error: "Invalid body" }); return true; }
+    const t = tables.get(String(input?.table ?? "")), dealer = t?.dealer ?? katalog.standard.dealer;
+    const r = await chat.reply({ dealer, guest: g, name: input?.name, text: input?.text, tableId: t ? t.slug : "demo", lang: t?.lang ?? "en", state: input?.state ?? {} });
+    if (!r) { json(res, 400, { error: "Empty message" }); return true; }
+    onChat(req, r);
+    json(res, 200, { text: r.text });
+    return true;
+  }
+
   // true when the route was roulette's
   async function api(req, res, route) {
+    if (route === "roulette/chat" || route === "roulette/chat/forget") return chatApi(req, res, route);
     if (route !== "studio/roulette-table") return false;
     if (req.method === "GET") {
       const t = tables.get(new URL(req.url, "http://x").searchParams.get("slug") ?? "");

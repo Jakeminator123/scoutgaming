@@ -195,6 +195,22 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
   }
   function dolj() { beskedVarSlut = false; $(".besked").classList.add("dold"); }
   const sag = () => {};
+  // rundans vinnare till vänster (som ATG/Evolution): antal, total och en rad per vinnare; borta när nästa snurr börjar.
+  // Bordet har i dag en spelare per webbläsare, så listan är spelaren själv; med delade bord fylls den med alla vid bordet.
+  function visaVinnare(lista) {
+    rot.querySelector(".rundvinnare")?.remove();
+    if (!lista.length) return;
+    const e = document.createElement("div"), total = lista.reduce((a, v) => a + v.belopp, 0);
+    e.className = "abs rundvinnare";
+    e.innerHTML = `<div class="v-topp"><b></b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.8-4.6 4.2-7 8.5-7s7.7 2.4 8.5 7z"/></svg><span></span><strong></strong></div><i></i><ol></ol>`;
+    e.querySelector("b").textContent = lista.length; e.querySelector("span").textContent = T.won; e.querySelector("strong").textContent = kort(total);
+    for (const v of [...lista].sort((a, b) => b.belopp - a.belopp).slice(0, 5)) {
+      const li = document.createElement("li"), b = document.createElement("b"); b.textContent = kort(v.belopp);
+      li.append(b, document.createTextNode(" " + v.namn)); e.querySelector("ol").append(li);
+    }
+    rot.append(e);
+  }
+  const spelarNamn = () => { try { return localStorage.getItem("roulette_namn") || T.you; } catch { return T.you; } };
   function visaSaldo(v, upp = false) { const e = $(".saldo"); e.textContent = fmt(v); e.classList.toggle("upp", upp); }
   function ritaHistorik(ny = false) {
     $(".hn").innerHTML = S.historik.slice(0, 12).map((n, i) => `<i class="${pocketColor(n)}${ny && i === 0 ? " senast" : ""}">${n}</i>`).join("");
@@ -238,7 +254,7 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
       if (performance.now() - upprepadVid < 450) return;              // dubbelklick på UPPREPA startar inte rundan
       const sum = totalt();
       if (sum > S.saldo) { tips(T.noFunds); return; }
-      S.senaste = new Map(S.insatser); S.saldo -= sum; S.fas = "las";
+      S.senaste = new Map(S.insatser); S.saldo -= sum; S.fas = "las"; visaVinnare([]);
       visaSaldo(S.saldo); sag("Inga fler insatser"); bord.classList.add("las"); hover(null); knappar();
       spela([...S.insatser].map(([id, amount]) => ({ id, amount })));
       return;
@@ -486,13 +502,14 @@ export function skapaUI(rot, { saldo, historik, nar, klocka, spela, ljud, kvalit
     vinst(n) {
       const vinnare = [...S.insatser].filter(([id]) => BET_BY_ID[id].numbers.includes(n)).map(([id, b]) => [id, b, retur(id, b, n)]).sort((a, b) => b[2] - a[2]);
       const vinst = vinnare.reduce((a, v) => a + v[2], 0), insats = totalt();
-      S.fas = "vinst";
+      S.fas = "vinst"; S.utfall = vinst > 0 ? "won" : insats > 0 ? "lost" : "none";
       bord.classList.add("vinst"); cell(n).classList.remove("landad");
       for (const e of bord.querySelectorAll(".f[data-bet]")) {
         const id = e.dataset.bet;
         if (id === `straight-${n}`) e.classList.add("vinnare"); else if (!id.startsWith("straight") && BET_BY_ID[id].numbers.includes(n)) e.classList.add("traff");
       }
       ritaMarker(); vinstkort(n, vinnare, vinst, insats);
+      visaVinnare(vinst > 0 ? [{ namn: spelarNamn(), belopp: vinst }] : []);
 
       const fran = S.saldo, till = S.saldo + vinst, t0 = klocka();
       utbetala(n, vinnare, t0);

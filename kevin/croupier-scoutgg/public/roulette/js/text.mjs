@@ -10,6 +10,7 @@ const en = {
   sound: "Sound on/off", settings: "Settings", stats: "Statistics (last 100)", rules: "Rules & payouts", fullscreen: "Fullscreen",
   close: "Close (Esc)", undo: "Undo (Ctrl+Z)", double: "Double", clear: "Clear", chip: (v) => `Chip ${v}`, chipNoFunds: (v) => `Chip ${v}: not enough balance`,
   // knappen och listen
+  won: "WON", you: "You",
   play: "PLAY", repeat: "REPEAT", noMoreBets: "NO MORE BETS", noMoreShort: "NO MORE BETS", yourBets: "YOUR BETS",
   topUp: (b) => `Top up ${b}`,
   // satsbordet
