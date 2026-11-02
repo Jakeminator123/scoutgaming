@@ -42,7 +42,8 @@ async function freePort() {
 export async function engineSuiteFiles(hook = join(repository, '.githooks/pre-commit-full')) {
   const files = (await readFile(hook, 'utf8')).split(/\r?\n/).filter(line => line.startsWith('run_node_tests engine '))
     .flatMap(line => line.trim().split(/\s+/).slice(3));
-  if (!files.length || files.some(file => !/^test\/[a-z0-9-]+\.mjs$/.test(file) || !existsSync(join(repository, file)))) throw Error('engine_qa_suite_invalid');
+  if (!files.length || files.some(file => !/^test\/(?:[a-z0-9-]+\/)*[a-z0-9-]+\.mjs$/.test(file)
+    || file.split('/').includes('fixtures') || !existsSync(join(repository, file)))) throw Error('engine_qa_suite_invalid');
   return files;
 }
 export function tapSummary(text) {

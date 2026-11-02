@@ -105,7 +105,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'apps/studio/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs',
     'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
     'packages/presentation/contracts/probe-fixtures.mjs', 'services/game/presentation-selection.mjs', 'apps/studio/lib/studio-director.mjs',
-      'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'services/game/games/roulette/room.mjs', 'services/game/games/roulette/storage.mjs', 'services/game/games/roulette/access.mjs', 'services/game/games/roulette/index.mjs', 'services/game/games/roulette/rules.mjs',
+      'ops/neon-game/007-roulette-tables.sql', 'test/roulette/roulette-postgres.mjs', 'services/game/games/roulette/room.mjs', 'services/game/games/roulette/storage.mjs', 'services/game/games/roulette/access.mjs', 'services/game/games/roulette/index.mjs', 'services/game/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'apps/studio/lib/partner-session.mjs', 'apps/studio/lib/partner-team-api.mjs', 'apps/studio/lib/operator-audit-context.mjs', 'apps/studio/lib/operator-admin-api.mjs', 'apps/studio/lib/operator-journal.mjs',
       'ops/neon-studio/011-gpu-daily-budget.sql', 'ops/neon-studio/migrations.mjs', 'packages/operators/server/operator-store.mjs',
@@ -257,7 +257,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
         const branding = await runPartnerBrandingPostgresChecks({ ...configuration, operatorPool: team.operatorPool, authPool: team.authPool });
         return { ...branding, checks: [...team.checks, ...branding.checks] };
       } });
-    const { runRoulettePostgresChecks } = await import('../test/roulette-postgres.mjs');
+    const { runRoulettePostgresChecks } = await import('../test/roulette/roulette-postgres.mjs');
     const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
     const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
     const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;

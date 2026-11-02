@@ -13,6 +13,16 @@ Slutintegrationens [CI](https://github.com/Jakeminator123/scoutgaming/actions/ru
 Astrids produktionsdata och startsidemedier är inte avvecklade. Nästa dataetapp
 behöver exakta aktiva referenser, säkerhetskopia och verifierad återställning.
 
+## Funktionsgrupper för produktprov 2 november
+
+Rotens blackjack-, roulette- och delade rumsprov har samlats under
+`test/blackjack/`, `test/roulette/` och `test/rooms/`; se [testguiden](../test/README.md).
+Svitregistret behåller samma prov i samma sviter. Vanlig hook följer även
+nästlade prov och lokala/delade fixturer; motorharness och Chromes CI-upptäckt
+stöder undermappar. Atlas visar dessa körbara samband. Spelkärna, produktkod,
+schema, molnresurser och mediebytes ändras inte. Faktisk verifiering och PR-head
+rapporteras i PR:en; MERGAGENT3 äger granskning/merge och CI-uppföljning.
+
 ## Leveranskontroller 2 november
 
 Ignoreringsgränserna beskrivs i [IDE-guiden](../START-HERE.md#byta-ide-eller-återuppta-arbete). Spelbyggkontexten utesluter nu lokala cacher, worktrees och Codex-tillstånd; dess explicita runtimeindata består. Sökundantaget för det aktiva importmanifestet låser inte implementationen. Inga Git- eller Cursor-undantag för privata filer har tagits bort.

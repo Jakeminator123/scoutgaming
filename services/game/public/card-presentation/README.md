@@ -61,9 +61,9 @@ clearance. Card coordinates, measured contact frames and media are unchanged.
 
 ## Regression coverage
 
-`test/blackjack-presentation.mjs` checks presentation order against committed
+`test/blackjack/blackjack-presentation.mjs` checks presentation order against committed
 server draws and preserves hidden-card boundaries across 300 deterministic rounds.
-`test/blackjack-core.mjs` compares fixed cards, outcomes, money and proof signatures
+`test/blackjack/blackjack-core.mjs` compares fixed cards, outcomes, money and proof signatures
 captured from the independent migration engine over two complete shoes. The small
 reference is `test/fixtures/blackjack/regression.json`; duplicate executable engine
 and browser snapshots have been removed. Its source blob IDs and cryptographic

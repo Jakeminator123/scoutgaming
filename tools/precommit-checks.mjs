@@ -167,6 +167,7 @@ function fixtureConsumerTests(changes, root) {
   if (!safePath('test', { directory: true })) return [];
   const dependencies = new Map();
   const forbidden = new Set(['node_modules', 'arkiv', 'random-stuff-jakob']);
+  const isFixture = path => path.startsWith('test/') && path.split('/').slice(1, -1).includes('fixtures') && /\.[cm]?js$/.test(path);
   function imports(path) {
     if (dependencies.has(path)) return dependencies.get(path);
     const found = staticRelativeImports(readFileSync(resolve(root, path), 'utf8'))
@@ -179,18 +180,25 @@ function fixtureConsumerTests(changes, root) {
     if (seen.has(path)) return false;
     seen.add(path);
     for (const target of imports(path)) {
-      const fixture = target.startsWith('test/fixtures/') && /\.[cm]?js$/.test(target);
+      const fixture = isFixture(target);
       if (fixture && !safePath(target, { missing: true })) continue;
       // Missing targets still count: deleting a used helper must run its tests.
       // Production modules are leaf dependencies and are never opened here.
-      if (changed.has(target) && (fixture || path.startsWith('test/fixtures/'))) return true;
+      if (changed.has(target) && (fixture || isFixture(path))) return true;
       if (fixture && safePath(target) && reachesChange(target, seen)) return true;
     }
     return false;
   }
-  return readdirSync(resolve(root, 'test'), { withFileTypes: true })
-    .filter(entry => entry.isFile() && entry.name.endsWith('.mjs'))
-    .map(entry => `test/${entry.name}`).filter(path => reachesChange(path));
+  function collectTests(directory) {
+    return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap(entry => {
+      if (entry.name.startsWith('.') || forbidden.has(entry.name) || entry.name === 'fixtures') return [];
+      const path = `${directory}/${entry.name}`;
+      if (entry.isSymbolicLink() || !safePath(path, { directory: entry.isDirectory() })) return [];
+      if (entry.isDirectory()) return collectTests(path);
+      return entry.isFile() && entry.name.endsWith('.mjs') ? [path] : [];
+    });
+  }
+  return collectTests('test').filter(path => reachesChange(path));
 }
 
 // Text sources a test can load by path; documentation keeps its quick path.
@@ -310,7 +318,8 @@ export function focusedTests(changes, root = repositoryRoot) {
       throw Error('Invalid changed path');
     }
     own = 0;
-    if (/(?:\.test\.[cm]?js$|^(?:test|apps\/[^/]+\/test)\/[^/]+\.mjs$)/.test(path)) add(path);
+    if (!path.split('/').includes('fixtures')
+      && /(?:\.test\.[cm]?js$|^test\/.+\.mjs$|^apps\/[^/]+\/test\/[^/]+\.mjs$)/.test(path)) add(path);
     // Moved shared contracts keep their existing behavioral regression suites.
     const registryTests = {
       'runtime-catalog': ['test/runtime-media-catalog.mjs'],

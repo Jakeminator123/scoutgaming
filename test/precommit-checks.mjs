@@ -329,6 +329,38 @@ test('focused selection rejects traversal and option-like paths', () => {
   }
 });
 
+test('focused selection runs nested root tests once and never executes fixture modules as tests', async () => {
+  await fixture(async root => {
+    await writeTree(root, {
+      'test/cards/deep/round.mjs': "import '../../fixtures/shared.mjs';\n",
+      'test/fixtures/shared.mjs': "throw Error('helper must not run');\n",
+    });
+    const changes = [change('test/cards/deep/round.mjs', 'A'), change('test/fixtures/shared.mjs')];
+    assert.deepEqual(focusedTests(changes, root), ['test/cards/deep/round.mjs']);
+    const plan = checkPlan('focused', { changes, root, testWorkers: 2 });
+    assert.deepEqual(plan.find(args => args.includes('--test')),
+      [process.execPath, '--test', '--test-concurrency=2', 'test/cards/deep/round.mjs']);
+    await rm(join(root, 'test/cards/deep/round.mjs'));
+    assert.deepEqual(focusedTests([change('test/cards/deep/round.mjs', 'D')], root), []);
+  });
+});
+
+test('fixture discovery follows feature-local and shared helpers through nested directories', async () => {
+  await fixture(async root => {
+    await writeTree(root, {
+      'test/cards/deep/round.mjs': "import '../fixtures/wrapper.mjs';\n",
+      'test/cards/fixtures/wrapper.mjs': "export { helper } from '../../fixtures/shared.mjs';\n",
+      'test/fixtures/shared.mjs': "import '../cards/fixtures/wrapper.mjs';\nimport '../../services/widget.mjs';\nexport const helper = 1;\n",
+      'test/other/unused.mjs': "// import '../fixtures/shared.mjs';\n",
+    });
+    for (const path of ['test/cards/fixtures/wrapper.mjs', 'test/fixtures/shared.mjs', 'services/widget.mjs']) {
+      assert.deepEqual(focusedTests([change(path)], root), ['test/cards/deep/round.mjs'], path);
+    }
+    await rm(join(root, 'test/cards/fixtures/wrapper.mjs'));
+    assert.deepEqual(focusedTests([change('test/cards/fixtures/wrapper.mjs', 'D')], root), ['test/cards/deep/round.mjs']);
+  });
+});
+
 test('focused selection follows static fixture imports, including cycles and deleted targets, without executing helpers', async () => {
   await fixture(async root => {
     await mkdir(join(root, 'test', 'fixtures'), { recursive: true });
@@ -358,11 +390,13 @@ test('fixture discovery does not follow linked directories, linked files or prod
     const outside = await mkdtemp(join(tmpdir(), 'croupier-hook-outside-'));
     try {
       await mkdir(join(root, 'test', 'fixtures'), { recursive: true });
+      await symlink(outside, join(root, 'test', 'linked-group'), process.platform === 'win32' ? 'junction' : 'dir');
       await mkdir(join(root, 'services'));
       await writeFile(join(root, 'test', 'linked.mjs'), "import './fixtures/linked/helper.mjs';\nimport './fixtures/file.mjs';\n");
       await writeFile(join(root, 'test', 'production.mjs'), "import '../services/widget.mjs';\n");
       await writeFile(join(root, 'services', 'widget.mjs'), "import '../test/fixtures/target.mjs';\n");
       await writeFile(join(outside, 'helper.mjs'), "import '../../../target.mjs';\n");
+      await writeFile(join(outside, 'test.mjs'), "import '../fixtures/target.mjs';\n");
       await symlink(outside, join(root, 'test', 'fixtures', 'linked'), process.platform === 'win32' ? 'junction' : 'dir');
       // A directory link at a module filename catches file-path traversal too,
       // and works on Windows without the privilege required for file symlinks.
@@ -372,6 +406,7 @@ test('fixture discovery does not follow linked directories, linked files or prod
       assert.deepEqual(focusedTests([change('test/fixtures/target.mjs')], root), []);
       assert.deepEqual(focusedTests([change('services/widget.mjs')], root), []);
     } finally {
+      await rm(join(root, 'test', 'linked-group'), { force: true, recursive: true });
       await rm(join(root, 'test', 'fixtures', 'linked'), { force: true, recursive: true });
       await rm(join(root, 'test', 'fixtures', 'file.mjs'), { force: true, recursive: true });
       await rm(outside, { force: true, recursive: true });

@@ -50,7 +50,7 @@ Tabellen `croupier_game.roulette_tables` skapas av den additiva `ops/neon-game/0
 ## Verifiering
 
 ```sh
-node --test --test-concurrency=4 test/roulette.mjs test/roulette-room.mjs test/roulette-room-http.mjs test/roulette-publication.mjs test/roulette-postgres.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs
+node --test --test-concurrency=4 test/roulette/roulette.mjs test/roulette/roulette-room.mjs test/roulette/roulette-room-http.mjs test/roulette/roulette-publication.mjs test/roulette/roulette-postgres.mjs test/roulette/roulette-wheel.mjs test/roulette/roulette-start-contract.mjs
 ```
 
-Proven täcker alla 37 fack och färger, slumpanropets gränser, eventkontraktet, felaktiga indata, satsningar, utbetalningar, idempotens, session och origin samt publicering. `test/roulette-postgres.mjs` kräver den isolerade PostgreSQL-fixturen; CI kör den med riktig isolerad databas, inklusive samtidiga spelare, rollback och omstart. Statistiska stickprov bevisar ingen certifierad generator, och ett godkänt API-prov är inget visuellt godkännande. Efter UI-ändringar provas ett fullständigt spelvarv i isolerad staging med tappat svar, exakt återförsök och omladdning, på mobil och desktop.
+Proven täcker alla 37 fack och färger, slumpanropets gränser, eventkontraktet, felaktiga indata, satsningar, utbetalningar, idempotens, session och origin samt publicering. `test/roulette/roulette-postgres.mjs` kräver den isolerade PostgreSQL-fixturen; CI kör den med riktig isolerad databas, inklusive samtidiga spelare, rollback och omstart. Statistiska stickprov bevisar ingen certifierad generator, och ett godkänt API-prov är inget visuellt godkännande. Efter UI-ändringar provas ett fullständigt spelvarv i isolerad staging med tappat svar, exakt återförsök och omladdning, på mobil och desktop.
