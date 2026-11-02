@@ -1,0 +1,342 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
+import {captureFrozenPresentation} from '../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {withPackagePresentation,readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
+import {createPublicOperatorPreview} from '../../services/game/public-operator-preview.mjs';
+import {previewMediaPath,validatePublicOperatorPreview} from '../../packages/presentation/contracts/operator-preview-contract.mjs';
+import {createPortraitRoomEntryFixture} from '../fixtures/portrait-room-entry.mjs';
+import {materialSource} from '../../packages/presentation/contracts/material-catalog.mjs';
+
+const context={operatorSlug:'north',roomId:'room-north',packageRevision:7,dealerId:'linnea'};
+const descriptor='/api/operators/north/rooms/room-north/preview?dealer=linnea&revision=7';
+const clone=structuredClone;
+function asset(role,n) {
+  const row={schemaVersion:1,id:'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),role,label:role+' '+n,
+    sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};
+  return {...row,pathname:layerAssetPath(row)};
+}
+function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={}) {
+  const project=[['linnea','Linnea'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
+  const lane=defaultPresentationLane('linnea');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
+  lane.dealers=['linnea','nora','astrid'];lane.layers.dealer={enabled:true,default:'linnea',allowed:[...lane.dealers]};
+  lane.composition=defaultCompositionSettings();
+  project.layerAssets=[asset('background',1),asset('background',2),asset('table',3),asset('table',4)];
+  lane.layers.background={enabled:true,mode:'image',default:project.layerAssets[0].id,allowed:project.layerAssets.slice(0,2).map(row=>row.id)};
+  lane.layers.table={enabled:true,default:project.layerAssets[2].id,allowed:[project.layerAssets[2].id],colors:[]};
+  const mediaRows=lane.dealers.map((dealerId,index)=>{
+    const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
+    const format=compositing==='alpha'?'webm':'mp4';
+    project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
+    return {id,sha256,size:4096,contentType:'video/'+format,pathname:'croupier/media/dealers/'+dealerId+'/review/uploads/'+id+'/'+sha256+'.'+format,
+      classification:{dealerId,eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:dealerId,notes:'SECRET_DRAFT_NOTES',playback:'once',
+        ...(compositing?{compositing:compositing==='alpha'?{mode:'alpha'}:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}:{})},revision:'media-'+dealerId};
+  });
+  if(roulette) {
+    const records=['breathing','glasses-clean'].map((action,i)=>{
+      const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+4).repeat(64);
+      return {id,sha256,size:8192,contentType:'video/webm',pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.webm`,revision:'roulette-'+i,
+        classification:{dealerId:'linnea',game:'roulette',eventId:'roulette.idle',action,situation:action,startPose:'VILA',endPose:'VILA',
+          kind:'idle',role:'standard',label:action,notes:'SECRET_ROULETTE',playback:'once',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
+    });
+    project.dealers.find(row=>row.id==='linnea').rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
+    mediaRows.push(...records);for(const row of project.layerAssets)if(row.role==='table')row.game='roulette';
+  }
+  if(start) {
+    const clip=clone(mediaRows.at(-1)),id='30000000-0000-4000-8000-000000000001',sha256='9'.repeat(64);
+    Object.assign(clip,{id,sha256,pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.webm`,revision:'start-one'});
+    Object.assign(clip.classification,{eventId:'roulette.wheel-start',action:'wheel-start',situation:'wheel-start',kind:'action',framing:{scale:1.1,x:.1,y:.2}});
+    mediaRows.push(clip);
+    project.dealers.find(row=>row.id==='linnea').rouletteStart={videoId:id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2400,ballReleaseMs:4300,foregroundPolygons:[[[.1,.1],[.3,.1],[.3,.3]]]};
+    const {kind,hasAlpha,...signature}=materialSource('roulette-anna-v1');
+    Object.assign(project.layerAssets[2],signature);project.layerAssets[2].pathname=layerAssetPath(project.layerAssets[2]);
+  }
+  const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
+    available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
+  let presentation=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
+    administrationDocument:{kind:'administration',revision:'admin-snapshot',value:{rooms:[]}},mediaRows},inventory,
+    selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
+  if(schemaVersion===2){presentation=clone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
+  const room={schemaVersion:2,id:context.roomId,name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'};
+  const saved={operator:{id:'north-id',slug:'north',name:'North',status:'active',secret:'NEVER_PUBLIC'},
+    administration:{gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Room',
+      renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]},
+    package:{operatorId:'north-id',revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],rooms:[room],branding:withPackagePresentation({},presentation)}};
+  if(roulette){room.game='roulette';saved.package.games=['blackjack','roulette'];}
+  const reads=[],served=[];
+  const api=createPublicOperatorPreview({readCurrentContext:async slug=>{reads.push(slug);return clone(saved);},
+    privateMedia:async(record,request)=>{
+      served.push({record:clone(record),method:request.method,range:request.headers.get('range')});
+      const headers={ETag:'"sha256-'+record.sha256+'"','Content-Type':record.contentType,'Cache-Control':'public, max-age=86400',
+        'Accept-Ranges':'bytes','Content-Range':'bytes 0-15/'+record.size,'X-Private-Path':record.pathname};
+      if(request.headers.get('if-none-match')===headers.ETag)return new Response(null,{status:304,headers});
+      if(request.headers.get('range')==='bytes=999999-')return new Response('PRIVATE_PROVIDER_ERROR',{status:416,headers});
+      return new Response(request.method==='HEAD'?null:'published-media',{status:request.headers.has('range')?206:200,headers});
+    }});
+  const rewrite=change=>{const frozen=readPackagePresentation(saved.package);change(frozen);saved.package.branding=withPackagePresentation({},frozen);};
+  return {api,saved,reads,served,project,mediaRows,room,presentation,rewrite};
+}
+const request=(f,path=descriptor,init)=>f.api.handle(new Request('https://www.example.test'+path,init));
+const body=async f=>{const response=await request(f);assert.equal(response.status,200);return response.json();};
+
+test('optional start uses its own frozen profile and only the exact allowed design and dealer-byte route',async()=>{
+  const f=fixture({roulette:true,start:true}),value=await body(f),start=value.media.dealer.wheelStart;
+  assert.equal(start.tableDesignId,'roulette-anna-v1');assert.equal(start.durationMs,10042);assert.equal(start.ballReleaseMs,4300);
+  assert.notDeepEqual(start.framing,value.media.dealer.framing);assert.notDeepEqual(start.foregroundPolygons,value.media.dealer.foregroundPolygons);
+  assert.equal(start.src,previewMediaPath(context,'dealer',f.mediaRows.at(-1).id));
+  assert.equal((await request(f,start.src,{headers:{Range:'bytes=0-15'}})).status,206);
+  assert.equal((await request(f,start.src,{method:'HEAD'})).status,200);
+  assert.equal(f.served[0].record.sha256,f.mediaRows.at(-1).sha256);
+  for(const change of [v=>v.media.dealer.wheelStart.src=v.media.dealer.src,v=>v.media.dealer.wheelStart.src='https://foreign.example/start.webm',
+    v=>v.media.dealer.wheelStart.ballReleaseMs=10042,v=>v.media.dealer.wheelStart.tableDesignId='blackjack-green-felt',
+    v=>v.media.tables[0].designId='unknown',v=>delete v.media.dealer.wheelStart.framing,v=>v.media.dealer.wheelStart.pathname='private']) {
+    const copy=clone(value);change(copy);assert.throws(()=>validatePublicOperatorPreview(copy,context));
+  }
+  f.saved.administration.rooms[0].game='blackjack';
+  assert.equal((await body(f)).media.dealer.wheelStart,undefined);assert.equal((await request(f,start.src)).status,404);
+  f.saved.administration.rooms[0].game='roulette';
+  f.rewrite(pack=>{const table=pack.assets.find(row=>row.role==='table');table.sha256='b'.repeat(64);table.pathname=layerAssetPath(table);});
+  assert.equal((await body(f)).media.dealer.wheelStart,undefined);assert.equal((await request(f,start.src)).status,404);
+});
+
+test('start removal or stale package revision revokes bytes before a provider read',async()=>{
+  const f=fixture({roulette:true,start:true}),src=(await body(f)).media.dealer.wheelStart.src;
+  f.saved.package.revision=8;assert.equal((await request(f,src)).status,409);assert.equal(f.served.length,0);
+  f.saved.package.revision=7;f.rewrite(pack=>delete pack.registeredDealers.find(row=>row.id==='linnea').rouletteStart);
+  assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
+});
+
+test('roulette exposes only its explicitly frozen base, variants and foreground profile through revision-bound bytes',async()=>{
+  const f=fixture({roulette:true}),before=clone(f.saved),value=await body(f),frozen=readPackagePresentation(f.saved.package);
+  const binding=frozen.registeredDealers.find(row=>row.id==='linnea').rouletteIdle;
+  assert.equal(value.media.dealer.src,previewMediaPath(context,'dealer',binding.base.id));
+  assert.deepEqual(value.media.dealer.foregroundPolygons,binding.foregroundPolygons);
+  assert.equal(value.media.dealer.variants.length,1);assert.equal(value.media.dealer.variants[0].src,previewMediaPath(context,'dealer',binding.variants[0].id));
+  assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+  assert.doesNotMatch(JSON.stringify(value),/pathname|sha256|classification|SECRET/);
+  for(const row of [value.media.dealer,...value.media.dealer.variants]) {
+    const response=await request(f,row.src,{headers:{Range:'bytes=0-15'}});assert.equal(response.status,206);assert.equal(response.headers.get('content-type'),'video/webm');
+  }
+  assert.equal((await request(f,previewMediaPath(context,'dealer',f.mediaRows[0].id))).status,404);
+  assert.deepEqual(f.served.map(row=>row.record.sha256),[binding.base.sha256,binding.variants[0].sha256]);assert.deepEqual(f.saved,before);
+  f.saved.administration.rooms[0].game='blackjack';
+  assert.equal((await body(f)).media.dealer.src,previewMediaPath(context,'dealer',f.mediaRows[0].id));
+  for(const row of [value.media.dealer,...value.media.dealer.variants])assert.equal((await request(f,row.src)).status,404);
+});
+test('roulette variant removal, changed revision and cross-room descriptor mutations fail before provider bytes',async()=>{
+  const f=fixture({roulette:true}),value=await body(f),src=value.media.dealer.variants[0].src;
+  for(const change of [v=>v.media.dealer.variants.push(v.media.dealer.variants[0]),
+    v=>v.media.dealer.variants[0].src=v.media.dealer.src,
+    v=>v.media.dealer.variants[0].framing.x=.3,
+    v=>v.media.dealer.variants[0].src=v.media.dealer.variants[0].src.replace('/room-north/','/room-other/'),
+    v=>v.media.dealer.foregroundPolygons=[[[0,0],[1,1],[2,0]]]]) {
+    const copy=clone(value);change(copy);assert.throws(()=>validatePublicOperatorPreview(copy,context));
+  }
+  f.rewrite(pack=>pack.registeredDealers.find(row=>row.id==='linnea').rouletteIdle.variants=[]);
+  assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
+  f.saved.package.revision=8;assert.equal((await request(f,value.media.dealer.src)).status,409);assert.equal(f.served.length,0);
+});
+
+test('historical roulette packages hide incompatible tables in descriptors and byte routes',async()=>{
+  const f=fixture();f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+  const before=clone(f.saved),value=await body(f);
+  assert.deepEqual(value.media.tables,[]);assert.equal(value.media.backgrounds.length,2);
+  assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,404);
+  assert.equal(f.served.length,0);assert.deepEqual(f.saved,before);
+});
+
+test('roulette never exposes the same persons blackjack idle or its media route',async()=>{
+  const f=fixture();f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+  f.rewrite(pack=>{for(const asset of pack.assets)if(asset.role==='table')asset.game='roulette';});
+  const value=await body(f);
+  assert.equal(value.media.dealer,null);
+  assert.equal(value.media.backgrounds.length,2);
+  const result=await request(f,previewMediaPath(context,'dealer',f.mediaRows[0].id));
+  assert.equal(result.status,404);assert.equal(f.served.length,0);
+});
+
+test('v2/v3 published descriptor selects one frozen dealer and only allowed layers without private records',async()=>{
+  for(const schemaVersion of [2,3]) {
+    const f=fixture({schemaVersion}),before=clone(f.saved),value=await body(f);
+    assert.deepEqual(validatePublicOperatorPreview(value,context),value);
+    assert.equal(value.dealer.label,'Linnea');assert.equal(value.independentLayers,true);
+    assert.deepEqual(value.settings,defaultCompositionSettings());
+    assert.equal(value.media.dealer.src,previewMediaPath(context,'dealer',f.mediaRows[0].id));
+    assert.deepEqual(value.media.dealer.compositing,f.mediaRows[0].classification.compositing);
+    assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+    assert.doesNotMatch(JSON.stringify(value),/pathname|sha256|SECRET|NEVER_PUBLIC|classification|revision.*media|blob|projectRevision/);
+    assert.deepEqual(f.reads,['north']);assert.equal(f.served.length,0);assert.deepEqual(f.saved,before);
+  }
+});
+test('frozen alpha survives the public descriptor and immutable byte route without weakening game isolation',async()=>{
+  for(const schemaVersion of [2,3]) {
+    const f=fixture({schemaVersion,compositing:'alpha'}),before=clone(f.saved),value=await body(f);
+    assert.deepEqual(value.media.dealer.compositing,{mode:'alpha'});
+    assert.equal(value.media.dealer.contentType,'video/webm');
+    assert.deepEqual(validatePublicOperatorPreview(value,context),value);
+    const response=await request(f,value.media.dealer.src);
+    assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'video/webm');
+    assert.deepEqual(f.saved,before);
+    f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+    assert.equal((await body(f)).media.dealer,null);
+    assert.equal((await request(f,value.media.dealer.src)).status,404);
+    assert.equal(f.served.length,1,'roulette cannot fetch even an alpha blackjack idle');
+  }
+});
+
+test('preview labels match canonical supplied material while byte paths remain publication-scoped',async()=>{
+  const f=fixture(),{kind,...signature}=materialSource('studio-teal','video');
+  f.rewrite(pack=>{const asset=pack.assets[0];Object.assign(asset,signature);asset.pathname=layerAssetPath(asset);});
+  const before=clone(f.saved),value=await body(f);
+  assert.equal(value.media.backgrounds[0].label,'Studio · turkos');
+  assert.equal(value.media.backgrounds[0].contentType,'video/mp4');
+  assert.equal(value.media.backgrounds[0].src,previewMediaPath(context,'background',f.project.layerAssets[0].id));
+  assert.equal(value.media.backgrounds.length,2);assert.equal(value.media.backgrounds[1].label,'background 2');
+  assert.deepEqual(f.saved,before);
+});
+
+test('GET/HEAD forward Range and exact immutable storage tuple; every media reuse validates the current publication',async()=>{
+  const f=fixture(),value=await body(f);
+  for(const src of [value.media.dealer.src,value.media.tables[0].src,value.media.backgrounds[0].src]) {
+    const response=await request(f,src,{headers:{range:'bytes=0-15'}});
+    assert.equal(response.status,206);assert.equal(await response.text(),'published-media');
+    assert.equal(response.headers.get('cache-control'),'private, no-cache, must-revalidate');assert.equal(response.headers.has('x-private-path'),false);
+    assert.equal(response.headers.get('accept-ranges'),'bytes');
+    const head=await request(f,src,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');
+  }
+  assert.equal(f.reads.length,7);assert.equal(f.served.length,6);
+  assert.deepEqual(f.served[0],{record:{provider:'vercel-blob',pathname:f.mediaRows[0].pathname,sha256:f.mediaRows[0].sha256,size:4096,contentType:'video/mp4'},method:'GET',range:'bytes=0-15'});
+  const head=await request(f,descriptor,{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');assert.equal(f.served.length,6);
+  assert.equal(head.headers.get('cache-control'),'private, no-store');
+});
+test('stale revision and withdrawn room/operator/package are rejected before Blob I/O, even conditional requests',async()=>{
+  const changes=[
+    [409,f=>f.saved.package.revision++],[404,f=>f.saved.operator.status='suspended'],
+    [404,f=>f.saved.administration.rooms[0].state='preview'],[503,f=>f.saved.package.rooms[0].operatorId='foreign'],
+    [404,f=>{f.saved.package.tables=[];f.saved.package.rooms=[];}],[404,f=>f.saved.package.games=[]],[404,f=>{f.saved.package.rooms=[];f.saved.package.tables=[];}],
+    [404,f=>f.saved.package=null],[404,f=>f.saved.operator=null],
+  ];
+  for(const [status,change] of changes) {
+    const f=fixture(),value=await body(f);change(f);
+    assert.equal((await request(f)).status,status);
+    const response=await request(f,value.media.dealer.src,{headers:{'if-none-match':'"sha256-'+f.mediaRows[0].sha256+'"',range:'bytes=0-15'}});
+    assert.equal(response.status,status);assert.equal(f.served.length,0);assert.equal(response.headers.get('cache-control'),'private, no-store');
+  }
+});
+test('room, dealer, role, foreign media and unpublished layer cannot be substituted',async()=>{
+  const f=fixture(),value=await body(f);
+  for(const path of [
+    descriptor.replace('room-north','room-foreign'),descriptor.replace('dealer=linnea','dealer=foreign'),
+    value.media.dealer.src.replace(f.mediaRows[0].id,f.mediaRows[1].id),
+    previewMediaPath(context,'table',f.project.layerAssets[3].id),
+    previewMediaPath(context,'table',f.project.layerAssets[0].id),
+    previewMediaPath(context,'background',f.project.layerAssets[2].id),
+  ])assert.equal((await request(f,path)).status,404,path);
+  assert.equal(f.served.length,0);
+});
+test('layer withdrawal from selected frozen lane is effective before descriptor and byte response',async()=>{
+  const f=fixture(),value=await body(f);
+  f.rewrite(pack=>{pack.lanes[0].layers.table.allowed=[];pack.lanes[0].layers.table.default=null;pack.assets=pack.assets.filter(row=>row.role!=='table');});
+  const next=await body(f);assert.equal(next.media.tables.length,0);
+  assert.equal((await request(f,value.media.tables[0].src)).status,404);assert.equal(f.served.length,0);
+});
+test('historical missing or opaque keying retains only its expressly allowed independent layers',async()=>{
+  for(const opaque of [false,true]) {
+    const f=fixture({compositing:false});
+    // Historical package decoding remains supported; the new-capture API is
+    // intentionally not used to publish opaque metadata.
+    if(opaque)f.rewrite(pack=>{
+      for(const row of [...pack.registeredDealers.map(dealer=>dealer.idle),...pack.playback.media])row.classification.compositing={mode:'opaque'};
+    });
+    const before=clone(f.saved),value=await body(f);
+    assert.equal(value.independentLayers,true);assert.deepEqual(value.settings,defaultCompositionSettings());
+    assert.equal(value.media.dealer.compositing,undefined,'the preview applies its mandatory legacy keying default');
+    assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+    assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,200);
+    assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[3].id))).status,404);
+    assert.deepEqual(f.saved,before);
+  }
+});
+test('historical full-frame and baked flags preserve layer grants without admitting unpublished media',async()=>{
+  const f=fixture();f.rewrite(pack=>{delete pack.lanes[0].composition;pack.lanes[0].layers.background.mode='baked';});
+  const before=clone(f.saved),value=await body(f);
+  assert.equal(value.independentLayers,true);assert.deepEqual(value.settings,defaultCompositionSettings());
+  assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+  for(const asset of [...value.media.tables,...value.media.backgrounds])assert.equal((await request(f,asset.src)).status,200);
+  assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[3].id))).status,404);
+  assert.deepEqual(f.saved,before);
+});
+test('former dealer names require own published media and retired Amira remains rejected',async()=>{
+  const f=fixture(),response=await request(f,descriptor.replace('dealer=linnea','dealer=astrid'));
+  assert.equal(response.status,200);const value=await response.json();
+  assert.equal(value.dealer.id,'astrid');assert.equal(value.media.dealer.src,previewMediaPath({...context,dealerId:'astrid'},'dealer',f.mediaRows[2].id));assert.equal(f.served.length,0);
+  const original=await request(f,descriptor.replace('dealer=linnea','dealer=amira'));
+  assert.equal(original.status,400);assert.deepEqual(await original.json(),{error:'invalid_preview_request'});
+  const unpublished=await request(f,descriptor.replace('dealer=linnea','dealer=unpublished'));assert.equal(unpublished.status,404);assert.equal(f.served.length,0);
+  const legacy=createPortraitRoomEntryFixture({dealer:'amira'});
+  const api=createPublicOperatorPreview({readCurrentContext:async()=>({operator:{id:legacy.room.operatorId,slug:'sg-test',status:'active'},package:legacy.pack,administration:legacy.administration}),privateMedia:()=>assert.fail('retired dealer never reaches private media')});
+  const old=await api.handle(new Request('https://example.test/api/operators/sg-test/rooms/'+legacy.room.id+'/preview?dealer=amira&revision=7'));
+  assert.equal(old.status,400);assert.deepEqual(await old.json(),{error:'invalid_preview_request'});
+});
+test('strict request grammar rejects duplicate/extra queries, malformed ids and methods before snapshots',async()=>{
+  const f=fixture();
+  for(const path of [descriptor+'&dealer=linnea',descriptor+'&extra=1',descriptor.replace('&revision=7',''),descriptor.replace('revision=7','revision=01'),
+    descriptor.replace('revision=7','revision=9007199254740992'),descriptor.replace('dealer=linnea','dealer=../private'),descriptor.replace('/north/','/%6eorth/'),
+    descriptor.replace('/room-north/','/room_1/'),previewMediaPath(context,'dealer',f.mediaRows[0].id)+'?x=1']) {
+    assert.equal((await request(f,path)).status,400,path);
+  }
+  const post=await request(f,descriptor,{method:'POST'});assert.equal(post.status,405);assert.equal(post.headers.get('allow'),'GET, HEAD');
+  assert.equal(f.reads.length,0);assert.equal(f.served.length,0);
+  assert.equal(await request(f,'/api/operators/north/rooms'),null);
+});
+test('underlying failures and integrity mismatch expose no provider body, secrets or redirected URLs',async()=>{
+  const f=fixture();
+  const make=privateMedia=>({api:createPublicOperatorPreview({readCurrentContext:async()=>clone(f.saved),privateMedia})});
+  const src=previewMediaPath(context,'dealer',f.mediaRows[0].id);
+  for(const privateMedia of [
+    ()=>{throw Error('SECRET_BLOB_TOKEN');},
+    ()=>new Response('SECRET_BLOB_RESPONSE',{status:500}),
+    ()=>new Response(null,{status:302,headers:{Location:'https://private.example/token'}}),
+  ]) {
+    const response=await request(make(privateMedia),src);assert.equal(response.status,503);
+    assert.doesNotMatch(await response.text(),/SECRET|private.example/);assert.equal(response.headers.has('location'),false);
+  }
+  const mismatch=await request(make(()=>new Response('wrong bytes',{headers:{ETag:'"wrong"'}})),src);
+  assert.equal(mismatch.status,409);
+  const unavailable=await request({api:createPublicOperatorPreview()});assert.equal(unavailable.status,503);
+});
+test('authorized conditional and unsatisfiable Range responses retain safe semantics',async()=>{
+  const f=fixture(),src=previewMediaPath(context,'dealer',f.mediaRows[0].id);
+  const cached=await request(f,src,{headers:{'if-none-match':'"sha256-'+f.mediaRows[0].sha256+'"'}});
+  assert.equal(cached.status,304);assert.equal(await cached.text(),'');assert.equal(cached.headers.get('cache-control'),'private, no-cache, must-revalidate');
+  const invalid=await request(f,src,{headers:{range:'bytes=999999-'}});
+  assert.equal(invalid.status,416);assert.equal(await invalid.text(),'');assert.equal(invalid.headers.has('content-length'),false);
+  assert.equal(invalid.headers.get('cache-control'),'private, no-store');
+  assert.equal(f.reads.length,2);
+});
+test('client contract rejects foreign URLs, contexts, extra fields and hidden storage data',async()=>{
+  const value=await body(fixture());
+  for(const change of [
+    row=>row.secret='private',row=>row.media.dealer.pathname='private',row=>row.media.dealer.compositing.softness=0,
+    row=>row.media.dealer.src='https://private.example/video',
+    row=>row.media.dealer.src=row.media.dealer.src.replace('/north/','/other/'),
+    row=>row.media.tables[0].src=row.media.tables[0].src.replace('/table/','/background/'),
+    row=>row.media.backgrounds.push(clone(row.media.backgrounds[0])),
+    row=>row.settings.token='private',row=>row.independentLayers=false,
+  ]){const row=clone(value);change(row);assert.throws(()=>validatePublicOperatorPreview(row,context));}
+  assert.throws(()=>validatePublicOperatorPreview(value,{...context,packageRevision:8}));
+});
+
+test('v2 portrait anchor and v3 published dealer change never authorize a foreign registered baseline',async()=>{
+  const old=fixture({schemaVersion:2});
+  assert.equal((await request(old,descriptor.replace('dealer=linnea','dealer=nora'))).status,404);
+  const f=fixture(),value=await body(f);
+  // Keep the immutable package valid while changing the actual game room to an
+  // incompatible renderer. A browser retaining media URLs must fail closed.
+  f.saved.administration.gameLanes[0].renderer='indexed-video';
+  f.saved.administration.gameLanes[0].mediaCollection='legacy-dealers';
+  const response=await request(f,value.media.dealer.src);
+  assert.ok([404,503].includes(response.status));assert.equal(f.served.length,0);
+});

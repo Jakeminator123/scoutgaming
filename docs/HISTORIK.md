@@ -15,7 +15,7 @@ Historiska hänvisningar i kodkommentarer och borttagna rapporter till sökväga
 Sista main-version med filerna: `c52368b2f547b83b8e32938c6a8a9eb1618f4d34`.
 Katalog-/revisionskoden hade bara testkonsumenter; inga aktiva produktidentiteter
 eller mediebytes raderades. De blandade testen behåller spel-, penga- och
-presentationsbeteenden, och [Postgres-flödet](../test/postgres-presentation-flow.mjs)
+presentationsbeteenden, och [Postgres-flödet](../test/presentation/runtime/postgres-presentation-flow.mjs)
 provar nu det publicerade native-film-kontraktet med syntetiskt material.
 
 | Fil | Vad som avvecklats |

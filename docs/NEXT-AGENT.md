@@ -15,13 +15,15 @@ behöver exakta aktiva referenser, säkerhetskopia och verifierad återställnin
 
 ## Funktionsgrupper för produktprov 2 november
 
-Rotens blackjack-, roulette- och delade rumsprov har samlats under
-`test/blackjack/`, `test/roulette/` och `test/rooms/`; se [testguiden](../test/README.md).
-Svitregistret behåller samma prov i samma sviter. Vanlig hook följer även
-nästlade prov och lokala/delade fixturer; motorharness och Chromes CI-upptäckt
-stöder undermappar. Atlas visar dessa körbara samband. Spelkärna, produktkod,
-schema, molnresurser och mediebytes ändras inte. Faktisk verifiering och PR-head
-rapporteras i PR:en; MERGAGENT3 äger granskning/merge och CI-uppföljning.
+Samtliga 230 kvarvarande `.mjs`-filer från testroten ligger nu i funktionsmappar;
+endast `test/README.md` ligger kvar. Åtkomst, bolag, lagring, media, presentation,
+tal och leverans kompletterar blackjack, roulette och rum; se [testguiden](../test/README.md).
+Svitregistret behåller samma prov i samma sviter. Vanlig hook hittar även ett
+nästlat prov med källfilens basnamn när provets importsökväg byggs dynamiskt,
+och följer fortsatt lokala/delade fixturer utan att följa junctions.
+Motorharness, Chromes CI-upptäckt, QA-kopiering och Atlas använder flyttade vägar.
+Spelkärna, schema, molnresurser och mediebytes ändras inte. Faktisk verifiering
+och samlad PR-head rapporteras i leveransens PR; CI och driftacceptans är separata.
 
 ## Atlas: regler, konsumenter och provvägar 2 november
 
@@ -202,7 +204,7 @@ hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
 ## Chattens beteendeprov 1 november
 
-Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
+Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/speech/generated/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
 
 De tidigare listade klientkällsnitten är nu ersatta. Beteendeproven behåller
 maxinsatser, previewisolering, filmägare/hålkortsvisning, serverstyrda vinster,
@@ -232,7 +234,7 @@ Den historiska mediekatalogen, revisionshjälparen och tre timingfixturer är
 borttagna efter konsumentkontroll; de lästes bara av tester. [HISTORIK](HISTORIK.md#avvecklad-k04-testkedja)
 anger sista Git-versionen. De blandade presentationsproven behåller kortordning,
 idle, återanslutning och isoleringen av pengar/utfall från presentationsfel.
-[Postgres-flödet](../test/postgres-presentation-flow.mjs) använder nu produktens
+[Postgres-flödet](../test/presentation/runtime/postgres-presentation-flow.mjs) använder nu produktens
 native-film-v2-resolver och medieselektorer med syntetiskt fryst material.
 
 Lokalt passerar de 16 bevarade presentationsproven, film-/material-/selektionsproven

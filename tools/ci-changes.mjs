@@ -9,7 +9,7 @@ import { isDocumentationPath } from './documentation-paths.mjs';
 
 // The regression legs of .github/workflows/croupier.yml. The workflow reads its
 // matrix from the classifier output, so the leg table lives here, next to the
-// scope table that selects legs; test/ci-changes.mjs proves the legs partition
+// scope table that selects legs; test/delivery/ci-changes.mjs proves the legs partition
 // the suites of .githooks/pre-commit-full (engine and container run separately).
 // Each leg installs the toolchain once: shared setup (ffmpeg, npm, pnpm) costs
 // about as much as a small suite. Group by measured cost without freezing the count.
@@ -46,7 +46,7 @@ export const BROWSER_MODES = Object.freeze(['required', 'advisory', 'none']);
 //                                                             gateway container when its inputs changed
 // openclaw-deploy is safe because the Gateway image copies only deploy/ files,
 // and deploy/ is imported solely by the access suite (deploy/*.test.mjs,
-// test/backup-render-state.mjs, the lab check) and scanned by the contracts
+// test/delivery/backup-render-state.mjs, the lab check) and scanned by the contracts
 // suite (no-sqlite, orphan tests). lab/src/ is copied into Postgres fixtures,
 // so it stays 'full'. The complete regression on main runs nightly (schedule).
 export const SCOPE_LEGS = Object.freeze({

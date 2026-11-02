@@ -47,7 +47,7 @@ och komponentnamn är inte låsningar av nästa design.
 Behåll tangentbordsåtkomst, synligt fokus, kontrast och begripliga tom-/feltillstånd.
 Status ska kunna förstås utan enbart färg. Relevanta prov är
 [kitets beteenden](../test/admin-ui-kit.test.mjs), [valda menyposters fokus](../test/css-focus-ring.test.mjs),
-[knappars och diagrams fokus](../test/admin-chart-focus.test.mjs) och [tokens](../../../test/ui-tokens.mjs).
+[knappars och diagrams fokus](../test/admin-chart-focus.test.mjs) och [tokens](../../../test/presentation/theme/ui-tokens.mjs).
 Browserproven mäter tangentbordsfokus och kontrast i båda teman och högkontrastläge.
 Ett provkvitto gäller den provade versionen;
 en dokumentlänk är inget nytt godkännande av layout eller produktbeteende.

@@ -110,11 +110,11 @@ export async function runSharedTableQa({ postgresBin, downloadPostgres = false, 
       const { runSharedWalletSqlChecks } = await import('../test/fixtures/shared-wallet-sql-checks.mjs');
       const wallet = await runSharedWalletSqlChecks({ pool, createPool });
       const table = await runPostgresSharedTableChecks({ pool, createPool, restart }); pool = table.pool;
-      const { checkPresentationReceiverGuard, runPostgresPresentationReceiverChecks } = await import('../test/postgres-presentation-receiver.mjs');
+      const { checkPresentationReceiverGuard, runPostgresPresentationReceiverChecks } = await import('../test/presentation/runtime/postgres-presentation-receiver.mjs');
       const receiverGuard = await checkPresentationReceiverGuard({ pool });
       await pool.query(await readFile(join(repository, 'ops/neon-game', '010-presentation-receiver.sql'), 'utf8'));
       const receiver = await runPostgresPresentationReceiverChecks({ pool, createPool, restart }); pool = receiver.pool;
-      const { runPostgresPresentationFlowChecks } = await import('../test/postgres-presentation-flow.mjs');
+      const { runPostgresPresentationFlowChecks } = await import('../test/presentation/runtime/postgres-presentation-flow.mjs');
       const flow = await runPostgresPresentationFlowChecks({ pool, restart }); pool = flow.pool;
       const { runPostgresSharedCommandChecks } = await import('../test/blackjack/postgres-shared-command.mjs');
       const commands = await runPostgresSharedCommandChecks({pool,createPool}); pool = commands.pool;
@@ -142,8 +142,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     : args.length === 2 && args[0] === '--postgres-bin' ? { postgresBin: args[1] } : null;
   if (!options) { console.error('Usage: node tools/run-shared-table-qa.mjs [--schema-upgrade | --lissabon-retirement] --download-postgres | --postgres-bin /absolute/bin'); process.exitCode = 1; }
   else {
-    if (schemaUpgrade) options.runChecks = (await import('../test/shared-schema-upgrade.mjs')).runSharedSchemaUpgradeChecks;
-    if (lissabonRetirement) options.runChecks = (await import('../test/lissabon-retirement.mjs')).runLissabonRetirementChecks;
+    if (schemaUpgrade) options.runChecks = (await import('../test/storage/shared-schema-upgrade.mjs')).runSharedSchemaUpgradeChecks;
+    if (lissabonRetirement) options.runChecks = (await import('../test/delivery/lissabon-retirement.mjs')).runLissabonRetirementChecks;
     runSharedTableQa(options).catch(error => { console.error(error.stack); process.exitCode = 1; });
   }
   }

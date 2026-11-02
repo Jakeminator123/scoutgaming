@@ -249,7 +249,7 @@ test('the snapshot carries only the sections the role may read, so a denied or n
 // Nyckel→bolag (docs/games/partner-api.md#company-binding): Integration shows the company's own keys, masked.
 // The memory pool hands back whole rows (key, secret, wallet, IP list, creator) on purpose: only
 // the projection in lib/partner-api-keys.mjs may reach the snapshot. The SQL runs on PGlite in
-// test/partner-key-operator.mjs.
+// test/access/partner-key-operator.mjs.
 const apiKey = (id, operatorId, extra = {}) => ({ id, name: `Nyckel ${id}`, key: `ck_live_LEAKKEY${id}`, secret: `cs_LEAKSECRET${id}`, scopes: '["launch","play","admin"]',
   wallet_url: 'https://wallet.partner.invalid/LEAKWALLET', ip_allow: '203.0.113.7', created_by: 'staff@scoutgaming.invalid',
   created_at: '2026-10-29T08:00:00.000Z', last_used: null, revoked_at: null, operator_id: operatorId, ...extra });

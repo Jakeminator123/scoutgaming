@@ -96,7 +96,7 @@ Studio kör sin svit ensam; Admin och contracts kör på databasbenet.
 CSS och OpenClaw-deploy behåller två ben och samma sviter som tidigare:
 Studio/Admin/contracts samt access/presentation. Provfiler och upptäckt kommer
 fortsatt från [svitregistret](../../.githooks/pre-commit-full); bygg-, PostgreSQL-,
-policy- och talsteg följer sina sviter. [Urvalsproven](../../test/ci-changes.mjs)
+policy- och talsteg följer sina sviter. [Urvalsproven](../../test/delivery/ci-changes.mjs)
 kontrollerar partitionen, stegens ägare och fallback vid okända indata.
 Omfördelningen är inte i sig en uppmätt tidsvinst. Jämför CI:s jobbtider och
 grupptider på jämförbara körningar; lokala Git-fixturprov mäter inte denna effekt.

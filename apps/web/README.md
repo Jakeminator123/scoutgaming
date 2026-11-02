@@ -56,7 +56,7 @@ pnpm build
 `npm test` kör SSR-, routing-, inloggnings- och uppspelningsprov; bygget kör
 dem före `next build`. Typkontrollen krävs separat eftersom Next-konfigurationen
 hoppar över byggets typfel. Integrationsproven mot talservicen och spelmotorn är
-`test/platform-native-websocket.mjs` och `test/platform-moving-speech.mjs` i
+`test/speech/generated/platform-native-websocket.mjs` och `test/speech/moving/platform-moving-speech.mjs` i
 reporoten. Talservicen använder Node 24.21.0 enligt Volta-pinnen i
 [`apps/speech/package.json`](../speech/package.json) och har egen lockfil: kör
 `npm ci --ignore-scripts` i `apps/speech`.
