@@ -301,6 +301,29 @@ class GraphTests(Fixture):
         self.assertIn("--test-concurrency=2", commands["test/plain.mjs"]["command"])
         self.assertEqual(commands["test/plain.mjs"]["requirements"], [])
 
+    def test_environment_platform_and_transitive_skip_guards_withhold_commands(self):
+        self.add({".githooks/pre-commit-full":
+                  'run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"\n'
+                  'run_node_tests database isolated test/postgres.mjs test/container.mjs test/indirect.mjs test/plain.mjs\n',
+                  "test/postgres.mjs": "const config = process.env.CROUPIER_POSTGRES_QA_CONFIG;\ntest('db', {skip: !config}, run);\n",
+                  "test/container.mjs": "test('container', {skip: process.platform !== 'linux'}, run);\n",
+                  "test/indirect.mjs": "import './helpers/guard.mjs';\n",
+                  "test/helpers/guard.mjs": "import '../indirect.mjs';\nexport function guard(t) { if (!process.env.SYNTHETIC_QA) t.skip('fixture prerequisite'); }\n",
+                  "test/plain.mjs": "// test.skip('comment');\nconst text = 'skip: process.platform';\nexport {};\n"})
+        commands = {c["path"]: c for c in self.build()["controls"]["commands"]}
+        for path in ["test/postgres.mjs", "test/container.mjs", "test/indirect.mjs"]:
+            self.assertIsNone(commands[path]["command"])
+            self.assertIsNone(commands[path]["suiteCommand"])
+            self.assertTrue(commands[path]["requirements"])
+        self.assertIn("CROUPIER_POSTGRES_QA_CONFIG", commands["test/postgres.mjs"]["requirements"][0]["reason"])
+        self.assertIn("process.platform", commands["test/container.mjs"]["requirements"][0]["reason"])
+        proofs = commands["test/indirect.mjs"]["requirements"][0]["evidence"]
+        self.assertTrue(any(p["path"] == "test/helpers/guard.mjs" and p["line"] == 2 for p in proofs))
+        self.assertTrue(any(p["path"] == "test/indirect.mjs" and p["line"] == 1 for p in proofs))
+        self.assertIsNotNone(commands["test/plain.mjs"]["command"])
+        self.assertIsNone(commands["test/plain.mjs"]["suiteCommand"])
+        self.assertTrue(commands["test/plain.mjs"]["suiteRequirement"])
+
     def test_parser_ignores_comments_strings_regex_and_nested_templates(self):
         source = r'''
 // import './not-comment.mjs';

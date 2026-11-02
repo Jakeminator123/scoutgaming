@@ -94,6 +94,7 @@
       for(const requirement of c.requirements){block.append(note(requirement.reason,'warn'));for(const p of requirement.evidence)block.append(proofBox(p));}
       if(c.command){block.append(commandBox(c.command,c.mode==='python-discover'?'Befintlig Python-upptäckt':'Riktat prov från befintlig registrering'));if(c.mode==='node-test')block.append(el('p','','Samma Node-runner, begränsad till vald fil och två testarbetare.'));}
       if(c.suiteCommand){const full=el('details');full.append(el('summary','','Visa hela svitens kommando'),commandBox(c.suiteCommand,'Hela sviten · kan vara omfattande'));block.append(full);}
+      else if(c.suiteRequirement&&c.command)block.append(note(c.suiteRequirement,'warn'));
       block.append(proofBox(c.proof));
       if(c.runnerProof)block.append(proofBox(c.runnerProof));
       d.append(block);

@@ -56,6 +56,18 @@ radbevis i registret, provfilen och CI. Atlas väljer inte PostgreSQL-binärer,
 laddar inte ned en driver och sätter inga miljövariabler. Detta är kända
 förutsättningar, ingen fullständig analys av alla möjliga skip-villkor.
 
+Dessutom hålls kommandon tillbaka när den lexikala analysen hittar möjliga
+`skip`-/`todo`-villkor i provfilen eller dess statiskt upplösta JS/TS-beroenden.
+Det fångar exempelvis PostgreSQL-konfiguration, plattformskrav och opt-in i
+hjälpare utan en lista över särskilda provfilnamn. Vyn visar villkorets rad,
+identifierade miljövariabelnamn/plattformsläsningar och importkedjans radbevis;
+inga värden läses. Kommentarer och strängar räknas inte som villkor. Urvalet
+är avsiktligt försiktigt och kan kräva manuell granskning även när ett villkor
+inte skulle köras. Olösta/dynamiska beroenden och godtycklig kontrollkod kan
+fortfarande dölja förutsättningar; kommandoförslagen är inte komplett verifiering.
+Om något registrerat prov i en svit har sådana villkor hålls även svitens
+vanliga hookkommando tillbaka; andra prov kan fortfarande få riktade kommandon.
+
 Kommandona kan markeras och kopieras. **Atlas kör inga kommandon.** Kontrollera
 paketversion, beroenden och isolerad provmiljö i svitens dokumentation före
 manuell körning. Ett framtida körgränssnitt behöver separat utformning för

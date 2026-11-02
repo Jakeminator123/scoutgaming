@@ -404,7 +404,7 @@ def build_graph(root, revision, manifest):
     controls_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(controls_module)
     controls, control_texts = controls_module.build_controls(root, allowed, sources,
-        lambda path, line: proof_link(root, path, line, revision, dirty), {path for path in allowed if is_test(path)})
+        lambda path, line: proof_link(root, path, line, revision, dirty), {path for path in allowed if is_test(path)}, tokens, edges)
     graphs, issues = semantic_graphs(root, manifest, {**sources, **control_texts}, revision, dirty)
     other_files = [{"id": path, "module": module_for(path), "extension": PurePosixPath(path).suffix or "shell/config",
                     "status": "samband ej analyserade", "dirty": path in dirty}
