@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "template: empty until the GPU run in docs/PAOW-BANK-KORNING.md; rename XX to the day it is filled",
+  "status": "template: empty until the GPU run in docs/media/PAOW-BANK-KORNING.md; copy to a dated acceptance receipt when the run is performed",
   "dealerId": "paow",
   "environment": "preview (scoutgaming-preview-engine, Vercel scoutgaming-preview)",
   "runBy": "",

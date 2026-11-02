@@ -1,6 +1,6 @@
 # Klipp, Neon och Blob
 
-Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegreppen (dealer, bolag, rum, mall, paket, spelinställningar, klippkartan) står i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), uppspelningskontrakten i [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md).
+Hur dealerklipp och övrigt material lagras, importeras och raderas. Produktbegreppen (dealer, bolag, rum, mall, paket, spelinställningar, klippkartan) står i [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), uppspelningskontrakten i [PRESENTATION-RUNTIME](../media/PRESENTATION-RUNTIME.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md).
 
 ## Lagringsgränsen
 
@@ -47,7 +47,7 @@ Kodavstämning 1 november 2026:
   `tools/check-migration-readiness.mjs` läser **båda** ledgrarna och använder
   `planGameMigrations`. Nummer måste alltid anges med rätt ledger.
 - Den daterade molninventeringen och senare migrationskvitton finns i
-  [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen).
+  [ENVIRONMENT-RESTORATION](../operations/ENVIRONMENT-RESTORATION.md#migrerat-schema-i-produktionen).
   Tabellantal ovan beskriver 29 oktober, inte en ny molnkontroll. Läs aktuell
   ledger i varje miljö inför schemaändring eller kravhöjning.
 
@@ -144,7 +144,7 @@ källmedia, historik eller plånboksjournal som bieffekt.
 1. Frys miljö, scope, exakt kandidatlista, konsumenter och revisioner; kontrollera pågående jobb och andra agenters ägarskap. Följ `operator-store.mjs`, publicerade `operator_packages.rooms` och sparade paket som aktiva rum eller låsta konfigurationer använder. Administrationsdokumentets gamla rumskopia är inte rumsregistret.
 2. Följ dealerposter, `media_records`, registrerade filmprofiler, lager, `shared_table_configs` och deras heads/materialrevisioner. För tal behövs profiler, `moving_speech_bindings`, driftprofiler, bankkarta, journal, budget, reservationer och callbackbindningar. Följ körbara anrop; en textreferens eller ett tomt rum räcker inte.
 3. Utred API-nycklar, partnerspelare, sessioner och bolagsbindningar före bolagsradering enligt [Partner-API-guiden](../games/partner-api.md#company-binding). Raderingen får inte lämna fungerande nycklar eller felbundna spelare.
-4. Förbered verifierbar återställning enligt [ENVIRONMENT-RESTORATION](../ENVIRONMENT-RESTORATION.md): Neon-underlag, aktuella revisioner och exakta Blob-URL:er/hashar. Privata data stannar utanför Git. Följ uppdragets mandat för särskilda databasingrepp och leverera kompatibla kodvägar före avveckling.
+4. Förbered verifierbar återställning enligt [ENVIRONMENT-RESTORATION](../operations/ENVIRONMENT-RESTORATION.md): Neon-underlag, aktuella revisioner och exakta Blob-URL:er/hashar. Privata data stannar utanför Git. Följ uppdragets mandat för särskilda databasingrepp och leverera kompatibla kodvägar före avveckling.
 5. Ta bort eller koppla om referenser i rätt transaktion/revision. Lös aktiva beroenden hos konsumenten; radera inte kalibrering eller bevis för att kringgå en spärr. Den registerlagrade runtimekatalogen ändras via `ops/neon-studio/runtime-media-import.mjs` och dess runner med revisions- och planhashkontroll. Publicera bara paket/rum vars verkliga kontrakt ändras; gamla K04-testkataloger är ingen produktionsgrind.
 6. Prova uppdragets bevarade produktflöden, behörighet och negativa åtkomstfall. Bekräfta att ingen klient eller aktivt jobb längre begär kandidaterna. Radera sedan exakt verifierade Blob-objekt; avvikelse från den frysta revisionen kräver nytt underlag, inte bred prefixradering.
 
@@ -159,7 +159,7 @@ Flödet är OpenClaw-beslut → registrerad röst (TTS) → exakt PCM → vald o
 - Workern ligger i `services/moving-gpu-worker/` (versionslåst motor, modellhashar, bank- och sessionsvalidering). `moving-gpu-build.yml` bygger och provar imagen utan nät och GPU; `moving-gpu-publish.yml` publicerar.
 - `services/game/moving-speech-transport.mjs` kräver en GHCR-image med SHA-256-digest och workerintyg för release, dealer, bank, session och accepterat RunPod-jobb innan första PCM skickas.
 - Varje session binds till exakta bankoriginal, profilrevision, publicerat paket och eget jobb (Studio-migrering 013), med beständig budget.
-- Senast dokumenterade talstatus är av; uppdraget är pausat (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md#driftväljarens-api)). Betalda prov följer uppdragets uttryckliga budget, och bara Jakob godkänner läppsynk.
+- Senast dokumenterade talstatus är av; uppdraget är pausat (`CROUPIER_MOVING_SPEECH_ENABLED`, se [ENVIRONMENT-VARIABLES](../operations/ENVIRONMENT-VARIABLES.md#driftväljarens-api)). Betalda prov följer uppdragets uttryckliga budget, och bara Jakob godkänner läppsynk.
 - Bildruteplanen räknar hela ljudsamplingar: `floor((pcmBytes / 2 + 18000) / 1000)` rutor vid 24 fps, med 220 ms inledande och 530 ms avslutande tystnad. Vila använder alltid källruta 0.
 
 ## Var koden finns

@@ -39,7 +39,7 @@ export async function prepareApiKeyOperator(evidence) {
     sqlSha256:hash(sql),readinessSha256:hash(readinessSql),evidence:boundEvidence,applies:false,productionApproved:false,
     // Code from PR A reads the column tolerantly; only PR C requires this ledger row at start.
     deploymentRequired:false,minimumServerMajor:16,emptyTableOnly:true,atomic:true,
-    recovery:'Neon backup branch backup-api-key-operator-<date> taken first (docs/ENVIRONMENT-RESTORATION.md); no blind DOWN or in-place restore.' } };
+    recovery:'Neon backup branch backup-api-key-operator-<date> taken first (docs/operations/ENVIRONMENT-RESTORATION.md); no blind DOWN or in-place restore.' } };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

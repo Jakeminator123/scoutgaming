@@ -1,9 +1,9 @@
 # Körplan: återstående arbete
 
-Uppdaterad 1 november 2026 mot `f6185c3663dc9101958c8aca78527a5fa2d0301b`.
+Uppdaterad 2 november 2026 mot `91b4e1888ea28c008b4ff25f827474a78f4f79db`.
 Kvarvarande uppdrag och beslut samlas här. Migreringen och organisationsvågorna
 R1–R5, S1–S6 och förenklingsvåg 2 är avslutade inom sina omfattningar;
-[HISTORIK](../../HISTORIK.md) anger de borttagna planernas Git-versioner.
+Git och PR:er bär de avslutade leveransernas historik.
 **Talet är pausat enligt Jakob.**
 
 ## Utgångsläge och mandat
@@ -18,7 +18,7 @@ R1–R5, S1–S6 och förenklingsvåg 2 är avslutade inom sina omfattningar;
 | Område | Kvar / beslut | Verifiering för ändringen |
 | --- | --- | --- |
 | Legacy/Astrid | Clip-policy-kedjan är borta; kvarvarande worker-/medierester bedöms efter faktisk användning. Gatewaydelen används i spelcontainern. | Följ konsumenterna, ersätt levande anrop och ta bort död kod med förbrukade prov. Astrid avvecklas enligt dataavsnittet nedan. |
-| Material och Admin | Kompatibelt materialbyte och atomisk publicering med påverkan per rum/bolag återstår. | Scope, CAS, samtidighet, grannrummets utkast och låsta paketversioner ska hålla. Återställning får inte öppna rum eller aktivera tal. |
+| Material och Admin | Avgränsat blackjackmaterialbyte och atomisk bolagstilldelning är levererade. Sammanhållet ersätt-och-radera över flera beroende objekt återstår. | Scope, CAS, samtidighet, grannrummets utkast och låsta paketversioner ska hålla. Återställning får inte öppna rum eller aktivera tal. |
 | Bolag, native och partner | Nyckel-/spelarbindning och kravhöjning återstår enligt avsnittet nedan. Extern partnerwallet är inte real-money-accepterad. | Prova faktisk behörighet, samtidighet och pengar för berörd ingång. Aktiva adaptrar är inte legacy på grund av sitt namn. |
 | Lounge och vyer | Produktutveckling väljs mot aktuell main; opublicerade prototyputkast är andras arbetsmaterial. | Avgränsa ändringen och dess prov; en gammal prototypbranch är inget implementationsmandat. |
 | Tal | **PAUSAT.** Talberoende öppning/avräkning har konservativ reservtid. [TALKEDJA](../TALKEDJA.md) samlar det pausade uppdraget. | Aktualitet, mute/distribution, bank/worker och ljud-/bildrutebundna medier prövas inom återupptaget taluppdrag. |
@@ -37,7 +37,7 @@ Admins `player-administration.mjs` och partner-API:ts skapväg skriver ännu int
 spelarens `operator_id`; `async-player-auth.mjs` har toleranta läsningar.
 Detta är kodrestarbete, inte en ny databas- eller driftkontroll.
 
-1. Läs aktuell game-ledger och readiness per miljö. `prepare-api-key-operator.mjs` och `prepare-player-operator.mjs` renderar SQL offline. 012:s preflight kräver tom nyckeltabell; radera inte aktiva nycklar för att få kontrollen grön. DDL följer mandat och [återställningsguiden](../../ENVIRONMENT-RESTORATION.md).
+1. Läs aktuell game-ledger och readiness per miljö. `prepare-api-key-operator.mjs` och `prepare-player-operator.mjs` renderar SQL offline. 012:s preflight kräver tom nyckeltabell; radera inte aktiva nycklar för att få kontrollen grön. DDL följer mandat och [återställningsguiden](../../operations/ENVIRONMENT-RESTORATION.md).
 2. När readiness tillåter: gör 012 obligatorisk, neka obundna nycklar/launch-token och avveckla förbrukade toleranta läsvägar. Följ `keys.list/create` och `allowLegacyPartnerSessions`. Bevara felkoder, rotation/återkallelse, låsordning och återvalidering vid samtidiga kommandon.
 3. Bind spelaren till validerat aktivt bolag i varje skapväg: Admin, partner, registrering, personal-/Craig-koppling, `/api/player` och förhandsvisning. Partnerns spelarvy ska filtreras på sessionens bolag. Samma identitet behövs vid sida, socket, kommando, roulette och partner-API; saldo och transaktioner består.
 4. Besluta verifierat reservbolag, globalt eller bolagsunikt inloggningsnamn och vilka vägar utan bolagskontext som ska stängas eller kräva bolag. Besluta även om spelarens bolag får ändras. `player_accounts.email` är global primärnyckel i dagens kontrakt. 014:s backfillförslag använder nyckelns bolag, senaste bolagsbundna bord och ett uttryckligt reservbolag; senaste bord är en heuristik, inte auktoritet. Visa aktuell NULL-fördelning före skrivning.
@@ -68,5 +68,5 @@ En ny destruktiv åtgärd behöver avgränsad lista, frysta revisioner och verif
 Ändra berört restarbete här och sakguiden när kontraktet ändras. [NEXT-AGENT](../../NEXT-AGENT.md)
 bär aktuell överlämning; PR:en bär ändringens granskning och kod-/CI-bevis.
 Ange full SHA och verklig verifiering. Skilj kod, deploy och produktacceptans.
-Daterade etappkvitton och beslut finns i Git enligt HISTORIK; F11 behåller sitt
+Daterade etappkvitton och beslut finns i Git; F11 behåller sitt
 separata bevis eftersom ett aktuellt releasebeslut använder det.

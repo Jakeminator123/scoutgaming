@@ -5,7 +5,7 @@ spelarens sidor och ingressen till spelmotorn och Studio-tjänsten på samma
 publika origin, [www.scoutgaming.tech](https://www.scoutgaming.tech/). Tjänsten
 `studio` (`apps/studio`) serverar `/admin`, `/partner` och `/lobby`; spelmotorn
 kör på Render `croupier-v3`. Läget står i [överlämningen](../../docs/NEXT-AGENT.md)
-och driften i [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md).
+och driften i [CLOUD-DELIVERY](../../docs/operations/CLOUD-DELIVERY.md).
 
 ## Adresser
 

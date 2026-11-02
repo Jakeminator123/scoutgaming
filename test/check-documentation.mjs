@@ -19,12 +19,22 @@ function check(source, targets = {}) {
   return { errors, reads };
 }
 
-test('the prose CI path and link audit use one source list, including agent entry points', () => {
-  assert.equal(isDocumentationSource, isDocumentationPath);
+test('link audit includes functional guides without granting CI or merge exemptions', () => {
   const files = ['GEMINI.md', '.github/copilot-instructions.md', '.windsurf/rules/scoutgaming.md', 'apps/studio/components/partner/README.md'];
   const errors = checkDocumentation({ files, read: () => '[missing](missing.md)' });
   assert.deepEqual(errors.map(error => error.file), files);
-  assert.equal(isDocumentationSource('services/openclaw/lab/deploy/runtime-bundle/README.md'), false, 'runtime bundles remain strict');
+  const functional = ['test/README.md', 'tools/system-map/README.md', 'packages/new-feature/README.md',
+    'services/openclaw/lab/deploy/runtime-bundle/README.md'];
+  const content = Object.fromEntries(functional.map(path => [path, '[missing](missing.md)']));
+  const reads = [];
+  const data = ['services/game/prompt.md', 'services/openclaw/lab/deploy/runtime-bundle/roles/new.md', 'docs/receipt.json'];
+  data.forEach(path => { content[path] = '[not prose](missing.md)'; });
+  const functionalErrors = checkDocumentation({ files: Object.keys(content), read: path => { reads.push(path); return content[path]; } });
+  assert.deepEqual(functionalErrors.map(error => error.file), functional);
+  assert.deepEqual(reads, functional, 'arbitrary Markdown and JSON payloads are not read as prose');
+  for (const path of [...functional, ...data]) assert.equal(isDocumentationPath(path), false, path);
+  assert.equal(isDocumentationSource('tools/../private/README.md'), false);
+  assert.equal(isDocumentationSource('tools\\feature\\README.md'), false);
 });
 
 test('missing tracked targets and renamed headings report exact source line', () => {

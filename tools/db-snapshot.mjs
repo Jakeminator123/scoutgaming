@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Database snapshot — READ-ONLY. Step 8 of the restore runbook in docs/ENVIRONMENT-RESTORATION.md
+// Database snapshot — READ-ONLY. Step 8 of the restore runbook in docs/operations/ENVIRONMENT-RESTORATION.md
 // (built for O02's restore-replay; its format id o02-db-snapshot/v1 is unchanged).
 //
 // Takes a content snapshot of croupier_game, croupier_studio and croupier_auth so that the
@@ -11,7 +11,7 @@
 //   total        sha256 over the canonical JSON of all table and sequence entries
 // Everything runs inside one `BEGIN READ ONLY` transaction and ends with ROLLBACK. Catalog
 // columns of type `name` are cast to text before sorting, and no UNION is used, so the 63-byte
-// truncation documented in docs/ENVIRONMENT-RESTORATION.md cannot recur. The connection
+// truncation documented in docs/operations/ENVIRONMENT-RESTORATION.md cannot recur. The connection
 // string is read from a file and never printed; the output holds no row data, only hashes.
 //
 // Usage, from the repository root:

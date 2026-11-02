@@ -65,7 +65,7 @@ const denied = () => { throw Object.assign(new Error('studio_request_rejected'),
 // it outside the Lab project; no webpack asset URL is passed to Node fs.
 const schemaRoot = () => resolve(studioRoots().repositoryRoot, 'ops');
 // Admin always runs natively on Vercel, on the one public origin, under the fixed
-// basePath /studio. No variable selects this (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// basePath /studio. No variable selects this (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
 
 export function nativeStudioAdminConfiguration(env = process.env) {
   if (!studioGamePolicyConfiguration(env)) unavailable();

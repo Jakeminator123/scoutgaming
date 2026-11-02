@@ -48,7 +48,7 @@ test('database path and stream lane are fixed in code; panel values are ignored,
 });
 
 // Miljövariabler 2: the fixed names come from the registry (no source names them,
-// docs/ENVIRONMENT-VARIABLES.md#fasta-värden). Stale or contrary panel values change
+// docs/operations/ENVIRONMENT-VARIABLES.md#fasta-värden). Stale or contrary panel values change
 // nothing and never reach the game child, until Jakob removes them from the panels.
 test('fixed Neon, Blob and Studio flags ignore stale panel values and are never forwarded',async()=>{
   const {hardcodedNames}=JSON.parse(await readFile(new URL('../docs/environment-variables.json',import.meta.url),'utf8'));
@@ -156,7 +156,7 @@ test('two dealers each get a verified bank and drift profile; Dragan alone is un
   assert.deepEqual(rest,single);
 });
 
-// docs/PAOW-BANK-KORNING.md step 7: preview carries Paow alone; its profile's bankHash is the archive hash and its
+// docs/media/PAOW-BANK-KORNING.md step 7: preview carries Paow alone; its profile's bankHash is the archive hash and its
 // releaseDigest is the image's release, so Dragan's production values are never copied to preview.
 test('preview with Paow alone: own bank and endpoint pass; a foreign release or Dragan bank is refused',()=>{
   const paowOnly={...base(),...moving(),CROUPIER_MOVING_SPEECH_BANK_RECORDS:JSON.stringify({paow:paowManifest}),

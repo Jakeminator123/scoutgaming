@@ -118,7 +118,7 @@ delar samma pågående eller sparade beslut för ett oförändrat `requestId`;
 Studio når Director med `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN` (serversidan,
 ingen `NEXT_PUBLIC_*`). `OPENCLAW_MODEL_API_KEY` stannar på Gatewayen. Alla
 nycklar och var de sätts står i
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md). Director-tjänsten
+[ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md). Director-tjänsten
 och dess blueprint ligger i `services/openclaw/lab/`;
 [OpenClaw-guiden](../../docs/AI/openclaw/README.md) har källorna.
 
@@ -144,7 +144,7 @@ syntetiska publika vyer. Det är inget spel- eller videotest.
 `/api/inputs/reference` (`lib/partner-reference.mjs`) provar kopplingen till
 partnern: behörighet, spelöppning och videokarta. Den är valfri, gör inga
 spelhandlingar och kräver `BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)).
+[ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md)).
 `lib/partner-observer.mjs` kontrollerar bara att nycklarna och adressen är
 giltiga; den öppnar ingen anslutning.
 

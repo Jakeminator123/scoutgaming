@@ -21,7 +21,7 @@ export function platformConfiguration(env = process.env) {
   const publicOrigin = exactPlatformOrigin(env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN');
   const backendOrigin = exactPlatformOrigin(env.CROUPIER_BACKEND_ORIGIN, 'CROUPIER_BACKEND_ORIGIN');
   // One public origin for game and Admin, native Admin on Vercel and Neon as the one
-  // registry are fixed; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed
+  // registry are fixed; no variable selects them (docs/operations/ENVIRONMENT-VARIABLES.md, fixed
   // values). Studio is served from the public origin.
   const labUiOrigin = publicOrigin;
   const secret = env.CROUPIER_VERCEL_INGRESS_SECRET;

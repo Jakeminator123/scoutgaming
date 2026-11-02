@@ -8,7 +8,7 @@ koden är ett labb.
 - [AI-dokumentationen](../../docs/AI/README.md)
 - [Director och Gateway: kodens ansvar](lab/README.md)
 - [Studio: användarguide](../../apps/studio/docs/README.md)
-- [Runtime och media](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
+- [Runtime och media](../../docs/media/PRESENTATION-RUNTIME.md)
 
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens
 adress. Det lokala `--offline`-serverparet och anslutningshelpern

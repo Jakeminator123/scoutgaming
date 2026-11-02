@@ -89,7 +89,7 @@ test('a reintroduced read of a fixed flag is caught in source, test, build scrip
     'services/example/render.yaml': `services:\n  - type: web\n    envVars:\n      - key: ${name}\n`,
     'packages/example/comment.mjs': `// process.env.${name} is retired.\nexport const description = "process.env.${name}";\nexport const metadata = { ${name}: 'historical' };\n`,
     'packages/example/description.json': `{"description":"process.env.${name}","${name}":"historical"}\n`,
-    'docs/ENVIRONMENT-VARIABLES.md': `| \`${name}\` | fixed |\n`,
+    'docs/operations/ENVIRONMENT-VARIABLES.md': `| \`${name}\` | fixed |\n`,
     'services/game/README.md': `${name} is gone.\n`,
     '.github/workflows/check.yml': `env:\n  ${name}: '1'\n`,
     'packages/example/other.mjs': `export const similar = process.env.${name}_EXTRA;\n`,
@@ -120,7 +120,7 @@ test('the CLI rejects an env read and passes when it becomes a comment and descr
   const files = {
     'tools/check-environment-variables.mjs': readFileSync(new URL('../tools/check-environment-variables.mjs', import.meta.url), 'utf8'),
     'docs/environment-variables.json': JSON.stringify(registry),
-    'docs/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
+    'docs/operations/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
     'packages/example/runtime.mjs': "export const on = process.env.FIXED_FLAG === '1';\n",
   };
   for (const [path, text] of Object.entries(files)) {
@@ -160,7 +160,7 @@ test('real staged comments, binding renames and log labels pass; env reads, defa
     '.env.example': 'ACTIVE_PORT=1\n',
     'tools/check-environment-variables.mjs': readFileSync(new URL('../tools/check-environment-variables.mjs', import.meta.url), 'utf8'),
     'docs/environment-variables.json': JSON.stringify(registry),
-    'docs/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
+    'docs/operations/ENVIRONMENT-VARIABLES.md': 'Synthetic environment inventory.\n',
     [runtime]: baseline,
   };
   for (const [path, source] of Object.entries(files)) {
@@ -191,8 +191,8 @@ test('real staged comments, binding renames and log labels pass; env reads, defa
   writeFileSync(join(repository, runtime), baseline); git('add', runtime);
   writeFileSync(join(repository, '.env.example'), 'ACTIVE_PORT=2\n'); git('add', '.env.example');
   assert.match(cli().stderr, /stage both environment inventory files in the same commit/);
-  writeFileSync(join(repository, 'docs/ENVIRONMENT-VARIABLES.md'), 'Updated synthetic inventory.\n');
-  git('add', 'docs/ENVIRONMENT-VARIABLES.md');
+  writeFileSync(join(repository, 'docs/operations/ENVIRONMENT-VARIABLES.md'), 'Updated synthetic inventory.\n');
+  git('add', 'docs/operations/ENVIRONMENT-VARIABLES.md');
   assert.equal(cli().status, 1, 'one inventory alone is insufficient');
   writeFileSync(join(repository, 'docs/environment-variables.json'), JSON.stringify(registry, null, 2));
   git('add', 'docs/environment-variables.json');

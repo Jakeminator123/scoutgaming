@@ -31,6 +31,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { environmentBranches, featurePatterns, matchesBranchPattern } from './check-push-target.mjs';
 import { checkDocumentation, isDocumentationSource } from './check-documentation.mjs';
+import { isDocumentationPath } from './documentation-paths.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const REPO = 'Jakeminator123/scoutgaming';
@@ -139,8 +140,8 @@ export function freshnessVerdict(freshness, paths, complete, name = MAIN_BRANCH,
     const mainFiles = freshness.files.filter(path => packageRoot(path) === root);
     if (!mainFiles.length) continue;
     const prFiles = paths.filter(path => packageRoot(path) === root);
-    const mainCode = mainFiles.find(path => !isDocumentationSource(path));
-    const prCode = prFiles.find(path => !isDocumentationSource(path));
+    const mainCode = mainFiles.find(path => !isDocumentationPath(path));
+    const prCode = prFiles.find(path => !isDocumentationPath(path));
     shared.push({ root, main: mainCode ?? mainFiles[0], pr: prCode ?? prFiles[0], code: Boolean(mainCode && prCode) });
   }
   const describe = entries => entries.map(entry => `${entry.root} (${name}: ${entry.main}; PR: ${entry.pr})`).join(', ');

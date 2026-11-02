@@ -1,10 +1,10 @@
 # Talkedjan och RunPod: Kevins uppsättning, vår kedja, aktivering
 
-Skrivet 2026-10-29 på Jakobs fråga: "Alla värden som finns inlagda ska användas som de fungerar. Vi ska använda Kevins RunPod. Vi ska också ha en endpoint för Kevin. Varför är det här inte dokumenterat, varför fungerar det inte, varför är det inte aktiverat?" Källor: Kevins läge i Slack 28/10 kl 15:30 och hans agents svar 22–28/10 (loggen ligger hos Jakob, utanför Git), [det historiska Paow-underlaget](HISTORIK.md), [TALKEDJA](plans/TALKEDJA.md), [miljöguiden](ENVIRONMENT-VARIABLES.md) och koden på main `c8d784ab`. Det ursprungliga underlaget gjorde inga molnanrop. Färska läsningar och LIPSNK-agentens separat beställda helklippsprov 30 oktober redovisas nedan; äldre uppgifter är historiska, inte aktuell konfiguration. Inga hemligheter finns här.
+Skrivet 2026-10-29 på Jakobs fråga: "Alla värden som finns inlagda ska användas som de fungerar. Vi ska använda Kevins RunPod. Vi ska också ha en endpoint för Kevin. Varför är det här inte dokumenterat, varför fungerar det inte, varför är det inte aktiverat?" Källor: Kevins läge i Slack 28/10 kl 15:30 och hans agents svar 22–28/10 (loggen ligger hos Jakob, utanför Git), [Paow-underlaget i Git](https://github.com/Jakeminator123/scoutgaming/blob/c0150add62fd9e4b39fd31a7e0127406ca860007/docs/plans/PAOW-LIPSYNC.md), [TALKEDJA](../plans/TALKEDJA.md), [miljöguiden](../operations/ENVIRONMENT-VARIABLES.md) och koden på main `c8d784ab`. Det ursprungliga underlaget gjorde inga molnanrop. Färska läsningar och LIPSNK-agentens separat beställda helklippsprov 30 oktober redovisas nedan; äldre uppgifter är historiska, inte aktuell konfiguration. Inga hemligheter finns här.
 
 ## Kort svar
 
-**Avslutsstatus 30 oktober 2026:** Jakob-2-läppsynk är pausad. Tre olika preview-hemligheter är verifierade; nyckeln listar fortfarande Jakob/ABYDM, inte Paow/Dragan. Mall `5dkkc3wolw` är rättad till `croupier-v3` och de två olästa produktionsvariablerna är borttagna. Se [miljökvittot från 30 oktober](ENVIRONMENT-VARIABLES.md#verifierad-tal--och-miljöstatus-30-oktober-2026). Aktiveringsstegen nedan är återstartsunderlag, inte ett pågående uppdrag.
+**Avslutsstatus 30 oktober 2026:** Jakob-2-läppsynk är pausad. Tre olika preview-hemligheter är verifierade; nyckeln listar fortfarande Jakob/ABYDM, inte Paow/Dragan. Mall `5dkkc3wolw` är rättad till `croupier-v3` och de två olästa produktionsvariablerna är borttagna. Se [miljökvittot från 30 oktober](../operations/ENVIRONMENT-VARIABLES.md#verifierad-tal--och-miljöstatus-30-oktober-2026). Aktiveringsstegen nedan är återstartsunderlag, inte ett pågående uppdrag.
 
 - **Inte dokumenterat:** Kevins RunPod-läge fanns bara i Slack. K04:s `lipsync-underlag.md` (endpoint-id och ws-kontrakt, 22/10) flyttades till docs/history och raderades 28/10 (`8ad45fbf`); PAOW-LIPSYNC och TALKEDJA tog bara med delar. Det här är den samlade platsen.
 - **Daterad kontroll, 2026-10-30 00:24 UTC:** produktionens stillbildsendpoint `zsudl8tmzcmiv1` gav auth/health HTTP 200. Det bevisar åtkomst och hälsosvar, inte att ljud eller video kan genereras. Rörligt tal är av (`moving flag=0`), `CROUPIER_MOVING_SPEECH_BANK_RECORDS` saknas och basprofilen saknar `dealerId`; rörlig generering är därför inte konfigurerad. I preview är `generated/moving=0` och bank samt endpoint saknas.
@@ -33,9 +33,9 @@ Cleanup (Kevins förslag, inget raderas utan hans ja): behåll Kevins prod-pod, 
 
 ## Röst: ElevenLabs och Cartesia
 
-- Båda rösterna ligger i Kevins ElevenLabs Pro-konto: Paow `WZVEBKUreb9jAKojf0QF`, Dragan `7f95xPL4S3ySZ4OS1pw8` (Kevin 28/10). Uppgiften 28/10 att Render-nyckeln ser Paow är inaktuell: läsningen 30/10 listar Jakob/ABYDM men hittar inte Paow. Kevin uppger att den nyckeln hör till Impactwin och att Paow/Dragan finns i hans vanliga konto. Jakob vill samla alla fyra hos Kevin; verifierad målkontonyckel saknas. Se [aktuellt röstläge](NEXT-AGENT.md#jakob-2-och-tal-fortsatt-pausat).
+- Båda rösterna ligger i Kevins ElevenLabs Pro-konto: Paow `WZVEBKUreb9jAKojf0QF`, Dragan `7f95xPL4S3ySZ4OS1pw8` (Kevin 28/10). Uppgiften 28/10 att Render-nyckeln ser Paow är inaktuell: läsningen 30/10 listar Jakob/ABYDM men hittar inte Paow. Kevin uppger att den nyckeln hör till Impactwin och att Paow/Dragan finns i hans vanliga konto. Jakob vill samla alla fyra hos Kevin; verifierad målkontonyckel saknas. Se [röstuppdraget](../plans/TALKEDJA.md#t7-samla-rösterna-hos-kevin-beslut-30-oktober).
 - Paows läsning (Kevin): sv `eleven_v3`, stability 0,5, similarity 0,85, speaker boost; en `eleven_multilingual_v2`, 0,38/0,8, style 0,3; ljud loudnorm −16 LUFS, mono 16-bit; klipp 1080×1920, 24 fps. Vilan `paow_vila2x` är `talk_base.png`. Kevin byggde ingen bank: varje replik (66 sv + 66 en) läppsynkades från vilobilden. Inställningarna står redan i `packages/presentation/contracts/dealer-voice-catalog.json`; loudnorm finns inte i vår kedja (ElevenLabs `pcm_24000` går rakt in).
-- **Cartesia är standardkälla i helfilsvägen** och användes som uttrycklig provröst 30/10. Det innebär inte att Cartesia alltid krävs för rörligt tal: dagens konfiguration stöder streaming med antingen komplett stillbildsprovider eller ingen sådan uppsättning. Paow och Dragan använder sin verifierade ElevenLabs-profil. Exakta villkor finns i [miljöguiden](ENVIRONMENT-VARIABLES.md).
+- **Cartesia är standardkälla i helfilsvägen** och användes som uttrycklig provröst 30/10. Det innebär inte att Cartesia alltid krävs för rörligt tal: dagens konfiguration stöder streaming med antingen komplett stillbildsprovider eller ingen sådan uppsättning. Paow och Dragan använder sin verifierade ElevenLabs-profil. Exakta villkor finns i [miljöguiden](../operations/ENVIRONMENT-VARIABLES.md).
 
 ## Vår kedja i `croupier-v3`
 
@@ -69,7 +69,7 @@ resurslistor ovan är ingen aktuell instruktion att skapa eller radera något.
 1. Läs aktuell röst-, endpoint-, bank- och callbackbindning för rätt konto
    och miljö. `tools/check-provider-profile.mjs` kan kontrollera health och
    röstlista utan generering. Health bevisar inte workerprotokollet.
-2. Följ [TALKEDJA](plans/TALKEDJA.md) för kvarvarande kod-/integrationsarbete
+2. Följ [TALKEDJA](../plans/TALKEDJA.md) för kvarvarande kod-/integrationsarbete
    och [PAOW-BANK-KORNING](PAOW-BANK-KORNING.md) för bank och worker. Skapa
    inte om redan fungerande endpoint eller preview-hemlighet på grund av
    den äldre inventeringen.

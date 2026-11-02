@@ -50,7 +50,7 @@ Vändning använder `reveal.dealer`/`dealer-hole`. Box 1 är spelarens vänstra 
 
 ## Format och lager
 
-- Dealerklipp: H.264/MP4 i 9:16 (1080×1920), konstant 24 fps, kvadratiska pixlar och ingen rotation. Friläggning (grön nyckling eller alfa) anges per media i registret. Repliker bär bild och ljud i samma MP4 (`recordedSpeech` v2, se [runtime-referensen](../../LOCAL-PRESENTATION-RUNTIME.md)); övriga klipp är tysta.
+- Dealerklipp: H.264/MP4 i 9:16 (1080×1920), konstant 24 fps, kvadratiska pixlar och ingen rotation. Friläggning (grön nyckling eller alfa) anges per media i registret. Repliker bär bild och ljud i samma MP4 (`recordedSpeech` v2, se [runtime-referensen](../../media/PRESENTATION-RUNTIME.md)); övriga klipp är tysta.
 - WebM/VP9 med riktig alfa accepteras av [MIME-valideringen](../../../packages/shared/media-file-types.mjs), men det bevisar inte alfa eller ljud i varje webbläsare. Kontrollera faktiskt innehåll.
 - Bord: PNG RGBA eller förlustfri WebP med riktig transparens, otrimmad canvas. Bakgrunder är separata, opaka bilder eller ljudlösa videor.
 - Lagerordning med split: bakgrund → dealerkropp → bord → kort → dealerhänder (samma avkodade bild) → framkant → UI. En horisontell split är en provmask, ingen handsegmentering.

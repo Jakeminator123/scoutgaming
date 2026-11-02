@@ -6,7 +6,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const appTraceRoutes = entries => Object.fromEntries(Object.entries(entries)
   .flatMap(([route, files]) => [[route, files], [`/app${route}`, files]]));
 // Studio is always mounted under /studio on the public origin; no variable selects
-// it (docs/ENVIRONMENT-VARIABLES.md, fixed values). The browser reads the same value.
+// it (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values). The browser reads the same value.
 const STUDIO_BASE_PATH = '/studio';
 export default {
   basePath: STUDIO_BASE_PATH,

@@ -394,6 +394,16 @@ test('reviewed docs and code require a safe combined tree; real Git histories ke
     assert.equal(h.verdict.ok, false, path);
     assert.ok(h.verdict.reason.includes('services/game/table.mjs') && h.verdict.reason.includes(path), h.verdict.reason);
   }
+  const functionalGuide = await history({ 'services/game/table.mjs': 'main\n' }, {
+    'services/game/nested/README.md': '# Feature\n[Table](../table.mjs)\n',
+  });
+  assert.equal(functionalGuide.proof.ok, true, functionalGuide.proof.reason);
+  assert.equal(functionalGuide.verdict.ok, false, 'a valid new README does not grant a package exception');
+  const brokenGuide = await history({ 'services/game/table.mjs': null }, {
+    'services/game/nested/README.md': '# Feature\n[Table](../table.mjs)\n',
+  });
+  assert.equal(brokenGuide.proof.ok, false, 'functional links are checked in the actual combined Git tree');
+  assert.match(brokenGuide.proof.reason, /services\/game\/nested\/README.md:2: Target is not a tracked file/);
   const rename = await history({ 'services/game/table.mjs': 'main\n' }, { 'services/game/table.mjs': null, 'services/game/new.mjs': 'export const table = 1;\n' });
   const renamedPaths = changedPaths([{ filename: 'services/game/new.mjs', previous_filename: 'services/game/table.mjs', status: 'renamed' }]);
   assert.equal(freshnessVerdict(rename.freshness, renamedPaths, true, 'main', rename.head).ok, false);

@@ -1,6 +1,6 @@
 # Speldokumentation
 
-En ingång per spel. Koden avgör vad spelet gör; bolagets publicerade paket avgör vilken scen ett rum visar. Gemensamma lagrings- och uppspelningskontrakt står i [runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md), begreppen i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md).
+En ingång per spel. Koden avgör vad spelet gör; bolagets publicerade paket avgör vilken scen ett rum visar. Gemensamma lagrings- och uppspelningskontrakt står i [runtime-referensen](../media/PRESENTATION-RUNTIME.md), begreppen i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och läget i [NEXT-AGENT](../NEXT-AGENT.md).
 
 - [Blackjack](blackjack/README.md): regler, kodkarta, delat bord och dealerbankens mått. Produktens spel i drift (Johns Bet, dealer PAOW).
 - [Roulette](roulette/README.md): regler, rumskommandon och scen. Spelbart, men utan kopplad dealerbank.

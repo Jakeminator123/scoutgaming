@@ -22,9 +22,9 @@ mediematerial och den aktiva `dealerVersionPath`-adaptern behålls.
 
 ## Före användning
 
-- Läs [den tekniska referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md),
+- Läs [den tekniska referensen](../../docs/media/PRESENTATION-RUNTIME.md),
   [överlämningen](../../docs/NEXT-AGENT.md) och
-  [återställningsreglerna](../../docs/ENVIRONMENT-RESTORATION.md) för mediearbete.
+  [återställningsreglerna](../../docs/operations/ENVIRONMENT-RESTORATION.md) för mediearbete.
   Spelformat och låsta lager beskrivs i [spelguiden](../../docs/games/README.md).
 - Shellrecepten kräver FFmpeg/FFprobe; `encode.sh`
   använder dessutom macOS/BSD `stat`.
@@ -38,5 +38,5 @@ mediematerial och den aktiva `dealerVersionPath`-adaptern behålls.
   beror på upprepning. Filhash och provresultat godkänner inte läppsynk eller kortkontakt.
 
 Kvarvarande audit av `runtime/hands` och äldre byggare följs i den befintliga
-[molnplanen](../../docs/CLOUD-MIGRATION.md), punkt SL-10. Verktygens existens
+[molnplanen](../../docs/operations/CLOUD-DELIVERY.md), punkt SL-10. Verktygens existens
 betyder inte att den punkten är klar.

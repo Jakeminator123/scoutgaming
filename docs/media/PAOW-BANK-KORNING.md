@@ -2,7 +2,7 @@
 
 **Pausat uppdrag.** Guiden används när talkedjan återupptas med avgränsad körning och kostnadsram; den beställer ingen GPU-/provideråtgärd i sig.
 
-Körbeskrivning för T4–T5 i [TALKEDJA](plans/TALKEDJA.md): bygg Paows bank i vårt format, lägg den i previews privata Blob och koppla den till en egen RunPod-endpoint i Kevins konto med vår worker-image. Jakob, eller en agent med nycklarna, kör stegen i ordning. Inga nycklar i repot; varje hemlighet sätts direkt i panelen eller i en ospårad lokal fil. Dragan och Kevins befintliga endpoints och poddar (och banan `e2e-prod`) rörs aldrig. Kvittot fylls i [2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json](2026-11-XX-TALKEDJA-PAOW-BANK-ACCEPTANCE.json) (byt `XX` mot dagen när det fylls).
+Körbeskrivning för T4–T5 i [TALKEDJA](../plans/TALKEDJA.md): bygg Paows bank i vårt format, lägg den i previews privata Blob och koppla den till en egen RunPod-endpoint i Kevins konto med vår worker-image. Jakob, eller en agent med nycklarna, kör stegen i ordning. Inga nycklar i repot; varje hemlighet sätts direkt i panelen eller i en ospårad lokal fil. Dragan och Kevins befintliga endpoints och poddar (och banan `e2e-prod`) rörs aldrig. Kvittot fylls i [kvittomallen](PAOW-BANK-ACCEPTANCE.template.json) (kopiera den till uppdragets daterade acceptanskvitto när provet genomförs).
 
 Banken byggs ur **samma miljös** register som den ska köras i. Spelmotorn kräver att talprofilens referens och varje bankklipp finns med samma ID och sha256 i miljöns register; en bank byggd ur produktionens register fungerar inte i preview. Börja i preview.
 

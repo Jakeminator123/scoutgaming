@@ -69,5 +69,5 @@ det publika modulregistret. Lissabon-profilklienten är borttagen (22 oktober
 
 Stora mediafiler kan ligga utanför mappen och lösas via projektets medielayout
 eller Blob. En saknad lokal film är därför inte belägg för oanvänd kod.
-Se [LOCAL-PRESENTATION-RUNTIME.md](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
+Se [PRESENTATION-RUNTIME.md](../../../docs/media/PRESENTATION-RUNTIME.md)
 och [kortpresentationens README](card-presentation/README.md).

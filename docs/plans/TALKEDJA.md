@@ -1,6 +1,6 @@
 # Talkedjan: dealer-generisk, Paow först
 
-Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [det historiska Paow-underlaget](../HISTORIK.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. O03 är genomfört (#527); milstolpar som byggts markeras i planen. Se [TALKEDJA-RUNPOD](../TALKEDJA-RUNPOD.md) för daterat driftunderlag. Arbetet är pausat enligt Jakob. Vid återupptag gäller aktuell körplan och mergeordningen i AGENTS; daterade mätningar nedan är inte färsk molnstatus. Bara Jakob godkänner ljud och läppsynk.
+Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [Paow-underlaget i Git](https://github.com/Jakeminator123/scoutgaming/blob/c0150add62fd9e4b39fd31a7e0127406ca860007/docs/plans/PAOW-LIPSYNC.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. O03 är genomfört (#527); milstolpar som byggts markeras i planen. Se [TALKEDJA-RUNPOD](../media/TALKEDJA-RUNPOD.md) för daterat driftunderlag. Arbetet är pausat enligt Jakob. Vid återupptag gäller aktuell körplan och mergeordningen i AGENTS; daterade mätningar nedan är inte färsk molnstatus. Bara Jakob godkänner ljud och läppsynk.
 
 ## Målbild
 
@@ -44,7 +44,7 @@ daterat prov; den visar inte dagens provideråtkomst eller ny AV-acceptans.
   Den historiska K04-katalogen och revisionshjälparen är avvecklade;
   den kvarvarande testkedjan använder detta publiceringskontrakt.
 - Callbackrättningen för produktionsmallen är kvitterad 30 oktober 16:46 UTC
-  i [miljöguiden](../ENVIRONMENT-VARIABLES.md). Kör inte den historiska
+  i [miljöguiden](../operations/ENVIRONMENT-VARIABLES.md). Kör inte den historiska
   fixern igen utan en aktuell felbild. Previews separata bindning måste
   verifieras i sin egen miljö.
 
@@ -74,7 +74,7 @@ bedöma efter verkliga konsumenter.
 ### T2. Preview får verifierad taluppsättning
 
 Preview har daterade nyckel- och konfigurationskvitton i
-[ENVIRONMENT-VARIABLES](../ENVIRONMENT-VARIABLES.md); den äldre uppgiften
+[ENVIRONMENT-VARIABLES](../operations/ENVIRONMENT-VARIABLES.md); den äldre uppgiften
 att alla talnycklar saknas ska inte användas. Kontrollera nuvarande
 miljöspecifik röst-, endpoint-, budget- och callbackbindning innan prov.
 Produktionens nycklar kopieras inte som genväg. Godkänt dealermaterial
@@ -92,7 +92,7 @@ Spåra aktiva anrop innan radering och behåll den ägda workerns verifierade
 
 ### T4. Paows bank byggs och verifieras
 
-Följ [PAOW-BANK-KORNING](../PAOW-BANK-KORNING.md), vars källmanifest hämtas
+Följ [PAOW-BANK-KORNING](../media/PAOW-BANK-KORNING.md), vars källmanifest hämtas
 ur aktuell registerexport. Använd inte äldre fasta klippantal eller rå
 `avatar-paow.tar` som om den vore vår verifierade bank. Bygg i separat
 staging och registrera arkiv, kvitto, källornas ID/hashar och worker-release
@@ -143,6 +143,14 @@ ompublicering av produktionsrum. Om ett faktiskt publicerat materialkontrakt
 
 ## Vid återupptag
 
+Privata startunderlag för det pausade Jakob-2-arbetet är
+`.cache/jakob2-moving-probe-20261030/PAUSED-HANDOFF.md` och
+`.cache/jakob2-realtime-preview-20261030/PROVRUM-HANDOFF.md`.
+Det första skiljer senaste container-/proxyfelet HTTP 404 från tidigare
+`IMAGE_AUTH_ERROR`; det andra beskriver previewimporten och filmprofilen.
+Verifiera aktuellt läge före fortsättning. `.cache/elevenlabs-kevin-consolidation/`
+är förberedelseunderlag, inte en genomförd röstflytt.
+
 Kvar står T7:s verifierade röståtkomst och röstunderlag, bank/worker-
 protokoll och faktisk ljud-/bildacceptans, kostnadsram för GPU-prov samt
 beslut om eventuell produktionsaktivering eller varm worker. Redan
@@ -153,4 +161,4 @@ T8 kräver ett konkret tjänstekontrakt före processflytten; eventuell DDL
 och flytt av aktiva hemligheter följer den tilldelningens mandat.
 Radera verifierat förbrukade transportvägar och specialfall tillsammans
 med konsumenter och prov. När kedjan är klar förs kontrakten till
-sakguiderna och denna plan raderas via [HISTORIK](../HISTORIK.md).
+sakguiderna och denna plan raderas. Git bär den avslutade historiken.

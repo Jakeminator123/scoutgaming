@@ -5,7 +5,7 @@ Director och den privata Gatewayn kör på Render från
 skapade; återskapa dem inte för en env-ändring. Blueprinten
 [render.yaml](../../../services/openclaw/lab/render.yaml) beskriver
 kontraktet, tjänsternas Environment-vyer de faktiska värdena. Alla nyckelnamn
-och var de sätts står i [variabelregistret](../../ENVIRONMENT-VARIABLES.md);
+och var de sätts står i [variabelregistret](../../operations/ENVIRONMENT-VARIABLES.md);
 identiteter i [START-HERE](../../../START-HERE.md#identiteter).
 
 ## Tjänster och nycklar

@@ -66,7 +66,7 @@ const sharedRoomQa = consumeSharedRoomQaContext();
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../../..');
 // Neon is the one Studio registry and private Blob the one media store on every
-// deployment; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// deployment; no variable selects them (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
 // The local media layout is therefore never served.
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
 // One product path: PostgreSQL only; no variable selects a backend.

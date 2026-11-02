@@ -4,7 +4,7 @@ Paketet äger presentationskompositorn, rena projekt- och mediakontrakt samt urv
 och används av både Admin (`apps/studio`) och spelmotorn (`services/game`). En mall (i Admin "Sammansättning"
 eller "Spelmall", `lane` i koden) är en presentation; ett sparat lane-ID är en kompatibilitetsidentitet, inte en
 extra produktnivå. Begreppen står i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och lagrings- och
-uppspelningskontraktet i [runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+uppspelningskontraktet i [runtimekontraktet](../../docs/media/PRESENTATION-RUNTIME.md).
 
 - `compositor/` — kompositor (`compositor.js`) och geometri (`geometry.js`). Den fristående redigeraren, spelaren, bryggan och lagerpaketen (`/layer-packs`) är borttagna.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.

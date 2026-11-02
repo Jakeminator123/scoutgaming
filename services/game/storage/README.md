@@ -25,6 +25,6 @@ publicerade paket får inte bytas ut genom en mapp- eller namnändring.
 Det finns inga migrationsfiler eller databasdumpar här. Schema och migrationer
 ligger i [ops/neon-game/](../../../ops/neon-game/) och
 [ops/neon-studio/](../../../ops/neon-studio/). Följ
-[CLOUD-MIGRATION.md](../../../docs/CLOUD-MIGRATION.md) vid schemaändringar;
+[CLOUD-DELIVERY.md](../../../docs/operations/CLOUD-DELIVERY.md) vid schemaändringar;
 en fungerande kodimport bevisar inte att en migration är installerad.
 `pg` installeras från `services/game/package.json`; `node_modules/` är lokala beroenden.
