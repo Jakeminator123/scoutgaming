@@ -282,6 +282,25 @@ class GraphTests(Fixture):
         (self.root / ".github/workflows/ci.yml").write_text("changed\n", encoding="utf-8")
         self.assertEqual(self.invoke("--strict-anchors")[0], 1)
 
+    def test_harness_tests_never_offer_plain_node_or_hook_commands(self):
+        self.add({".githooks/pre-commit-full":
+                  'run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"\n'
+                  'run_node_tests engine http test/engine.mjs\n'
+                  'run_node_tests presentation browser test/browser.mjs test/plain.mjs\n',
+                  "test/engine.mjs": "export {};\n",
+                  "test/browser.mjs": "const driver = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;\n",
+                  "test/plain.mjs": "export {};\n",
+                  ".github/workflows/ci.yml": "run: node tools/run-engine-qa.mjs --postgres-bin /isolated/bin\n"
+                  'CROUPIER_BROWSER_FIXTURE_MODULE="$driver/index.mjs" \\\n'})
+        commands = {c["path"]: c for c in self.build()["controls"]["commands"]}
+        for path in ["test/engine.mjs", "test/browser.mjs"]:
+            self.assertIsNone(commands[path]["command"])
+            self.assertIsNone(commands[path]["suiteCommand"])
+            self.assertTrue(commands[path]["requirements"])
+            self.assertTrue(any(p["path"] == ".github/workflows/ci.yml" for p in commands[path]["requirements"][0]["evidence"]))
+        self.assertIn("--test-concurrency=2", commands["test/plain.mjs"]["command"])
+        self.assertEqual(commands["test/plain.mjs"]["requirements"], [])
+
     def test_parser_ignores_comments_strings_regex_and_nested_templates(self):
         source = r'''
 // import './not-comment.mjs';

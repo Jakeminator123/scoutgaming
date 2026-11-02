@@ -60,7 +60,7 @@ def glob_matches(path, pattern):
     return re.fullmatch("".join(parts), path) is not None
 
 
-def test_commands(text, paths, proof):
+def test_commands(text, paths, proof, sources, control_texts):
     """Only recognized existing registry forms. No guessing from a test filename."""
     commands, edges = [], []
     registry = ".githooks/pre-commit-full"
@@ -94,8 +94,28 @@ def test_commands(text, paths, proof):
                 command = f'node "{path}"'
             else:
                 command = f'python -m unittest discover -s {words[9]} -v'
-            commands.append({"path": path, "suite": suite, "group": group, "mode": mode,
-                             "command": command, "suiteCommand": f"sh {registry} {suite}",
+            requirements = []
+            if mode == "node-test" and suite == "engine":
+                requirements.append({"reason": "Kräver motorharness med isolerad PostgreSQL/TLS. Vanlig Node-körning och den direkta hooksviten kan hoppa över proven; inget kopierbart kommando erbjuds utan vald harnessmiljö.",
+                                     "evidence": [proof(registry, line_number)]})
+            browser_lines = [i for i, source_line in enumerate(sources.get(path, "").splitlines(), 1)
+                             if "process.env.CROUPIER_BROWSER_FIXTURE_MODULE" in source_line]
+            if mode == "node-test" and browser_lines:
+                requirements.append({"reason": "Filen refererar till browser-fixturen. Chrome och installerad browserdriver måste sättas upp av browserharnessen; vanlig Node-körning eller hooksviten kan hoppa över acceptansen. Inget kopierbart kommando erbjuds här.",
+                                     "evidence": [proof(path, browser_lines[0])]})
+            if mode == "node-test" and path not in sources:
+                requirements.append({"reason": "Provfilens innehåll kunde inte analyseras. Dess körförutsättningar är okända; inget riktat kommando erbjuds.", "evidence": []})
+            if requirements and (suite == "engine" or browser_lines):
+                marker = "tools/run-engine-qa.mjs" if suite == "engine" else "CROUPIER_BROWSER_FIXTURE_MODULE="
+                for control_path, control_text in control_texts.items():
+                    if not control_path.startswith(".github/workflows/"):
+                        continue
+                    for i, control_line in enumerate(control_text.splitlines(), 1):
+                        if marker in control_line and not control_line.lstrip().startswith("#"):
+                            requirements[0]["evidence"].append(proof(control_path, i))
+            commands.append({"path": path, "suite": suite, "group": group, "mode": mode, "requirements": requirements,
+                             "command": None if requirements else command,
+                             "suiteCommand": None if requirements else f"sh {registry} {suite}",
                              "proof": proof(registry, line_number),
                              "runnerProof": proof(registry, runner_line) if mode == "node-test" else None})
             edges.append({"source": registry, "target": path, "line": line_number, "kind": "Provregistrering"})
@@ -136,7 +156,7 @@ def build_controls(root, allowed, sources, proof, test_paths):
                 seen.add(key)
                 edges.append({"source": path, "target": target, "line": line_number,
                               "kind": "Dokumenthänvisning" if category(path) == "Agentregler" else "Literal sökvägsreferens"})
-    commands, registrations = test_commands(texts.get(".githooks/pre-commit-full", ""), allowed & test_paths, proof)
+    commands, registrations = test_commands(texts.get(".githooks/pre-commit-full", ""), allowed & test_paths, proof, sources, texts)
     registered = {(edge["source"], edge["target"], edge["line"]) for edge in registrations}
     edges = [edge for edge in edges if (edge["source"], edge["target"], edge["line"]) not in registered]
     edges.extend(registrations)

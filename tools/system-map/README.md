@@ -49,6 +49,13 @@ ger aldrig ett körkommando. Radbevis visar både registrering och, för Node
 test-runnern, dess definition. Ett prov som kontrollerar en registrering är
 ett annat bevis än registreringen själv.
 
+Motorsvitens HTTP-prov och filer som refererar till browser-fixturen får
+inga kopierbara vanliga Node-/hookkommandon: de kan annars lyckas genom att
+hoppa över proven. Vyn visar det särskilda harnesskravet och återfunna
+radbevis i registret, provfilen och CI. Atlas väljer inte PostgreSQL-binärer,
+laddar inte ned en driver och sätter inga miljövariabler. Detta är kända
+förutsättningar, ingen fullständig analys av alla möjliga skip-villkor.
+
 Kommandona kan markeras och kopieras. **Atlas kör inga kommandon.** Kontrollera
 paketversion, beroenden och isolerad provmiljö i svitens dokumentation före
 manuell körning. Ett framtida körgränssnitt behöver separat utformning för

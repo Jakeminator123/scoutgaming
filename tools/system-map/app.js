@@ -88,11 +88,13 @@
   function appendCommands(d,path){
     const commands=data.controls.commands.filter(c=>c.path===path);
     if(!commands.length){if(nodes.get(path)?.test)d.append(note('Ingen körregistrering stöds för denna fil i det analyserade svitregistret. Filnamn och import är inte bevis för ett körbart prov.'));return;}
-    d.append(el('h3','','Registrerade provkommandon · '+commands.length),note('Kör från repots rot. Atlas kör ingenting. Kontrollera beroenden, isolerad provmiljö och eventuell databas enligt sviten. Importreferens bevisar inte beteendetäckning eller godkänt resultat.'));
+    d.append(el('h3','','Provregistreringar och körväg · '+commands.length),note('Kör från repots rot. Atlas kör ingenting. Kontrollera beroenden, isolerad provmiljö och eventuell databas enligt sviten. Importreferens bevisar inte beteendetäckning eller godkänt resultat.'));
     for(const c of commands){
-      const block=el('section','detail-block');block.append(badge(c.suite+' / '+c.group),commandBox(c.command,c.mode==='python-discover'?'Befintlig Python-upptäckt':'Riktat prov från befintlig registrering'));
-      if(c.mode==='node-test')block.append(el('p','','Samma Node-runner, begränsad till vald fil och två testarbetare.'));
-      const full=el('details');full.append(el('summary','','Visa hela svitens kommando'),commandBox(c.suiteCommand,'Hela sviten · kan vara omfattande'));block.append(full,proofBox(c.proof));
+      const block=el('section','detail-block');block.append(badge(c.suite+' / '+c.group));
+      for(const requirement of c.requirements){block.append(note(requirement.reason,'warn'));for(const p of requirement.evidence)block.append(proofBox(p));}
+      if(c.command){block.append(commandBox(c.command,c.mode==='python-discover'?'Befintlig Python-upptäckt':'Riktat prov från befintlig registrering'));if(c.mode==='node-test')block.append(el('p','','Samma Node-runner, begränsad till vald fil och två testarbetare.'));}
+      if(c.suiteCommand){const full=el('details');full.append(el('summary','','Visa hela svitens kommando'),commandBox(c.suiteCommand,'Hela sviten · kan vara omfattande'));block.append(full);}
+      block.append(proofBox(c.proof));
       if(c.runnerProof)block.append(proofBox(c.runnerProof));
       d.append(block);
     }
