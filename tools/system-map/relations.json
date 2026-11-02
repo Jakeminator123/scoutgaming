@@ -25,15 +25,15 @@
           "id": "matrix-registry", "source": "matrix", "target": "registry", "kind": "Körkommando",
           "label": "Kör valda sviter", "conditional": false,
           "explanation": "CI kör varje vald svit genom samma register som full lokal regression. Funktionsmappar ändrar inte provens svit eller krav.",
-          "evidence": [{ "path": ".github/workflows/croupier.yml", "match": "sh .githooks/pre-commit-full \"$suite\" || failed=1" }]
+          "evidence": [{ "path": "test/ci-changes.mjs", "match": "assert.match(suitesStep, /sh \\.githooks\\/pre-commit-full \"\\$suite\" \\|\\| failed=1/);" }]
         },
         {
           "id": "registry-feature-tests", "source": "registry", "target": "feature-tests", "kind": "Körkommando",
           "label": "Registrerade beteendeprov", "conditional": false,
           "explanation": "Registret pekar direkt på de flyttade proven. Motorharnessen läser sin fillista därifrån och tillåter nästlade testvägar; hjälparmoduler körs inte som egna prov.",
           "evidence": [
-            { "path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay fuzz-blackjack test/blackjack/fuzz-blackjack.mjs test/blackjack/blackjack-sidebets.mjs" },
-            { "path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay roulette test/roulette/roulette.mjs test/roulette/roulette-room.mjs test/roulette/roulette-room-http.mjs test/roulette/roulette-wheel.mjs test/roulette/roulette-start-contract.mjs test/roulette/roulette-publication.mjs test/roulette/roulette-postgres.mjs" },
+            { "path": "tools/check-orphan-tests.mjs", "match": "const hit = matches.find(item => item.runner === '.githooks/pre-commit-full') || matches[0];" },
+            { "path": "test/run-engine-qa.mjs", "match": "assert.equal(new Set(files).size, files.length);" },
             { "path": "tools/run-engine-qa.mjs", "match": "|| file.split('/').includes('fixtures') || !existsSync(join(repository, file)))) throw Error('engine_qa_suite_invalid');" }
           ]
         },
