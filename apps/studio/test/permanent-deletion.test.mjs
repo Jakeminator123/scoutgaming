@@ -4,12 +4,20 @@
 // Syntetiska data; ingen produktionsdatabas.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {partnerPostgresFixture} from './fixtures/partner-postgres.mjs';
 import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
 import {createPermanentDeletionApi} from '../lib/permanent-deletion-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {readOperatorLifecycle} from '../../../packages/operators/server/operator-lifecycle.mjs';
 import {STANDARD_OPERATOR_ROLES} from '../lib/operator-admin-api.mjs';
+import {addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
+import {createRetainedStudioMedia,RETAINED_BANK_VARIANTS} from '../../../packages/studio-registry/server/document-contract.mjs';
+import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
+import {changeDealerLifecycle,checkDealerArchive} from '../lib/dealers/dealer-lifecycle.mjs';
+import {createStudioMediaDeletion} from '../lib/studio-media-deletion.mjs';
+import {runtimeCatalogJsonFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
+import {runtimeCatalogJson,runtimeCatalogRevision,validateRuntimeMediaCatalog} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
 
 const origin='https://admin.fixture.invalid';
 async function fixture(t,role='admin'){
@@ -39,6 +47,83 @@ async function fixture(t,role='admin'){
   [f.scope.environment,f.scope.workspaceId,operatorId]))[0].n);
  return {...f,send,lifecycle,pack,archiveOperator,archiveRoom,remove,count};
 }
+
+test('six retained originals archive, restore and resume permanent purge through real SQL while other dealers and packages stay intact',async t=>{
+ const f=await fixture(t),saved=await f.raw.readDocument('project'),originals=RETAINED_BANK_VARIANTS.map(row=>createRetainedStudioMedia(row.id));
+ let project=(await f.raw.saveDocument('project',{value:addDealer(saved.value,'astrid','Astrid'),expectedRevision:saved.revision,actor:'fixture'})).value;
+ for(const row of originals)await f.raw.registerMedia(row,{actor:'explicit-import'});
+ const otherRows=(await f.raw.listMedia()).filter(row=>row.classification.dealerId!=='astrid');
+ const packages=await f.raw.listLifecyclePackages();
+ async function change(archived){
+  const body={dealerId:'astrid',archived,expectedRevision:project.revision};
+  if(archived)body.impactToken=(await checkDealerArchive({repository:f.repository,body:{dealerId:'astrid',expectedRevision:project.revision}})).impact.token;
+  project=await changeDealerLifecycle({repository:f.repository,mutationTransaction:f.config.presentationTransaction,stillAuthorized:async()=> 'fixture',body});
+ }
+ await change(true);assert.deepEqual([...project.dealerTrash[0].activeMediaIds].sort(),originals.map(row=>row.id).sort());
+ await change(false);
+ for(const original of originals){const {revision,updatedAt,...row}=await f.raw.getMedia(original.id);assert.deepEqual(row,{...original,classification:{...original.classification,archived:false}});}
+ await change(true);
+ const clock=Date.parse(project.dealerTrash[0].archivedAt)+16*60*1000,paths=[];
+ const late=createStudioRepository({pool:f.pool,scope:{...f.scope,workspaceId:'late-retained-import'}});
+ const deletion=createStudioMediaDeletion({repository:f.repository,mutationTransaction:f.config.presentationTransaction,now:()=>clock,readIndex:()=>new Map(),
+  env:{BLOB_READ_WRITE_TOKEN:'fixture-private-blob'},options:{blobClient:{del:async pathname=>{
+   paths.push(pathname);
+   const original=originals.find(row=>row.pathname===pathname),current=await f.raw.getMedia(original.id);
+   assert.equal(current.deletion.state,'pending');
+   await assert.rejects(late.registerMedia(original,{actor:'late-import'}),{code:'studio_media_owned_elsewhere'});
+   if(paths.length===2)throw Error('fixture-provider-error');
+  }}}});
+ const input=()=>({dealerId:'astrid',expectedRevision:project.revision});
+ // Runtime legacy JSON is decoded before deciding ownership; labels/prose and
+ // bare content hashes alone do not name a media identity or pathname.
+ for(const {metadata,encoding,corruptHash} of [
+  {metadata:{videoId:originals[0].id}},
+  {metadata:{storage:{pathname:originals[0].pathname}}},
+  {metadata:{videoId:originals[0].id},encoding:'unicode'},
+  {metadata:{storage:{pathname:originals[0].pathname}},encoding:'slashes'},
+  {metadata:{notes:'unrelated source'},corruptHash:true},
+  {metadata:{notes:`old media ${originals[0].id}`,sha256:originals[0].sha256}},
+ ]){
+  const catalog=runtimeCatalogJsonFixture(metadata);
+  if(encoding){
+   const [path]=Object.keys(catalog.legacy.entries);
+   let encoded=catalog.legacy.entries[path].replaceAll('-','\\u002d');
+   if(encoding==='slashes')encoded=encoded.replaceAll('/','\\/');
+   catalog.legacy.entries[path]=encoded;
+   catalog.layout.files[0].sha256=createHash('sha256').update(encoded).digest('hex');
+   catalog.layout.files[0].size=Buffer.byteLength(encoded);
+   validateRuntimeMediaCatalog(catalog);
+   assert.deepEqual(JSON.parse(encoded),metadata);
+  }
+  if(corruptHash)catalog.layout.files[0].sha256='0'.repeat(64);
+  await f.pool.query(`INSERT INTO croupier_studio.runtime_media_catalogs(environment_id,workspace_id,revision,value) VALUES($1,'foreign',$2,$3::jsonb)
+    ON CONFLICT(environment_id,workspace_id) DO UPDATE SET revision=excluded.revision,value=excluded.value`,
+    ['runtime-owner',runtimeCatalogRevision(catalog),runtimeCatalogJson(catalog)]);
+  if(corruptHash){
+   await assert.rejects(deletion.checkDealer(input()),{code:'studio_media_delete_coverage_incomplete'});
+   await assert.rejects(deletion.removeDealer(input(),{stillAuthorized:async()=> 'fixture'}),{code:'studio_media_delete_coverage_incomplete'});
+   assert.equal(paths.length,0);assert.ok((await f.raw.listMedia()).every(row=>!row.deletion));
+   continue;
+  }
+  const check=await deletion.checkDealer(input());
+  if(metadata.notes)assert.deepEqual(check,{allowed:true,count:6});
+  else{
+   assert.deepEqual(check,{allowed:false,reason:'studio_media_in_use',count:6});
+   await assert.rejects(deletion.removeDealer(input(),{stillAuthorized:async()=> 'fixture'}),{code:'studio_media_in_use'});
+   assert.equal(paths.length,0);assert.ok((await f.raw.listMedia()).every(row=>!row.deletion));
+  }
+ }
+ assert.deepEqual(await deletion.checkDealer(input()),{allowed:true,count:6});
+ await assert.rejects(deletion.removeDealer(input(),{stillAuthorized:async()=> 'fixture'}),{code:'studio_dealer_delete_pending'});
+ project=(await f.raw.readDocument('project')).value;
+ await assert.rejects(change(false),{code:'studio_dealer_delete_pending'});
+ project=await deletion.removeDealer(input(),{stillAuthorized:async()=> 'fixture'});
+ assert.equal(paths.length,7);assert.deepEqual([...new Set(paths)].sort(),originals.map(row=>row.pathname).sort());
+ assert.equal(project.dealers.some(row=>row.id==='astrid'),false);assert.deepEqual(project.dealerTrash,[]);
+ for(const original of originals){const {revision,updatedAt,deletion,...row}=await f.raw.getMedia(original.id);assert.equal(deletion.state,'deleted');assert.deepEqual(row,{...original,classification:{...original.classification,archived:true}});}
+ assert.deepEqual((await f.raw.listMedia()).filter(row=>row.classification.dealerId!=='astrid'),otherRows);
+ assert.deepEqual(await f.raw.listLifecyclePackages(),packages);
+});
 
 test('an empty company in the trash is deleted with its own rows; an active one and a wrong name are refused',async t=>{
  const f=await fixture(t);

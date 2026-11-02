@@ -27,6 +27,11 @@ import {isPresentationRoomReadQuery} from '../lib/studio-admin-contract.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import {draftReviewSurfaces,isDraftValidationFailure,lostDraftChoices} from '../lib/room-release.mjs';
 import {withNativeFilmedPlanningReadiness} from '../../../packages/presentation/server/native-filmed-readiness-context.mjs';
+import {publicEditableBranding} from '../../../packages/operators/contracts/branding.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
+import {operatorAuditContext} from '../lib/operator-audit-context.mjs';
+import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 
 // Utan konto-id: en betrodd adapter utan rätt att publicera utseende (som före andra versionen).
 const actor={user:'release-admin',role:'admin'};
@@ -598,6 +603,105 @@ test('a live choice the new template removes does not stop a draft that leaves i
   assert.deepEqual(misfit.blockers,[{area:'roomChoices',code:'studio_release_invalid',reason:'studio_room_choices_draft_invalid'}]);
   await assert.rejects(f.post(f.bodyOf(misfit),{actor:designer}),code('studio_release_invalid',422,{reason:'studio_room_choices_draft_invalid'}));
   assert.deepEqual(await f.persisted(),untouched);
+});
+
+test('a room material choice publishes against the frozen package when full publication is blocked by a paused room',async t=>{
+  const f=await releaseFixture(t),a=f.id('north-a'),b=f.id('north-b');
+  const green='00000000-0000-4000-8000-00000000b001',blue='00000000-0000-4000-8000-00000000b002';
+  const asset=id=>{const row={schemaVersion:1,id,role:'background',label:id===green?'Green':'Blue',contentType:'image/png',sha256:'b'.repeat(64),size:32,width:1920,height:1080};
+    return {...row,pathname:layerAssetPath(row)};};
+  let project=await f.raw.readDocument('project');
+  await f.raw.saveDocument('project',{expectedRevision:project.revision,actor:'fixture',value:{...project.value,
+    layerAssets:[...(project.value.layerAssets??[]),asset(green),asset(blue)],lanes:project.value.lanes.map(lane=>lane.id!==f.lane?lane
+      :{...lane,composition:defaultCompositionSettings(),layers:{...lane.layers,background:{enabled:true,mode:'image',default:green,allowed:[green,blue]}}})}});
+  await f.post({operatorId:'north',lanes:[f.lane]});
+  for(const name of ['north-a','north-b']){await f.saveDraft(name,{language:'sv',limitPreset:'casual'});await f.publish(await f.read(name));}
+  let pack=await f.direct.getCurrentPackage('north');
+  await f.direct.publishPackage({actor:'fixture',operatorId:'north',expectedRevision:pack.revision,lanes:pack.lanes,games:pack.games,tables:pack.tables,
+    rooms:pack.rooms.map(room=>room.id===b?{...room,state:'pending'}:room),branding:pack.branding});
+  pack=await f.direct.getCurrentPackage('north');
+  await f.direct.saveBrandingDraft({actor:designer.user,operatorId:'north',expectedPackageRevision:pack.revision,expectedDraftRevision:0,
+    branding:{...publicEditableBranding(pack.branding),roomOverrides:{[a]:{background:blue}}}});
+  // Saving an unassigned environment advances the project without touching either published room.
+  project=await f.raw.readDocument('project');
+  await f.raw.saveDocument('project',{expectedRevision:project.revision,actor:'fixture',value:{...project.value,
+    lanes:[...project.value.lanes,{...structuredClone(project.value.lanes[0]),id:'unrelated-material-draft',label:'Unrelated draft'}]}});
+  const view=await f.read('north-a','north',{actor:designer}),before=await f.persisted();
+  assert.equal(view.ready,true,JSON.stringify(view.blockers));
+  await assert.rejects(f.post(f.bodyOf(view),{actor:designer}),code('studio_conflict',409,{step:'room_config_head'}));
+  assert.deepEqual(await f.persisted(),before,'the failed publication preserves both rooms, package, draft and audit');
+  let authorized=true,failAudit=false;
+  const readAdministration=()=>f.raw.readDocument('administration');
+  const brandingApi=createPartnerBrandingApi({store:f.direct,readAdministration,readProject:()=>assert.fail('must keep the frozen presentation'),
+    materials:{listMaterials:()=>assert.fail('must not merge unpublished company material')},
+    withWriteContext:(work,options)=>f.repository.transaction(()=>f.repository.withTransactionClient(async client=>{
+      const sql={query:(text,values)=>failAudit&&text.includes('operator-store:audit-write')?Promise.reject(new Error('injected audit failure')):client.query(text,values)};
+      const store=await createOperatorStore({sql,scope:f.scope,transaction:callback=>callback(sql)});
+      return work({store,readAdministration,reauthorize:async()=>authorized,withMutationContext:f.repository.withMutationContext});
+    }),options)});
+  const command=async(action,extra={})=>brandingApi.command({action,operatorId:'north',actor:designer.user,audit:operatorAuditContext(designer),
+    expectedDraftRevision:(await f.direct.getBrandingDraft('north')).revision,expectedPackageRevision:pack.revision,...extra});
+  const review=await command('review'),publish=extra=>command('publish-room-material',{roomId:a,reviewToken:review.reviewToken,...extra});
+  const initialConfig=Object.fromEntries(before.configs.map(row=>[row.room_id,JSON.parse(row.body)]));
+  await t.test('roles, room ownership and stale review or package are denied without writes',async()=>{
+    for(const extra of [{audit:{...operatorAuditContext(designer),accessClass:'partner'}},{roomId:f.id('south')},{roomId:b},
+      {expectedPackageRevision:pack.revision-1},{expectedDraftRevision:0},{reviewToken:'stale'}]) {
+      await assert.rejects(publish(extra),error=>[403,404,409].includes(error.statusCode));
+      assert.deepEqual(await f.persisted(),before);
+    }
+    authorized=false;await assert.rejects(publish(),{statusCode:403});authorized=true;
+    assert.deepEqual(await f.persisted(),before);
+  });
+  await t.test('audit failure rolls back material package, native config and draft together',async()=>{
+    failAudit=true;await assert.rejects(publish(),{statusCode:503});failAudit=false;
+    assert.deepEqual(await f.persisted(),before);
+  });
+  const result=await publish(),after=await f.direct.getCurrentPackage('north'),persisted=await f.persisted();
+  assert.equal(result.packageRevision,pack.revision+1);assert.equal(result.draft,null);
+  assert.equal(after.branding.roomOverrides[a].background,blue);
+  assert.deepEqual(readPackagePresentation(after),readPackagePresentation(pack),'the project save and new material are not captured');
+  assert.equal(after.branding.roomGameConfigVersions[b],pack.branding.roomGameConfigVersions[b]);
+  assert.deepEqual(persisted.configs.filter(row=>row.room_id===b),before.configs.filter(row=>row.room_id===b));
+  const currentA=JSON.parse(persisted.configs.find(row=>row.room_id===a&&row.version===after.branding.roomGameConfigVersions[a]).body);
+  assert.notEqual(currentA.configVersion,initialConfig[a].configVersion);assert.equal(currentA.packageRevision,after.revision);
+  assert.equal(currentA.language,initialConfig[a].language);assert.equal(currentA.limitPreset,initialConfig[a].limitPreset);
+  assert.equal((await f.raw.readDocument('project')).revision,(await f.read()).revisions.project);
+  assert.deepEqual(persisted.documents,before.documents,'project, game-settings draft and administration are untouched');
+  assert.equal(persisted.audits[0].count,before.audits[0].count+1,'the package audit commits');
+  assert.equal(persisted.drafts.at(-1).action,'draft.publish');
+  assert.equal(Number(persisted.drafts.at(-1).published_package_revision),after.revision,'the immutable draft journal binds the same package');
+  pack=after;
+  const save=async branding=>command('save-draft',{branding});
+  const freshPublish=async extra=>{const review=await command('review');return command('publish-room-material',{roomId:a,reviewToken:review.reviewToken,...extra});};
+  await t.test('other draft fields, other rooms and material outside the frozen package cannot enter the narrow publication',async()=>{
+    const good={...publicEditableBranding(pack.branding),roomOverrides:{[a]:{background:green}}};
+    const invalid=[{...good,dealer:'dragan'},{...good,roomOverrides:{[a]:{background:green,dealer:'dragan'}}},
+      {...good,roomOverrides:{...good.roomOverrides,[b]:{}}},
+      {...good,roomOverrides:{...good.roomOverrides,[b]:{background:blue}}},
+      {...good,roomOverrides:{[a]:{background:'00000000-0000-4000-8000-00000000ffff'}}}];
+    for(const branding of invalid){
+      // Use the store to inject an invalid existing draft as well: the publication
+      // must defend its boundary independently of the save form and save validator.
+      await f.direct.saveBrandingDraft({actor:designer.user,operatorId:'north',expectedPackageRevision:pack.revision,
+        expectedDraftRevision:(await f.direct.getBrandingDraft('north')).revision,branding});
+      const stable=await f.persisted();
+      await assert.rejects(command('publish-room-material',{roomId:a,reviewToken:'unused'}),{statusCode:422});
+      assert.deepEqual(await f.persisted(),stable);
+    }
+    await save(good);
+  });
+  await t.test('a changed administration invalidates the review and stale native media cannot be republished',async()=>{
+    const review=await command('review'),admin=await f.raw.readDocument('administration');
+    await f.raw.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'fixture'});
+    let stable=await f.persisted();
+    await assert.rejects(command('publish-room-material',{roomId:a,reviewToken:review.reviewToken}),{statusCode:409});
+    assert.deepEqual(await f.persisted(),stable);
+    const media=await f.raw.getMedia(f.source.records.find(row=>row.classification.kind==='action').id);
+    await f.raw.classifyMedia(media.id,{sha256:media.sha256,expectedRevision:media.revision,metadata:{...media.classification,notes:'Changed after freeze'},actor:'fixture'});
+    stable=await f.persisted();
+    await assert.rejects(freshPublish(),{statusCode:422});
+    assert.deepEqual(await f.persisted(),stable);
+  });
 });
 
 test('only the choices the appearance draft changes are compared, and only validation failures become draft_invalid',()=>{

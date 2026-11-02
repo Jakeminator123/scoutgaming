@@ -107,7 +107,6 @@ test('exact legacy migration keeps a private backup and does not alter workspace
   old.gateway.auth = { mode: 'token', token: '${OPENCLAW_GATEWAY_TOKEN}' };
   old.gateway.controlUi = { enabled: false };
   delete old.agents.entries['croupier-operator'];
-  delete old.agents.entries['croupier-social'];
   delete old.agents.entries['croupier-speech'];
   delete old.agents.defaults;
   delete old.talk;
@@ -147,22 +146,6 @@ test('adding explicit ownership backs up native config and preserves human tool/
   assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
 });
 
-test('adding the social role preserves existing agents and retains the pre-social config', async (t) => {
-  const env = await fixture(t);
-  const existing = gatewayConfig(env);
-  delete existing.agents.entries['croupier-social'];
-  existing.agents.entries['croupier-chat'].name = 'Hand-edited lab chat';
-  const original = JSON.stringify(existing);
-  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
-  const result = await prepareGatewayConfig(env, { validateConfig: validateFixture });
-  assert.equal(result.action, 'reconcile-social');
-  assert.ok(result.backupPath.endsWith('.pre-social-migration.bak'));
-  assert.equal(await readFile(result.backupPath, 'utf8'), original);
-  for (const [id, agent] of Object.entries(existing.agents.entries)) assert.deepEqual(result.config.agents.entries[id], agent);
-  assert.deepEqual(result.config.models, existing.models);
-  assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
-});
-
 test('adding the speech role preserves operator chat and retains the pre-speech config', async (t) => {
   const env = await fixture(t);
   const existing = gatewayConfig(env);
@@ -178,16 +161,6 @@ test('adding the speech role preserves operator chat and retains the pre-speech 
   assert.deepEqual(result.config.models, existing.models);
   assert.deepEqual(result.config.agents.entries['croupier-speech'].tools.deny, ['*']);
   assert.equal((await prepareGatewayConfig(env, { validateConfig: validateFixture })).action, 'reuse');
-});
-
-test('social role conflicts leave saved config byte-for-byte unchanged', async (t) => {
-  const env = await fixture(t);
-  const existing = gatewayConfig(env);
-  existing.agents.entries['croupier-social'].tools = { allow: ['exec'] };
-  const original = JSON.stringify(existing);
-  await writeFile(env.OPENCLAW_CONFIG_PATH, original);
-  await assert.rejects(prepareGatewayConfig(env, { validateConfig: validateFixture }), /social role conflict/);
-  assert.equal(await readFile(env.OPENCLAW_CONFIG_PATH, 'utf8'), original);
 });
 
 test('adding model candidates preserves older role backups and retries the same source safely', async (t) => {

@@ -37,7 +37,6 @@ test('Director root build context admits runtime sources but excludes local keys
   }
   assert.equal(included('services/openclaw/lab/src/server.mjs'), true);
   assert.equal(included('packages/director/engine.mjs'), true);
-  assert.equal(included('packages/director/node/companion-store.mjs'), true);
   for (const privatePath of ['packages/director/.env', 'packages/director/node/companion.sqlite', 'packages/director/node/companion.json', 'packages/director/node_modules/extra/index.mjs']) assert.equal(included(privatePath), false, privatePath);
   assert.equal(included('packages/presentation/contracts/dealer-identity.mjs'), true);
 });
@@ -82,7 +81,6 @@ test('isolated Docker COPY inputs resolve the complete Director graph and serve 
   }
   assert.ok(copied.includes('packages/presentation/contracts/dealer-identity.mjs'));
   assert.ok(copied.includes('packages/director/engine.mjs'));
-  assert.ok(copied.includes('packages/director/node/companion-store.mjs'));
   const isolatedLab = join(fixture, 'app/services/openclaw/lab');
   const script = `
     import assert from 'node:assert/strict';

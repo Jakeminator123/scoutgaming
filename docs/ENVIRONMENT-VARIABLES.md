@@ -105,7 +105,7 @@ Staged-kontrollen jämför env-uttryck och deras direkta standardvärden i HEAD 
 | --- | --- | --- |
 | `CROUPIER_VERCEL_UNIFIED_UI` | `1`: en publik origin för spel och Admin | `packages/server-transport/configuration.mjs` (`unifiedUi`, `labUiOrigin` = den publika originen), `apps/studio/lib/studio-native-runtime.mjs`, `studio-native-request.mjs`, `apps/studio/proxy.ts` |
 | `CROUPIER_STUDIO_NATIVE_ADMIN` | `1`: Admin körs nativt på Vercel | `nativeStudioAdminEnabled()` i `studio-native-runtime.mjs`, `nativeStudio` i `configuration.mjs` |
-| `CROUPIER_LAB_BASE_PATH` | `/studio` | `apps/studio/next.config.mjs` (`basePath`, `NEXT_PUBLIC_LAB_BASE_PATH`), `client/build.mjs`, `client/surface-bundle.mjs`, `app/layout.tsx`, `companion-server.mjs`, `proxy.ts` |
+| `CROUPIER_LAB_BASE_PATH` | `/studio` | `apps/studio/next.config.mjs` (`basePath`, `NEXT_PUBLIC_LAB_BASE_PATH`), `client/build.mjs`, `client/surface-bundle.mjs`, `app/layout.tsx`, `proxy.ts` |
 | `CROUPIER_STUDIO_NEON_POLICY` | `1`: Neon är registret | `saved-game-policy.mjs`, `packages/navigation/game-entry.mjs` (`gameEntryEnabled`), `canonicalGame` i `configuration.mjs` och `ops/cloud/vercel-ingress.mjs`, `ops/cloud/config.mjs`, `container-entry.mjs`, `services/game/server.mjs` och talets journalkrav |
 | `CROUPIER_MEDIA_STORAGE` | `blob`: privat Blob | `ops/cloud/config.mjs`, `container-entry.mjs`, `private-media-contract.mjs` och `media-runtime.mjs` (Blob är konfigurerad när `BLOB_READ_WRITE_TOKEN` finns), `services/game/server.mjs` |
 
@@ -220,7 +220,7 @@ Registerposten är `render-openclaw-director`; standardvärden står i Blueprint
 | `OPENCLAW_DASHBOARD_ENABLED` | valfri | Gatewayns inloggning via Director |
 | `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY` | valfri, hemlig | Ed25519-nyckel (base64 PKCS8) för Admins modellval; bara på Director |
 | `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK` | valfri | Utan origin används `RENDER_EXTERNAL_URL` (värdhanterad) när `OPENCLAW_DASHBOARD_ENABLED=true`; loopback bara lokalt |
-| `LAB_COMPANION_ENABLED`, `LAB_COMPANION_FUN_ENABLED`, `LAB_COMPANION_WEB_ENABLED` | valfri | Följeslagarfunktionerna; bara `false` stänger av |
+| `LAB_COMPANION_ENABLED`, `LAB_COMPANION_FUN_ENABLED` | valfri, sätts på Director | Operatörschattens persona/humor; bara `false` stänger av. Den pensionerade labbchatten använder dem inte längre |
 | `OPENCLAW_PRODUCT_SPEECH_URL` | valfri, bara lokalt | Directors egen relämottagare i labbet; sätts inte på Render |
 | `LAB_REMOTE_URL`, `LAB_REMOTE_TOKEN` | nekas | Lokalt fjärrläge som skickar vidare till en annan Director; stänger av Gateway-inloggningen och sätts aldrig på Render |
 
@@ -233,6 +233,10 @@ Directors läsare är `packages/director/configuration.mjs` (`DIRECTOR_ENV_KEYS`
 ## Gateway `croupier-lab-openclaw`
 
 Privat tjänst; registerposten är `render-openclaw-gateway`.
+
+Gatewayns privata sökhjälp läser fortsatt `LAB_COMPANION_ENABLED` och
+`LAB_COMPANION_WEB_ENABLED` (valfria, sätts på Gateway; bara `false` stänger av
+sökning). Dashboard-handoff har sitt separata behörighetskontrakt.
 
 | Namn | Krav | Syfte |
 | --- | --- | --- |

@@ -58,8 +58,6 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/director/admin-error.mjs',
       'packages/director/astrid-observation.mjs',
       'packages/director/companion-personas.mjs',
-      'packages/director/companion-search.mjs',
-      'packages/director/companion.mjs',
       'packages/director/configuration.mjs',
       'packages/director/conversation-memory.mjs',
       'packages/director/dashboard-handoff-contract.mjs',
@@ -68,10 +66,8 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/director/product-probe.mjs',
       'packages/director/product-speech.mjs',
       'packages/director/generated-speech-text.mjs',
-      'packages/director/social.mjs',
       'packages/director/speech-routing.mjs',
       'packages/director/studio-admin-contract.mjs',
-      'packages/director/node/companion-store.mjs',
     'packages/director/node/settings-reader.mjs',
       'apps/studio/lib/director-settings.mjs',
       'services/game/director-settings.mjs',
@@ -112,7 +108,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'services/game/games/roulette/room.mjs', 'services/game/games/roulette/storage.mjs', 'services/game/games/roulette/access.mjs', 'services/game/games/roulette/index.mjs', 'services/game/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'apps/studio/lib/partner-session.mjs', 'apps/studio/lib/partner-team-api.mjs', 'apps/studio/lib/operator-audit-context.mjs', 'apps/studio/lib/operator-admin-api.mjs', 'apps/studio/lib/operator-journal.mjs',
-      'ops/neon-studio/011-gpu-daily-budget.sql', 'ops/neon-studio/migrations.mjs', 'packages/operators/server/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
+      'ops/neon-studio/011-gpu-daily-budget.sql', 'ops/neon-studio/migrations.mjs', 'packages/operators/server/operator-store.mjs',
       'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/server/craig-identity.mjs', 'packages/studio-access/server/bo-auth-epoch.mjs', 'packages/studio-access/server/partner-access-policy.mjs',
       'packages/studio-access/display-name.mjs',
       'packages/storage/server/postgres-store.mjs', 'packages/operators/server/operator-lifecycle.mjs', 'packages/presentation/contracts/game-lanes.mjs',
@@ -253,8 +249,6 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const { runStudioCutoverChecks } = await import('../test/studio-cutover-integration.mjs');
     const current = await runStudioCutoverChecks({ pool, restart, tls: { key: await readFile(join(root, 'fixture.key')), cert: await readFile(join(root, 'fixture.crt')) } });
     pool = current.pool;
-    const { runSpeechLedgerImportSqlChecks } = await import('../test/speech-ledger-import.mjs');
-    const imported = await runSpeechLedgerImportSqlChecks({ pool, restart }); pool = imported.pool;
     const { runPartnerTeamPostgresChecks } = await import('../test/partner-team-postgres.mjs');
     const { runPartnerBrandingPostgresChecks } = await import('../test/partner-branding-postgres.mjs');
     const partnerChecks = await runPartnerDatabaseQa({ adminPool: pool, pgPort, createPool: options => new Pool(options),
@@ -269,7 +263,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
     const {runMovingDriftExecutorSqlChecks}=await import('../test/fixtures/moving-drift-executor-sql-checks.mjs');
     const execution=await runMovingDriftExecutorSqlChecks({pool});
-    const integrationChecks = [...current.checks, ...imported.checks, ...partnerChecks, ...roulette.checks, ...drift.checks,...execution.checks];
+    const integrationChecks = [...current.checks, ...partnerChecks, ...roulette.checks, ...drift.checks,...execution.checks];
     if (JSON.stringify(await sourceHashes()) !== JSON.stringify(before)) throw new Error('isolated_qa_sources_changed_rerun_required');
     console.log(JSON.stringify({ acceptance: 'isolated-studio-sql-restart-https', postgres: 'localhost/studio_qa/postgres', retainedContractChecks, legacyChecks: existing.checks, integrationChecks, sourceHashes: before }, null, 2));
     await pool.end(); pool = null; await stop();

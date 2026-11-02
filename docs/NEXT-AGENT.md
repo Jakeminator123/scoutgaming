@@ -6,6 +6,24 @@ Aktuell samordning 2 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scout
 
 Dokument följer samma gräns på 1 MiB och exakta krympande undantagslista som andra filer. Git-objekt-/eventkontrollen och medieskyddet består. Full CI kör samma sviter på fyra befintliga ben: Studio ensam, Admin/contracts på databasbenet, access/presentation och speech/gameplay. CSS och OpenClaw-deploy behåller sina två tidigare ben och stegflaggor. Ingen uppmätt tidsvinst hävdas; mergegrindens paketspärr är oförändrad. [Kontrollguiden](../tools/system-map/README.md#leveranskontroller) och Atlas visar körbara samband. Exakt-head CI och faktiskt mergekvitto hör till PR:en.
 
+## Avgränsat materialbyte för ett spelbord 2 november
+
+Admins Utseende erbjuder **Publicera materialval** när hela utkastets enda
+ändringar gäller det valda blackjackbordets bakgrund eller bordsgrafik och
+bordet redan har publicerade spelinställningar. Den befintliga brandingvägen
+verifierar gränsen under låset och använder det frysta paketets tillåtna
+material. Projektutkast och nytt bolagsmaterial följer inte med.
+J08 skriver rummets nya config tillsammans med paket och journal; ett pausat
+grannrum behåller sin configVersion och historiska packageRevision.
+
+Reproduktionen i `room-release.test.mjs` visar att den fullständiga
+publiceringen ger 409 efter en orelaterad projektsparning när ett annat
+konfigurerat rum är pausat. Samma prov verifierar avgränsat byte, obehörighet,
+CAS, främmande material, ändrade medier och rollback vid journalfel.
+UI- och Chromeproven täcker spara → granska → publicera på mobil och dator.
+Lokala resultat och slutlig SHA hör till PR:en; CI och driftacceptans följs
+separat. Ingen produktdata eller process i Render ändras av uppdraget.
+
 ## Återuppta arbete mellan IDE:er 2 november
 
 Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.
@@ -53,6 +71,38 @@ Riktade SQL-, native- och browserprov samt leveransbevis anges i ändringens PR.
 Ingen DDL, produktionsdata, mediebytes eller driftacceptans ingår.
 Säkert materialbyte är nästa separata delmål.
 
+## Social-/companionkod avvecklad 2 november
+
+Eventstudios kvarvarande API, Director-endpoints, minneslager och Gateway-rollens
+kodregistrering är borttagna. Aktiv operatörschatt, privat sökning och produkttal
+har kvar sina egna vägar. Den generella registervalidatorn behåller läsning,
+export och återställning av det kvarvarande `social-policy`-dokumentet.
+Ingen data, molnkonfiguration eller deploy har ändrats. Separat avveckling av
+Neon-dokumentet och lagrad Gateway-/companiondata återstår enligt
+[AI-guiden](AI/README.md#avvecklad-labbchatt); provbevis hör till PR:en.
+
+## Retained-originalens livscykel 2 november
+
+De sex befintliga retained-posterna kan arkiveras, återställas och uttryckligen
+raderas genom [medielivscykeln](storage/BLOB-NEON.md#radering). Grundidentitet,
+proveniens och originalklassificering består; bara arkivflagga och den gemensamt
+validerade tombstonen ändras. Dealerns cascade inkluderar originalen och flyttar
+Astrids globala legacy-grundloop även när dess ID saknar en medieregisterrad.
+Andra dealers policies och poster består; återställning öppnar inte tal eller rum.
+
+Referenser i runtimekatalogen, inklusive tolkad legacy-JSON, ingår i raderingskontrollen.
+Hela kataloginventeringen avkodas före jämförelsen: giltiga JSON-escapes får inte
+gömma ett id eller en sökväg. Oläsbar eller ofullständig katalog stoppar radering;
+prosa med ett id som delsträng och en ensam filhash räknas inte som ägare.
+Pending/deleted stoppar återimport över scopegränsen och bytehämtning. Arkiverade
+original återförs inte till aktiva familjevarianter. 192 riktade prov och ett
+PGlite-flöde med alla sex original passerar lokalt på Node 24.21.0, med fel/resume,
+alias, CAS, auth, referenser och oförändrade andra dealers/paket.
+
+Ingen produktdata, Blob-byte, DDL eller miljövariabel ändras av leveransen.
+Faktisk Astrid-avveckling följer [avvecklingsordningen](storage/BLOB-NEON.md#avveckling-av-produktdata-och-original)
+och separat uppdrag; kodprov är inte drift- eller produktdataacceptans.
+
 ## CI-bas och historikprov 1 november
 
 Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och dess verkliga bas, samma källa som testurvalet och mergeverktyget. En äldre bas i händelsens metadata orsakar inte längre ett falskt stopp; fel SHA/ref/head och dolda stora mellanliggande objekt avvisas fortsatt. Historikprovet använder Admins aktiva flikkomponent och behåller dealer-/rumskontext, kategorifilter, historik och utkastskydd.
@@ -61,15 +111,19 @@ Storlekskontrollen binder PR-intervallet till GitHubs exakta mergecommit och des
 
 Sju gamla Admin-actions utan implementation och fyra workspace-läsare utan UI-konsument är borttagna. Dealerverktygen använder hubbens navigation; den dubbla Studio-flikraden och dess förbrukade komponentkontrakt är borta. Filter, dealerbyte, historik, utkastskydd, CAS och scope verifieras fortfarande med beteendeprov. Den gamla Studio-probe-routen och dess adapter är avvecklade efter Jakobs uttryckliga godkännande; motorns probe är en separat aktiv tjänst. Exakta prov- och mergebevis hör till ändringens PR.
 
-## Klientens layout- och chattkontroller 1 november
+## Klientens beteendeprov 2 november
 
-Tre extraktioner från chattavsnittets tidigare inventering är genomförda:
 `action-placement`, `game-overlay-layout` och `dealer-chat-visibility` importerar
-nu klientens [game-interface](../services/game/public/game-interface.mjs) och
+klientens [game-interface](../services/game/public/game-interface.mjs) och
 [dealer-chat-controls](../services/game/public/dealer-chat-controls.mjs).
 Mobilplacering, lagliga knappar, första frame/stängning, återupptagen ytterhand
-och chatt-/röstreadiness har kvar beteendeprov. De sju övriga källsnitten är
-oförändrade och passerar i den angränsande klientkörningen. Endast konsumenter
+och chatt-/röstreadiness har kvar beteendeprov. Dealerurval, previewkontroller,
+repetition, filmägarskap, utfallsfeedback, utdelningschatt och roulette importerar
+också produktens kontroller; källsnitt, omskrivna exporter och VM-körning är borta
+ur de berörda proven. [Klientguiden](../services/game/public/README.md) visar
+modulerna och de kvarvarande gränserna mot dokument, media och server.
+De riktade klientproven och webbens modulbygge passerar lokalt på Node 24.21.0.
+Endast konsumenter
 på main/preview styr fortsatt avveckling. Exakta lokala prov och leveransbevis
 hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
@@ -77,17 +131,11 @@ hör till PR:en; ingen ny deploy- eller AV-acceptans ingår.
 
 Spelklienten använder [chat-requests.mjs](../services/game/public/chat-requests.mjs) för spelarens chattanrop och native-bryggans `onSubmit`. Det rena källsnittet i [strömprovet](../test/generated-speech-stream-player.mjs) är ersatt med verkliga anrop genom spelklientens API: exakt JSON-body, NDJSON/JSON, strömflagga bara för spelaren, abort, upptagenstatus och gamla svar efter dealer-/session-/rundbyte. Befintlig playbackdiagnostik och dess livscykelprov är bevarade. 77 riktade chatt-/brygg-/klientprov och 2 webbbyggprov passerar lokalt på Node 24.21.0; ingen ny drift- eller AV-acceptans ingår.
 
-De sju kvarvarande granskade källsnitten kör verkligt beteende och ska behålla täckningen när följande kod flyttas till importerbara produktmoduler. De är bedömda men inte ändrade i denna leverans:
-
-| Prov under `test/` | Nästa avgränsade extraktion |
-| --- | --- |
-| `player-choices.mjs` | Dealerurval till spel/repetition samt lobby-/preview-retur. |
-| `studio-preview-client.mjs` | Insatskontroller, preview-notis och samma returkontroller som ovan; behåll maxgränser och sessionisolering. |
-| `dealer-version-switcher.mjs` | Repetitionspanelens byte, status, uppspelning, batchgranskning och readiness. |
-| `filmed-action-ownership.mjs` | `beginDealingTake`, `endDealingTake` och `revealHole`, med befintliga ägar-/avbrottsprov. |
-| `blackjack-feedback.mjs` | Presentationen av avräkning: tal, ljud och blackjackmarkering utifrån serverutfallet. |
-| `moving-speech-deal-plan.mjs` | Frame-/kortcommitkontroller samt köad chatt och återhämtning efter avvisad/tvetydig start. |
-| `roulette-wheel.mjs` | Rundans submit-/kvittoflöde och direkt import av hjulmonteringen, med bevarat skydd mot dubbel insats. |
+De tidigare listade klientkällsnitten är nu ersatta. Beteendeproven behåller
+maxinsatser, previewisolering, filmägare/hålkortsvisning, serverstyrda vinster,
+exakta frame-/kortcommits och idempotenta roulettkvitton. De prövar även sena
+svar efter dealer-/session-/rundbyte, stängd repetition och tvetydig start utan
+automatisk ny insats. Detta är ingen inventering av alla andra testharness i repot.
 
 ## Funktionsmappar för dealers 1 november
 

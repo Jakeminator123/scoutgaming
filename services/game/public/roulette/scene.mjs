@@ -1,3 +1,4 @@
+import {WHEEL,pocketColor} from '/roulette-rules.mjs';
 import {mountPublishedScene} from '/published-scene.mjs';
 import {validatePublicOperatorRooms} from '/operator-rooms-contract.mjs';
 import {validatePublicOperatorPreview} from '/operator-preview-contract.mjs';
@@ -57,7 +58,7 @@ export async function mountRoomScene(room,{onTable=()=>{},onDealerClip=()=>{}}={
     const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
     canvas.role='img';canvas.setAttribute('aria-label','Roulettebord'+(dealer?' med '+preview.dealer.label:'')+' i '+room.name);canvas.hidden=true;
     host.append(canvas);
-    wheel=mountRouletteWheel(host,{designId:publishedTable?.designId,placement:settings.desktop.table,embedded:true,onPaint:()=>scene?.refresh()});
+    wheel=mountRouletteWheel(host,{designId:publishedTable?.designId,placement:settings.desktop.table,embedded:true,onPaint:()=>scene?.refresh()},{pockets:WHEEL,pocketColor});
     scene=mountPublishedScene(canvas,{dealer,background,table,tableMask:publishedTable?null:ROULETTE_TABLE_MASK,
       settings,layout:'desktop',compositing:dealer?.compositing,onDealerClip,tableOverlay:()=>wheel?.canvas,
       onReady:()=>{

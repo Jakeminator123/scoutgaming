@@ -1,9 +1,9 @@
-import {WHEEL,pocketColor} from '/roulette-rules.mjs';
 import {createSpin,presentationForRound,TAU} from './wheel-motion.mjs';
 
 // Calibrated only against catalog design roulette-anna-v1 (1708 x 920).
 // This replaces the generated number ring; it never determines a game result.
 export function mountRouletteWheel(host,{designId,placement,embedded=false,onPaint=()=>{}},{
+  pockets:WHEEL,pocketColor,document=globalThis.document,setTimeout=globalThis.setTimeout,clearTimeout=globalThis.clearTimeout,
   now=()=>performance.now(),requestFrame=cb=>requestAnimationFrame(cb),cancelFrame=id=>cancelAnimationFrame(id),
   reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches,
 }={}) {

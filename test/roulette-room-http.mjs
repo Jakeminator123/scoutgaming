@@ -4,9 +4,10 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {rouletteDocument} from '../services/game/games/roulette/http.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
-import {BETS,BET_BY_ID} from '../services/game/games/roulette/rules.mjs';
+import {BETS,BET_BY_ID,WHEEL,pocketColor} from '../services/game/games/roulette/rules.mjs';
 import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../services/game/public/roulette/table-layout.mjs';
 import {readFileSync} from 'node:fs';
+import {registerHooks} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {validatePublicOperatorRooms} from '../packages/presentation/contracts/operator-rooms-contract.mjs';
 import {validatePublicOperatorPreview,previewMediaPath} from '../packages/presentation/contracts/operator-preview-contract.mjs';
@@ -33,7 +34,7 @@ test('room document preserves login context and serves only explicit public asse
   assert.doesNotMatch(page.headers.get('content-security-policy'),/d-id|blob:/);
   assert.match(page.headers.get('content-security-policy'),/script-src 'self';/);
   assert.equal(page.headers.get('cache-control'),'private, no-store');
-  for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
+  for(const asset of ['/roulette/app.mjs','/roulette/round-controller.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
     assert.equal(backendPlatformPath(asset),true);assert.equal((await get(asset)).status,200);
   }
   const image=await get('/roulette/assets/roulette-bord.png');
@@ -83,6 +84,7 @@ function contains(polygon,[x,y]) {
   return hit;
 }
 // Runs the actual roulette client against an inert document and returns what it sends and links.
+let clientImport=0;
 async function rouletteClient(search) {
   class Element {
     constructor(){this.style={setProperty(){}};this.dataset={};this.children=[];this.hidden=true;this.open=false;this.classList={toggle(){},add(){},remove(){},contains:()=>false};}
@@ -91,19 +93,20 @@ async function rouletteClient(search) {
   }
   const elements=new Map(),requests=[];let requested;const sent=new Promise(resolve=>{requested=resolve;});
   const original=new Map(['document','location','fetch','sessionStorage'].map(key=>[key,globalThis[key]]));
+  // Mirror the engine's public rules alias; relative imports resolve normally.
+  const imports=registerHooks({resolve(specifier,context,nextResolve){
+    return nextResolve(specifier==='/roulette-rules.mjs'?new URL('../services/game/games/roulette/rules.mjs',import.meta.url).href:specifier,context);
+  }});
   try {
     globalThis.document={title:'',fullscreenEnabled:false,createElement:()=>new Element(),querySelector:()=>new Element(),
       getElementById:id=>elements.get(id)??elements.set(id,new Element()).get(id)};
     globalThis.location={href:'https://game.example.invalid/play/roulette'+search,search};
     globalThis.sessionStorage={getItem:()=>null,setItem(){},removeItem(){}};
     globalThis.fetch=async(url,init)=>{requests.push([url,JSON.parse(init.body)]);requested();return Response.json({error:'roulette_room_not_found'},{status:404});};
-    const source=readFileSync(new URL('../services/game/public/roulette/app.mjs',import.meta.url),'utf8')
-      .replace("'/roulette-rules.mjs'",JSON.stringify(new URL('../services/game/games/roulette/rules.mjs',import.meta.url).href))
-      .replace("'./table-layout.mjs'",JSON.stringify(new URL('../services/game/public/roulette/table-layout.mjs',import.meta.url).href));
-    await import('data:text/javascript;base64,'+Buffer.from(source+'\n// '+search).toString('base64'));
+    await import(new URL('../services/game/public/roulette/app.mjs?fixture='+ ++clientImport,import.meta.url));
     await sent;await new Promise(resolve=>setImmediate(resolve));
     return {requests,login:elements.get('login').href};
-  } finally {for(const [key,value] of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
+  } finally {imports.deregister();for(const [key,value] of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 }
 test('extra address keys never become roulette room context, so the client reaches the same table',async()=>{
   const {createRouletteRoomAccess,validateRoomContext}=await import('../services/game/games/roulette/access.mjs');
@@ -178,7 +181,7 @@ function sceneFixture({deferReady=false,playWheelStart}={}){
   const mount=runInNewContext(sceneSource+'\nmountRoomScene;',{document,URLSearchParams,AbortController,AbortSignal,setTimeout,clearTimeout,performance,
     window:{addEventListener(name,listener){windowListeners[name]=listener;}},localStorage:{getItem:key=>stored[key]??null},
     fetch:async url=>{fetches.push(url);return Response.json(url.endsWith('/rooms')?catalog:preview);},
-    validatePublicOperatorRooms,validatePublicOperatorPreview,readChoices,ROULETTE_TABLE:prototype,ROULETTE_TABLE_MASK:prototypeMask,
+    validatePublicOperatorRooms,validatePublicOperatorPreview,readChoices,WHEEL,pocketColor,ROULETTE_TABLE:prototype,ROULETTE_TABLE_MASK:prototypeMask,
     rouletteSceneSettings:value=>({...value,prototypeGeometry:true}),
     mountRouletteWheel:()=>({play:(number,id,options)=>{wheelCalls.push(number);wheelOptions.push(options);return Promise.resolve();},showOutcome(){},close(){}}),
     mountPublishedScene(_canvas,options){calls.push(options);if(!deferReady)options.onReady();return {close(){closed++;},toggle(){},playWheelStart};},

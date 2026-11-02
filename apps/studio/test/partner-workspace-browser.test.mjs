@@ -36,7 +36,8 @@ let source;
 async function fixtureSource(){return source??=build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';
 import './app/globals.css';import './app/scout-theme.css';
 import {PartnerOperatorWorkspace} from './components/partner/partner-operator-workspace.jsx';
-const props=window.__PROPS__;createRoot(document.getElementById('root')).render(React.createElement(PartnerOperatorWorkspace,props));`,resolveDir:studio,loader:'jsx'},
+import {PartnerAppearance} from './components/partner-appearance';
+const props=window.__PROPS__;createRoot(document.getElementById('root')).render(React.createElement(props.initial?PartnerAppearance:PartnerOperatorWorkspace,props));`,resolveDir:studio,loader:'jsx'},
   bundle:true,write:false,outfile:'fixture.js',platform:'browser',format:'iife',jsx:'automatic',logLevel:'silent',
   define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'""','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"0"'},
   }).then(result=>({js:result.outputFiles.find(file=>file.path.endsWith('.js')).text,css:result.outputFiles.find(file=>file.path.endsWith('.css')).text}));}
@@ -58,8 +59,14 @@ function fixtureState(){
   return {initial,snapshot};
 }
 
-async function fixture(browser,path){
-  const {initial,snapshot}=fixtureState();let server=structuredClone(initial);
+async function fixture(browser,path,{material=false}={}){
+  const {initial,snapshot}=fixtureState();
+  if(material){
+    initial.rooms[1].materialPublishable=true;
+    initial.presentation.lanes[0].layers.background={enabled:true,mode:'image',default:'bg-green',allowed:['bg-green','bg-blue']};
+    initial.presentation.assets=[{id:'bg-green',role:'background',label:'Grön'},{id:'bg-blue',role:'background',label:'Blå'}];
+  }
+  let server=structuredClone(initial);
   const context=await browser.newContext(),failures=[],writes=[];
   await context.addInitScript(studioHistoryBootstrap);
   await context.route('**/*',async route=>{try{
@@ -71,14 +78,18 @@ async function fixture(browser,path){
       const body=JSON.parse(request.postData());writes.push(body);
       if(body.action==='save-draft'){server={...server,draftRevision:server.draftRevision+1,draft:{revision:server.draftRevision+1,basePackageRevision:server.packageRevision,branding:body.branding,updatedAt:Date.UTC(2026,9,28)}};return route.fulfill({json:server});}
       if(body.action==='review')return route.fulfill({json:{reviewToken:'fixture-review',draftRevision:server.draftRevision,packageRevision:server.packageRevision,branding:server.draft.branding,
-        changes:[{roomId:'room-vip',key:'roomOverrides.dealer',before:'astrid',after:'elin'}],affectedRooms:['room-vip']}});
-      if(body.action==='publish'){server={...server,packageRevision:server.packageRevision+1,branding:server.draft.branding,draft:null,draftRevision:server.draftRevision+1};return route.fulfill({json:server});}
+        changes:[{roomId:'room-vip',key:material?'background':'roomOverrides.dealer',before:material?'bg-green':'astrid',after:material?'bg-blue':'elin'}],affectedRooms:['room-vip']}});
+      if(body.action===(material?'publish-room-material':'publish')){
+        if(material){assert.equal(body.roomId,'room-vip');assert.equal(body.reviewToken,'fixture-review');}
+        server={...server,packageRevision:server.packageRevision+1,branding:server.draft.branding,draft:null,draftRevision:server.draftRevision+1};return route.fulfill({json:server});}
       return route.fulfill({status:409,json:{}});
     }
     if(url.pathname.includes('/preview'))return route.fulfill({status:404,json:{}});
     if(url.pathname.startsWith('/studio/api/'))return route.fulfill({status:404,json:{}});
     assert.equal(method,'GET');
-    return route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="sv"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script>window.__PROPS__=${JSON.stringify({surface:'partner',user:'north-admin',apiBase:'/studio/api/partner/snapshot',initialSnapshot:snapshot,initialView:'rooms',initialRoomId:new URL(path,origin).searchParams.get('room')})}</script><script src="/fixture.js"></script></body></html>`});
+    const props=material?{initial,apiBase:'/studio/api/partner',operatorSlug:'north',roomId:'room-vip',roomLayout:true,adminChoices:true,publication:'room'}
+      :{surface:'partner',user:'north-admin',apiBase:'/studio/api/partner/snapshot',initialSnapshot:snapshot,initialView:'rooms',initialRoomId:new URL(path,origin).searchParams.get('room')};
+    return route.fulfill({contentType:'text/html; charset=utf-8',body:`<!doctype html><html lang="sv"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script>window.__PROPS__=${JSON.stringify(props)}</script><script src="/fixture.js"></script></body></html>`});
   }catch(error){failures.push(error);await route.fulfill({status:500,body:'Isolated fixture failed'});}});
   // Bundle before navigating so a busy machine never turns the build into a navigation timeout.
   await fixtureSource();
@@ -86,6 +97,28 @@ async function fixture(browser,path){
   return {page,writes,async close(){await context.close();assert.deepEqual(failures,[]);}};
 }
 async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href),browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
+
+test('Admin material choices save, review and publish only the selected room in desktop and mobile Chrome',{skip:!browserModule},()=>withBrowser(async browser=>{
+  for(const width of [390,1280]){
+    const f=await fixture(browser,'/admin/rooms/room-vip',{material:true}),{page}=f;
+    try{
+      await page.setViewportSize({width,height:900});
+      const choices=page.locator('fieldset[data-kind="background"]');
+      await choices.locator('summary').click();
+      await page.getByRole('radio',{name:'Bakgrund: Blå',exact:true}).click();
+      await page.locator('[data-action="save-draft"]').click();
+      await page.getByRole('button',{name:'Publicera materialval',exact:true}).click();
+      const dialog=page.getByRole('dialog',{name:'Granska och publicera'});await dialog.waitFor();
+      assert.match(await dialog.textContent(),/Bara detta spelbords bakgrund och bordsgrafik publiceras/);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'actions stay inside the viewport');
+      await dialog.getByRole('button',{name:'Publicera nu',exact:true}).click();
+      await page.getByRole('dialog',{name:'Publicerat · version 8'}).waitFor();
+      assert.deepEqual(f.writes.map(row=>row.action),['save-draft','review','publish-room-material']);
+      assert.deepEqual(f.writes[0].branding,{lane:fixtureState().initial.presentation.lanes[0].id,roomOverrides:{'room-vip':{background:'bg-blue'}}});
+      assert.deepEqual(f.writes[2],{action:'publish-room-material',expectedDraftRevision:1,expectedPackageRevision:7,reviewToken:'fixture-review',roomId:'room-vip'});
+    }finally{await f.close();}
+  }
+}));
 // The bundle is built before navigating, but the first render still runs the whole shell, the editor's
 // dynamic import and its branding GET; on a busy CI machine that has exceeded the 10 s default.
 const FIRST_RENDER=30000;

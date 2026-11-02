@@ -167,7 +167,7 @@ Varje talad replik är ett paket: exakt text, ljud, video, frameindex, kalibreri
 
 ## Director och Gateway
 
-`tools/backup-render-state.mjs` har profilerna `director` och `gateway` och kopierar diskens filer som exakta bytes med hash före och efter. Den vägrar länkar och specialfiler och kontrollerar att `companion.json` respektive `companion-search.json` är kompletta.
+`tools/backup-render-state.mjs` har profilerna `director` och `gateway` och kopierar diskens filer som exakta bytes med hash före och efter. Den vägrar länkar och specialfiler och kontrollerar att det aktiva söklagret `companion-search.json` är komplett. Pensionerade `companion.json`/SQLite-filer kopieras som opaka bytes; de återaktiverar ingen kod.
 
 1. Stoppa tjänstens skrivare (suspendera tjänsten). `--quiesced yes` är din försäkran, inte en mätning.
 2. Ta snapshoten och flytta den till en privat plats utanför Render och Git; `/tmp` i containern är flyktig:
@@ -176,14 +176,14 @@ Varje talad replik är ett paket: exakt text, ljud, video, frameindex, kalibreri
    ```
    Gateway: `--profile gateway --source /data/openclaw`.
 3. Restore kräver stoppad tjänst, verifierad snapshot, rätt profil och tom monterad målrot: `node tools/backup-render-state.mjs restore --profile <director|gateway> --snapshot <snapshot> --destination <tom målrot> --quiesced yes`. Director återställs till `/data/catalog`, Gateway till `/data/openclaw`.
-4. Verifiera katalogrevision och historik, companion-profilen och att ett sparat sökkvitto återanvänds efter start och ytterligare en omstart.
+4. Verifiera katalogrevision, historik, kopierade bytes och att ett sparat sökkvitto återanvänds efter start och ytterligare en omstart.
 
 Konton, saldo och sko återställs alltid från Neon, aldrig från dessa diskar. En extern fullbackup av de två diskarna är ännu inte gjord. Daterat bevis från 27 oktober: Director och Gateway körde `cc415cd8`; O03 deployade dem inte. Se [NEXT-AGENT](NEXT-AGENT.md) för senare versionskvitton.
 
 ## Historiska arkiv
 
 - SQLite-vägen är borttagen ur `main` (steg 1–7). Gamla SQLite-arkiv och product-snapshots läses bara i ett isolerat mål, med verktygen vid Git-SHA `89343a655a6a44dbe2553a83f02294312070dc01` (sista main före borttagningen) eller med `sqlite3`. De återställs aldrig över Neon och blir aldrig en andra skrivare.
-- Den avvecklade produktdisken och den första Neon-importen har verifierade externa backuper på Jakobs dator (`CroupierBackups/production-disk-retirement-20261004` och `neon-game-20261002-132437`). De är historiska källor.
+- Den avvecklade produktdisken och den första Neon-importen har verifierade externa backuper på Jakobs dator (`CroupierBackups/production-disk-retirement-20261004` och `neon-game-20261002-132437`). De är historiska källor. Engångsimporten av diskbaserade taljournaler är avvecklad; taljournaler, tidigare försök och importkvitton återställs med Neon-backupen enligt stegen ovan.
 - Git-historiken skrevs om en gång 12 oktober 2026 med Jakobs godkännande; originalet finns som verifierad bundle utanför Git. Klona den bara till en separat tom katalog och publicera aldrig gammal historik.
 
 ## Byggdelar och Node-versioner

@@ -3,7 +3,15 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {validateRuntimeMediaCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
+import {validateRuntimeMediaCatalog,createEmptyRuntimeMediaCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
+
+// A valid captured JSON source, with exact UTF-8 metadata and no external bytes.
+export function runtimeCatalogJsonFixture(value) {
+  const catalog=createEmptyRuntimeMediaCatalog(),text=JSON.stringify(value),path='dealers/astrid/runtime/fixture.json';
+  catalog.layout.files.push({path,legacyPath:'fixture/source.json',access:'source',sha256:createHash('sha256').update(text).digest('hex'),size:Buffer.byteLength(text)});
+  catalog.legacy.entries['media/'+path]=text;
+  return validateRuntimeMediaCatalog(catalog);
+}
 
 export function readRuntimeCatalogFixture(root=fileURLToPath(new URL('../../',import.meta.url))) {
   const read=path=>JSON.parse(readFileSync(join(root,path),'utf8'));

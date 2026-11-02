@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import {playerLobbyPath} from '../../../../packages/navigation/player-lobby.mjs';
 
 const files = new Map([
-  ['/play/roulette','index.html'], ['/roulette-rules.mjs','rules.mjs'], ['/roulette/app.mjs','app.mjs'], ['/roulette/style.css','style.css'], ['/roulette/scene.mjs','scene.mjs'],
+  ['/play/roulette','index.html'], ['/roulette-rules.mjs','rules.mjs'], ['/roulette/round-controller.mjs','round-controller.mjs'], ['/roulette/app.mjs','app.mjs'], ['/roulette/style.css','style.css'], ['/roulette/scene.mjs','scene.mjs'],
   ['/roulette/media.mjs','media.mjs'], ['/roulette/assets/roulette-bord.png','assets/roulette-bord.png'],
   ['/roulette/table-layout.mjs','table-layout.mjs'],
   ['/roulette/wheel.mjs','wheel.mjs'], ['/roulette/wheel-motion.mjs','wheel-motion.mjs'],

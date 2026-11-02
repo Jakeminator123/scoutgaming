@@ -373,7 +373,7 @@ test('lobby operator survives into the engine proxy, also on a partner launch; o
 
 test('native Studio routes use the Vercel data writer while game commands stay on Render', () => {
   const native = platformConfiguration({...env,});
-  for (const path of ['/studio/api/project','/studio/api/social','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
+  for (const path of ['/studio/api/project','/studio/api/videos','/studio/api/videos/upload','/studio/api/videos/classify','/studio/api/videos/one']) {
     assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'studio',path);
   }
   assert.equal(platformRoute(new URL('/studio/api/social/profile',native.publicOrigin),native).kind,'backend');

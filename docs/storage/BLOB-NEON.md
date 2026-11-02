@@ -114,13 +114,23 @@ Frysta importkällor i `apps/studio/lib/dealers/dealer-import-sources.mjs` anvä
 
 ## Radering
 
-Ordinarie medieradering är det sista steget och behåller källoriginal. Uttryckligt beställd avveckling av original, som Astrid, följer [avvecklingsordningen nedan](#avveckling-av-produktdata-och-original) och uppdragets bevaringsgränser. Skydden som finns i koden ska återanvändas, inte byggas om:
+Arkivering och återställning ändrar registerstatus utan att ändra mediebytes. Permanent radering är det sista steget för exakt valda, registrerade medier. Uttryckligt beställd avveckling av original, som Astrid, följer [avvecklingsordningen nedan](#avveckling-av-produktdata-och-original) och uppdragets bevaringsgränser; andra källoriginal och historik raderas inte som bieffekt. Skydden som finns i koden ska återanvändas, inte byggas om:
 
 - Arkivering före permanent radering, revisions- och hashkontroll, objektlås och sekvensen `pending → radera Blob → deleted` med förnyad behörighetskontroll (`apps/studio/lib/studio-media-deletion.mjs`).
 - `inspectMediaDeletion` (`packages/studio-registry/server/repository.mjs`) läser dokument, paket, alias, Forge-profiler och icke-avslutade Forge-jobb, sparade talrepliker och talpaketens metadata, och kontrollerar Neons runtimeindex. Saknade tabeller, fler sidor eller okända svar stoppar raderingen.
-- Retained bank, publicerade paket, andra ägares poster och aktiva uppladdningar spärrar.
+- Aktiva referenser, publicerade paket, andra ägares poster och aktiva uppladdningar spärrar.
 - En aktiv GPU-session, giltig tallease eller oavslutad helfilsbegäran i miljön stoppar radering konservativt, eftersom äldre talsessioner saknar exakta indatareferenser.
 - Nya Forge-jobb kontrolleras atomiskt mot pending, deleted och arkiverad media under samma scopelås; ett sent providerutfall får aldrig återaktivera raderad media.
+
+De sex befintliga `retainedBank`-posterna följer samma `archive → restore` eller
+`archive → pending → Blob → deleted`. Proveniensmarkeringen är inget permanent
+raderingsförbud: ursprungligt id, hash, storlek, sökväg och klassificering består,
+med endast arkivflagga och validerad raderingsstatus som livscykelfält. Ny import
+i en annan arbetsyta får inte kringgå ett befintligt `pending` eller `deleted`.
+Dealerns arkivering flyttar även Astrids globala legacy-grundloop när dess
+medie-ID saknar en registerrad; andra dealers egna policies består. Återställning
+återaktiverar varken tal eller rum. Arkiverade och pending-original återförs inte
+till spelbara familjevarianter; deleted-poster ger inga bytes.
 
 "Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealers/dealer-lifecycle.test.mjs`, `apps/studio/test/dealers/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
 

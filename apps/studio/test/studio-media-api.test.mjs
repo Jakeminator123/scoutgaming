@@ -46,6 +46,38 @@ test('native classification cannot rewrite a retained original identity or bank 
   assert.deepEqual(pool.snapshot(),before);
 });
 
+test('archive and restore accept every exact retained identity without normalizing its original classification',async()=>{
+  const {api,repository}=await fixture();
+  for(const original of RETAINED_BANK_VARIANTS){
+    const record=createRetainedStudioMedia(original.id);await repository.registerMedia(record,{actor:'explicit-import'});
+    for(const archived of [true,false]){
+      const before=await repository.getMedia(record.id);
+      const response=await api.handle(request('/studio/api/videos/archive','POST',{id:record.id,sha256:record.sha256,previous:before.classification,archived}));
+      assert.equal(response.status,200,JSON.stringify(await response.json()));
+      const {revision,updatedAt,...after}=await repository.getMedia(record.id);
+      assert.notEqual(revision,before.revision);
+      assert.deepEqual(after,{...record,classification:{...record.classification,archived}});
+    }
+  }
+});
+
+test('retained archive preserves origin, role, refreshed authorization, exact hash/metadata and active-reference checks',async()=>{
+  for(const guard of ['origin','role','authorization','hash','metadata','reference']){
+    let authorizations=0;
+    const f=await fixture({authorize:async()=>({user:guard==='authorization'&&authorizations++?'Other':'Operator',role:guard==='role'?'reader':'admin',scope})});
+    const record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);await f.repository.registerMedia(record,{actor:'explicit-import'});
+    if(guard==='reference'){
+      const saved=await f.repository.readDocument('project'),next=structuredClone(saved.value);
+      next.lines.find(line=>line.dealerId==='astrid'&&line.eventId===record.classification.eventId).variants[0].videoGenerationId=record.id;
+      seedSavedVideoProject(f.pool,scope,next);
+    }
+    const before=f.pool.snapshot(),body={id:record.id,sha256:guard==='hash'?'f'.repeat(64):record.sha256,previous:{...record.classification,...(guard==='metadata'?{label:'forged'}:{})},archived:true};
+    const response=await f.api.handle(request('/studio/api/videos/archive','POST',body,guard==='origin'?{origin:'https://foreign.invalid'}:{}));
+    assert.equal(response.status,['origin','role','authorization'].includes(guard)?403:409,guard);
+    assert.deepEqual(f.pool.snapshot(),before);
+  }
+});
+
 const origin = 'https://studio.example.invalid', scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
 const config = {scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',
   allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid','studio.example.invalid']};

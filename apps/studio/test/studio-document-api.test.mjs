@@ -5,7 +5,6 @@ import { createStudioDocumentApi } from '../lib/studio-document-api.mjs';
 import { createSeedProject, addDealer, defaultPresentationLane } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../../packages/presentation/contracts/composition-settings.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
-import { createSocialPolicy } from './fixtures/social-store.mjs';
 import { createStudioRepository } from '../../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../../test/fixtures/studio-memory-pool.mjs';
 
@@ -19,12 +18,11 @@ const request = (path = '/studio/api/project', { method = 'GET', body, headers =
 async function fixture(options = {}) {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
   const initial = await repository.initializeDocument('project', { value: createSeedProject(), actor: 'migration' });
-  const policy = await repository.initializeDocument('social-policy', { value: createSocialPolicy(), actor: 'migration' });
   const api = createStudioDocumentApi({ repository, config,
     authorize: async () => ({ user: 'Operator', role: 'admin', scope }),
     validateProjectBindings: async () => {}, mutationTransaction: async work => work(), ...options,
   });
-  return { pool, repository, initial, policy, api };
+  return { pool, repository, initial, api };
 }
 test('native policy GET uses the shared repository and PUT records authenticated actor plus CAS history', async () => {
   const { api, initial, repository, pool } = await fixture();
@@ -60,7 +58,7 @@ test('spoofed host/origin, cross-site, encoded paths and actor/scope body inject
   for (const key of ['actor','scope','session','other']) {
     assert.equal((await api.handle(request(undefined, { method: 'PUT', body: { project: initial.value, expectedRevision: initial.revision, [key]: 'forged' } }))).status, 400);
   }
-  assert.equal(pool.snapshot().audits.length, 2); assert.equal(pool.snapshot().history.length, 0);
+  assert.equal(pool.snapshot().audits.length, 1); assert.equal(pool.snapshot().history.length, 0);
 });
 test('scope mismatch, missing live account and changed identity during body validation fail closed', async () => {
   for (const authorize of [async () => ({ user: 'Operator', role: 'admin', scope: { ...scope, workspaceId: 'other' } }),
@@ -73,14 +71,11 @@ test('scope mismatch, missing live account and changed identity during body vali
   assert.equal((await api.handle(request(undefined, { method: 'PUT', body: { project: initial.value, expectedRevision: initial.revision } }))).status, 403);
   assert.equal(pool.snapshot().history.length, 0);
 });
-test('unverified media verifier blocks native project writes; social saved policy has separate CAS', async () => {
-  const { api, initial, policy, repository, pool } = await fixture({ validateProjectBindings: undefined });
+test('unverified media verifier blocks native project writes without history', async () => {
+  const { api, initial, repository, pool } = await fixture({ validateProjectBindings: undefined });
   assert.equal((await api.handle(request(undefined, { method: 'PUT', body: { project: initial.value, expectedRevision: initial.revision } }))).status, 503);
-  const draft = structuredClone(policy.value); draft.cooldownMs = 2000;
-  const saved = await api.handle(request('/studio/api/social', { method: 'PUT', body: { policy: draft, expectedRevision: policy.revision } }));
-  assert.equal(saved.status, 200); assert.equal((await saved.json()).policy.cooldownMs, 2000);
   assert.equal((await repository.readDocument('project')).revision, initial.revision);
-  assert.equal(pool.snapshot().history.length, 1);
+  assert.equal(pool.snapshot().history.length, 0);
 });
 test('stream body bounds, invalid content type, UTF-8 and JSON are rejected without audit', async () => {
   const { api, initial, pool } = await fixture();
@@ -92,7 +87,7 @@ test('stream body bounds, invalid content type, UTF-8 and JSON are rejected with
   const invalid = new Request(`${origin}/studio/api/project`, { method: 'PUT', body: new Uint8Array([0xff]), headers: { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' } });
   assert.equal((await api.handle(invalid)).status, 400);
   assert.equal((await api.handle(request(undefined, { method: 'PUT', body: ' '.repeat(1048577) }))).status, 413);
-  assert.equal(pool.snapshot().audits.length, 2);
+  assert.equal(pool.snapshot().audits.length, 1);
 });
 test('missing document and driver failures do not expose DB details or manufacture saved policy', async () => {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
@@ -127,7 +122,7 @@ test('documents require the product transaction and recheck role/scope after its
       mutationTransaction:async work => {revoke(session);locked = true;try{return await work();}finally{locked = false;}},
     });
     assert.equal((await api.handle(request(undefined,{method:'PUT',body:{project:initial.value,expectedRevision:initial.revision}}))).status,403);
-    assert.equal(pool.snapshot().history.length,0);assert.equal(pool.snapshot().audits.length,2);
+    assert.equal(pool.snapshot().history.length,0);assert.equal(pool.snapshot().audits.length,1);
   }
 });
 
@@ -145,21 +140,21 @@ test('a paused request body cannot preserve authority revoked before the transac
 test('Next stripped document routes use the logical public request for GET, PUT, credentials and CAS',async()=>{
   const publicOrigin=config.allowedOrigins[0],headers={host:'studio.example.invalid','x-forwarded-host':'public.example.invalid',
     'x-forwarded-proto':'https',origin:publicOrigin,'sec-fetch-site':'same-origin',cookie:'bo_jwt=fixture'};
-  const {api,initial,policy,pool,repository}=await fixture({authorize:async actual=>{
+  const {api,initial,pool,repository}=await fixture({authorize:async actual=>{
     assert.equal(new URL(actual.url).origin,publicOrigin);assert.equal(actual.headers.get('origin'),publicOrigin);
     assert.equal(actual.headers.get('cookie'),'bo_jwt=fixture');return {user:'Operator',role:'admin',scope};
   }});
-  for(const [path,field,saved] of [['/api/project','project',initial],['/api/social','policy',policy]]){
+  for(const [path,field,saved] of [['/api/project','project',initial]]){
     const get=await api.handle(new NextRequest(origin+path,{headers}));assert.equal(get.status,200);
     assert.deepEqual((await get.json())[field],saved.value);
-    const draft=structuredClone(saved.value);if(field==='project')draft.events[0].label='Forwarded saved';else draft.cooldownMs=2500;
+    const draft=structuredClone(saved.value);draft.events[0].label='Forwarded saved';
     const put=await api.handle(new NextRequest(origin+path,{method:'PUT',headers:{...headers,'content-type':'application/json'},
       body:JSON.stringify({[field]:draft,expectedRevision:saved.revision})}));
     assert.equal(put.status,200);const value=(await put.json())[field];assert.notEqual(value.revision,saved.revision);
-    assert.deepEqual((await repository.readDocument(field==='project'?'project':'social-policy')).value,value);
+    assert.deepEqual((await repository.readDocument('project')).value,value);
   }
-  assert.equal(pool.snapshot().history.length,2);
-  for(const path of ['/api/unknown','/api/project/unknown','/api/social/unknown']){
+  assert.equal(pool.snapshot().history.length,1);
+  for(const path of ['/api/unknown','/api/project/unknown','/api/social']){
     assert.equal((await api.handle(new NextRequest(origin+path,{headers}))).status,404);
   }
   const current=await repository.readDocument('project'),body={project:current.value,expectedRevision:current.revision};
@@ -169,7 +164,7 @@ test('Next stripped document routes use the logical public request for GET, PUT,
     assert.equal(result.status,403);
   }
   assert.equal((await api.handle(new NextRequest(origin+'/api/project',{method:'PUT',headers:{...headers,'content-type':'application/json'},body:JSON.stringify({...body,actor:'forged'})}))).status,400);
-  assert.equal(pool.snapshot().history.length,2);
+  assert.equal(pool.snapshot().history.length,1);
 });
 
 test('Native Nora composition saves preflight before outer product SQL; old saves never fetch and old Render preserves data', async () => {

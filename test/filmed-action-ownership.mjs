@@ -1,17 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import vm from 'node:vm';
+import {createFilmedActionControls} from '../services/game/public/filmed-action-controls.mjs';
 import {createLocalPresentation} from '../services/game/public/local-presentation.mjs';
 
-const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-const body=(start,end)=>{
-  const from=source.indexOf(start),to=source.indexOf(end,from);
-  assert.ok(from>=0&&to>from);return source.slice(from,to);
-};
-const functions=body('async function beginDealingTake()', '\nasync function dealSequence()')
-  +body('async function endDealingTake(', '\nasync function revealHole(')
-  +body('async function revealHole(', '\nfunction clearTable()');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 
 async function fixture(t){
@@ -27,12 +18,12 @@ async function fixture(t){
     :{video,standard:null,decision:{requestId:'fixture',sourceEvent:JSON.parse(options.body).event,media:{}}}),{status:200})};
   const controller=await createLocalPresentation({player,host:element(),dealerId:'dragan',version:()=>1,receipt(){},onIdle(){},onBusy(){},muted:()=>true,transport});
   t.after(()=>{controller.close();globalThis.document=previousDocument;});
-  const context=vm.createContext({console:{info(){},warn(){}},localPresentation:controller,localPresentationEnabled:true,
+  const context={console:{info(){},warn(){}},localPresentation:controller,localPresentationEnabled:true,
     speechQueue:{idle:Promise.resolve()},speechPoseGate:{state:{actionOwner:'none'}},updatePoseState(){},
     performancePlayer:{finish:async()=>{},joins:false},round:{phase:'settled'},
     localCards:{sync(){},begin:()=>1,frame(){},finish:()=>false,reveal(){}},nativeObservation:{emit(){}},
-    cardEl:()=>({style:{setProperty(){}},classList:{add(){}}})});
-  vm.runInContext(functions,context);
+    cardEl:()=>({style:{setProperty(){}},classList:{add(){}}})};
+  Object.assign(context,createFilmedActionControls({...context,state:context}));
   await context.endDealingTake();await tick();assert.equal(jobs.length,1,'prior player action releases its own idle');
   return {controller,jobs,context};
 }

@@ -5,7 +5,8 @@ import { mkdtemp, readdir, readFile, rm, writeFile, open, stat, rename, utimes }
 import { writeFileSync,utimesSync,readSync } from 'node:fs';
 import { join,dirname,resolve,basename } from 'node:path';
 import { tmpdir } from 'node:os';
-import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, isCloudMediaConfigured, validatePrivateMedia, privateContentTypeMatches,mediaBlobPath,withVerifiedPrivateMediaFile } from '../lib/cloud-media-store.mjs';
+import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, purgeManagedMedia, isCloudMediaConfigured, validatePrivateMedia, privateContentTypeMatches,mediaBlobPath,withVerifiedPrivateMediaFile } from '../lib/cloud-media-store.mjs';
+import {createRetainedStudioMedia,RETAINED_BANK_VARIANTS} from '../../../packages/studio-registry/server/document-contract.mjs';
 
 const bytes = Buffer.from('0000ftypisom00000private-video-fixture-exact-bytes');
 const sha256 = createHash('sha256').update(bytes).digest('hex');
@@ -13,6 +14,17 @@ const contentType = 'video/mp4';
 const env = { BLOB_READ_WRITE_TOKEN: 'fixture-server-only' };
 const pathname = () => `croupier/videos/${randomUUID()}/${sha256}.mp4`;
 const request = (headers = {}, method = 'GET') => new Request('http://localhost/media', { headers, method });
+
+test('retained purge requires an exact valid pending tombstone before calling Blob for that one pathname',async()=>{
+  const record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id),calls=[];
+  const options={env,blobClient:{del:async path=>calls.push(path)}};
+  const pending={...record,classification:{...record.classification,archived:true},deletion:{state:'pending',requestedAt:'2026-11-02T10:00:00.000Z'}};
+  for(const value of [record,{...pending,deletion:null},{...pending,deletion:{...pending.deletion,extra:true}},
+    {...pending,classification:record.classification},{...pending,pathname:record.pathname.replace('/retained-bank/','/other/')},
+    {...pending,deletion:{...pending.deletion,state:'deleted',completedAt:'2026-11-02T10:00:01.000Z'}}])await assert.rejects(purgeManagedMedia(value,options));
+  assert.deepEqual(calls,[]);
+  await purgeManagedMedia(pending,options);assert.deepEqual(calls,[record.pathname]);
+});
 
 test('Blob UTF-8 metadata accepts only matching JSON/SVG essence and the single UTF-8 charset',()=>{
   for(const [actual,expected]of [['application/json; charset=utf-8','application/json'],['image/svg+xml;charset="UTF-8"','image/svg+xml'],['model/gltf+json; charset=utf-8','model/gltf+json'],['video/mp4','video/mp4']])assert.equal(privateContentTypeMatches(actual,expected),true);

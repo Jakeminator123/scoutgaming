@@ -6,7 +6,7 @@ import {listPackageRooms} from '../../../packages/presentation/server/package-ro
 import {roomGame} from '../../../packages/presentation/contracts/presentation-room.mjs';
 import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
-import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../../packages/operators/contracts/branding.mjs';
+import { isRoomMaterialChange, publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../../packages/operators/contracts/branding.mjs';
 import {StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { adminLayerAdjustments, effectivePartnerAdjustments, partnerLayerChoices } from './partner-package-view.mjs';
@@ -136,7 +136,8 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:await cleanDraft(draft,pack,source),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
       roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices(roomPackage(pack,room),readPackagePresentation(pack),document)[room.presentationLaneId]])),
-      rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
+      rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room),
+        ...(roomGame(room)==='blackjack'&&typeof pack.branding?.roomGameConfigVersions?.[room.id]==='string'?{materialPublishable:true}:{})}))};
   }
   function assertEditable(branding) {
     if(!plainObject(branding)||Object.keys(branding).some(key=>!PARTNER_BRANDING_FIELDS.includes(key)&&key!=='roomOverrides'))fail(422);
@@ -280,18 +281,22 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
   }
   async function command(input) {
     requireDraftStore(store);
-    if(!['save-draft','review','publish','restore','discard-draft'].includes(input.action)
+    if(!['save-draft','review','publish','publish-room-material','restore','discard-draft'].includes(input.action)
       ||!Number.isSafeInteger(input.expectedDraftRevision)||input.expectedDraftRevision<0
       ||!Number.isSafeInteger(input.expectedPackageRevision)||input.expectedPackageRevision<1)fail(400);
     input=structuredClone(input);
+    const roomMaterial=input.action==='publish-room-material',publishes=input.action==='publish'||roomMaterial;
+    if(roomMaterial&&input.audit?.accessClass!=='internal-admin')fail(403);
     if(typeof withWriteContext!=='function')fail(503);
     // Partner changes retain N1's frozen presentation. Negotiate that package,
     // never the latest project or a different operator's package, before SQL;
     // with the company's material it is the merged candidate this publish writes.
     let presentationMutation,materialFingerprint=operatorMaterialFingerprint([]);
     const adminChoices=input.audit?.accessClass==='internal-admin';
-    if(input.action==='publish'){
-      const current=await load(input.operatorId),rows=await materialRowsBeforeSql(input.operatorId);
+    if(publishes){
+      // A room material choice uses only assets already in its frozen package.
+      // Never import project drafts or merge the company's newly uploaded material here.
+      const current=await load(input.operatorId),rows=roomMaterial?[]:await materialRowsBeforeSql(input.operatorId);
       materialFingerprint=operatorMaterialFingerprint(rows);
       let candidate=current;
       if(rows.length) {
@@ -324,6 +329,12 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
         await context.store.saveBrandingDraft({...input,branding});
       }else{
         if(!await cleanDraft(draft,pack,context.store)||draft.basePackageRevision!==pack.revision)fail(409);
+        if(roomMaterial){
+          const room=roomList(pack,document).find(row=>row.id===input.roomId&&roomGame(row)==='blackjack');
+          if(!room)fail(404);
+          if(typeof pack.branding?.roomGameConfigVersions?.[room.id]!=='string')fail(409);
+          if(!isRoomMaterialChange(pack.branding,draft.branding,room.id))fail(422);
+        }
         const brandingFor=source=>validateDraft(source,draft.branding,document,adminChoices);
         const branding=input.action==='publish'
           ?await brandingWithMaterials(pack,await lockedMaterialRows(context,input.operatorId,materialFingerprint),document,brandingFor)

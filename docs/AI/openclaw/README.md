@@ -29,11 +29,12 @@ dokumentationen och ger inga nya verktyg.
 ## Kodens ansvar
 
 [packages/director](../../../packages/director/) äger beslutsmotor, tal- och
-provkontrakt, social policy, companion och rena inställningar; Studio och
+provkontrakt, operatörschatt och rena inställningar; Studio och
 spelmotorn importerar biblioteket direkt. Tjänstens `src/` äger HTTP,
 Gateway-RPC, signering, katalog-I/O och miljöläsning.
 `apps/studio/lib/director-settings.mjs` och `services/game/director-settings.mjs`
 väljer fil och datarot med den gemensamma läsaren
-`packages/director/node/settings-reader.mjs`. Companion-lagret
-(`companion.json`) ligger i bibliotekets `node/`-adapter; anroparen väljer
-katalog.
+`packages/director/node/settings-reader.mjs`. Den pensionerade social-/companionkedjan
+är avvecklad; historiska social-policy-dokument valideras i
+`packages/studio-registry/server/document-contract.mjs` vid generell
+läsning, export och återställning.

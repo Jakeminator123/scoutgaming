@@ -1,3 +1,4 @@
+import {createRouletteRoundController} from './round-controller.mjs';
 import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
 import {TABLE_ARTWORK,tableArtwork,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
 
@@ -176,30 +177,11 @@ async function command(request) {
   return data;
 }
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
-async function submit() {
-  if(busy||!pending) return;
-  if($('more').open)$('more').close();
-  if($('table-zoom').open)$('table-zoom').close();
-  busy=true;$('retry').hidden=true;renderDraft();message('Satsningarna är låsta. Rundan avgörs…');
-  try {
-    const result=await command(pending);
-    if(result.player.id!==pending.playerId||result.requestId!==pending.requestId||!result.round) throw Error('invalid_receipt');
-    state=result;clearPending();draft=new Map();undo=[];
-    message('Hjulet snurrar. Vänta tills kulan har stannat…');
-    // The receipt is already committed. A visual failure must never retry a debit.
-    try {const scene=await roomSceneReady;await scene?.playRound(result.round.event.outcome.number,result.round.id);} catch { /* Show the confirmed result below. */ }
-    renderState();showResult(result.round);
-    message(`${result.replayed?'Den sparade rundan hämtades. ':''}${result.round.event.outcome.number} · ${colourNames[result.round.event.outcome.color]}. ${result.round.returned?'Tillbaka '+money(result.round.returned,result.round.currency)+'.':'Ingen vinst.'} Lägg nya satsningar när du vill.`);
-  } catch(error) {
-    if(error.status===400) {
-      // Explicit validation failures commit no new round. Refresh before unlocking.
-      try {state=await command({op:'state'});clearPending();renderState();} catch { /* Keep the exact command available for recovery. */ }
-    }
-    if(error.status===401) $('login').hidden=false;
-    message(errorText[error.message] ?? 'Svaret kunde inte bekräftas. Kontrollera samma runda igen innan du spelar vidare.',true);
-    $('retry').hidden=!pending;
-  } finally {busy=false;renderDraft();}
-}
+const {submit}=createRouletteRoundController({state:{
+  get busy(){return busy;},set busy(v){busy=v;},get pending(){return pending;},
+  get state(){return state;},set state(v){state=v;},get draft(){return draft;},set draft(v){draft=v;},
+  get undo(){return undo;},set undo(v){undo=v;},get roomSceneReady(){return roomSceneReady;}
+},$,command,clearPending,renderDraft,renderState,showResult,message,colourNames,errorText,money});
 async function init() {
   try {
     state=await command({op:'state'});

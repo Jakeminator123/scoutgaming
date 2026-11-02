@@ -26,6 +26,20 @@ async function running(t, overrides = {}, fetchImpl = fetch, serverOptions = {})
 const post = (base, path, body, headers = {}) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const completion = content => new Response(JSON.stringify({ choices: [{ message: { content } }] }), { headers: { 'Content-Type': 'application/json' } });
 
+test('retired social and companion endpoints cannot invoke a provider or remote relay', async t => {
+  for (const remoteUrl of ['', 'https://director.example.invalid']) {
+    const { base, store } = await running(t, { remoteUrl, remoteToken: 'fixture-relay-token' },
+      () => assert.fail('retired routes must not call any upstream'));
+    const before = await store.load();
+    for (const path of ['/api/studio/social-chat', '/api/studio/companion']) {
+      const response = await post(base, path, {});
+      assert.equal(response.status, 404);
+      assert.deepEqual(await response.json(), { error: 'not_found' });
+    }
+    assert.deepEqual(await store.load(), before);
+  }
+});
+
 test('only the named OpenClaw credential is used; no implicit OpenAI fallback', () => {
   const config = readSettings({ env: { OPENAI_API_KEY: 'do-not-use', OPENCLAWAPI_KEY: 'gateway-only' }, envFiles: [] });
   assert.equal(config.gatewayKey, 'gateway-only');

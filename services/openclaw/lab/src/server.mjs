@@ -9,8 +9,6 @@ import { catalogStore } from './store.mjs';
 import { normalizeInput, prepareDecision, finalizeDecision } from '../../../../packages/director/engine.mjs';
 import { askDirector, chatWithDirector, providerStatus, boundedJson, GatewayError } from '../../../../packages/director/openclaw.mjs';
 import { createDashboardProxy } from './dashboard-proxy.mjs';
-import { normalizeSocialInput, socialChat, validateSocialReply } from '../../../../packages/director/social.mjs';
-import { createCompanionService, normalizeCompanionRequest } from '../../../../packages/director/companion.mjs';
 import { createProductSpeechService, PRODUCT_SPEECH_AGENT, PRODUCT_SPEECH_PATH } from '../../../../packages/director/product-speech.mjs';
 import { createProductProbeService, PRODUCT_PROBE_PATH } from '../../../../packages/director/product-probe.mjs';
 import { createStudioOpenClawAdmin } from './studio-admin.mjs';
@@ -91,8 +89,6 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   const rate = new Map();
   let activeAdvice = 0;
   let activeChat = 0;
-  let activeSocialChat = 0;
-  let companion;
   const productSpeech = createProductSpeechService({ settingsProvider, fetchImpl, onRouting: onSpeechRouting });
   const productProbe = createProductProbeService({ settingsProvider, fetchImpl });
   const decide = async (raw, settings, deadlineAt = Infinity) => {
@@ -164,8 +160,6 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/status': ['GET'], '/api/catalog': ['GET', 'PUT'], '/api/scenarios': ['GET'],
           '/api/decide': ['POST'], '/api/chat': ['POST'], '/api/presentation': ['POST'],
           '/api/studio/advice': ['POST'], '/api/studio/chat': ['POST'],
-          '/api/studio/social-chat': ['POST'],
-          '/api/studio/companion': ['POST'],
           [PRODUCT_SPEECH_PATH]: ['POST'],
           [PRODUCT_PROBE_PATH]: ['POST'], '/api/studio/probe': ['POST'],
           [STUDIO_OPENCLAW_ADMIN_PATH]: ['GET', 'PATCH', 'POST'],
@@ -194,9 +188,7 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           } finally { res.removeListener('close', disconnected); }
         }
         if (settings.remoteUrl && path !== '/api/scenarios') {
-          if (path === '/api/studio/companion') body = normalizeCompanionRequest(body);
-          else if (path === '/api/studio/social-chat') body = normalizeSocialInput(body);
-          else if (path.startsWith('/api/studio/')) {
+          if (path.startsWith('/api/studio/')) {
             const prepared = prepareDecision(body?.catalog, { ...body?.input, mode: 'active' });
             body = { catalog: body.catalog, input: { requestId: prepared.requestId, event: prepared.event, context: prepared.context, mode: 'active' }, message: body.message, conversationId: body.conversationId };
           }
@@ -206,22 +198,10 @@ export async function createLabServer({ settings: settingsProvider = readSetting
             body = { presentation: body.presentation.map(event => normalizeInput({ event, context: body.context }).event), context: normalizeInput({ event: { type: 'idle' }, context: body.context }).context, mode: body.mode, requestId: body.requestId };
           }
           const data = await relay(path, req.method, body, settings, fetchImpl);
-          if (path === '/api/studio/social-chat') return respond(res, 200, validateSocialReply(data, body));
           if (path === '/api/status') data.remote = { configured: true, status: 'connected' };
           return respond(res, 200, data);
         }
-        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', 'studio-social-chat-v1', ...(settings.companionEnabled !== false ? ['studio-companion-v1'] : []), ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1','product-probe-v1'] : [])] });
-        if (path === '/api/studio/companion') {
-          companion ??= createCompanionService({ directory: initial.dataDir, settings: settingsProvider, fetchImpl });
-          return respond(res, 200, await companion.handle(body));
-        }
-        if (path === '/api/studio/social-chat') {
-          const input = normalizeSocialInput(body);
-          if (activeSocialChat >= 2) throw new GatewayError('social_chat_busy', 429);
-          activeSocialChat++;
-          try { return respond(res, 200, await socialChat(input, settings, fetchImpl)); }
-          finally { activeSocialChat--; }
-        }
+        if (path === '/api/status') return respond(res, 200, { service: 'croupier-openclaw-lab', provider: providerStatus(settings), remote: { configured: false }, catalogRevision: (await store.load()).revision, editable: true, sourceTypes: SOURCE_TYPES, capabilities: ['studio-advice-v1', 'studio-chat-v1', ...(settings.speechToken && settings.speechToken !== settings.apiToken && settings.speechAgent === PRODUCT_SPEECH_AGENT ? ['product-speech-v1','product-probe-v1'] : [])] });
         // A studio sends an ephemeral validated catalog; it never overwrites the
         // deployed catalog. Only projected input and eligible candidates reach AI.
         if (path === '/api/studio/advice' || path === '/api/studio/chat') {
@@ -276,7 +256,6 @@ export async function createLabServer({ settings: settingsProvider = readSetting
   // Upgraded sockets are not covered by Node's closeAllConnections().
   const closeServer = server.close.bind(server);
   server.close = callback => { dashboard?.close(); return closeServer(callback); };
-  server.on('close', () => companion?.close());
   return { server, store };
 }
 

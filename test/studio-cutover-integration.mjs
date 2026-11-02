@@ -153,7 +153,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       let result;
       if (path === '/api/studio-game/command') result = await runtime.command(request);
       else if (path.startsWith('/studio/api/auth/')) result = await runtime.auth.handle(request);
-      else if (['/studio/api/project', '/studio/api/social'].includes(path)) result = await runtime.document.handle(request);
+      else if (path === '/studio/api/project') result = await runtime.document.handle(request);
       else if (path === '/api/bo/config') result = Response.json(await runtime.gamePolicy.readGameConfiguration());
       else result = await runtime.admin.handle(request);
       const responseHeaders = Object.fromEntries(result.headers), setCookies = result.headers.getSetCookie();

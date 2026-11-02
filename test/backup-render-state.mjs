@@ -8,7 +8,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { backupRenderState, restoreRenderState, verifyRenderBackup } from '../tools/backup-render-state.mjs';
-import { createCompanionStore, COMPANION_STORE_FILE } from '../packages/director/node/companion-store.mjs';
 import { createSearchService, SEARCH_STORE_FILE } from '../services/openclaw/lab/deploy/companion-search-server.mjs';
 
 const runFile = promisify(execFile);
@@ -19,22 +18,22 @@ async function cli(...args) {
   return JSON.parse(stdout);
 }
 
-const identity = 'a'.repeat(64), searchId = 'b'.repeat(64);
-const LEGACY = Buffer.from('retired companion.sqlite fixture bytes');
+const searchId = 'b'.repeat(64);
+const LEGACY = Buffer.from('retired companion fixture bytes');
+const COMPANION_STORE_FILE = 'companion.json';
 // The provider refuses, so the durable receipt is the reserved 0.50 SEK 'unavailable'.
 const searchOptions = (directory, fetchImpl = async () => new Response('', { status: 500 })) =>
   ({ directory, key: 'fixture-model-key', now: () => Date.parse('2026-09-21T04:00:00Z'), fetchImpl });
 
 // The product profile (players/croupier.db, craig.db) left with the engine's SQLite path.
-// Director and Gateway state is written by the real companion stores.
+// Active search state uses its real store; retired Director files are opaque bytes.
 async function fixture(t, profile = 'director') {
   const base = await mkdtemp(join(tmpdir(), 'croupier-render-backup-test-'));
   t.after(() => rm(base, { recursive: true, force: true }));
   const source = join(base, 'source'), snapshot = join(base, 'snapshot'), target = join(base, 'target');
   await mkdir(source); await mkdir(target);
   if (profile === 'director') {
-    const store = createCompanionStore(source);
-    store.rename(identity, 'Jakob'); store.close();
+    await writeFile(join(source, COMPANION_STORE_FILE), LEGACY);
     await writeFile(join(source, 'catalog.json'), '{"fixture":true}\n');
     await mkdir(join(source, 'history'));
     await writeFile(join(source, 'history', 'one.json'), '{"revision":1}\n');
@@ -51,11 +50,10 @@ async function fixture(t, profile = 'director') {
   return { base, source, snapshot, target };
 }
 
-// Reopening proves the restored bytes are a working store, not only a matching hash.
+// Active search receipts reopen; retired Director files retain their exact bytes.
 async function assertStoreReopens(profile, directory) {
   if (profile === 'director') {
-    const store = createCompanionStore(directory);
-    try { assert.equal(store.profile(identity).name, 'Jakob'); } finally { store.close(); }
+    assert.deepEqual(await readFile(join(directory, COMPANION_STORE_FILE)), LEGACY);
     assert.deepEqual(await readFile(join(directory, 'companion.sqlite')), LEGACY);
     return;
   }
@@ -132,9 +130,11 @@ test('symlinks are refused without copying outside data', async t => {
 test('corrupt stores and reserved source names never publish a snapshot', async t => {
   for (const profile of ['director', 'gateway']) {
     const f = await fixture(t, profile);
-    await writeFile(join(f.source, profile === 'director' ? COMPANION_STORE_FILE : SEARCH_STORE_FILE), 'not json');
-    await assert.rejects(backupRenderState({ profile, source: f.source, destination: f.snapshot, quiesced: true }), { code: 'store_integrity_failed' });
-    await assert.rejects(readdir(f.snapshot), { code: 'ENOENT' });
+    if (profile === 'gateway') {
+      await writeFile(join(f.source, SEARCH_STORE_FILE), 'not json');
+      await assert.rejects(backupRenderState({ profile, source: f.source, destination: f.snapshot, quiesced: true }), { code: 'store_integrity_failed' });
+      await assert.rejects(readdir(f.snapshot), { code: 'ENOENT' });
+    }
     await writeFile(join(f.source, 'manifest.json'), 'reserved');
     await assert.rejects(backupRenderState({ profile, source: f.source, destination: f.snapshot, quiesced: true }), { code: 'reserved_source_entry' });
   }
@@ -152,26 +152,26 @@ test('manifest traversal is rejected before restoring any file', async t => {
 });
 
 test('a structurally damaged store is rejected even when JSON parsing and hashes pass', async t => {
-  const f = await fixture(t, 'director');
-  await backupRenderState({ profile: 'director', source: f.source, destination: f.snapshot, quiesced: true });
-  const path = join(f.snapshot, COMPANION_STORE_FILE);
+  const f = await fixture(t, 'gateway');
+  await backupRenderState({ profile: 'gateway', source: f.source, destination: f.snapshot, quiesced: true });
+  const path = join(f.snapshot, SEARCH_STORE_FILE);
   const damaged = JSON.parse(await readFile(path, 'utf8'));
-  damaged.requests = {};
+  damaged.searches = {};
   await writeFile(path, JSON.stringify(damaged));
   // A valid hash is not evidence of a usable store.
   const manifestPath = join(f.snapshot, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const bytes = await readFile(path);
-  Object.assign(manifest.files.find(item => item.path === COMPANION_STORE_FILE), {
+  Object.assign(manifest.files.find(item => item.path === SEARCH_STORE_FILE), {
     bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'),
   });
   await writeFile(manifestPath, JSON.stringify(manifest));
   await assert.rejects(verifyRenderBackup(f.snapshot), { code: 'store_integrity_failed' });
-  await assert.rejects(restoreRenderState({ profile: 'director', snapshot: f.snapshot, destination: f.target, quiesced: true }), { code: 'store_integrity_failed' });
+  await assert.rejects(restoreRenderState({ profile: 'gateway', snapshot: f.snapshot, destination: f.target, quiesced: true }), { code: 'store_integrity_failed' });
   assert.deepEqual(await readdir(f.target), []);
-  await cp(path, join(f.source, COMPANION_STORE_FILE));
+  await cp(path, join(f.source, SEARCH_STORE_FILE));
   const rejected = join(f.base, 'rejected-snapshot');
-  await assert.rejects(backupRenderState({ profile: 'director', source: f.source, destination: rejected, quiesced: true }), { code: 'store_integrity_failed' });
+  await assert.rejects(backupRenderState({ profile: 'gateway', source: f.source, destination: rejected, quiesced: true }), { code: 'store_integrity_failed' });
   await assert.rejects(readdir(rejected), { code: 'ENOENT' });
   assert.equal((await readdir(f.base)).some(name => name.startsWith('.rejected-snapshot.partial-')), false);
 });

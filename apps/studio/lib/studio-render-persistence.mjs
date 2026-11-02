@@ -5,7 +5,6 @@ import { createPostgresStore, validateGameConnection } from '../../../packages/s
 import { createStudioPolicyRuntime } from '../../../packages/presentation/server/studio-policy-runtime.mjs';
 import { createRegisteredDealerIdle } from '../../../packages/presentation/server/registered-dealer-idle.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../../ops/neon-studio/migrations.mjs';
-import { createNeonSocialStore } from './neon-project-store.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
 import { StudioError } from './project-store.mjs';
 
@@ -52,7 +51,6 @@ export async function createStudioRenderPersistence({env = process.env,poolFacto
     if (!shared?.policy?.projectStore || !shared.repository || !shared.scope) throw new Error('missing policy');
     const media = mediaFactory({...shared,env,repositoryRoot});
     return Object.freeze({...media,projectStore:readonly(shared.policy.projectStore()),
-      socialStore:readonly(createNeonSocialStore({repository:shared.repository,scope:shared.scope})),
       scope:shared.scope,configurationSource:'neon/croupier_studio'});
   } catch {
     try {await pool.end();} catch { /* Preserve failure; no disk fallback. */ }

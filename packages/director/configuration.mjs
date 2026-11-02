@@ -3,7 +3,7 @@ export const DIRECTOR_ENV_KEYS = ['HOST', 'PORT', 'LAB_API_TOKEN', 'LAB_DATA_DIR
   'OPENCLAW_SPEECH_AGENT', 'OPENCLAW_PRODUCT_SPEECH_URL', 'OPENCLAW_PRODUCT_SPEECH_TOKEN',
   'OPENCLAW_SPEECH_ROUTING', 'OPENCLAW_SPEECH_DEEP_MODEL', 'OPENCLAW_SPEECH_TIMEOUT_MS',
   'OPENCLAW_DASHBOARD_ENABLED', 'OPENCLAW_DASHBOARD_ORIGIN', 'OPENCLAW_DASHBOARD_ALLOW_LOOPBACK', 'RENDER_EXTERNAL_URL',
-  'LAB_COMPANION_ENABLED', 'LAB_COMPANION_FUN_ENABLED', 'LAB_COMPANION_WEB_ENABLED'];
+  'LAB_COMPANION_ENABLED', 'LAB_COMPANION_FUN_ENABLED'];
 
 export const isLoopback = hostname => ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
 
@@ -30,7 +30,6 @@ export function projectDirectorSettings(values) {
     ...(values.OPENCLAW_SPEECH_TIMEOUT_MS === undefined ? {} : { speechTimeoutMs: Number(values.OPENCLAW_SPEECH_TIMEOUT_MS) }),
     companionEnabled: values.LAB_COMPANION_ENABLED !== 'false',
     companionFunEnabled: values.LAB_COMPANION_FUN_ENABLED !== 'false',
-    companionWebEnabled: values.LAB_COMPANION_WEB_ENABLED !== 'false',
     dashboardOrigin: values.OPENCLAW_DASHBOARD_ORIGIN || (values.OPENCLAW_DASHBOARD_ENABLED === 'true' ? values.RENDER_EXTERNAL_URL || '' : ''),
     dashboardAllowLoopback: values.OPENCLAW_DASHBOARD_ALLOW_LOOPBACK === 'true',
     adviceTimeoutMs: Number.isFinite(timeout) ? Math.max(50, Math.min(timeout, 30000)) : 2500,

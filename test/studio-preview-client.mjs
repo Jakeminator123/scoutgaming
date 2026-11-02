@@ -1,6 +1,8 @@
+import {initializePreviewControls,mountPlayerReturn} from '../services/game/public/player-entry-controls.mjs';
+import {createBlackjackBetControls} from '../services/game/public/blackjack-bet-controls.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../services/game/public/studio-preview-client.mjs';
+import { STUDIO_PREVIEW_NOTICE, createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../services/game/public/studio-preview-client.mjs';
 import { decorateGameEntryHtml, validateStudioPreview } from '../services/game/public/game-entry-contract.mjs';
 import { validateComposition } from '../packages/presentation/runtime/presentation-composition.mjs';
 import { readChoices, writeChoices, choicesStorageKey } from '../packages/presentation/runtime/player-choices.mjs';
@@ -114,55 +116,48 @@ test('own dealer starts its exact preview idle and cannot select paid OpenClaw m
 });
 
 async function controlsFixture(studioPreview=null) {
- const {readFile}=await import('node:fs/promises'),vm=await import('node:vm');
- const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const nodes=new Map(),hints=[],link={search:''};
  const node=key=>{if(!nodes.has(key))nodes.set(key,{});return nodes.get(key);};
- const sandbox=vm.createContext({studioPreview,round:null,busy:false,SEATS:7,selected:5,
+ const state={studioPreview,round:null,busy:false,SEATS:7,selected:5,
   bets:Array.from({length:7},()=>({main:0,pp:0,tp:0})),undoStack:[],DEALER:{key:'astrid'},location:link,
   document:{querySelectorAll:()=>[]},$:node,buildChips(){},renderBets(){},hint:(...args)=>hints.push(args),
   fmt:String,console:{info(){}},flyChip(){},sfx:{play(){}},
   dealerVersionPath:()=>assert.fail('preset must not navigate'),ensureLogin:()=>assert.fail('invalid restored bets must not request login'),
-  dealSequence:()=>assert.fail('invalid restored bets must not reach the server')});
- const run=code=>vm.runInContext(code,sandbox);
- const slice=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert.ok(a>=0&&b>a);return source.slice(a,b);};
- run(slice('const CHIPS = [','// ---------- player account:'));
- run(slice('const betTotal =','const mains ='));
- run(slice('let allSides = false;','seatEls.forEach((seat, i) => {'));
- run(slice("$('#double-btn').onclick =","// MAX:"));
- run(source.split('\n').find(line=>line.startsWith("$('#deal-now').onclick =")));
- run('balance=10000000;');
- return {run,node,hints,link,read:code=>JSON.parse(run('JSON.stringify('+code+')')),
-  render:()=>run('{'+slice('  const staked = bets.filter','  layoutDealControl();')+'}')};
+  dealSequence:()=>assert.fail('invalid restored bets must not reach the server')};
+ state.balance=10000000;
+ const controls=createBlackjackBetControls({...state,state});
+ node('#double-btn').onclick=controls.doubleBets;node('#deal-now').onclick=controls.startRound;
+ return {state,controls,node,hints,link,render:controls.renderControls};
 }
 
 test('actual Classic controls retain main and side caps and reject oversized restored drafts without sending them',async()=>{
  const f=await controlsFixture();
- f.run('selected=1000;placeBet(0,"main",{});placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});selected=5;placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});');
- assert.deepEqual(f.read('bets[0]'),{main:2000,pp:1000,tp:1000});
+ f.state.selected=1000;for(const field of ['main','main','pp','tp'])f.controls.placeBet(0,field,{});
+ f.state.selected=5;for(const field of ['main','pp','tp'])f.controls.placeBet(0,field,{});
+ assert.deepEqual(f.state.bets[0],{main:2000,pp:1000,tp:1000});
  f.render();assert.equal(f.node('#deal-now').disabled,false);
  for(const [main,pp,tp] of [[50000,0,0],[5,1001,0],[5,0,1001]]){
-  f.run('bets[0]='+JSON.stringify({main,pp,tp})+';');f.render();
+  f.state.bets[0]={main,pp,tp};f.render();
   assert.equal(f.node('#deal-now').disabled,true);assert.match(f.node('#deal-now').title,/Reduce or clear/);
   await f.node('#deal-now').onclick();
-  assert.deepEqual(f.read('bets[0]'),{main,pp,tp},'unsubmitted choices stay available to edit');
+  assert.deepEqual(f.state.bets[0],{main,pp,tp},'unsubmitted choices stay available to edit');
   assert.equal(f.hints.at(-1)[0],'CLASSIC LIMIT');
  }
- f.run('bets[0]={main:4,pp:0,tp:0};');f.render();assert.equal(f.node('#deal-now').disabled,true);
- f.run('bets[0].main=5;');f.render();assert.equal(f.node('#deal-now').disabled,false);
+ f.state.bets[0]={main:4,pp:0,tp:0};f.render();assert.equal(f.node('#deal-now').disabled,true);
+ f.state.bets[0].main=5;f.render();assert.equal(f.node('#deal-now').disabled,false);
 });
 
 test('doubling respects existing Classic side caps as well as main cap and balance',async()=>{
  const f=await controlsFixture();
  for(const key of ['pp','tp']){
-  f.run('bets[0]={main:100,pp:0,tp:0};bets[0]['+JSON.stringify(key)+']=500;');f.render();
+  f.state.bets[0]={main:100,pp:0,tp:0,[key]:500};f.render();
   assert.equal(f.node('#double-btn').disabled,false);f.node('#double-btn').onclick();f.render();
-  assert.equal(f.read('bets[0].main'),200);assert.equal(f.read('bets[0]['+JSON.stringify(key)+']'),1000);
+  assert.equal(f.state.bets[0].main,200);assert.equal(f.state.bets[0][key],1000);
   assert.equal(f.node('#double-btn').disabled,true);
-  const before=f.read('bets');f.node('#double-btn').onclick();assert.deepEqual(f.read('bets'),before);
+  const before=structuredClone(f.state.bets);f.node('#double-btn').onclick();assert.deepEqual(structuredClone(f.state.bets),before);
  }
- f.run('bets[0]={main:2000,pp:0,tp:0};');f.render();assert.equal(f.node('#double-btn').disabled,true);
- f.run('bets[0]={main:100,pp:0,tp:0};balance=199;');f.render();assert.equal(f.node('#double-btn').disabled,true);
+ f.state.bets[0]={main:2000,pp:0,tp:0};f.render();assert.equal(f.node('#double-btn').disabled,true);
+ f.state.bets[0]={main:100,pp:0,tp:0};f.state.balance=199;f.render();assert.equal(f.node('#double-btn').disabled,true);
 });
 
 test('closing one preview addresses only its owner-bound session',async()=>{
@@ -175,24 +170,19 @@ test('closing one preview addresses only its owner-bound session',async()=>{
 });
 
 test('preview notice uses the existing HUD and hides inert chat without changing ordinary initialization',async()=>{
- const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
- const block=source.slice(source.indexOf('if (studioPreview) {'),source.indexOf('const choiceStorage='));
- const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
- const run=new AsyncFunction('studioPreview','document','$','gameApi','STUDIO_PREVIEW_NOTICE','previewSession',block);
  const element=tag=>({tag,children:[],attrs:{},append(...rows){this.children.push(...rows);},setAttribute(key,value){this.attrs[key]=value;}});
  for(const preview of [null,context]){
   const nodes=Object.fromEntries(['#top-right','#chat','#chat-input','#chat-send','#add-funds','#sign-out','#wallet label'].map(id=>[id,element(id)]));
   const document={createElement:element,querySelector:selector=>nodes[selector],body:{append(){assert.fail('preview notice must remain in the HUD');}}};
   let sessions=0;
-  await run(preview,document,selector=>nodes[selector],{session:async()=>{sessions++;return metadata(context);}},'Full preview explanation',null);
+  await initializePreviewControls({studioPreview:preview,document,gameApi:{session:async()=>{sessions++;return metadata(context);}}});
   assert.equal(sessions,preview?1:0);
   if(preview){
    const notice=nodes['#top-right'].children[0];
    assert.equal(notice.tag,'details');assert.equal(notice.id,'studio-preview-status');
    assert.equal(notice.children[0].textContent,'Provspel · separat testsaldo');
-   assert.equal(notice.children[0].title,'Full preview explanation');
-   assert.equal(notice.children[1].textContent,'Full preview explanation');
+   assert.equal(notice.children[0].title,STUDIO_PREVIEW_NOTICE);
+   assert.equal(notice.children[1].textContent,STUDIO_PREVIEW_NOTICE);
    assert.equal(nodes['#chat'].hidden,true);assert.equal(nodes['#chat'].inert,true);
    assert.equal(nodes['#chat-input'].disabled,true);assert.equal(nodes['#chat-send'].disabled,true);
   }else{assert.deepEqual(nodes['#top-right'].children,[]);assert.equal(nodes['#chat'].hidden,undefined);}
@@ -200,15 +190,12 @@ test('preview notice uses the existing HUD and hides inert chat without changing
 });
 
 async function returnLinkFixture({selection,preview=null,closeFails=false,embedded=false}={}){
- const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
- const block=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
- const run=new Function('studioPreview','entrySelection','document','gameApi','writeChoices','choiceStorage','previewSessionId','soundStorageKey','location','window','requestEmbeddedStudioPreviewClose',block);
  const link={},events=[],storage={removeItem:key=>events.push(['remove',key])};
  const target={location:{origin:'https://studio.test'}};target.parent=embedded?{postMessage:(message,origin)=>events.push(['message',message,origin])}:target;
- run(preview,selection,{querySelector:()=>link},{close:async()=>{events.push(['close']);if(closeFails)throw Error('Expired');}},
-  (...args)=>events.push(['choices',...args.slice(1)]),storage,preview?.sessionId??null,'preview-sound',
-  {search:'?operator=foreign&table=foreign&returnTo=https://foreign.invalid',assign:href=>events.push(['navigate',href])},target,value=>requestEmbeddedStudioPreviewClose(value,target));
+ mountPlayerReturn({studioPreview:preview,entrySelection:selection,document:{querySelector:()=>link},
+  gameApi:{close:async()=>{events.push(['close']);if(closeFails)throw Error('Expired');}},
+  choiceStorage:{...storage,setItem:(key,value)=>events.push(['choices',key,value])},previewSessionId:preview?.sessionId??null,soundStorageKey:'preview-sound',
+  location:{search:'?operator=foreign&table=foreign&returnTo=https://foreign.invalid',assign:href=>events.push(['navigate',href])},window:target});
  return {link,events};
 }
 
@@ -237,11 +224,11 @@ test('preview return opens Admin with exact composition and dealer after closing
    await link.onclick({...modifier,preventDefault(){assert.fail('modified click must retain normal browser behavior');}});assert.deepEqual(events,[]);
   }
   let prevented=false;await link.onclick({button:0,preventDefault(){prevented=true;}});
-  assert.equal(prevented,true);assert.deepEqual(events,[['close'],['choices',undefined,{},id],['remove','preview-sound'],['navigate',link.href]]);
+  assert.equal(prevented,true);assert.deepEqual(events,[['close'],['remove','croupier.studio-preview.'+id+'.choices'],['remove','preview-sound'],['navigate',link.href]]);
  }
 });
 test('embedded preview return closes its session and asks the parent to stop, without loading Admin inside the frame',async()=>{
  const {link,events}=await returnLinkFixture({selection:{dealer:'astrid'},preview:context,embedded:true});
  assert.equal(link.textContent,'Stäng provspel');await link.onclick({button:0,preventDefault(){}});
- assert.deepEqual(events,[['close'],['choices',undefined,{},id],['remove','preview-sound'],['message',{type:'croupier:studio-preview-close',sessionId:id},'https://studio.test']]);
+ assert.deepEqual(events,[['close'],['remove','croupier.studio-preview.'+id+'.choices'],['remove','preview-sound'],['message',{type:'croupier:studio-preview-close',sessionId:id},'https://studio.test']]);
 });

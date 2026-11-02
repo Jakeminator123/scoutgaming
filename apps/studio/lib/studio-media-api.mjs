@@ -157,20 +157,22 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         if(Object.keys(body).sort().join(',')!=='archived,id,previous,sha256'||typeof body.archived!=='boolean')fail('studio_invalid_request',400);
         validateMediaId(body.id);
         if(typeof mutationTransaction!=='function'||typeof repository?.findMediaReferences!=='function')fail('studio_mutation_transaction_required');
+        const source=await repository.getMedia(body.id);
+        if(!source)fail('studio_media_missing',404);
         const proposedMetadata={...body.previous,archived:body.archived};
-        const presentationMutation={metadata:body.archived?proposedMetadata:writeMetadata(proposedMetadata)};
+        const presentationMutation={metadata:body.archived||source.retainedBank?proposedMetadata:writeMetadata(proposedMetadata)};
         await mutationTransaction(async()=>{
           await refresh();
           await repository.transaction(async()=>{
             const current=await repository.getMedia(body.id);
-            if(!current||current.retainedBank)fail('studio_retained_media_immutable',409);
+            if(!current)fail('studio_media_missing',404);
             if(current.deletion)fail('studio_media_deletion_pending',409);
             if(!body.archived)await requireSavedVideoDealer(repository,current.classification.dealerId);
             if(current.sha256!==body.sha256||canonicalStudioJson(body.previous)!==canonicalStudioJson(current.classification))fail('studio_conflict',409);
             const usage=await repository.findMediaReferences(body.id);
             if(body.archived&&usage.references.some(row=>!row.historical))fail('studio_media_in_use',409);
             const metadata={...current.classification,archived:body.archived};
-            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.archived?metadata:writeMetadata(metadata),actor});
+            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:body.archived||current.retainedBank?metadata:writeMetadata(metadata),actor});
           },{presentationMutation});
         },{presentationMutation});
         return json(await videoRegistry());
