@@ -22,7 +22,9 @@ def category(path):
     name = PurePosixPath(path).name
     if name in IGNORE_NAMES or name.endswith(".dockerignore"):
         return "Ignoreringsgränser"
-    if name in {"AGENTS.md", "CLAUDE.md"} or path == ".github/copilot-instructions.md" or path.startswith(".cursor/rules/") and path.endswith(".mdc"):
+    if (name in {"AGENTS.md", "CLAUDE.md", "GEMINI.md"} or path == ".github/copilot-instructions.md"
+            or path.startswith(".cursor/rules/") and path.endswith(".mdc")
+            or path.startswith(".windsurf/rules/") and path.endswith(".md")):
         return "Agentregler"
     if path.startswith(".githooks/"):
         return "Git-hookar"

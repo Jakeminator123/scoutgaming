@@ -1,6 +1,6 @@
 """Bounded, dependency-free JS/TS reference inventory. Not a compiler or call graph.
 
-Only tracked, non-ignored source is read. No arbitrary source excerpts are emitted.
+Tracked existence is separate from readable source. No arbitrary source excerpts are emitted.
 Literal imports are syntax references, never evidence of runtime execution.
 """
 from __future__ import annotations
@@ -46,31 +46,37 @@ def safe_path(root, path):
 
 def inventory(root):
     tracked = set(run(root, "ls-files", "-z", "--cached").split("\0")) - {""}
-    args = ["ls-files", "-z", "--cached", "--ignored", "--exclude-standard"]
+    # Keep existing privacy boundaries; .ignore only filters content analysis.
+    git_ignored = set(run(root, "ls-files", "-z", "--cached", "--ignored", "--exclude-standard").split("\0")) - {""}
+    ignored = set()
     if (root / ".ignore").is_file():
-        args.append("--exclude-from=.ignore")
-    ignored = set(run(root, *args).split("\0")) - {""}
-    allowed = {p for p in tracked - ignored if safe_path(root, p)}
-    sources, skipped = {}, Counter()
-    for path in sorted(allowed):
+        ignored = set(run(root, "ls-files", "-z", "--cached", "--ignored", "--exclude-from=.ignore").split("\0")) - {""}
+    allowed = {p for p in tracked - git_ignored if safe_path(root, p)}
+    excluded_content = {p: "innehåll undantaget av .ignore" for p in allowed & ignored}
+    sources, skipped = {}, Counter(excluded_content.values())
+    for path in sorted(allowed - excluded_content.keys()):
         if path.split("/")[0] not in ROOTS or PurePosixPath(path).suffix not in EXTENSIONS:
             continue
         file = root / path
+        reason = None
         if not file.is_file():
-            skipped["saknas lokalt"] += 1
+            reason = "saknas lokalt"
         elif file.stat().st_size > MAX_BYTES:
-            skipped["över 1 MB"] += 1
+            reason = "över 1 MB"
         else:
             try:
                 text = file.read_text(encoding="utf-8-sig")
                 if "\0" in text:
-                    skipped["binär"] += 1
+                    reason = "binär"
                 else:
                     sources[path] = text
             except UnicodeError:
-                skipped["ej UTF-8"] += 1
+                reason = "ej UTF-8"
+        if reason:
+            excluded_content[path] = reason
+            skipped[reason] += 1
     dirty = set(run(root, "diff", "--no-ext-diff", "--no-textconv", "--name-only", "-z", "HEAD").split("\0")) - {""}
-    return sources, allowed, {"tracked": len(tracked), "excluded": len(tracked - allowed),
+    return sources, allowed, excluded_content, {"tracked": len(tracked), "excluded": len(tracked - allowed),
                               "scanned": len(sources), "skipped": dict(skipped)}, dirty
 
 
@@ -247,7 +253,7 @@ def resolver_configs(root, allowed):
     return sorted(aliases, key=lambda item: -len(item[0])), packages
 
 
-def resolve_spec(source, spec, sources, allowed, aliases, packages):
+def resolve_spec(source, spec, allowed, aliases, packages):
     if spec is None:
         return None, "dynamiskt uttryck"
     if any(c in spec for c in "\\?#%\x00") or re.match(r"^[a-zA-Z]+:", spec) or spec.startswith("/"):
@@ -288,11 +294,9 @@ def resolve_spec(source, spec, sources, allowed, aliases, packages):
         options += [candidate + "/index" + ext for ext in (".ts", ".tsx", ".mjs", ".js")]
     elif suffix in {".js", ".jsx", ".mjs"} and candidate not in allowed:
         options += [candidate[:-len(suffix)] + ext for ext in (".ts", ".tsx", ".mts")]
-    matches = [p for p in options if p in sources]
+    matches = [p for p in options if p in allowed]
     if matches:
         return matches[0], None
-    if any(p in allowed for p in options):
-        return None, "mål utanför JS/TS-inventeringen"
     return None, "olöst lokal referens"
 
 
@@ -384,35 +388,42 @@ def semantic_graphs(root, manifest, sources, revision, dirty):
 
 
 def build_graph(root, revision, manifest):
-    sources, allowed, stats, dirty = inventory(root)
-    aliases, packages = resolver_configs(root, allowed)
+    sources, allowed, excluded_content, stats, dirty = inventory(root)
+    readable = allowed - excluded_content.keys()
+    aliases, packages = resolver_configs(root, readable)
     edges, unknown, external = [], [], 0
+    resources = set()
     nodes = [{"id": path, "label": PurePosixPath(path).name, "module": module_for(path), "test": is_test(path), "testRole": test_role(path),
               "dirty": path in dirty, "lines": text.count("\n") + 1} for path, text in sources.items()]
     for path, text in sources.items():
         for ref in references(text):
-            target, reason = resolve_spec(path, ref["specifier"], sources, allowed, aliases, packages)
+            target, reason = resolve_spec(path, ref["specifier"], allowed, aliases, packages)
             if target:
                 edges.append({"source": path, "target": target, "type": "test" if is_test(path) else "import",
                               "mode": ref["mode"], "line": ref["line"]})
+                if target not in sources:
+                    resources.add(target)
             elif reason == "inbyggd/extern":
                 external += 1
             else:
                 # Never export unresolved expression text, tokens, URLs or private paths.
                 unknown.append({"source": path, "line": ref["line"], "mode": ref["mode"], "reason": reason})
+    nodes.extend({"id": path, "label": PurePosixPath(path).name, "module": module_for(path), "test": is_test(path), "testRole": test_role(path),
+                  "dirty": path in dirty, "lines": None, "analysis": "metadata",
+                  "status": excluded_content.get(path, "filtyp utanför JS/TS-analysen")} for path in sorted(resources))
     spec = importlib.util.spec_from_file_location("system_map_controls", Path(__file__).with_name("controls.py"))
     controls_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(controls_module)
-    controls, control_texts = controls_module.build_controls(root, allowed, sources,
-        lambda path, line: proof_link(root, path, line, revision, dirty), {path for path in allowed if is_test(path)}, tokens, edges)
+    controls, control_texts = controls_module.build_controls(root, readable, sources,
+        lambda path, line: proof_link(root, path, line, revision, dirty), {path for path in readable if is_test(path)}, tokens, edges)
     graphs, issues = semantic_graphs(root, manifest, {**sources, **control_texts}, revision, dirty)
     other_files = [{"id": path, "module": module_for(path), "extension": PurePosixPath(path).suffix or "shell/config",
-                    "status": "samband ej analyserade", "dirty": path in dirty}
+                    "status": excluded_content.get(path, "samband ej analyserade"), "dirty": path in dirty}
                    for path in sorted(allowed - set(sources))
                    if PurePosixPath(path).suffix in OTHER_EXTENSIONS | EXTENSIONS or path.startswith(".githooks/") or PurePosixPath(path).name.startswith("Dockerfile")]
     stats.update({"edges": len(edges), "external": external, "unknown": len(unknown), "otherFiles": len(other_files),
                   "semantic": sum(len(g["edges"]) for g in graphs), "stale": len(issues),
-                  "tests": sum(n["test"] for n in nodes), "dirty": len(set(sources) & dirty)})
+                  "tests": sum(is_test(path) for path in sources), "dirty": len(set(sources) & dirty)})
     return {"nodes": nodes, "otherFiles": other_files, "edges": edges, "unknown": unknown, "graphs": graphs, "issues": issues, "controls": controls,
             "stats": stats, "revision": revision, "root": root.as_uri(), "dirtyFiles": sorted(dirty & allowed),
             "limits": "Statisk JS/TS-referensinventering, inte AST-, körnings- eller testtäckningsanalys. Kommentarer, strängar och mallsträngars innehåll hoppas över. require kan vara lokalt ombundet. JSONC, ärvda tsconfig-alias, villkorade exports och beräknade imports kan vara olösta. Frånvaro av kant betyder inte död kod."}
