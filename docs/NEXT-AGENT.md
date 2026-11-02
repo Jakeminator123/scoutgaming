@@ -15,6 +15,8 @@ behöver exakta aktiva referenser, säkerhetskopia och verifierad återställnin
 
 ## Leveranskontroller 2 november
 
+Ignoreringsgränserna beskrivs i [IDE-guiden](../START-HERE.md#byta-ide-eller-återuppta-arbete). Spelbyggkontexten utesluter nu lokala cacher, worktrees och Codex-tillstånd; dess explicita runtimeindata består. Sökundantaget för det aktiva importmanifestet låser inte implementationen. Inga Git- eller Cursor-undantag för privata filer har tagits bort.
+
 Dokument följer samma gräns på 1 MiB och exakta krympande undantagslista som andra filer. Git-objekt-/eventkontrollen och medieskyddet består. Full CI kör samma sviter på fyra befintliga ben: Studio ensam, Admin/contracts på databasbenet, access/presentation och speech/gameplay. CSS och OpenClaw-deploy behåller sina två tidigare ben och stegflaggor. Två före-körningar och en efter-körning med identiska produktträd visade 41–44 sekunder kortare kritiskt ben och 19–33 sekunder kortare totalt; urvalet är litet och ingen generell tidsvinst garanteras. Mergegrindens paketspärr är oförändrad. [Kontrollguiden](../tools/system-map/README.md#leveranskontroller) och Atlas visar körbara samband. Exakt-head CI, mätunderlag och faktiskt mergekvitto hör till PR:en.
 
 Mätkvitton: [före 1](https://github.com/Jakeminator123/scoutgaming/actions/runs/41358712764),

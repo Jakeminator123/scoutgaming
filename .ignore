@@ -1,4 +1,4 @@
-# Search only: ripgrep and the Grep tools in Claude Code and Cursor.
+# Search only: ripgrep and other tools that honor .ignore.
 # Git, builds and deploys are unaffected by this file.
 # ripgrep already skips everything in .gitignore (node_modules, .env*, .vercel,
 # local data, logs, build output), so this file lists only TRACKED files that
@@ -34,5 +34,6 @@
 !/media/game/source/scene-footage/
 /media/game/source/scene-footage/*
 !/media/game/source/scene-footage/README.md
-# Frozen Kevin import source: about 190 KB of JSON on one line. Open it explicitly.
+# Active import manifest, compact JSON on one line. Search noise only, not a code lock.
+# Open it explicitly when tracing dealer-import-sources.mjs or changing the import.
 /apps/studio/lib/dealers/dealer-import-kevin-source-paow.json

@@ -1,5 +1,6 @@
-# Cursor: files the editor's AI may never read. Only secrets and private local
-# state belong here; build output is already in .gitignore and search noise in .ignore.
+# Cursor AI access exclusions for secrets and private local state.
+# Terminal/MCP access is not blocked by this file; it is not an OS permission boundary.
+# Build output is in .gitignore; .ignore reduces ripgrep search noise.
 .env*
 !.env.example
 *.pem
