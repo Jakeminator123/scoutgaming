@@ -2,9 +2,24 @@
 
 Aktuell samordning 2 november 2026. Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Läs [START-HERE](../START-HERE.md) och [AGENTS](../AGENTS.md); den äldre checkouten `dev/projects/scoutgame` och andras prototyper är inte integrationsytor.
 
+Kodstädningen och de två publiceringsrättningarna är levererade genom
+[#795](https://github.com/Jakeminator123/scoutgaming/pull/795),
+[#799](https://github.com/Jakeminator123/scoutgaming/pull/799) och
+[#804](https://github.com/Jakeminator123/scoutgaming/pull/804).
+Slutintegrationens [CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/41365808370)
+är grön på head `86f469d032866275c396f2eb62682e768a33d4da` och mergad som
+`e49fbae90adee013dfbf287089b3d7bb7aef41b0`. Kontrollera färska Git-heads vid
+återupptagning; daterade kvitton nedan är inte aktuell molnacceptans.
+Astrids produktionsdata och startsidemedier är inte avvecklade. Nästa dataetapp
+behöver exakta aktiva referenser, säkerhetskopia och verifierad återställning.
+
 ## Leveranskontroller 2 november
 
-Dokument följer samma gräns på 1 MiB och exakta krympande undantagslista som andra filer. Git-objekt-/eventkontrollen och medieskyddet består. Full CI kör samma sviter på fyra befintliga ben: Studio ensam, Admin/contracts på databasbenet, access/presentation och speech/gameplay. CSS och OpenClaw-deploy behåller sina två tidigare ben och stegflaggor. Ingen uppmätt tidsvinst hävdas; mergegrindens paketspärr är oförändrad. [Kontrollguiden](../tools/system-map/README.md#leveranskontroller) och Atlas visar körbara samband. Exakt-head CI och faktiskt mergekvitto hör till PR:en.
+Dokument följer samma gräns på 1 MiB och exakta krympande undantagslista som andra filer. Git-objekt-/eventkontrollen och medieskyddet består. Full CI kör samma sviter på fyra befintliga ben: Studio ensam, Admin/contracts på databasbenet, access/presentation och speech/gameplay. CSS och OpenClaw-deploy behåller sina två tidigare ben och stegflaggor. Två före-körningar och en efter-körning med identiska produktträd visade 41–44 sekunder kortare kritiskt ben och 19–33 sekunder kortare totalt; urvalet är litet och ingen generell tidsvinst garanteras. Mergegrindens paketspärr är oförändrad. [Kontrollguiden](../tools/system-map/README.md#leveranskontroller) och Atlas visar körbara samband. Exakt-head CI, mätunderlag och faktiskt mergekvitto hör till PR:en.
+
+Mätkvitton: [före 1](https://github.com/Jakeminator123/scoutgaming/actions/runs/41358712764),
+[före 2](https://github.com/Jakeminator123/scoutgaming/actions/runs/41361052019) och
+[efter](https://github.com/Jakeminator123/scoutgaming/actions/runs/41361775310).
 
 ## Avgränsat materialbyte för ett spelbord 2 november
 
@@ -42,7 +57,7 @@ Publika moduladresser och driftlägen är oförändrade.
 Lokalt passerar 269 riktade prov inklusive Chrome, Studio-/Admintyper och
 Atlas med strikta ankare enligt implementationens kvitto. Oberoende granskning
 bekräftar samma innehåll i 37 produktfiler efter normalisering av importmål.
-Testinventeringen är oförändrad: 587 filer, inga föräldralösa prov.
+Vid den flytten var testinventeringen oförändrad: 587 filer, inga föräldralösa prov.
 Exakt PR-/hookbevis finns i det privata uppdragskvittot
 `.cache/gpt-auto-boundaries-1101/funktionsmappar.md`; CI och leverans följs av samordnaren.
 
@@ -54,7 +69,8 @@ Fullfils-, ström- och sessionsproven använder journalen och behåller scope,
 budget, samtidighet, exakta artefakter, gamla svar och avbruten uppspelning.
 Filformat-/fillåsprov och fem rena QA-reservationsprov är avvecklade;
 dagens journalprov täcker dessutom återstart, kalla workers och osäkra submit.
-Den historiska ledgerimporten, SQL-migreringarna och lagrade data är oförändrade.
+Den förbrukade diskimporten och snapshotverktyget är också avvecklade genom
+#796/#804; SQL-migreringarna och lagrade data är oförändrade.
 Riktade prov passerar på Node 24.21.0; full CI hör till PR:en. Talet är fortsatt
 pausat och ingen drift-, provider- eller AV-acceptans ingår.
 
@@ -69,7 +85,8 @@ behörighet, bolag/scope, CAS, projekt-/adminrevision, media och eget material
 Felaktigt kvitto eller osäkert nätutfall kräver återläsning före nytt försök.
 Riktade SQL-, native- och browserprov samt leveransbevis anges i ändringens PR.
 Ingen DDL, produktionsdata, mediebytes eller driftacceptans ingår.
-Säkert materialbyte är nästa separata delmål.
+Avgränsat materialbyte är levererat enligt avsnittet ovan. Ett sammanhållet
+ersätt-och-radera-flöde för flera beroende produktobjekt återstår separat.
 
 ## Social-/companionkod avvecklad 2 november
 
@@ -194,11 +211,11 @@ eller AV-acceptans ingår inte.
 
 **Beteenden framför struktur, 1 november:** [#777](https://github.com/Jakeminator123/scoutgaming/pull/777) tar bort den oanvända importplanen och dess 14 planprov. Aktiva API-/panelprov använder importkällmodulen direkt; Dragan-provet behåller plats/pose, exakt taltext, playback/preload och granskningskrav. [#778](https://github.com/Jakeminator123/scoutgaming/pull/778) ersätter blackjackprovets råstate-hash med historiskt härledda observationer av kort, beslut, utfall och betalningar. Historiska skobevis behåller exakta digester; spelmotorn är orörd. [#779](https://github.com/Jakeminator123/scoutgaming/pull/779) tillåter dokumentorsakad paketöverlapp först efter länkkontroll i ett kombinerat, fryst main/head-träd. Samma filer, två kodändringar i samma paket samt ägar-/head-/CI-skydd kvarstår.
 
-Alla tre PR:er passerade CI på sluthead. Riktade prov: 41 import/API och 9 oförändrade panelprov, 30 blackjackprov inklusive 17 negativa mutationer samt 23 mergeprov med verklig Git-historik. Samordnaren granskade slutdiffarna och räknade om historiska signaturer. Regeltexten skiljer skyddade personbrancher från ändringsbar kod i `main`; förbrukade konsumenter uppdateras med flytt/radering. Dokumentstorlekstaket är oförändrat eftersom inget konkret hinder visats. Säkerhetsläsningen observerade 0 öppna/25 ignorerade incidenter men hade historisk `too_large` och ofullständig platsmetadata; det är inte full säkerhetstäckning. Driftsättning och visuell kontroll redovisas separat i `.cache/behavior-unlocks-1101/final-result.md`.
+Alla tre PR:er passerade CI på sluthead. Riktade prov: 41 import/API och 9 oförändrade panelprov, 30 blackjackprov inklusive 17 negativa mutationer samt 23 mergeprov med verklig Git-historik. Samordnaren granskade slutdiffarna och räknade om historiska signaturer. Regeltexten skiljer skyddade personbrancher från ändringsbar kod i `main`; förbrukade konsumenter uppdateras med flytt/radering. Dokumentens särskilda storlekstak lämnades då kvar men togs senare bort i #794/#799. Säkerhetsläsningen observerade 0 öppna/25 ignorerade incidenter men hade historisk `too_large` och ofullständig platsmetadata; det är inte full säkerhetstäckning. Driftsättning och visuell kontroll redovisas separat i `.cache/behavior-unlocks-1101/final-result.md`.
 
 **Förenklingsvåg 2, 31 oktober:** #769 avvecklar den pensionerade `bo:`-spelarsessionen; #770 tar bort godtyckliga rad-/test-/CI-antalslås och kontrollerar verkliga SQLite-importer; #771 ersätter käll-/CSS-/markup-lås med beteendeprov, inklusive verklig browser och semantiska transaktionslås. #772 monterar kamera-/röstkontroller först efter giltig enabled-konfiguration och kallar Studio-routing för `studio`; #773 tar bort den fristående operator-speech-QA-kedjan och dess syntetiska ägarundantag. Dagens Admin-/partnerautentisering, atomiska pengar och historisk SQL/import består. Exakta headar, CI, release och egen resursstädning redovisas i det beställda privata kvittot `.cache/wave2-final-result.md`; läs inte äldre release-SHA nedan som aktuell driftstatus.
 
-Rapportfynd är prövade, inte automatiska raderingsorder. Three-kärnan, Provspel/gästpreview, gameLanes, Blob-index, importkällor och aktiva medietillgångar har konsumenter. `lab_sessions` har en aktiv producent; tomma gamla handofftabeller ger inget DDL-mandat. Atomiskt materialbyte, särskild historikgallring och eventuell tillgångsflytt är separata avgränsade produkt-/databeslut. Nio ignore-filer återställdes byte för byte efter riktad synlighetsgranskning; inga globala eller privata skydd öppnades. Miljögranskningen ändrade inga nycklar eller providerinställningar. Talet är fortsatt pausat.
+Rapportfynd är prövade, inte automatiska raderingsorder. Three-kärnan, Provspel/gästpreview, gameLanes, Blob-index, importkällor och aktiva medietillgångar har konsumenter. `lab_sessions` har en aktiv producent; tomma gamla handofftabeller ger inget DDL-mandat. Det avgränsade materialbytet är nu levererat ovan; särskild historikgallring och eventuell tillgångsflytt är separata avgränsade produkt-/databeslut. Nio ignore-filer återställdes byte för byte efter riktad synlighetsgranskning; inga globala eller privata skydd öppnades. Miljögranskningen ändrade inga nycklar eller providerinställningar. Talet är fortsatt pausat.
 
 **Avslutad migrationsadministration, 31 oktober:** `migrering/` och dess rapportgenerator, statuskontroller och specialfall i CI/hookar är avvecklade på Jakobs begäran. [HISTORIK](HISTORIK.md) anger Git-versionerna. 78 riktade Node-prov och 18 Atlasprov passerar; Atlas genereras utan fel eller varningar. Aktiva SQL-/readinesskontrakt och molndata är oförändrade. Ingen ny driftacceptans ingår.
 
