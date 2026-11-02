@@ -10,6 +10,10 @@
       "nodes": [
         { "id": "scope", "label": "CI-urval", "place": "regressionLegs · tools/ci-changes.mjs", "col": 1, "row": 0 },
         { "id": "matrix", "label": "Jobbmatris till CI", "place": "ciOutputs · tools/ci-changes.mjs", "col": 2, "row": 0 },
+        { "id": "registry", "label": "Ett svitregister", "place": ".githooks/pre-commit-full", "col": 3, "row": 0 },
+        { "id": "feature-tests", "label": "Blackjack, roulette och rum", "place": "test/blackjack/ · test/roulette/ · test/rooms/", "col": 4, "row": 0 },
+        { "id": "focused", "label": "Nästat lokalt testurval", "place": "focusedTests · tools/precommit-checks.mjs", "col": 3, "row": 1 },
+        { "id": "browser", "label": "Rekursiv Chrome-upptäckt", "place": ".github/workflows/croupier.yml", "col": 3, "row": 2 },
         { "id": "suites", "label": "Urvals- och partitionsprov", "place": "test/ci-changes.mjs", "col": 0, "row": 0 },
         { "id": "objects", "label": "Exakt Git-intervall", "place": "CI-event + Git-objekt", "col": 0, "row": 1 },
         { "id": "limits", "label": "Fil- och mediegrind", "place": "tools/check-repo-limits.mjs", "col": 1, "row": 1 },
@@ -17,6 +21,34 @@
         { "id": "merge", "label": "Integrationsgrind", "place": "tools/merge-pr.mjs", "col": 1, "row": 2 }
       ],
       "edges": [
+        {
+          "id": "matrix-registry", "source": "matrix", "target": "registry", "kind": "Körkommando",
+          "label": "Kör valda sviter", "conditional": false,
+          "explanation": "CI kör varje vald svit genom samma register som full lokal regression. Funktionsmappar ändrar inte provens svit eller krav.",
+          "evidence": [{ "path": ".github/workflows/croupier.yml", "match": "sh .githooks/pre-commit-full \"$suite\" || failed=1" }]
+        },
+        {
+          "id": "registry-feature-tests", "source": "registry", "target": "feature-tests", "kind": "Körkommando",
+          "label": "Registrerade beteendeprov", "conditional": false,
+          "explanation": "Registret pekar direkt på de flyttade proven. Motorharnessen läser sin fillista därifrån och tillåter nästlade testvägar; hjälparmoduler körs inte som egna prov.",
+          "evidence": [
+            { "path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay fuzz-blackjack test/blackjack/fuzz-blackjack.mjs test/blackjack/blackjack-sidebets.mjs" },
+            { "path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay roulette test/roulette/roulette.mjs test/roulette/roulette-room.mjs test/roulette/roulette-room-http.mjs test/roulette/roulette-wheel.mjs test/roulette/roulette-start-contract.mjs test/roulette/roulette-publication.mjs test/roulette/roulette-postgres.mjs" },
+            { "path": "tools/run-engine-qa.mjs", "match": "|| file.split('/').includes('fixtures') || !existsSync(join(repository, file)))) throw Error('engine_qa_suite_invalid');" }
+          ]
+        },
+        {
+          "id": "focused-feature-tests", "source": "focused", "target": "feature-tests", "kind": "Funktionsanrop",
+          "label": "Följ lokala och delade fixturer", "conditional": true,
+          "explanation": "Hooken söker rekursivt efter konsumenter av ändrade fixturer, även lokala fixturer i funktionsmappar. Länkar och junctions följs inte; cykler och raderade hjälparmoduler hanteras utan att exekvera dem.",
+          "evidence": [{ "path": "tools/precommit-checks.mjs", "match": "return collectTests('test').filter(path => reachesChange(path));" }]
+        },
+        {
+          "id": "browser-feature-tests", "source": "browser", "target": "feature-tests", "kind": "Körkommando",
+          "label": "Rot och undermappar i Chrome", "conditional": true,
+          "explanation": "CI:s Git-sökning hittar även flyttade browserprov och utesluter fixturmappar. Ett verkligt Git-fixturprov verifierar urvalet; det ersätter inte en körning i Chrome.",
+          "evidence": [{ "path": "test/github-workflow.mjs", "match": "const selected = run(['grep', '-l', '-F', '-e', marker, '--', ...pathspecs]).split(/\\r?\\n/).sort();" }]
+        },
         {
           "id": "scope-matrix", "source": "scope", "target": "matrix", "kind": "Körkommando",
           "label": "Scope → jobbmatris", "conditional": false,

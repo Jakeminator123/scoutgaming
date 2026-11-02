@@ -362,10 +362,36 @@ test('delivery never configures upstream or reports success when remote verifica
 });
 
 
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+
+test('Chrome discovery finds root and nested browser tests once while excluding fixture modules', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'browser-discovery-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const workflow = await readFile(new URL('../.github/workflows/croupier.yml', import.meta.url), 'utf8');
+  const line = workflow.split(/\r?\n/).find(line => line.includes('mapfile -t files < <(git grep'));
+  const pathspecs = [...line.split(' -- ')[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const run = args => {
+    const result = spawnSync('git', args, { cwd: root, env, encoding: 'utf8', windowsHide: true });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  run(['init', '-q']);
+  const files = ['test/root.mjs', 'test/rooms/deep/browser.mjs', 'test/rooms/fixtures/helper.mjs',
+    'test/fixtures/helper.mjs', 'apps/studio/test/feature/browser.test.mjs', 'apps/web/test/browser.mjs', 'other/browser.mjs'];
+  const marker = 'process.env.' + 'CROUPIER_BROWSER_FIXTURE_MODULE';
+  for (const file of files) {
+    await mkdir(join(root, file, '..'), { recursive: true });
+    await writeFile(join(root, file), `const driver = ${marker};\n`);
+  }
+  run(['add', '--', ...files]);
+  const selected = run(['grep', '-l', '-F', '-e', marker, '--', ...pathspecs]).split(/\r?\n/).sort();
+  assert.deepEqual(selected, ['test/root.mjs', 'test/rooms/deep/browser.mjs', 'apps/studio/test/feature/browser.test.mjs', 'apps/web/test/browser.mjs'].sort());
+});
 
 for (const scenario of ['warm', 'cold', 'incomplete', 'missing-tool']) {
   test(`FFmpeg installer: ${scenario} cache and tool readiness`, async () => {

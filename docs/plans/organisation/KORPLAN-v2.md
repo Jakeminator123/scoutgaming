@@ -46,7 +46,7 @@ Detta är kodrestarbete, inte en ny databas- eller driftkontroll.
 
 Befintliga relevanta prov: `test/api-key-operator-migration.mjs`,
 `test/studio-admin-accounts.mjs`, `test/partner-launch-route.mjs`,
-`test/shared-room-access.mjs` och `test/shared-command-auth.mjs`.
+`test/rooms/shared-room-access.mjs` och `test/rooms/shared-command-auth.mjs`.
 
 ## Data och medieavveckling
 

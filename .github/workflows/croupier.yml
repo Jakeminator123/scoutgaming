@@ -298,7 +298,7 @@ jobs:
           echo "verified=true" >> "$GITHUB_OUTPUT"
       - name: Game rules split check
         if: ${{ !cancelled() && matrix.policy }}
-        run: node test/split-rules.mjs
+        run: node test/blackjack/split-rules.mjs
       - name: Delivery policy and team inbox
         if: ${{ !cancelled() && matrix.policy }}
         run: node --test --test-concurrency=4 test/github-workflow.mjs test/inbox.mjs
@@ -358,7 +358,7 @@ jobs:
           # Every test file that reads the browser fixture runs here, so a new
           # browser test can never be skipped in CI by default. In the regression
           # legs the variable is unset and these cases skip.
-          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/*.mjs' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
+          mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/**/*.mjs' ':(glob,exclude)test/**/fixtures/**' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)
           test "${#files[@]}" -gt 0
           printf 'Browser test file: %s\n' "${files[@]}"
           CROUPIER_BROWSER_FIXTURE_MODULE="$driver/node_modules/playwright-core/index.mjs" \
