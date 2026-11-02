@@ -269,7 +269,7 @@ function stagedChangesNeedDocs(registry) {
       catch (error) { if (revision === 'HEAD' && error.status === 128) return ''; throw error; }
     };
     if (hasEnvChange(readRevision('HEAD'), readRevision(''), templatePaths.has(path) || blueprintPaths.has(path) || /(^|\/)\.env(?:\.|$)/.test(path), path)) {
-      return !staged.includes('docs/environment-variables.json') || !staged.includes('docs/ENVIRONMENT-VARIABLES.md')
+      return !staged.includes('docs/environment-variables.json') || !staged.includes('docs/operations/ENVIRONMENT-VARIABLES.md')
         ? [`${path} changes environment variables; stage both environment inventory files in the same commit.`] : [];
     }
   }
@@ -280,7 +280,7 @@ async function audit(registry) {
   const errors = validateRegistry(registry);
   if (errors.length) return errors;
   for (const { path, line, names } of hardcodedNameReferences(hardcodedNames(registry))) {
-    errors.push(`${path}:${line} names ${names.join(', ')}, which is hard-coded (docs/ENVIRONMENT-VARIABLES.md#fasta-värden); use the fixed value instead of reading the variable.`);
+    errors.push(`${path}:${line} names ${names.join(', ')}, which is hard-coded (docs/operations/ENVIRONMENT-VARIABLES.md#fasta-värden); use the fixed value instead of reading the variable.`);
   }
   for (const [service, entry] of Object.entries(registry.services)) {
     const listed = new Set(categories.flatMap(category => entry[category]));

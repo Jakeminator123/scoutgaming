@@ -23,6 +23,11 @@ Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
 
 ## Funktionsmappar
 
+Alla beteendeprov under `test/` är grupperade efter funktion; se
+[testguiden](test/README.md) för Admin, åtkomst, media, komposition, bolag,
+presentation och övriga grupper. Roten innehåller bara guiden; delade
+hjälpare ligger i `test/fixtures/`.
+
 Dealerns import, fabrik, filmprofil, röst, mediebibliotek och livscykel finns
 i [`lib/dealers/`](lib/dealers/). Frysta importmanifest hör till samma modulgrupp;
 deras identiteter och innehåll ändras inte av mappindelningen.
@@ -70,11 +75,11 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 
 | Ansvar | Källa | Kontroll |
 | --- | --- | --- |
-| Event-ID, källtyper och klippbegrepp | `packages/presentation/contracts/policies/studio-contract.json` | `test/studio-contract.test.mjs` |
+| Event-ID, källtyper och klippbegrepp | `packages/presentation/contracts/policies/studio-contract.json` | `test/composition/scenes/studio-contract.test.mjs` |
 | Projektschema, seed och validering | `packages/presentation/contracts/` (`schemas/`, `policies/`, `studio-model.mjs`) | `validateProject` och kontraktstester |
 | Mediefamiljer och standardfiler | `packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
 | Runtime-katalogens källor (utan presentationsbank sedan 2026-10-28) | `media/layout.json`, `media/blob-index.json`, `media/catalog/*.json` | `node tools/build-runtime-media-catalog.mjs --check` |
-| Uppmätta kortspår | `services/game/public/card-presentation/` | `test/local-card-overlay.mjs` i reporoten och browsergranskning |
+| Uppmätta kortspår | `services/game/public/card-presentation/` | `test/presentation/layout/local-card-overlay.mjs` i reporoten och browsergranskning |
 | Medieorkestrering och läsare | `packages/studio-registry/server/`; bindning i `packages/presentation/server/` | Paketens tester |
 | Director-, tal- och sociala kontrakt | `packages/director/`; Studios miljöläsning i `lib/director-settings.mjs` | `packages/director`-tester |
 | Adresser och bolagssluggar | `packages/navigation/` | Navigationstester |
@@ -118,7 +123,7 @@ delar samma pågående eller sparade beslut för ett oförändrat `requestId`;
 Studio når Director med `LAB_REMOTE_URL` och `LAB_REMOTE_TOKEN` (serversidan,
 ingen `NEXT_PUBLIC_*`). `OPENCLAW_MODEL_API_KEY` stannar på Gatewayen. Alla
 nycklar och var de sätts står i
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md). Director-tjänsten
+[ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md). Director-tjänsten
 och dess blueprint ligger i `services/openclaw/lab/`;
 [OpenClaw-guiden](../../docs/AI/openclaw/README.md) har källorna.
 
@@ -135,7 +140,7 @@ och dess blueprint ligger i `services/openclaw/lab/`;
 - Dolt kort förblir `null` i publika vyer. Ett variantbeslut ändrar aldrig
   publicerade fakta.
 
-`node --test apps/studio/test/engine-compatibility.test.mjs` provar den
+`node --test apps/studio/test/presentation/engine-compatibility.test.mjs` provar den
 riktiga presentationsfunktionen (`services/game/partner-presentation.mjs`) med
 syntetiska publika vyer. Det är inget spel- eller videotest.
 
@@ -144,7 +149,7 @@ syntetiska publika vyer. Det är inget spel- eller videotest.
 `/api/inputs/reference` (`lib/partner-reference.mjs`) provar kopplingen till
 partnern: behörighet, spelöppning och videokarta. Den är valfri, gör inga
 spelhandlingar och kräver `BETTALOTTO_PARTNER_*`-nycklarna i processmiljön (se
-[ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md)).
+[ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md)).
 `lib/partner-observer.mjs` kontrollerar bara att nycklarna och adressen är
 giltiga; den öppnar ingen anslutning.
 

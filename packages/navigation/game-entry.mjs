@@ -11,7 +11,7 @@ export const GAMES = Object.freeze(['blackjack', 'roulette']);
 // Selectors that make a game start an actual room/presentation choice rather than a lobby entry.
 export const GAME_CONTEXT_KEYS = Object.freeze(['dealer','presentation','lane','rehearsal','table','launch','labObserverOrigin','labObserverChannel']);
 // Neon is the one registry on every deployment, so the canonical game entry is always
-// on; no variable selects it (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// on; no variable selects it (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
 export const gameEntryEnabled = () => true;
 export function publicGamePath() {
   return GAME_START_PATH;

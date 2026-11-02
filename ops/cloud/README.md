@@ -11,7 +11,7 @@ Browser → Vercel web / Admin / speech
           scoped Neon data + private Blob bytes
 ```
 
-The service, deploy and checks are in [RENDER-V3.md](RENDER-V3.md), the build boundary in [CONTAINER-CONTEXT.md](CONTAINER-CONTEXT.md), the deployment map in [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md#ytor-och-datalagring), variables in [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md) and backup and rollback in [ENVIRONMENT-RESTORATION](../../docs/ENVIRONMENT-RESTORATION.md).
+The service, deploy and checks are in [RENDER-V3.md](RENDER-V3.md), the build boundary in [CONTAINER-CONTEXT.md](CONTAINER-CONTEXT.md), the deployment map in [CLOUD-DELIVERY](../../docs/operations/CLOUD-DELIVERY.md#ytor-och-datalagring), variables in [ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md) and backup and rollback in [ENVIRONMENT-RESTORATION](../../docs/operations/ENVIRONMENT-RESTORATION.md).
 
 ## Files
 

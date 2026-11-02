@@ -145,34 +145,48 @@ function staticRelativeImports(source) {
   return imports;
 }
 
-function fixtureConsumerTests(changes, root) {
-  const changed = new Set(changes.map(change => change.path));
-  if (![...changed].some(path => /\.[cm]?js$/.test(path))) return [];
+const forbiddenTestDirectories = new Set(['node_modules', 'arkiv', 'random-stuff-jakob']);
+
+function safeTestPath(root, path, { missing = false, directory = false } = {}) {
   // Check every path component before reading. In particular, a fixture folder
   // may be a Windows junction even when the final module looks like a file.
-  function safePath(path, { missing = false, directory = false } = {}) {
-    let target = root;
-    const parts = path.split('/');
-    for (let i = 0; i < parts.length; i++) {
-      target = resolve(target, parts[i]);
-      let info;
-      try { info = lstatSync(target); }
-      catch (error) { if (error.code === 'ENOENT') return missing; throw error; }
-      if (info.isSymbolicLink()) return false;
-      if (i < parts.length - 1 || directory) { if (!info.isDirectory()) return false; }
-      else if (!info.isFile()) return false;
-    }
-    return true;
+  let target = root;
+  const parts = path.split('/');
+  for (let i = 0; i < parts.length; i++) {
+    target = resolve(target, parts[i]);
+    let info;
+    try { info = lstatSync(target); }
+    catch (error) { if (error.code === 'ENOENT') return missing; throw error; }
+    if (info.isSymbolicLink()) return false;
+    if (i < parts.length - 1 || directory) { if (!info.isDirectory()) return false; }
+    else if (!info.isFile()) return false;
   }
-  if (!safePath('test', { directory: true })) return [];
+  return true;
+}
+
+function rootTestFiles(root, directory = 'test') {
+  if (!safeTestPath(root, directory, { directory: true })) return [];
+  return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap(entry => {
+    if (entry.name.startsWith('.') || forbiddenTestDirectories.has(entry.name) || ['fixtures', '__fixtures__'].includes(entry.name)) return [];
+    const path = `${directory}/${entry.name}`;
+    if (entry.isSymbolicLink() || !safeTestPath(root, path, { directory: entry.isDirectory() })) return [];
+    if (entry.isDirectory()) return rootTestFiles(root, path);
+    return entry.isFile() && entry.name.endsWith('.mjs') ? [path] : [];
+  });
+}
+
+function fixtureConsumerTests(changes, root, tests) {
+  const changed = new Set(changes.map(change => change.path));
+  if (![...changed].some(path => /\.[cm]?js$/.test(path))) return [];
+  const safePath = (path, options) => safeTestPath(root, path, options);
   const dependencies = new Map();
-  const forbidden = new Set(['node_modules', 'arkiv', 'random-stuff-jakob']);
-  const isFixture = path => path.startsWith('test/') && path.split('/').slice(1, -1).includes('fixtures') && /\.[cm]?js$/.test(path);
+  const isFixture = path => path.startsWith('test/')
+    && path.split('/').slice(1, -1).some(part => ['fixtures', '__fixtures__'].includes(part)) && /\.[cm]?js$/.test(path);
   function imports(path) {
     if (dependencies.has(path)) return dependencies.get(path);
     const found = staticRelativeImports(readFileSync(resolve(root, path), 'utf8'))
       .map(specifier => posix.normalize(posix.join(posix.dirname(path), specifier)))
-      .filter(target => !target.startsWith('../') && !target.split('/').some(part => forbidden.has(part) || part.startsWith('.')));
+      .filter(target => !target.startsWith('../') && !target.split('/').some(part => forbiddenTestDirectories.has(part) || part.startsWith('.')));
     dependencies.set(path, found);
     return found;
   }
@@ -189,16 +203,7 @@ function fixtureConsumerTests(changes, root) {
     }
     return false;
   }
-  function collectTests(directory) {
-    return readdirSync(resolve(root, directory), { withFileTypes: true }).flatMap(entry => {
-      if (entry.name.startsWith('.') || forbidden.has(entry.name) || entry.name === 'fixtures') return [];
-      const path = `${directory}/${entry.name}`;
-      if (entry.isSymbolicLink() || !safePath(path, { directory: entry.isDirectory() })) return [];
-      if (entry.isDirectory()) return collectTests(path);
-      return entry.isFile() && entry.name.endsWith('.mjs') ? [path] : [];
-    });
-  }
-  return collectTests('test').filter(path => reachesChange(path));
+  return tests.filter(path => reachesChange(path));
 }
 
 // Text sources a test can load by path; documentation keeps its quick path.
@@ -310,6 +315,8 @@ function sourceConsumerTests(paths, root) {
 export function focusedTests(changes, root = repositoryRoot) {
   const selected = new Set();
   const withoutOwnTests = [];
+  const rootTests = rootTestFiles(root);
+  const studioTests = changes.some(({ path }) => path.startsWith('apps/studio/')) ? rootTestFiles(root, 'apps/studio/test') : [];
   let own = 0;
   const add = path => { if (existsSync(resolve(root, path))) { selected.add(path); own++; } };
   for (const { path } of changes) {
@@ -318,17 +325,17 @@ export function focusedTests(changes, root = repositoryRoot) {
       throw Error('Invalid changed path');
     }
     own = 0;
-    if (!path.split('/').includes('fixtures')
+    if (!path.split('/').some(part => ['fixtures', '__fixtures__'].includes(part))
       && /(?:\.test\.[cm]?js$|^test\/.+\.mjs$|^apps\/[^/]+\/test\/[^/]+\.mjs$)/.test(path)) add(path);
     // Moved shared contracts keep their existing behavioral regression suites.
     const registryTests = {
-      'runtime-catalog': ['test/runtime-media-catalog.mjs'],
-      'registry-core': ['apps/studio/test/video-registry.test.mjs', 'apps/studio/test/blob-source-routing.test.mjs'],
-      'registry-reader': ['apps/studio/test/neon-video-registry.test.mjs'],
-      'blob-reader': ['apps/studio/test/cloud-media-store.test.mjs'],
-      'private-media-contract': ['apps/studio/test/cloud-media-store.test.mjs'],
-      'video-manifest': ['apps/studio/test/lab-video-manifest.test.mjs'],
-      'storage-contract': ['test/studio-repository.mjs'],
+      'runtime-catalog': ['test/media/runtime-media-catalog.mjs'],
+      'registry-core': ['apps/studio/test/media/registry/video-registry.test.mjs', 'apps/studio/test/media/registry/blob-source-routing.test.mjs'],
+      'registry-reader': ['apps/studio/test/media/registry/neon-video-registry.test.mjs'],
+      'blob-reader': ['apps/studio/test/media/registry/cloud-media-store.test.mjs'],
+      'private-media-contract': ['apps/studio/test/media/registry/cloud-media-store.test.mjs'],
+      'video-manifest': ['apps/studio/test/media/registry/lab-video-manifest.test.mjs'],
+      'storage-contract': ['test/storage/studio-repository.mjs'],
       'video-dealer-registration': ['apps/studio/test/dealers/dealer-video-registration.test.mjs'],
     };
     if (path.startsWith('packages/studio-registry/server/')) {
@@ -339,20 +346,20 @@ export function focusedTests(changes, root = repositoryRoot) {
     for (const candidate of [
       `${directory}/${stem}.test.mjs`, `${directory}/${stem}.test.js`,
       `${directory}/test/${stem}.test.mjs`, `${directory}/test/${stem}.mjs`,
-      `test/${stem}.mjs`,
-      ...(path.startsWith('apps/studio/') ? [`apps/studio/test/${stem}.test.mjs`] : []),
+      ...rootTests.filter(test => basename(test) === `${stem}.mjs`),
+      ...(path.startsWith('apps/studio/') ? studioTests.filter(test => basename(test) === `${stem}.test.mjs`) : []),
       ...(path.startsWith('apps/studio/lib/') ? [`apps/studio/test${directory.slice('apps/studio/lib'.length)}/${stem}.test.mjs`] : []),
       ...(path.startsWith('apps/') ? [`${path.split('/').slice(0, 2).join('/')}/test/${stem}.mjs`] : []),
     ]) add(candidate);
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
-      for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
+      for (const file of ['test/delivery/precommit-checks.mjs', 'test/delivery/ci-changes.mjs', 'test/delivery/github-workflow.mjs']) add(file);
     }
-    if (path === '.githooks/pre-commit-full') add('test/regression-group.mjs');
+    if (path === '.githooks/pre-commit-full') add('test/delivery/regression-group.mjs');
     // The merge guard reads the branch policy.
-    if (path === 'tools/repository-policy.json') add('test/merge-pr.mjs');
+    if (path === 'tools/repository-policy.json') add('test/delivery/merge-pr.mjs');
     if (!own && consumerSource.test(path) && !isDocumentationPath(path)) withoutOwnTests.push(path);
   }
-  for (const path of fixtureConsumerTests(changes, root)) selected.add(path);
+  for (const path of fixtureConsumerTests(changes, root, rootTests)) selected.add(path);
   for (const path of sourceConsumerTests(withoutOwnTests, root)) selected.add(path);
   return [...selected].sort();
 }

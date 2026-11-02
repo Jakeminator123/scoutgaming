@@ -93,11 +93,11 @@ Personan aktiverar inte tal, GPU, mikrofon eller en dealerprofil i ett rum.
 ## Tester
 
 ```powershell
-node --test test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
+node --test test/speech/chat/openclaw-chat-contract.mjs test/speech/chat/chat-decision-player.mjs test/speech/playback/speech-package-contract.mjs test/speech/playback/speech-pose-gate.mjs
 node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw/lab/deploy/gateway-config.test.mjs services/openclaw/lab/deploy/runtime-bundle.test.mjs services/openclaw/lab/deploy/start-gateway.test.mjs
-node tools/run-engine-qa.mjs --postgres-bin <bin> test/product-chat-http.mjs
+node tools/run-engine-qa.mjs --postgres-bin <bin> test/speech/chat/product-chat-http.mjs
 ```
 
 Testerna använder fixturehemligheter, HTTP-stubbar, loopback och tempdata och
-gör inga modell- eller molnanrop. `test/product-chat-http.mjs` kör spelmotorn
+gör inga modell- eller molnanrop. `test/speech/chat/product-chat-http.mjs` kör spelmotorn
 mot Postgres och hoppar över med skäl utan motorharnessen.

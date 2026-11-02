@@ -15,7 +15,7 @@ const createRenderStudioPolicy = createStudioPolicyRuntime({
   },
 });
 
-// Neon is the one registry; no variable selects it (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// Neon is the one registry; no variable selects it (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
 export const renderStudioPolicyEnabled = () => true;
 export function assertRenderStudioWritable() {
   throw new StudioError('studio_writes_moved_to_native',410);

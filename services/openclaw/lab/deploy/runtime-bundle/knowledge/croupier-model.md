@@ -44,5 +44,5 @@ and review of exact line/dealer/action/take are the integration boundary.
 
 Source references (repository paths, not claims of live file access):
 web/partner-presentation.mjs; lab/COMPATIBILITY.md;
-docs/LOCAL-PRESENTATION-RUNTIME.md.
+docs/media/PRESENTATION-RUNTIME.md.
 This is a dated design snapshot; current request data is needed for live state.

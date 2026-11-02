@@ -6,7 +6,7 @@ The relay, ticket authentication, worker binding and Cartesia/ElevenLabs PCM ada
 [`services/game/generated-speech-stream.mjs`](../../game/generated-speech-stream.mjs),
 [`services/game/dealer-speech-runtime.mjs`](../../game/dealer-speech-runtime.mjs) and
 [`services/game/speech-journal-runtime.mjs`](../../game/speech-journal-runtime.mjs).
-The shared player in `services/game/public` owns playback. `browser-player.mjs` and `server.mjs` here are protocol references; the standalone server is not a production service and launches no GPU worker. Playback rules are in the [runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+The shared player in `services/game/public` owns playback. `browser-player.mjs` and `server.mjs` here are protocol references; the standalone server is not a production service and launches no GPU worker. Playback rules are in the [runtime guide](../../../docs/media/PRESENTATION-RUNTIME.md).
 
 ## Standalone protocol checks
 

@@ -4,7 +4,7 @@ import { createRenderStudioPolicy as createProductStudioPolicy } from '../../ser
 // scoped repository, saved project/administration and registered dealer idle all run
 // against the engine's pool. Only its configuration check reads an inert *.neon.tech
 // URL, because the owned CI cluster is 127.0.0.1 (the same substitution
-// test/studio-cutover-integration.mjs makes in process). It refuses any database that
+// test/rooms/studio-cutover-integration.mjs makes in process). It refuses any database that
 // is not an engine-qa database on loopback with verify-full TLS.
 export function engineQaStudioEnvironment(env) {
   const actual = new URL(env.CROUPIER_GAME_DATABASE_URL);

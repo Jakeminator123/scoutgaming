@@ -72,7 +72,7 @@ export function operatorMemoryPool({ apiKeyColumn = true } = {}) {
     // This schema has no migration 021: company material is not installed.
     if (text.includes('/* operator-materials:materials-ready */')) return [{ ledgered: 0, present: false }];
     // croupier_auth.api_keys as Partnerportalen reads it (lib/partner-api-keys.mjs). With game
-    // migration 012 (apiKeyColumn) every row names its company; the real SQL runs in test/partner-key-operator.mjs.
+    // migration 012 (apiKeyColumn) every row names its company; the real SQL runs in test/access/partner-key-operator.mjs.
     if (text.includes('/* partner-api-keys:column */')) return [{ present: apiKeyColumn }];
     if (text.includes('/* partner-api-keys:list */')) {
       return tables.api_keys.filter(row => row.operator_id === values[0]).map(row => ({ ...copy(row), wallet_configured: Boolean(row.wallet_url) }));

@@ -11,8 +11,8 @@ gränser.
 | Director, Gateway, nycklar och Render-drift | [Drift](openclaw/DEPLOYMENT.md) |
 | OpenClaws egen dashboard | [Dashboard](openclaw/DASHBOARD-SV.md) |
 | Runtimepaketet som Gateway-rollerna får | [Runtime-bundle](../../services/openclaw/lab/deploy/runtime-bundle/README.md) |
-| Medier och uppspelning | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
-| Miljövariabler | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
+| Medier och uppspelning | [Runtime-referensen](../media/PRESENTATION-RUNTIME.md) |
+| Miljövariabler | [Variabelregistret](../operations/ENVIRONMENT-VARIABLES.md) |
 | Begrepp | [Ordlistan](../../apps/studio/docs/TERMINOLOGI.md) |
 | Läge och nästa steg | [NEXT-AGENT](../NEXT-AGENT.md) |
 
@@ -63,5 +63,5 @@ Följ [lagringsguidens avvecklingsordning](../storage/BLOB-NEON.md#avveckling-av
 
 Befintlig `companion.json` och lagrad Gateway-roll/workspace/session är privata
 driftdata. Kodavvecklingen raderar dem inte vid start. Deras avveckling kräver
-ett separat datasteg med backup; [återställningsguiden](../ENVIRONMENT-RESTORATION.md)
+ett separat datasteg med backup; [återställningsguiden](../operations/ENVIRONMENT-RESTORATION.md)
 beskriver den bevarade diskkopieringen.

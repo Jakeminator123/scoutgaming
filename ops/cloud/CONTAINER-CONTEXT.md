@@ -6,7 +6,7 @@ Spelmotorn `croupier-v3` byggs från reporoten med `ops/cloud/Dockerfile.game`:
 docker build -f ops/cloud/Dockerfile.game .
 ```
 
-Imagen kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`. Admin, lobby och spelskal byggs på Vercel. Se [RENDER-V3](RENDER-V3.md) för tjänst och deploy och [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten) för kodåtergång.
+Imagen kör `services/game/server.mjs` bakom gatewayn i `ops/cloud`. Admin, lobby och spelskal byggs på Vercel. Se [RENDER-V3](RENDER-V3.md) för tjänst och deploy och [återställningsguiden](../../docs/operations/ENVIRONMENT-RESTORATION.md#återställ-den-samlade-produkten) för kodåtergång.
 
 | Kopieras till imagen | Roll |
 | --- | --- |
@@ -26,4 +26,4 @@ Neon är registret: scoped `runtime_media_catalogs` innehåller layout, Blob-ind
 
 `.dockerignore` filtrerar bort Git, privata `arkiv/`, hemligheter, appdata och mediers source, staging och review. Filtreringen raderar inga lokala filer. OpenClaw och GPU-workern har egna Dockerfiler.
 
-Ett lyckat containerbygge bevisar bara bygg- och startkontraktet. Vid leverans kontrolleras driftsatt SHA, health och det ändrade beteendet enligt [driftkartan](../../docs/CLOUD-MIGRATION.md#kontrollera-en-deploy).
+Ett lyckat containerbygge bevisar bara bygg- och startkontraktet. Vid leverans kontrolleras driftsatt SHA, health och det ändrade beteendet enligt [driftkartan](../../docs/operations/CLOUD-DELIVERY.md#kontrollera-en-deploy).

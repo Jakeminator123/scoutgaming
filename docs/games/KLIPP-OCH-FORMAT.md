@@ -1,6 +1,6 @@
 # Klipp, format och godkännande
 
-Gemensam begreppsreferens för [blackjack](blackjack/README.md) och [roulette](roulette/README.md). Spelens geometri och handlingar står i respektive guide, orden i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och lagrings- och uppspelningskontraktet i [runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md). Detta är ett granskningskontrakt, inte ett uppladdningsschema.
+Gemensam begreppsreferens för [blackjack](blackjack/README.md) och [roulette](roulette/README.md). Spelens geometri och handlingar står i respektive guide, orden i [ordlistan](../../apps/studio/docs/TERMINOLOGI.md) och lagrings- och uppspelningskontraktet i [runtime-referensen](../media/PRESENTATION-RUNTIME.md). Detta är ett granskningskontrakt, inte ett uppladdningsschema.
 
 ## Sex saker som hålls isär
 

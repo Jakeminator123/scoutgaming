@@ -16,7 +16,7 @@ export function surfaceBundleOptions(surface) {
     external: ['/composition-runtime/compositor.js'],
     define: { 'process.env.NODE_ENV': '"production"',
       'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': JSON.stringify(surface==='admin'?'1':'0'),
-      // Studio's basePath is the fixed /studio (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+      // Studio's basePath is the fixed /studio (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
       'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"' },
     alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
       'react': resolve(root, 'node_modules/react'), 'react-dom': resolve(root, 'node_modules/react-dom'),

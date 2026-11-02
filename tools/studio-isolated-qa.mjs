@@ -31,9 +31,9 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'services/game/moving-drift-diagnostics.mjs',
   'test/fixtures/moving-drift-executor-sql-checks.mjs',
   'packages/presentation/contracts/moving-drift/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
-  'apps/studio/test/moving-drift-admin.test.mjs',
+  'apps/studio/test/admin/moving-drift-admin.test.mjs',
   'packages/presentation/contracts/moving-drift/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
-  'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/postgres-moving-drift.mjs',
+  'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/speech/moving/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',
   'packages/presentation/server/studio-policy-runtime.mjs',
   'packages/presentation/capability-contract.mjs',
@@ -85,7 +85,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-registry/server/runtime-catalog.mjs', 'packages/presentation/server/speech-reply-repository.mjs', 'packages/presentation/server/speech-reply-library.mjs',
       'media/layout.json', 'media/blob-index.json', 'media/catalog/presentation.json', 'media/catalog/legacy.json',
       'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs', 'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
-      'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'apps/studio/test/fixtures/cloud-presentation.mjs',
+      'ops/neon-studio/007-partner-branding-drafts.sql', 'test/operators/partner-branding-postgres.mjs', 'apps/studio/test/fixtures/cloud-presentation.mjs',
       'apps/studio/lib/partner-branding-api.mjs', 'apps/studio/lib/partner-presentation-choices.mjs', 'apps/studio/lib/partner-package-view.mjs',
       'ops/neon-studio/022-partner-journal.sql', 'ops/neon-studio/023-operator-package-rooms.sql', 'packages/operators/server/operator-audit-actions.mjs',
       'ops/neon-studio/021-operator-materials.sql', 'apps/studio/lib/operator-material-store.mjs', 'apps/studio/lib/operator-material-publication.mjs', 'packages/presentation/server/operator-material-merge.mjs',
@@ -107,20 +107,20 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
     'packages/presentation/contracts/probe-fixtures.mjs', 'services/game/presentation-selection.mjs', 'apps/studio/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette/roulette-postgres.mjs', 'services/game/games/roulette/room.mjs', 'services/game/games/roulette/storage.mjs', 'services/game/games/roulette/access.mjs', 'services/game/games/roulette/index.mjs', 'services/game/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
-      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'apps/studio/lib/partner-session.mjs', 'apps/studio/lib/partner-team-api.mjs', 'apps/studio/lib/operator-audit-context.mjs', 'apps/studio/lib/operator-admin-api.mjs', 'apps/studio/lib/operator-journal.mjs',
+      'test/operators/partner-team-postgres.mjs', 'test/delivery/studio-isolated-partner-qa.mjs', 'apps/studio/lib/partner-session.mjs', 'apps/studio/lib/partner-team-api.mjs', 'apps/studio/lib/operator-audit-context.mjs', 'apps/studio/lib/operator-admin-api.mjs', 'apps/studio/lib/operator-journal.mjs',
       'ops/neon-studio/011-gpu-daily-budget.sql', 'ops/neon-studio/migrations.mjs', 'packages/operators/server/operator-store.mjs',
       'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/server/craig-identity.mjs', 'packages/studio-access/server/bo-auth-epoch.mjs', 'packages/studio-access/server/partner-access-policy.mjs',
       'packages/studio-access/display-name.mjs',
       'packages/storage/server/postgres-store.mjs', 'packages/operators/server/operator-lifecycle.mjs', 'packages/presentation/contracts/game-lanes.mjs',
       'packages/studio-registry/server/repository.mjs',
       'services/game/storage/postgres-store.mjs', 'packages/studio-registry/server/document-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'packages/studio-registry/server/document-repository.mjs', 'packages/presentation/server/saved-game-policy.mjs', 'services/game/storage/studio-runtime.mjs',
-      'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
+      'ops/neon-studio/retained-bank.mjs', 'test/media/studio-retained-bank.mjs',
       'packages/storage/server/player-administration.mjs', 'services/game/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'apps/studio/lib/studio-game-authority.mjs',
       'apps/studio/lib/studio-native-auth-actions.mjs', 'apps/studio/lib/studio-admin-accounts.mjs', 'apps/studio/lib/studio-admin-data.mjs', 'apps/studio/lib/studio-admin-api.mjs', 'apps/studio/lib/studio-document-api.mjs',
       'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
       'apps/studio/lib/voice-preview.mjs', 'apps/studio/lib/media-blob-index.mjs', 'services/game/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
       'services/game/postgres-speech-journal.mjs', 'services/game/speech-journal-runtime.mjs', 'packages/presentation/contracts/speech-journal-constants.mjs', 'services/game/generated-speech-session.mjs', 'services/game/generated-speech-stream.mjs', 'services/game/generated-speech-runtime.mjs',
-      'services/game/speech-blob-artifacts.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
+      'services/game/speech-blob-artifacts.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/storage/studio-postgres-integration.mjs', 'test/rooms/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
 
 export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {
   if (!Number.isInteger(pgPort) || pgPort < 1 || pgPort > 65535 || typeof adminPool?.query !== 'function'
@@ -206,7 +206,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     if (movingDriftOnly) {
       const {loadStudioMigrations,planStudioMigrations} = await import('../ops/neon-studio/migrations.mjs');
       const driftSources = [...STUDIO_ISOLATED_QA_SOURCES,'packages/presentation/contracts/moving-drift/moving-drift.mjs','services/game/moving-drift-controller.mjs',
-        'services/game/postgres-moving-drift.mjs','test/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
+        'services/game/postgres-moving-drift.mjs','test/speech/moving/postgres-moving-drift.mjs','test/fixtures/moving-budget-sql-checks.mjs',
         'tools/studio-isolated-qa.mjs','ops/neon-studio/migrations.mjs',
         ...(await loadStudioMigrations()).map(row=>'ops/neon-studio/'+row.file)];
       const sourceDigest = async () => createHash('sha256').update((await Promise.all(driftSources.map(file=>readFile(join(repository,file))))).map(bytes=>createHash('sha256').update(bytes).digest('hex')).join('\n')).digest('hex');
@@ -221,7 +221,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       await pool.query(productSql);
       await pool.query('INSERT INTO croupier_game.storage_migrations(version,checksum,source_hashes,applied_at) VALUES ($1,$2,$3,$4)',
         ['product-v1',createHash('sha256').update(productSql).digest('hex'),'{}',new Date().toISOString()]);
-      const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
+      const {runMovingDriftPostgresChecks} = await import('../test/speech/moving/postgres-moving-drift.mjs');
       const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
       const {runMovingDriftExecutorSqlChecks}=await import('../test/fixtures/moving-drift-executor-sql-checks.mjs');
       const execution=await runMovingDriftExecutorSqlChecks({pool});
@@ -241,16 +241,16 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
     const before = await sourceHashes();
     // The acceptance count is TAP metadata; Node's default reporter varies
     // across versions and execution contexts. Require the parsed format.
-    const retainedUnitOutput = await run(process.execPath, ['--test', '--test-reporter=tap', join(repository,'test/studio-retained-bank.mjs')], {env});
+    const retainedUnitOutput = await run(process.execPath, ['--test', '--test-reporter=tap', join(repository,'test/media/studio-retained-bank.mjs')], {env});
     const retainedContractChecks = Number(/# tests (\d+)/.exec(retainedUnitOutput)?.[1]);
     if (!Number.isSafeInteger(retainedContractChecks) || retainedContractChecks < 4) throw new Error('retained_contract_checks_missing');
-    const { runStudioPostgresChecks } = await import('../test/studio-postgres-integration.mjs');
+    const { runStudioPostgresChecks } = await import('../test/storage/studio-postgres-integration.mjs');
     const existing = await runStudioPostgresChecks({ pool, restart }); pool = existing.pool;
-    const { runStudioCutoverChecks } = await import('../test/studio-cutover-integration.mjs');
+    const { runStudioCutoverChecks } = await import('../test/rooms/studio-cutover-integration.mjs');
     const current = await runStudioCutoverChecks({ pool, restart, tls: { key: await readFile(join(root, 'fixture.key')), cert: await readFile(join(root, 'fixture.crt')) } });
     pool = current.pool;
-    const { runPartnerTeamPostgresChecks } = await import('../test/partner-team-postgres.mjs');
-    const { runPartnerBrandingPostgresChecks } = await import('../test/partner-branding-postgres.mjs');
+    const { runPartnerTeamPostgresChecks } = await import('../test/operators/partner-team-postgres.mjs');
+    const { runPartnerBrandingPostgresChecks } = await import('../test/operators/partner-branding-postgres.mjs');
     const partnerChecks = await runPartnerDatabaseQa({ adminPool: pool, pgPort, createPool: options => new Pool(options),
       restartCluster: restart, runChecks: async configuration => {
         const team = await runPartnerTeamPostgresChecks(configuration);
@@ -259,7 +259,7 @@ export async function runIsolatedStudioQa({ postgresBin, downloadPostgres = fals
       } });
     const { runRoulettePostgresChecks } = await import('../test/roulette/roulette-postgres.mjs');
     const roulette = await runRoulettePostgresChecks({pool,restart}); pool = roulette.pool;
-    const {runMovingDriftPostgresChecks} = await import('../test/postgres-moving-drift.mjs');
+    const {runMovingDriftPostgresChecks} = await import('../test/speech/moving/postgres-moving-drift.mjs');
     const drift = await runMovingDriftPostgresChecks({pool,restart,createPool:()=>open(1)}); pool = drift.pool;
     const {runMovingDriftExecutorSqlChecks}=await import('../test/fixtures/moving-drift-executor-sql-checks.mjs');
     const execution=await runMovingDriftExecutorSqlChecks({pool});

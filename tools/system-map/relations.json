@@ -11,10 +11,10 @@
         { "id": "scope", "label": "CI-urval", "place": "regressionLegs · tools/ci-changes.mjs", "col": 1, "row": 0 },
         { "id": "matrix", "label": "Jobbmatris till CI", "place": "ciOutputs · tools/ci-changes.mjs", "col": 2, "row": 0 },
         { "id": "registry", "label": "Ett svitregister", "place": ".githooks/pre-commit-full", "col": 3, "row": 0 },
-        { "id": "feature-tests", "label": "Blackjack, roulette och rum", "place": "test/blackjack/ · test/roulette/ · test/rooms/", "col": 4, "row": 0 },
+        { "id": "feature-tests", "label": "Produktprov efter funktion", "place": "test/: spel, rum, access, operators, storage, media, presentation, speech, delivery", "col": 4, "row": 0 },
         { "id": "focused", "label": "Nästat lokalt testurval", "place": "focusedTests · tools/precommit-checks.mjs", "col": 3, "row": 1 },
         { "id": "browser", "label": "Rekursiv Chrome-upptäckt", "place": ".github/workflows/croupier.yml", "col": 3, "row": 2 },
-        { "id": "suites", "label": "Urvals- och partitionsprov", "place": "test/ci-changes.mjs", "col": 0, "row": 0 },
+        { "id": "suites", "label": "Urvals- och partitionsprov", "place": "test/delivery/ci-changes.mjs", "col": 0, "row": 0 },
         { "id": "objects", "label": "Exakt Git-intervall", "place": "CI-event + Git-objekt", "col": 0, "row": 1 },
         { "id": "limits", "label": "Fil- och mediegrind", "place": "tools/check-repo-limits.mjs", "col": 1, "row": 1 },
         { "id": "freshness", "label": "Testad bas / aktuell main", "place": "Frysta SHA + komplett fillista", "col": 0, "row": 2 },
@@ -37,7 +37,7 @@
           "id": "focused-feature-tests", "source": "focused", "target": "feature-tests", "kind": "Funktionsanrop",
           "label": "Följ lokala och delade fixturer", "conditional": true,
           "explanation": "Hooken söker rekursivt efter konsumenter av ändrade fixturer, även lokala fixturer i funktionsmappar. Länkar och junctions följs inte; cykler och raderade hjälparmoduler hanteras utan att exekvera dem.",
-          "evidence": [{ "path": "tools/precommit-checks.mjs", "match": "return collectTests('test').filter(path => reachesChange(path));" }]
+          "evidence": [{ "path": "tools/precommit-checks.mjs", "match": "return tests.filter(path => reachesChange(path));" }]
         },
         {
           "id": "browser-feature-tests", "source": "browser", "target": "feature-tests", "kind": "Körkommando",
@@ -59,8 +59,8 @@
           "label": "Verifiera sviter och steg", "conditional": false,
           "explanation": "Urvalsprovet anropar regressionLegs för varje scope och verifierar sviternas stegflaggor. Partitionsprovet jämför full CI med hookens svitregister. Det är provkod, inte bevis för ett faktiskt godkänt CI-resultat.",
           "evidence": [
-            { "path": "test/ci-changes.mjs", "match": "const legs = regressionLegs(scope);" },
-            { "path": "test/ci-changes.mjs", "match": "assert.deepEqual([...matrixSuites, 'container', 'engine'].sort(), [...hookSuites].sort(), 'every suite runs exactly once');" }
+            { "path": "test/delivery/ci-changes.mjs", "match": "const legs = regressionLegs(scope);" },
+            { "path": "test/delivery/ci-changes.mjs", "match": "assert.deepEqual([...matrixSuites, 'container', 'engine'].sort(), [...hookSuites].sort(), 'every suite runs exactly once');" }
           ]
         },
         {

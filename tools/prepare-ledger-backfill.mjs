@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Bara offline: ingen databasdrivrutin, inga miljövariabler och inget apply-läge.
 // Renderar ops/neon-game/013-ledger-backfill.sql: efterhandsrader för 006, 007 och delat bord
-// 008–010 i spelets ledger (docs/ENVIRONMENT-RESTORATION.md, "Två migreringsledgrar").
+// 008–010 i spelets ledger (docs/operations/ENVIRONMENT-RESTORATION.md, "Två migreringsledgrar").
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';

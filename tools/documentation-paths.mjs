@@ -1,5 +1,5 @@
-// Reviewed documentation paths shared by link checks, local checks and CI. Markdown outside the listed guides and
-// prose folders (runtime bundles, package docs, new folder READMEs) stays strict, as does JSON.
+// Reviewed prose paths eligible for the CI/local-check classification and merge freshness exception.
+// New READMEs and runtime Markdown remain strict until explicitly reviewed here.
 const guides = new Set([
   ".cursor/rules/scoutgaming.mdc",
   ".github/copilot-instructions.md",
@@ -14,6 +14,7 @@ const guides = new Set([
   "apps/studio/client/README.md",
   "apps/studio/components/partner/README.md",
   "apps/studio/docs/README.md",
+  "apps/studio/test/README.md",
   "apps/web/README.md",
   "inbox/README.md",
   "packages/presentation/README.md",
@@ -25,7 +26,9 @@ const guides = new Set([
   "services/game/storage/README.md",
   "services/openclaw/README.md",
   "services/openclaw/lab/README.md",
-  "tools/media/README.md"
+  "test/README.md",
+  "tools/media/README.md",
+  "tools/system-map/README.md"
 ]);
 // Prose folders: every Markdown file under docs/ and apps/studio/docs/, and the cloud
 // runbooks directly in ops/cloud/; scripts or other files placed there stay strict.
@@ -34,8 +37,18 @@ const proseFolders = [
   /^ops\/cloud\/[^/]+\.md$/,
 ];
 
-export function isDocumentationPath(path) {
+function normalizedPath(path) {
   return typeof path === 'string' && !path.includes('\\')
-    && !path.split('/').some(part => ['', '.', '..'].includes(part))
-    && (guides.has(path) || proseFolders.some(pattern => pattern.test(path)));
+    && !path.split('/').some(part => ['', '.', '..'].includes(part));
+}
+
+export function isDocumentationPath(path) {
+  return normalizedPath(path) && (guides.has(path) || proseFolders.some(pattern => pattern.test(path)));
+}
+
+// Link auditing also follows functional entry points. Auditing a README does not make
+// its containing package (or a Markdown runtime payload) eligible for lighter checks.
+export function isDocumentationSource(path) {
+  return isDocumentationPath(path) || (normalizedPath(path)
+    && /^(?:apps|packages|services|test|tools|ops|media)\/(?:[^/]+\/)*README\.md$/.test(path));
 }

@@ -123,7 +123,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (stillSpeech && (![cartesiaKey, runpodKey].every(value => value.length > 0 && value.length <= 2048 && !/\s/.test(value))
     || !/^[A-Za-z0-9_-]{1,100}$/.test(runpodEndpointId))) speechFail('CARTESIA_API_KEY/RUNPOD_API_KEY/CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID');
   // Neon is the one registry and private Blob the one media store in every product
-  // process; no variable selects them (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+  // process; no variable selects them (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
   // Only the childless maintenance export runs without them.
   const storageExport = readStorageExportConfig(env);
   const blobToken = env.BLOB_READ_WRITE_TOKEN || '';

@@ -4,7 +4,7 @@ import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } fro
 import { legacyStudioDocumentHref } from './lib/legacy-studio-document.mjs';
 
 // Studio is mounted under the fixed basePath /studio on the one public origin;
-// no variable selects either (docs/ENVIRONMENT-VARIABLES.md, fixed values).
+// no variable selects either (docs/operations/ENVIRONMENT-VARIABLES.md, fixed values).
 function legacyDocumentRedirect(request: NextRequest, publicOrigin: string) {
   const target = legacyStudioDocumentHref(request, {basePath: '/studio'});
   if (!target) return null;

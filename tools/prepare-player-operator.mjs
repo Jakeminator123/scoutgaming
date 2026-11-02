@@ -47,7 +47,7 @@ export async function preparePlayerOperator(evidence) {
     // PR F1 reads the column tolerantly; only the krav PR requires this ledger row at start.
     deploymentRequired: false, minimumServerMajor: 16, idempotent: true, atomic: true,
     backfill: ['partner-key', 'latest-table', 'fallback'],
-    recovery: 'Neon backup branch backup-player-operator-<date> taken first (docs/ENVIRONMENT-RESTORATION.md); no blind DOWN or in-place restore.' } };
+    recovery: 'Neon backup branch backup-player-operator-<date> taken first (docs/operations/ENVIRONMENT-RESTORATION.md); no blind DOWN or in-place restore.' } };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

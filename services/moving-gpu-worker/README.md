@@ -44,7 +44,7 @@ Spelmotorn läser `CROUPIER_MOVING_SPEECH_BANK_RECORDS`, ett JSON-objekt med dea
 {"dragan": {"provider": "vercel-blob", "pathname": "croupier/media/dealers/dragan/runtime/moving-bank/<uuid>/<sha256>.json", "contentType": "application/json", "size": 1045, "sha256": "<sha256>"}}
 ```
 
-Varje manifest ligger under dealerns egen `croupier/media/dealers/<dealerId>/runtime/moving-bank/`, och bankens källor måste tillhöra samma dealer. Varje dealer har exakt en driftprofil i `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` med `dealerId`, en egen endpoint och `bankHash` lika med bankarkivets SHA-256; alla använder samma image och `CROUPIER_MOVING_SPEECH_RELEASE_SHA256`. En ny dealer behöver alltså en egen endpoint med samma mall (min 0, max 1). Budgeten är per dealer (`<dealerId>-test-20261017`). Se [ENVIRONMENT-VARIABLES](../../docs/ENVIRONMENT-VARIABLES.md#driftväljarens-api).
+Varje manifest ligger under dealerns egen `croupier/media/dealers/<dealerId>/runtime/moving-bank/`, och bankens källor måste tillhöra samma dealer. Varje dealer har exakt en driftprofil i `CROUPIER_STUDIO_MOVING_DRIFT_PROFILES` med `dealerId`, en egen endpoint och `bankHash` lika med bankarkivets SHA-256; alla använder samma image och `CROUPIER_MOVING_SPEECH_RELEASE_SHA256`. En ny dealer behöver alltså en egen endpoint med samma mall (min 0, max 1). Budgeten är per dealer (`<dealerId>-test-20261017`). Se [ENVIRONMENT-VARIABLES](../../docs/operations/ENVIRONMENT-VARIABLES.md#driftväljarens-api).
 
 ## Session och protokoll
 

@@ -247,7 +247,7 @@ på Vercel); servern vägrar annars sparningen (`studio_speech_bank_missing`),
 utom för en redan begärd profil med samma referens (rösten får bytas).
 Referensen ska vara ett av bankens klipp. Referenstypen kan inte
 bytas medan AI-tal är begärt. Paows körning:
-[PAOW-BANK-KORNING](../../../docs/PAOW-BANK-KORNING.md).
+[PAOW-BANK-KORNING](../../../docs/media/PAOW-BANK-KORNING.md).
 
 Under talpanelen finns:
 
@@ -665,5 +665,5 @@ och fragment bevarade (`dealerId` blir `dealer`, `lane` blir `composition`):
 `/control/*`, `/lab`, `/labb` och `/studio` leder till motsvarande sida i
 Admin. `/bo`, `/v2`, `/demo` och `/casino.html` är borta. Se även
 [utvecklarreferensen](../README.md), [lagrings- och
-uppspelningskontrakt](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) och
+uppspelningskontrakt](../../../docs/media/PRESENTATION-RUNTIME.md) och
 [läget](../../../docs/NEXT-AGENT.md).

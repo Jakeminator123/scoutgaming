@@ -7,7 +7,7 @@ lobbyn (`/lobby`). Klienten har ett eget låst React-/TypeScript-bygge; Studio
 React, react-dom, deras `@types`, esbuild och TypeScript har exakt samma
 versioner här som i `apps/studio/package.json`, eftersom de delade
 komponenterna i `apps/studio/components` byggs av båda. Uppgradera dem i båda
-paketen i samma PR; `apps/studio/test/client-version-sync.test.mjs` kontrollerar
+paketen i samma PR; `apps/studio/test/delivery/client-version-sync.test.mjs` kontrollerar
 det. Aktuella versioner läses ur paketmanifesten, inte ur äldre införandeplaner.
 
 | Del | Ansvar |
@@ -46,8 +46,8 @@ och komponentnamn är inte låsningar av nästa design.
 
 Behåll tangentbordsåtkomst, synligt fokus, kontrast och begripliga tom-/feltillstånd.
 Status ska kunna förstås utan enbart färg. Relevanta prov är
-[kitets beteenden](../test/admin-ui-kit.test.mjs), [valda menyposters fokus](../test/css-focus-ring.test.mjs),
-[knappars och diagrams fokus](../test/admin-chart-focus.test.mjs) och [tokens](../../../test/ui-tokens.mjs).
+[kitets beteenden](../test/admin/admin-ui-kit.test.mjs), [valda menyposters fokus](../test/admin/css-focus-ring.test.mjs),
+[knappars och diagrams fokus](../test/admin/admin-chart-focus.test.mjs) och [tokens](../../../test/presentation/theme/ui-tokens.mjs).
 Browserproven mäter tangentbordsfokus och kontrast i båda teman och högkontrastläge.
 Ett provkvitto gäller den provade versionen;
 en dokumentlänk är inget nytt godkännande av layout eller produktbeteende.
