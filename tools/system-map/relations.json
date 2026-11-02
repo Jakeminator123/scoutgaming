@@ -25,17 +25,13 @@
           "id": "matrix-registry", "source": "matrix", "target": "registry", "kind": "Körkommando",
           "label": "Kör valda sviter", "conditional": false,
           "explanation": "CI kör varje vald svit genom samma register som full lokal regression. Funktionsmappar ändrar inte provens svit eller krav.",
-          "evidence": [{ "path": "test/ci-changes.mjs", "match": "assert.match(suitesStep, /sh \\.githooks\\/pre-commit-full \"\\$suite\" \\|\\| failed=1/);" }]
+          "evidence": [{"path": ".github/workflows/croupier.yml", "match": "sh .githooks/pre-commit-full \"$suite\" || failed=1"}]
         },
         {
           "id": "registry-feature-tests", "source": "registry", "target": "feature-tests", "kind": "Körkommando",
           "label": "Registrerade beteendeprov", "conditional": false,
           "explanation": "Registret pekar direkt på de flyttade proven. Motorharnessen läser sin fillista därifrån och tillåter nästlade testvägar; hjälparmoduler körs inte som egna prov.",
-          "evidence": [
-            { "path": "tools/check-orphan-tests.mjs", "match": "const hit = matches.find(item => item.runner === '.githooks/pre-commit-full') || matches[0];" },
-            { "path": "test/run-engine-qa.mjs", "match": "assert.equal(new Set(files).size, files.length);" },
-            { "path": "tools/run-engine-qa.mjs", "match": "|| file.split('/').includes('fixtures') || !existsSync(join(repository, file)))) throw Error('engine_qa_suite_invalid');" }
-          ]
+          "evidence": [{"path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay shared-blackjack test/blackjack/blackjack-core.mjs test/blackjack/blackjack-table.mjs test/blackjack/shared-table-command-authority.mjs test/blackjack/shared-table-runtime.mjs test/blackjack/shared-postgres-transaction.mjs test/blackjack/shared-table-client-snapshot.mjs test/blackjack/blackjack-presentation.mjs test/rooms/room-idle.mjs test/blackjack/table-player-actions.mjs test/blackjack/table-limit-profiles.mjs test/blackjack/table-state-recovery.mjs test/rooms/shared-room-overlap.mjs test/blackjack/shared-table-full.mjs test/blackjack/shared-table-settled.mjs test/rooms/shared-room-waiting.mjs"}, {"path": ".githooks/pre-commit-full", "match": "run_node_tests gameplay roulette test/roulette/roulette.mjs test/roulette/roulette-room.mjs test/roulette/roulette-room-http.mjs test/roulette/roulette-wheel.mjs test/roulette/roulette-start-contract.mjs test/roulette/roulette-publication.mjs test/roulette/roulette-postgres.mjs"}, {"path": "tools/run-engine-qa.mjs", "match": "const files = (await readFile(hook, 'utf8')).split(/\\r?\\n/).filter(line => line.startsWith('run_node_tests engine '))"}]
         },
         {
           "id": "focused-feature-tests", "source": "focused", "target": "feature-tests", "kind": "Funktionsanrop",
@@ -47,7 +43,7 @@
           "id": "browser-feature-tests", "source": "browser", "target": "feature-tests", "kind": "Körkommando",
           "label": "Rot och undermappar i Chrome", "conditional": true,
           "explanation": "CI:s Git-sökning hittar även flyttade browserprov och utesluter fixturmappar. Ett verkligt Git-fixturprov verifierar urvalet; det ersätter inte en körning i Chrome.",
-          "evidence": [{ "path": "test/github-workflow.mjs", "match": "const selected = run(['grep', '-l', '-F', '-e', marker, '--', ...pathspecs]).split(/\\r?\\n/).sort();" }]
+          "evidence": [{"path": ".github/workflows/croupier.yml", "match": "mapfile -t files < <(git grep -l -F -e process.env.CROUPIER_BROWSER_FIXTURE_MODULE -- ':(glob)test/**/*.mjs' ':(glob,exclude)test/**/fixtures/**' ':(glob)apps/**/*.test.mjs' ':(glob)apps/web/test/*.mjs' | sort)"}]
         },
         {
           "id": "scope-matrix", "source": "scope", "target": "matrix", "kind": "Körkommando",
