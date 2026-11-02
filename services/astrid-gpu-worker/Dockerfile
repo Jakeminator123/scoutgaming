@@ -36,12 +36,14 @@ RUN sed -i 's/\r$//' /workspace/fetch/*.sh && \
 
 RUN pip install -q runpod
 
-# Kod + Astrids stillbild (1x som png + råa yuv420p-plan, BT.709)
-COPY assets/ /workspace/avatar/
+# Code and byte-identical PNG/YUV assets. BuildKit mounts the compressed inputs
+# so they do not remain in an extra image layer alongside the restored files.
 COPY workers/ /workspace/workers/
 COPY handler.py /workspace/handler.py
 RUN sed -i 's/\r$//' /workspace/workers/*.py /workspace/handler.py && \
     ln -sf /workspace/workers/preprocessing_mp.py /workspace/preprocessing_mp.py
+RUN --mount=type=bind,source=assets,target=/tmp/astrid-assets \
+    python /workspace/workers/restore_assets.py /tmp/astrid-assets /workspace/avatar
 
 # Both avatars must be ready before publishing an image. A failed preparation is
 # a failed build, not additional work silently deferred to the first visitor.
