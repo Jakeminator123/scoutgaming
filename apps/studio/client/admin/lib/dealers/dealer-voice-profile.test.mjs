@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import * as voices from '../../../../../packages/presentation/contracts/dealer-voice-profile.mjs';
+import * as voices from '../../../../../../packages/presentation/contracts/dealer-voice-profile.mjs';
 
 // Röstprofil i Admin › Dealers › Röst och tal: renders the saved voice, the
 // catalog suggestion or nothing, validates the id and posts only to the
@@ -12,7 +12,7 @@ const PAOW='WZVEBKUreb9jAKojf0QF',OTHER='AbCdEfGhIjKlMnOpQrSt';
 let compiled;
 function harness({dealer,projectDirty=false,respond}){
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
-  compiled??=transformSync(readFileSync(new URL('../components/studio/dealer-voice-profile.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  compiled??=transformSync(readFileSync(new URL('../../components/studio/dealer-voice-profile.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
   const slots=[],calls=[],saved=[];let cursor=0;const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useEffect(){cursor++}};
   runInNewContext(compiled,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-profile.mjs')?voices:require(name),

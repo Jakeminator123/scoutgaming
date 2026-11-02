@@ -38,7 +38,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   const extra = surface === 'admin' ? '<link rel="stylesheet" href="/admin/_assets/admin/app.css">' : '';
   await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title}</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script><script src="/studio/assistant-widget.js" defer></script></body></html>`);
 }
-await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
+await build({entryPoints:[resolve(root,'admin/lib/dealers/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
   define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'"/studio"'}});
 // Lägesvalet (lib/theme-mode.mjs) körs före Admins stilmall. CSP:n tillåter inga inline-skript,
 // så startskriptet är en egen fil som Admin-dokumentet laddar direkt efter teckenkodningen.

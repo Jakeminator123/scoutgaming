@@ -1,4 +1,4 @@
-import {validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {validateProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 
 export const MAX_FILMED_PROFILE_BYTES=2*1024*1024;
 export async function readFilmedProfileFile(file){

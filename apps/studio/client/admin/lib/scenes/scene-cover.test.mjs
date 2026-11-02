@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as sceneStill from '../../../../../../packages/presentation/runtime/scene-still.mjs';
-import * as dealerArtwork from '../dealer-artwork.mjs';
+import * as dealerArtwork from '../dealers/dealer-artwork.mjs';
 import {defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
 
@@ -13,7 +13,7 @@ import {defaultCompositionSettings} from '../../../../../../packages/presentatio
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
 const compiled=transformSync(readFileSync(new URL('../../components/studio/scene-cover.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 const leaves={'lucide-react':{Layers:()=>React.createElement('svg',{'data-icon':'layers'})},
-  '../../../../../../packages/presentation/runtime/scene-still.mjs':sceneStill,'../../lib/dealer-artwork.mjs':dealerArtwork};
+  '../../../../../../packages/presentation/runtime/scene-still.mjs':sceneStill,'../../lib/dealers/dealer-artwork.mjs':dealerArtwork};
 const module={exports:{}};
 runInNewContext(compiled,{module,exports:module.exports,require:name=>{if(name==='react'||name.startsWith('react/'))return require(name);if(Object.hasOwn(leaves,name))return leaves[name];throw Error('Unexpected import '+name);}});
 const {SceneCover}=module.exports;

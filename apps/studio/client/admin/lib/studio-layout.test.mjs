@@ -190,7 +190,7 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
     {module,exports:module.exports,require:name=>{
       if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
       // Intake drag targets have their own coverage in clip-intake.test.mjs.
-      if(name==='../../lib/clip-intake.mjs')return {INTAKE_DRAG_TYPE:'application/x-scout-intake'};
+      if(name==='../../lib/dealers/clip-intake.mjs')return {INTAKE_DRAG_TYPE:'application/x-scout-intake'};
       // Guide behavior has its own coverage in clip-guide.test.mjs.
       if(name==='./clip-guide')return {ClipGuide:()=>null};
       if(name==='../../../../components/clip-pose-chain.mjs')return require('../../../components/clip-pose-chain.mjs');
@@ -258,7 +258,7 @@ test('registered filmed clips offer an explicit native draft action and keep it 
  const {registeredFilmedProfile}=await import('../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs');
  const module={exports:{}},hooks={...React,useState:value=>[value,()=>{}],useRef:value=>({current:value}),useEffect(){}};
  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-  {module,exports:module.exports,require:name=>name==='react'?hooks:name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:name==='../../lib/clip-intake.mjs'?{INTAKE_DRAG_TYPE:'application/x-scout-intake'}:name==='./clip-guide'?{ClipGuide:()=>null}:componentRequire(name)});
+  {module,exports:module.exports,require:name=>name==='react'?hooks:name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:name==='../../lib/dealers/clip-intake.mjs'?{INTAKE_DRAG_TYPE:'application/x-scout-intake'}:name==='./clip-guide'?{ClipGuide:()=>null}:componentRequire(name)});
  const project=addDealer(createSeedProject(),'paow','PAOW'),slot=clipSlots(project,{videos:[]},'paow').find(row=>row.eventId==='deal.player.left');
  const clip={id:'selected',label:'Original',sha256:registeredFilmedProfile('paow').takes[0].sha256,classification:{dealerId:'paow'}};
  let native=0,legacy=0;

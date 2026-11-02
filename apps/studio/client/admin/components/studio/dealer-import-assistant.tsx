@@ -4,7 +4,7 @@ import { uploadNativeVideo } from '../../../../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../lib/media-upload-batch.mjs';
 import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importClassification, importContentType, importErrorMessage, importFileError, importRowError, planImportFiles, importDealerId, registerImportDealer,
   CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses, importRowPoses, slotAcceptsPoses,
-  type AssistantHistoryEntry, type ImportCatalog, type ImportNamingRow, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
+  type AssistantHistoryEntry, type ImportCatalog, type ImportNamingRow, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealers/dealer-import.mjs';
 
 type Answer = {dealerId:string|null;intent:ImportIntent;selectedModel:ImportModel;source:'ai'|'filename-rules'|'unavailable';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
 type ChatEntry = {speaker:'Du'|'Assistent';text:string};

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, importRowError, uniqueImportFiles, planImportFiles, importDealerId, registerImportDealer } from './dealer-import.mjs';
-import { createSeedProject, addDealer } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { createSeedProject, addDealer } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 
 test('runtime readiness error is explained without rewriting the retained failure',()=>{
   const failure={message:'studio_presentation_runtime_update_required Kontrollera biblioteket innan filen läggs till igen.'};
@@ -174,7 +174,7 @@ async function importAssistantHarness(dealers=catalog.dealers,props={},options={
   const runtimeWindow={...events(windowListeners),location:new URL('https://admin.test/admin/dealers?dealer=dragan&tool=import'),confirm:message=>{prompts.push(message);return options.confirm?.(message)??true;}};
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect,deps){const i=cursor++;if(!slots[i]||deps.some((dep,j)=>dep!==slots[i][j])){slots[i]=deps;effects.push(()=>{cleanups[i]?.();cleanups[i]=effect();});}}};
-  const source=readFileSync(new URL('../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
+  const source=readFileSync(new URL('../../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
   runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,window:runtimeWindow,document:events(documentListeners),setTimeout,
     fetch:options.request??(async(path,init)=>Response.json(options.response?.(path,init)??{...catalog,dealers,limits:{...catalog.limits,maxFiles:30},provider:{configured:false}})),require:name=>name==='react'?react
       :name.includes('upload-native-video.mjs')?{uploadNativeVideo(){throw Error('no upload expected')}}

@@ -29,6 +29,12 @@ och mediegranskning med deklarationer och fyra beteendeprov. Komponenterna i
 `admin/components/studio/` använder samma moduler; full regression registrerar
 proven på deras nya sökvägar.
 
+[`admin/lib/dealers/`](admin/lib/dealers/) samlar dealerregister, porträtt,
+uppspelning, filmprofiler och klippimport med deklarationer och beteendeprov.
+Klippintaget använder samma dealerbundna katalog och importvalidering som
+chattimporten. Röstprofilens komponentprov finns i samma grupp; komponenterna
+ligger fortsatt i `admin/components/studio/`.
+
 ## UI, tema och kontrakt
 
 Admin och lobbyn byggs med Tailwind 4. Delade färger och typsnitt definieras i
