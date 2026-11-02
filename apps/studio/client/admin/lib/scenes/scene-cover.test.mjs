@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import * as sceneStill from '../../../../../packages/presentation/runtime/scene-still.mjs';
-import * as dealerArtwork from './dealer-artwork.mjs';
-import {defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultCompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
+import * as sceneStill from '../../../../../../packages/presentation/runtime/scene-still.mjs';
+import * as dealerArtwork from '../dealer-artwork.mjs';
+import {defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings} from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
 
 // The real SceneCover (scene-cover.tsx), rendered on the server: the shared still geometry and the dealer
 // artwork are the real modules; only the icon is a leaf.
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
-const compiled=transformSync(readFileSync(new URL('../components/studio/scene-cover.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+const compiled=transformSync(readFileSync(new URL('../../components/studio/scene-cover.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 const leaves={'lucide-react':{Layers:()=>React.createElement('svg',{'data-icon':'layers'})},
   '../../../../../../packages/presentation/runtime/scene-still.mjs':sceneStill,'../../lib/dealer-artwork.mjs':dealerArtwork};
 const module={exports:{}};

@@ -13,7 +13,7 @@ import { CompositionPreview } from '../../../../components/composition-preview';
 import { CompositionPlacementEditor } from '../../../../components/composition-placement-editor';
 import { BackgroundPlaybackEditor, LayerPlaybackEditor } from '../../../../components/background-playback-editor';
 import { effectiveDealerCompositing } from '../../../../../../packages/presentation/contracts/dealer-compositing.mjs';
-import { useScenePreviewMedia } from '../../lib/scene-preview-media.mjs';
+import { useScenePreviewMedia } from '../../lib/scenes/scene-preview-media.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 

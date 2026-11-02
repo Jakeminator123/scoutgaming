@@ -3,7 +3,7 @@ import Link from '../../../runtime/navigation';
 import {Empty,Note} from '../ui/hub';
 import {Loading} from '../ui/kit';
 import {CompositionPreview} from '../../../../components/composition-preview';
-import {useScenePreviewMedia} from '../../lib/scene-preview-media.mjs';
+import {useScenePreviewMedia} from '../../lib/scenes/scene-preview-media.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
 import {SavedScenePreview} from './saved-scene-preview';
