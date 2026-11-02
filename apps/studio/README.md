@@ -23,6 +23,11 @@ Användarsteg står i [användarguiden](docs/README.md). Admins **Hjälp**
 
 ## Funktionsmappar
 
+Alla beteendeprov under `test/` är grupperade efter funktion; se
+[testguiden](test/README.md) för Admin, åtkomst, media, komposition, bolag,
+presentation och övriga grupper. Roten innehåller bara guiden; delade
+hjälpare ligger i `test/fixtures/`.
+
 Dealerns import, fabrik, filmprofil, röst, mediebibliotek och livscykel finns
 i [`lib/dealers/`](lib/dealers/). Frysta importmanifest hör till samma modulgrupp;
 deras identiteter och innehåll ändras inte av mappindelningen.
@@ -70,7 +75,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 
 | Ansvar | Källa | Kontroll |
 | --- | --- | --- |
-| Event-ID, källtyper och klippbegrepp | `packages/presentation/contracts/policies/studio-contract.json` | `test/studio-contract.test.mjs` |
+| Event-ID, källtyper och klippbegrepp | `packages/presentation/contracts/policies/studio-contract.json` | `test/composition/scenes/studio-contract.test.mjs` |
 | Projektschema, seed och validering | `packages/presentation/contracts/` (`schemas/`, `policies/`, `studio-model.mjs`) | `validateProject` och kontraktstester |
 | Mediefamiljer och standardfiler | `packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
 | Runtime-katalogens källor (utan presentationsbank sedan 2026-10-28) | `media/layout.json`, `media/blob-index.json`, `media/catalog/*.json` | `node tools/build-runtime-media-catalog.mjs --check` |
@@ -135,7 +140,7 @@ och dess blueprint ligger i `services/openclaw/lab/`;
 - Dolt kort förblir `null` i publika vyer. Ett variantbeslut ändrar aldrig
   publicerade fakta.
 
-`node --test apps/studio/test/engine-compatibility.test.mjs` provar den
+`node --test apps/studio/test/presentation/engine-compatibility.test.mjs` provar den
 riktiga presentationsfunktionen (`services/game/partner-presentation.mjs`) med
 syntetiska publika vyer. Det är inget spel- eller videotest.
 

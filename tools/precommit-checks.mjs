@@ -330,11 +330,11 @@ export function focusedTests(changes, root = repositoryRoot) {
     // Moved shared contracts keep their existing behavioral regression suites.
     const registryTests = {
       'runtime-catalog': ['test/media/runtime-media-catalog.mjs'],
-      'registry-core': ['apps/studio/test/video-registry.test.mjs', 'apps/studio/test/blob-source-routing.test.mjs'],
-      'registry-reader': ['apps/studio/test/neon-video-registry.test.mjs'],
-      'blob-reader': ['apps/studio/test/cloud-media-store.test.mjs'],
-      'private-media-contract': ['apps/studio/test/cloud-media-store.test.mjs'],
-      'video-manifest': ['apps/studio/test/lab-video-manifest.test.mjs'],
+      'registry-core': ['apps/studio/test/media/registry/video-registry.test.mjs', 'apps/studio/test/media/registry/blob-source-routing.test.mjs'],
+      'registry-reader': ['apps/studio/test/media/registry/neon-video-registry.test.mjs'],
+      'blob-reader': ['apps/studio/test/media/registry/cloud-media-store.test.mjs'],
+      'private-media-contract': ['apps/studio/test/media/registry/cloud-media-store.test.mjs'],
+      'video-manifest': ['apps/studio/test/media/registry/lab-video-manifest.test.mjs'],
       'storage-contract': ['test/storage/studio-repository.mjs'],
       'video-dealer-registration': ['apps/studio/test/dealers/dealer-video-registration.test.mjs'],
     };

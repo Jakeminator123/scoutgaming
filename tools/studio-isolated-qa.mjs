@@ -31,7 +31,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
   'services/game/moving-drift-diagnostics.mjs',
   'test/fixtures/moving-drift-executor-sql-checks.mjs',
   'packages/presentation/contracts/moving-drift/moving-drift-admin.mjs','apps/studio/lib/moving-drift-admin.mjs',
-  'apps/studio/test/moving-drift-admin.test.mjs',
+  'apps/studio/test/admin/moving-drift-admin.test.mjs',
   'packages/presentation/contracts/moving-drift/moving-drift.mjs', 'services/game/moving-drift-controller.mjs',
   'services/game/postgres-moving-drift.mjs', 'ops/neon-studio/016-moving-drift-control.sql', 'test/speech/moving/postgres-moving-drift.mjs',
   'packages/operators/server/public-rooms.mjs',

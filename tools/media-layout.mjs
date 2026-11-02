@@ -11,7 +11,7 @@ export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '
 // (packages/studio-registry/server/media-runtime.mjs, apps/studio/lib/studio-media-deletion.mjs),
 // och resolveMediaPath tål en saknad fil (ENOENT). Legacy-klippinventeringen är avvecklad.
 // Verifieras av
-// apps/studio/test/media-layout-bundle.test.mjs; lägg ingen läsning på modulnivå och ingen ny
+// apps/studio/test/media/registry/media-layout-bundle.test.mjs; lägg ingen läsning på modulnivå och ingen ny
 // Studio-anropare utan runtimeCatalog.
 const cache = new Map();
 export function readMediaLayout(root = repositoryRoot) {
