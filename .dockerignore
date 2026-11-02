@@ -8,6 +8,7 @@
 .github
 .githooks
 .cache
+.pnpm-store
 .worktrees
 .codex
 .claude
