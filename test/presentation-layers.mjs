@@ -41,7 +41,7 @@ test('Admins tilldelning följer med paketet men aldrig i den publika brandingen
   assert.deepEqual(branding[PARTNER_ASSIGNMENT_KEY],assignment);
   assert.deepEqual(publicPackageBranding(branding),{name:'North'});
 });
-// Dealern (roomOverrides) provas på PostgreSQL i apps/studio/test/partner-table-actions.test.mjs.
+// Dealern (roomOverrides) provas på PostgreSQL i apps/studio/test/operators/partner-table-actions.test.mjs.
 test('Admins allow stänger bordsgrafik och bakgrund även i utseendets utkast för partnern, inte för Admin',async()=>{
   const {pack,presentation}=fixture();presentation.lanes[0].composition=defaultCompositionSettings();
   const choices={tableAsset:{table:presentation.assets[1].id,color:'#123456'},background:{background:presentation.assets[0].id}};

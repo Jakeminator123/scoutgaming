@@ -4,7 +4,7 @@ Projekt-, video-, idle- och probescheman ägs av
 `../../packages/presentation/contracts/schemas/`. `lab-video-manifest.schema.json` stannar här med appens lagringsfunktioner.
 Tekniska ID:n och tillåtna situationer samordnas med
 `../../packages/presentation/contracts/policies/studio-contract.json`.
-`test/studio-contract.test.mjs` kontrollerar att dessa håller ihop.
+`test/composition/scenes/studio-contract.test.mjs` kontrollerar att dessa håller ihop.
 
 V5 kompletterar `speak.other` med befintliga grundrepliker som tidigare gick
 att prova som original men inte klassificera vid upload. Detta är additivt:

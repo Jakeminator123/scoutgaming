@@ -439,7 +439,7 @@ test('focused selection finds registered tests that load a changed component fro
   // or room.mjs that other tests use for other files.
   assert.deepEqual(focusedTests([change('services/game/package-lock.json')]), []);
   assert.deepEqual(focusedTests([change('apps/web/package.json')]), []);
-  assert.ok(!focusedTests([change('apps/web/app/about/page.tsx')]).includes('apps/studio/test/partner-set-password.test.mjs'));
+  assert.ok(!focusedTests([change('apps/web/app/about/page.tsx')]).includes('apps/studio/test/access/partner-set-password.test.mjs'));
   assert.ok(!focusedTests([change('apps/studio/lib/room.mjs')]).includes('test/precommit-checks.mjs'));
 });
 
