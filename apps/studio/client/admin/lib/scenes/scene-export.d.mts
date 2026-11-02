@@ -1,4 +1,4 @@
-import type {StudioProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 export const SCENE_EXPORT_PATH: string;
 export function sceneExportMessage(code: string|null|undefined): string;
 export function sceneExportBody(input:{laneId:string;expectedRevision:string;dealer?:{videoId:string;frame:string}|null}):{laneId:string;expectedRevision:string;dealer?:{videoId:string;frame:string}};

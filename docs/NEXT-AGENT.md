@@ -57,6 +57,15 @@ Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HE
 
 Sex verkliga temporära Gitrepon provar ren/ändrad worktree, identitets- och ägarbyten, okänt metadataformat, sökvägsgränser och återupptagning från annan katalog utan ändringar av kod eller index. Dödhetsgranskning gäller aktuell main/preview och deras aktivt lästa fixerade refs; andra personers egna brancher lämnas orörda och låser inte mainstädning. Exakt huvud-/CI-bevis hör till PR:en; preview och driftacceptans samordnas separat.
 
+## Funktionsmapp för Admins scener 2 november
+
+Admins scenexport och förhandsvisningsmedia finns tillsammans med sina typer och
+sex befintliga beteendeprov i [admin/lib/scenes](../apps/studio/client/admin/lib/scenes/).
+Komponenternas importer, provens komponentläsning och fullsvitens registrering
+följer flytten. Kodinnehållet och importmålen är oförändrade efter normalisering
+av sökvägar. Riktade prov, typer och hookbevis anges i PR:en; CI och merge
+följs av samordnaren. Ingen produktdata, media eller drift ändras.
+
 ## Funktionsmappar för portal, roulette och drift 1 november
 
 Portalens sex skal-/teamfiler finns i [components/partner](../apps/studio/components/partner/README.md).

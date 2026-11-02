@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {useScenePreviewMedia} from './scene-preview-media.mjs';
 
 const asset=(id,role,extra={})=>({schemaVersion:1,id,role,label:id,sha256:'0'.repeat(64),size:1,contentType:'image/png',pathname:role+'s/'+id+'.png',width:1920,height:1080,...extra});
