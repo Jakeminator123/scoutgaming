@@ -371,7 +371,7 @@ test('Admin room layout saves only its room override and reports busy for the en
   assert.equal(busy.at(-1),false);assert.equal(byAction(h.render(),'review').props.disabled,false);
 });
 
-test('central room publication leaves appearance saving scoped and never publishes from the editor',async()=>{
+test('a mixed appearance draft keeps scoped saving and uses the central room publication',async()=>{
   const initial=initialState({branding:{roomOverrides:{'north-vip':{background:'bg-one'}}}}),calls=[],dirty=[],busy=[];
   const h=stateful(initial,async(_url,request)=>{
     const body=JSON.parse(request.body);calls.push(body);
@@ -482,4 +482,40 @@ test('Admin room appearance links to Studio without a separate geometry writer',
  assert.equal(links.length,1);const query=new URL(links[0].props.href,'https://test.invalid').searchParams;
  assert.equal(query.get('operator'),'op-1');assert.equal(query.get('table'),'north-main');
  assert.equal(byAction(h.render(),'open-scene-layout'),undefined);
+});
+
+test('Admin reviews and publishes only the selected room material with the saved revisions',async()=>{
+  const initial=initialState();initial.rooms[0].materialPublishable=true;
+  const branding={...initial.branding,roomOverrides:{'north-main':{background:'bg-two',table:'table-two'}}};
+  Object.assign(initial,{draftRevision:1,draft:{revision:1,basePackageRevision:7,branding}});
+  const calls=[],saved=[];
+  const h=stateful(initial,async(_url,request)=>{
+    const body=JSON.parse(request.body);calls.push(body);
+    return response(body.action==='review'?reviewed(initial,{changes:[{roomId:'north-main',key:'background',before:null,after:'bg-two'}]})
+      :{...initial,packageRevision:8,branding,draft:null,draftRevision:2});
+  },{roomId:'north-main',roomLayout:true,adminChoices:true,publication:'room',onSaved:state=>saved.push(state)});
+  assert.equal(textOf(byAction(h.render(),'review')),'Publicera materialval');
+  await byAction(h.render(),'review').props.onClick();
+  assert.equal(byAction(h.render(),'publish').props.disabled,false);
+  await byAction(h.render(),'publish').props.onClick();
+  assert.deepEqual(calls,[{action:'review',expectedDraftRevision:1,expectedPackageRevision:7},
+    {action:'publish-room-material',expectedDraftRevision:1,expectedPackageRevision:7,reviewToken:'a-valid-review-token',roomId:'north-main'}]);
+  assert.equal(saved.length,1);assert.equal(saved[0].packageRevision,8);
+});
+
+test('Admin never offers material publication for mixed drafts, another room or a room without settings',()=>{
+  const initial=initialState();initial.rooms[0].materialPublishable=true;
+  const onlyMaterial={...initial.branding,roomOverrides:{'north-main':{background:'bg-two'}}};
+  for(const branding of [{...onlyMaterial,dealer:'vera'},
+    {...onlyMaterial,roomOverrides:{'north-main':{background:'bg-two',dealer:'vera'}}},
+    {...onlyMaterial,roomOverrides:{...onlyMaterial.roomOverrides,'north-vip':{}}},
+    {...onlyMaterial,roomOverrides:{...onlyMaterial.roomOverrides,'north-vip':{table:'table-two'}}}]){
+    const view={...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding}};
+    const h=stateful(view,()=>assert.fail('mixed draft cannot publish'),{roomId:'north-main',roomLayout:true,adminChoices:true,publication:'room'});
+    assert.equal(byAction(h.render(),'review'),undefined);
+  }
+  for(const options of [{roomId:'north-vip',adminChoices:true},{roomId:'north-main',adminChoices:false}]){
+    const view={...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:onlyMaterial}};
+    assert.equal(byAction(stateful(view,()=>assert.fail('no publish'),{publication:'room',...options}).render(),'review'),undefined);
+  }
 });

@@ -5,11 +5,12 @@ export type PartnerAppearanceInitial = {
  operatorId:string; packageRevision:number; lanes:readonly string[]; branding:Readonly<Record<string,unknown>>;adjustable:readonly string[];
  presentation?:PresentationPackage;canConfigure?:boolean;dealerChoices?:Readonly<Record<string,readonly string[]>>;roomDealerChoices?:Readonly<Record<string,readonly string[]>>;
  draft?:AppearanceDraft|null;draftRevision?:number;history?:readonly {revision:number;publishedAt?:number|string;branding:Readonly<Record<string,unknown>>}[];
- rooms?:readonly {id:string;label:string;presentationLaneId:string;game?:'blackjack'|'roulette'}[];
+ rooms?:readonly {id:string;label:string;presentationLaneId:string;game?:'blackjack'|'roulette';materialPublishable?:boolean}[];
 };
 export type AppearanceReview = {reviewToken:string;draftRevision:number;packageRevision:number;branding:EditableBranding;changes:{roomId:string|null;key:string;before:string|null;after:string|null}[];affectedRooms:string[];hiddenTableChanges?:number;tablesHidden?:boolean};
 export function appearanceBranding(value:unknown):EditableBranding;
 export function sameAppearance(left:unknown,right:unknown):boolean;
+export function isRoomMaterialChange(live:unknown,draft:unknown,roomId:string|undefined):boolean;
 export function appearanceDraftRevision(state:PartnerAppearanceInitial):number;
 export function appearanceDraftBranding(state:PartnerAppearanceInitial):EditableBranding;
 export function appearanceReceipt(value:unknown,operatorId:string):value is PartnerAppearanceInitial;

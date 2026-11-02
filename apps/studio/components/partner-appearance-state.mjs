@@ -1,3 +1,4 @@
+export {isRoomMaterialChange} from '../../../packages/operators/contracts/branding.mjs';
 const KEYS = ['lane', 'table', 'background', 'dealer', 'color'];
 const ROOM_KEYS = KEYS.filter(key => key !== 'lane');
 const object = value => Boolean(value && typeof value === 'object' && !Array.isArray(value));

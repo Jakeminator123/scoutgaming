@@ -14,7 +14,7 @@ import {compositionLabel} from '../../../packages/navigation/control-flow.mjs';
 import {partnerRoomTabs} from '../../../packages/navigation/partner-navigation.mjs';
 import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
 import {displayLabel, loadPreviewMedia, previewChoiceMedia} from './partner-preview-media.mjs';
-import {appearanceBranding, appearanceChangeCount, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
+import {appearanceBranding, appearanceChangeCount, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, appearanceRoomStatus, changeAppearance, isRoomMaterialChange, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 
@@ -28,7 +28,7 @@ export type AppearanceHeader = {title: ReactNode; crumbs?: ReactNode; playHref?:
 
 // Table colour is cosmetic and never shown (Jakob 2026-10-28); a saved value stays untouched in the draft.
 const LAYERS = ['dealer', 'background', 'table'] as const;
-type Action = 'save-draft'|'review'|'publish'|'restore'|'discard-draft';
+type Action = 'save-draft'|'review'|'publish'|'publish-room-material'|'restore'|'discard-draft';
 type LayerKey = typeof LAYERS[number];
 // Partnerportalens flikar: samma id:n som Admins rumsflikar (partnerRoomTabs), så att Admins förhandsvisning landar rätt.
 type Tab = 'utseende'|'dealer'|'spel'|'tillganglighet'|'historik';
@@ -105,6 +105,8 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   const canPublish = editable && reviewValid && Boolean(review?.changes.length || hiddenTableChanges);
   // What the primary action would publish: the saved draft against live, or the local edits against live.
   const pending = appearanceChangeCount(dirty ? branding : appearanceDraftBranding(server), server.branding);
+  const materialPublication = publication === 'room' && adminChoices && room?.materialPublishable === true
+    && isRoomMaterialChange(server.branding, dirty ? branding : server.draft?.branding ?? server.branding, roomId);
   const endpoint = `${apiBase}/branding?operator=${encodeURIComponent(operatorSlug)}`;
   const labelOf = (value: string|null) => {
     if (value === null) return t('Standard','Default');
@@ -149,14 +151,18 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
     setBranding(current => resetAppearanceRoom(current, room.id)); setReview(null); setNotice('');
   }
   async function command(action: Action, sourcePackageRevision?: number) {
+    const publishes = action === 'publish' || action === 'publish-room-material';
     if (!editable || busyRef.current  || action === 'save-draft' && !canSave || action === 'review' && !canReview
-      || action === 'publish' && !canPublish || action === 'restore' && (dirty||sourcePackageRevision===server.packageRevision)) return;
+      || publishes && !canPublish || action === 'publish-room-material' && !materialPublication
+      || action === 'publish' && publication === 'room'
+      || action === 'restore' && (dirty||sourcePackageRevision===server.packageRevision)) return;
     if(action==='discard-draft'&&!server.draft){setBranding(appearanceBranding(server.branding));setReview(null);setProblem('');setLatest(null);announce(t('Ändringarna är kastade.','Changes discarded.'));return;}
     reportBusy(true); setProblem(''); setNotice(''); setLatest(null);
     const expectedDraftRevision = draftRevision, expectedPackageRevision = server.packageRevision;
     const body = {action, expectedDraftRevision, expectedPackageRevision,
       ...(action === 'save-draft' ? {branding: appearanceBranding(branding)} : {}),
-      ...(action === 'publish' ? {reviewToken: review?.reviewToken} : {}),
+      ...(publishes ? {reviewToken: review?.reviewToken} : {}),
+      ...(action === 'publish-room-material' ? {roomId} : {}),
       ...(action === 'restore' ? {sourcePackageRevision} : {})};
     setReview(null);
     try {
@@ -183,16 +189,16 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       }
       if (!appearanceReceipt(payload, initial.operatorId) || !payload.presentation || appearanceDraftRevision(payload) <= expectedDraftRevision
         || (action === 'discard-draft' ? appearanceDraftRevision(payload)!==expectedDraftRevision+1 || payload.packageRevision !== expectedPackageRevision || payload.draft !== null || !sameAppearance(payload.branding,server.branding) || !sameValue(payload.presentation,server.presentation)
-          : action === 'publish' ? payload.packageRevision !== expectedPackageRevision + 1 || payload.draft !== null
+          : publishes ? payload.packageRevision !== expectedPackageRevision + 1 || payload.draft !== null
           : payload.packageRevision !== expectedPackageRevision || !payload.draft || payload.draft.basePackageRevision !== expectedPackageRevision)
         || action === 'save-draft' && !sameAppearance(payload.draft?.branding, branding)) throw new Error('invalid receipt');
       setServer(payload); setBranding(appearanceDraftBranding(payload));
-      if (action === 'publish') setReceipt(payload.packageRevision);
+      if (publishes) setReceipt(payload.packageRevision);
       announce(action === 'discard-draft' ? t('Bolagets utkast är kastat. Publicerade spelbord är oförändrade.','Company draft discarded. Published tables are unchanged.')
-        : action === 'publish' ? t(`Publicerat som version ${payload.packageRevision}. Spelare får det vid nästa runda.`, `Published as version ${payload.packageRevision}. Players get it at the next round.`)
+        : publishes ? t(`Publicerat som version ${payload.packageRevision}. Spelare får det vid nästa runda.`, `Published as version ${payload.packageRevision}. Players get it at the next round.`)
         : action === 'restore' ? t('Tidigare version har återställts till ett sparat utkast. Publicerad version är oförändrad.','Earlier version restored to a saved draft. The published version is unchanged.')
         : t('Utkastet är sparat. Publicerad version är oförändrad.','Draft saved. The published version is unchanged.'));
-      if (action === 'publish'||action==='discard-draft') onSaved?.(payload);
+      if (publishes||action==='discard-draft') onSaved?.(payload);
     } catch {
       if (active.current) { setBlocked(true); setReviewOpen(false); setProblem(t('Svaret kunde inte bekräftas. Redigeringen finns kvar. Hämta senaste version innan du fortsätter.','The response could not be confirmed. Your edits remain here. Fetch the latest version before continuing.')); }
     } finally {
@@ -291,7 +297,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
     server.draft ? t('utkast sparat','draft saved') + (draftDate && Number.isFinite(draftDate.getTime()) ? ' ' + draftDate.toLocaleDateString(en ? 'en-GB' : 'sv-SE', {day:'numeric', month:'short', timeZone:'UTC'}) : '') : t('inget utkast','no draft'),
     unsaved ? t('osparade ändringar','unsaved changes') : null].filter(Boolean).join(' · ');
   const saveButton = <button type="button" className={'sg-btn' + (unsaved || stale ? ' sg-btn-primary' : '')} data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button>;
-  const publishLabel = pending ? t(`Publicera · ${pending} ${pending === 1 ? 'ändring' : 'ändringar'}`, `Publish · ${pending} ${pending === 1 ? 'change' : 'changes'}`) : t('Inget att publicera','Nothing to publish');
+  const publishLabel = materialPublication ? t('Publicera materialval','Publish material choices') : pending ? t(`Publicera · ${pending} ${pending === 1 ? 'ändring' : 'ändringar'}`, `Publish · ${pending} ${pending === 1 ? 'change' : 'changes'}`) : t('Inget att publicera','Nothing to publish');
   const reviewButton = <button type="button" className={'sg-btn' + (unsaved || stale ? '' : ' sg-btn-primary')} data-action="review" disabled={!canReview || !pending || busy} title={unsaved ? t('Spara utkastet först','Save the draft first') : undefined} onClick={() => command('review')}>{publishLabel}</button>;
   const more = <Dropdown.Root modal={false}>
     <Dropdown.Trigger asChild><button type="button" className={'sg-btn ' + styles.iconButton} aria-label={t('Fler åtgärder','More actions')}><MoreHorizontal size={16} aria-hidden="true"/></button></Dropdown.Trigger>
@@ -301,7 +307,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
       <Dropdown.Item className={styles.menuItem} onClick={() => setTab('historik')}><History size={14} aria-hidden="true"/>{t('Historik','History')}</Dropdown.Item>
     </Dropdown.Content></Dropdown.Portal>
   </Dropdown.Root>;
-  const actions = <div className={styles.actions}>{header?.playHref ? <a className="sg-btn sg-btn-ghost" href={header.playHref} target="_blank" rel="noopener">{t('Provspela','Play test')}<ExternalLink size={14} aria-hidden="true"/></a> : null}{saveButton}{publication==='inline'&&reviewButton}{more}</div>;
+  const actions = <div className={styles.actions}>{header?.playHref ? <a className="sg-btn sg-btn-ghost" href={header.playHref} target="_blank" rel="noopener">{t('Provspela','Play test')}<ExternalLink size={14} aria-hidden="true"/></a> : null}{saveButton}{(publication==='inline'||materialPublication)&&reviewButton}{more}</div>;
 
   const allRooms = (server.rooms ?? []).map(row => row.label);
   const reviewDialog = <Dialog.Root open={reviewOpen} onOpenChange={open => { setReviewOpen(open); if (!open) setReceipt(null); }}>
@@ -314,6 +320,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
         {receipt === null ? <>
           <Dialog.Title>{t('Granska och publicera','Review and publish')}</Dialog.Title>
           <Dialog.Description id="appearance-review-description">{t('Det här ändras jämfört med det spelarna ser nu.','This changes compared with what players see now.')}</Dialog.Description>
+          {materialPublication&&<p className={styles.hint}>{t('Bara detta spelbords bakgrund och bordsgrafik publiceras. Sparade ändringar i miljön väntar till spelbordets fullständiga publicering.','Only this table’s background and table graphics are published. Saved environment changes wait for the table’s full publication.')}</p>}
           <section className={styles.review} aria-label={t('Granskning före publicering','Review before publishing')}>
             {reviewValid && review ? <>
               {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><b>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('spelbordsval','table choice') + ')' : labels[row.key] ?? row.key}</b><span>{labelOf(row.before)} <span aria-hidden="true">→</span> <strong>{labelOf(row.after)}</strong></span></li>)}</ul> : hiddenTableChanges ? null : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
@@ -323,7 +330,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
             {!roomLayout ? <p className={styles.note}>{t('Utkastet är gemensamt för bolagets spelbord: en publicering gäller alla spelbord i bolaget', 'The draft is shared by the company tables: one publication applies to every table in the company')}{allRooms.length ? ` (${allRooms.join(', ')})` : ''}. {t('Pågående rundor spelas klart; nästa runda får den nya versionen.','Rounds in play finish; the next round gets the new version.')}</p> : null}
           </section>
           <div className={styles.dialogActions}><Dialog.Close asChild><button type="button" className="sg-btn">{t('Avbryt','Cancel')}</button></Dialog.Close>
-            <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy} onClick={() => command('publish')}>{busy ? t('Publicerar…','Publishing…') : t('Publicera nu','Publish now')}</button></div>
+            <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy || publication==='room'&&!materialPublication} onClick={() => command(publication==='room'?'publish-room-material':'publish')}>{busy ? t('Publicerar…','Publishing…') : t('Publicera nu','Publish now')}</button></div>
         </> : <>
           <Dialog.Title><CircleCheck size={18} aria-hidden="true" className={styles.okIcon}/>{t(`Publicerat · version ${receipt}`,`Published · version ${receipt}`)}</Dialog.Title>
           <Dialog.Description id="appearance-review-description">{t('Spelarna får den nya versionen vid nästa runda; en pågående runda spelas klart.','Players get the new version at the next round; a round in play finishes first.')}</Dialog.Description>
@@ -399,10 +406,12 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, language = 's
   return <section ref={root} className={styles.panel + ' ' + styles.adminPanel} aria-label={t('Utkast och publicering','Draft and publishing')}>
     {alerts}
     {workbench}
-    {publication==='room'&&<p className={styles.hint}>{t('Spara dina val här. Publicera ovanför flikarna när spelbordet är klart.','Save your choices here. Publish above the tabs when the table is ready.')}</p>}
+    {publication==='room'&&<p className={styles.hint}>{materialPublication
+      ?t('Spara och publicera materialvalen här. De gäller bara detta spelbord.','Save and publish the material choices here. They apply only to this table.')
+      :t('Spara dina val här. Publicera ovanför flikarna när spelbordet är klart.','Save your choices here. Publish above the tabs when the table is ready.')}</p>}
     <div className={styles.saveBar}><p className={styles.statusLine} role="status" aria-live="polite">{statusText}</p>{actions}</div>
     {children ? <details className={styles.gameSettings}><summary>{t('Spelinställningar','Game settings')}</summary>{children}</details> : null}
     <details className={styles.historyBox}><summary>{t('Versionshistorik','Version history')}</summary>{historyList}</details>
-    {publication==='inline'&&reviewDialog}
+    {(publication==='inline'||publication==='room'&&adminChoices&&(materialPublication||receipt!==null))&&reviewDialog}
   </section>;
 }
