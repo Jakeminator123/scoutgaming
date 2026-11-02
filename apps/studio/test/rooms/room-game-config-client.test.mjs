@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRoomGameConfigClient,createRoomGameConfigController} from '../lib/room-game-config-client.mjs';
+import {createRoomGameConfigClient,createRoomGameConfigController} from '../../lib/rooms/room-game-config-client.mjs';
 const context={operatorId:'operator-one',roomId:'room-123'};
 const fields={language:'sv',limitPreset:'prive'};
 const result=(extra={})=>({ok:true,...context,administrationRevision:'admin-1',packageRevision:4,draft:null,published:null,publication:{ready:false},...extra});

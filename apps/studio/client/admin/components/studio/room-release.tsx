@@ -8,7 +8,7 @@ import {publishRoomRelease,readRoomRelease,roomReleaseAreas,roomReleaseBlocker,r
 import {runBlockerAction} from '../../lib/blocker-view.mjs';
 
 // Spelbordets enda publicering (ADMIN-FORENKLING §7): en primär knapp, rutan "Det här ändras
-// jämfört med live" och ett kvitto. Servern (lib/room-release.mjs) gör alla kontroller; här
+// jämfört med live" och ett kvitto. Servern (lib/rooms/room-release.mjs) gör alla kontroller; här
 // skickas förhandsvisningens token och revisioner, och inget försök upprepas automatiskt.
 // Föräldern sätter `key` per bolag och spelbord, så kvitto, fel och ruta aldrig följer med till ett annat spelbord.
 type Status='idle'|'loading'|'ready'|'error';

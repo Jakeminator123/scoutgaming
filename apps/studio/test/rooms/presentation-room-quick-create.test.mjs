@@ -6,18 +6,18 @@
 // tjänsterna (createNativeRoomApis). PostgreSQL via PGlite med produktens repository och operatörsbutik.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPglitePool} from '../../../test/fixtures/pglite-pool.mjs';
-import {planStudioMigrations,applyStudioMigrations} from '../../../ops/neon-studio/migrations.mjs';
-import {createStudioRepository} from '../../../packages/studio-registry/server/document-repository.mjs';
-import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {createOperatorMaterialStore} from '../lib/operator-material-store.mjs';
-import {runtimeCatalogJson,runtimeCatalogRevision} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
-import {PRESENTATION_CAPABILITY_VERSION_HEADER,presentationCapabilitiesForVersion} from '../../../packages/presentation/capability-contract.mjs';
-import {readRuntimeCatalogFixture} from '../../../test/fixtures/runtime-media-catalog.mjs';
-import {nativeRoomMaterialFixture} from '../../../test/fixtures/native-room-game-material.mjs';
-import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
-import {createNativePresentationMutationTransaction,createNativeRoomApis} from '../lib/studio-native-runtime.mjs';
-import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
+import {createPglitePool} from '../../../../test/fixtures/pglite-pool.mjs';
+import {planStudioMigrations,applyStudioMigrations} from '../../../../ops/neon-studio/migrations.mjs';
+import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
+import {createOperatorStore} from '../../../../packages/operators/server/operator-store.mjs';
+import {createOperatorMaterialStore} from '../../lib/operator-material-store.mjs';
+import {runtimeCatalogJson,runtimeCatalogRevision} from '../../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {PRESENTATION_CAPABILITY_VERSION_HEADER,presentationCapabilitiesForVersion} from '../../../../packages/presentation/capability-contract.mjs';
+import {readRuntimeCatalogFixture} from '../../../../test/fixtures/runtime-media-catalog.mjs';
+import {nativeRoomMaterialFixture} from '../../../../test/fixtures/native-room-game-material.mjs';
+import {wrapNativePresentationRepository} from '../../lib/presentation-runtime-readiness.mjs';
+import {createNativePresentationMutationTransaction,createNativeRoomApis} from '../../lib/studio-native-runtime.mjs';
+import {createStudioAdminApi} from '../../lib/studio-admin-api.mjs';
 
 const actor={user:'quick-admin',role:'admin'},origin='https://studio.invalid';
 let fixtures=0;

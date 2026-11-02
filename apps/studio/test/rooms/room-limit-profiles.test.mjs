@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
-import * as profilesModule from '../lib/room-limit-profiles.mjs';
+import {ROOM_LIMIT_PRESETS} from '../../../../packages/presentation/contracts/room-game-config.mjs';
+import * as profilesModule from '../../lib/rooms/room-limit-profiles.mjs';
 
 const {roomLimitProfiles,roomLimitProfileNote}=profilesModule;
 

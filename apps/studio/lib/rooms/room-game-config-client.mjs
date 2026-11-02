@@ -1,4 +1,4 @@
-import { labUrl } from './lab-url.mjs';
+import { labUrl } from '../lab-url.mjs';
 
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);

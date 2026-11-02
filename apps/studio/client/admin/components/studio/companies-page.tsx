@@ -11,7 +11,7 @@ import {companyListGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {adminCompanyListTabs,adminCompanyTabs,adminRoomTabs,adminTabId} from '../../lib/admin-navigation';
 import {createStudioClient,shareWorkspace,type Catalog,type Workspace} from '../../lib/connected-studio.mjs';
 import {dealerChoices,defaultLanguage,laneChoices,newLaneText,QUICK_CREATE_NO_DEALER,QUICK_CREATE_STEPS,quickCreateDefaults,roomName,runQuickCreate,type QuickChoice,type QuickMemo,type QuickStepId,type QuickStepStatus} from '../../lib/room-quick-create.mjs';
-import {roomLimitProfiles} from '../../../../lib/room-limit-profiles.mjs';
+import {roomLimitProfiles} from '../../../../lib/rooms/room-limit-profiles.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {AppearanceRoomStatus} from '../../../../components/partner-appearance';
 import {RegisteredStudio} from './registered-studio';

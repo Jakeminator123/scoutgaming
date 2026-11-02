@@ -66,6 +66,21 @@ följer flytten. Kodinnehållet och importmålen är oförändrade efter normali
 av sökvägar. Riktade prov, typer och hookbevis anges i PR:en; CI och merge
 följs av samordnaren. Ingen produktdata, media eller drift ändras.
 
+## Rumsadaptrar och beteendeprov 2 november
+
+Rummets val, skapande, spelinställningar, insatsprofiler och publicering samlas
+i [`lib/rooms/`](../apps/studio/lib/rooms/), med fyra tillhörande typdeklarationer.
+Åtta befintliga rumsprov ligger i [`test/rooms/`](../apps/studio/test/rooms/)
+och hittas av Studios rekursiva testkommando. Konsumenternas importer och
+ordkontrollens konstruerade sökvägar följer flytten. Delade bolags- och
+livscykeladaptrar samt det motorbundna K04-provet ligger kvar.
+
+Lokalt är Studio-/Admintyper och testinventeringen verifierade; 37 käll-, typ-
+och testfiler har samma innehåll efter normalisering av sökvägar. Riktade
+beteendeprov, hook och exakt head redovisas i ändringens PR. Publika API:er,
+spelregler, scope, publiceringskontrakt och lagrade identiteter är oförändrade.
+CI och integration följs av samordnaren; ingen drift- eller dataacceptans ingår.
+
 ## Funktionsmappar för portal, roulette och drift 1 november
 
 Portalens sex skal-/teamfiler finns i [components/partner](../apps/studio/components/partner/README.md).
