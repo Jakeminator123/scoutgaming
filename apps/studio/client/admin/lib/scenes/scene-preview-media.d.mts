@@ -1,8 +1,8 @@
-import type {StudioProject,StudioLane,LayerAsset} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import type {CompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
-import type {DealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
-import type {DealerFraming} from '../../../../../packages/presentation/contracts/dealer-framing.mjs';
-import type {VideoEntry,VideoInventory} from './connected-studio.mjs';
+import type {StudioProject,StudioLane,LayerAsset} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import type {CompositionSettings} from '../../../../../../packages/presentation/contracts/composition-settings.mjs';
+import type {DealerCompositing} from '../../../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import type {DealerFraming} from '../../../../../../packages/presentation/contracts/dealer-framing.mjs';
+import type {VideoEntry,VideoInventory} from '../connected-studio.mjs';
 export type ScenePreviewMediaItem={url:string;label:string;contentType:string};
 export type ScenePreviewChoices={dealer?:string;background?:string;table?:string};
 export type ScenePreviewMedia={

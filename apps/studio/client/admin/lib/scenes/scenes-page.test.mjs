@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import * as adminNavigation from '../../../../../packages/navigation/admin-navigation.mjs';
-import {adminDocumentHref} from '../../../../../packages/navigation/admin-workspace-routes.mjs';
-import * as environmentWorkspace from './environment-workspace.mjs';
-import {compositionUses} from './connected-studio.mjs';
-import {createSeedProject,defaultPresentationLane,addDealer} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import * as adminNavigation from '../../../../../../packages/navigation/admin-navigation.mjs';
+import {adminDocumentHref} from '../../../../../../packages/navigation/admin-workspace-routes.mjs';
+import * as environmentWorkspace from '../environment-workspace.mjs';
+import {compositionUses} from '../connected-studio.mjs';
+import {createSeedProject,defaultPresentationLane,addDealer} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 
 // The real Miljöer och material page (scenes-page.tsx) and environment editor (environment-editor.tsx) with the
 // real kit, rendered on the server. Leaves with their own reads (material library, placement editor, preview,
@@ -20,18 +20,18 @@ function page({search='',workspace}){
   const query=new URLSearchParams(search),navigated=[];
   const navigation={__esModule:true,default:({href,children,className,...rest})=>h('a',{href,className,'aria-current':rest['aria-current'],role:rest.role},children),
     navigate:(href)=>navigated.push(href),usePathname:()=>'/admin/scenes',useSearchParams:()=>query};
-  const ui={},uiUrl=name=>new URL('../components/ui/'+name+'.tsx',import.meta.url);
+  const ui={},uiUrl=name=>new URL('../../components/ui/'+name+'.tsx',import.meta.url);
   const uiRequire=name=>name.endsWith('runtime/navigation')?navigation:name.endsWith('lib/admin-navigation')?adminNavigation:name.startsWith('./')?(ui[name]??=compile(uiUrl(name.slice(2)),uiRequire)):require(name);
   const stub=tag=>props=>h('section',{[tag]:JSON.stringify(Object.fromEntries(Object.entries(props).filter(([,value])=>typeof value!=='function'&&typeof value!=='object'||Array.isArray(value)&&value.every(item=>typeof item==='string'))))});
   const panels=[],hookCalls=[],deletes=[];
   const shared=name=>name==='react'||name.startsWith('react/')?require(name):name.endsWith('runtime/navigation')?navigation:name.startsWith('../ui/')?uiRequire('./'+name.slice(6))
     :name==='../../lib/admin-navigation'?adminNavigation:name==='../../lib/environment-workspace.mjs'?environmentWorkspace:name==='../../lib/connected-studio.mjs'?{compositionUses}
     :name==='./environment-workspace'?{useEnvironmentWorkspace:args=>{hookCalls.push(args);return workspace;}}:null;
-  const editor=compile(new URL('../components/studio/environment-editor.tsx',import.meta.url),name=>shared(name)??(name==='./environment-picture'?{EnvironmentPicture:stub('data-picture')}
+  const editor=compile(new URL('../../components/studio/environment-editor.tsx',import.meta.url),name=>shared(name)??(name==='./environment-picture'?{EnvironmentPicture:stub('data-picture')}
     :name==='./studio-composition-panel'?{StudioCompositionPanel:props=>{panels.push(props);return h('section',{'data-layers':props.compositionId,'data-game':props.game,'data-in-environment':String(props.inEnvironment),'data-dealer':props.dealerId});}}
     :name==='./saved-scene-preview'?{SavedScenePreview:stub('data-preview')}:name==='./permanent-delete'?{PermanentDeleteButton:props=>{deletes.push(props);return h('button',{'data-permanent-delete':props.target.id,disabled:props.disabled});}}
-    :name==='./room-settings-warning'?compile(new URL('../components/studio/room-settings-warning.tsx',import.meta.url),shared):name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
-  const scenes=compile(new URL('../components/studio/scenes-page.tsx',import.meta.url),name=>shared(name)??(name==='./environment-editor'?editor
+    :name==='./room-settings-warning'?compile(new URL('../../components/studio/room-settings-warning.tsx',import.meta.url),shared):name==='lucide-react'?require(name):assert.fail('Unexpected import '+name)));
+  const scenes=compile(new URL('../../components/studio/scenes-page.tsx',import.meta.url),name=>shared(name)??(name==='./environment-editor'?editor
     :name==='./registered-material-library'?{RegisteredMaterialLibrary:stub('data-library')}:name==='./dealer-identity-portrait'?{DealerFaces:()=>null}
     :name==='./scene-cover'?{SceneCover:props=>h('span',{'data-cover':props.lane.id})}
     :name==='../../../../components/lane-editor'?{addLane:(project,id,label,dealer)=>({...project,lanes:[...project.lanes,{...defaultPresentationLane(dealer),id,label}]}),newCompositionId:()=>'ny-miljo'}
@@ -185,7 +185,7 @@ test('an upload in the environment editor holds every navigation that would unmo
   const after=new CustomEvent('studio:before-navigate',{cancelable:true,detail:{href:'/admin/dealers'}});target.dispatchEvent(after);
   assert.equal(after.defaultPrevented,false,'a finished upload leaves navigation free');
   // The workspace hook holds navigation exactly while a child (upload or publication) is busy.
-  const hook=readFileSync(new URL('../components/studio/environment-workspace.tsx',import.meta.url),'utf8');
+  const hook=readFileSync(new URL('../../components/studio/environment-workspace.tsx',import.meta.url),'utf8');
   assert.match(hook,/useEffect\(\(\)=>childBusy\?holdNavigationDuringUpload\(window,setError\):undefined,\[childBusy\]\)/);
 });
 
@@ -199,7 +199,7 @@ function workspaceHook(){
   const {project}=fixture().data;
   const client={async load(){loads.push(1);return {catalog:{administration:{operators:[],rooms:[]}},project:structuredClone(project),inventory:{videos:[]}};},
     async save(value){saves.push(value);return {...value,revision:'saved-'+saves.length};}};
-  const module={exports:{}},code=transformSync(readFileSync(new URL('../components/studio/environment-workspace.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  const module={exports:{}},code=transformSync(readFileSync(new URL('../../components/studio/environment-workspace.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
   runInNewContext(code,{module,exports:module.exports,structuredClone,window:new EventTarget(),AbortController,JSON,require:name=>name==='react'?hooks
     :name.endsWith('connected-studio.mjs')?{createStudioClient:()=>client}:name.endsWith('environment-workspace.mjs')?environmentWorkspace
     :name.endsWith('studio-model.mjs')?{validateProject:value=>value}:name.endsWith('studio-composition.mjs')?{registerCompositionLayer:(base,draft,remote)=>({project:remote,conflicts:[]})}

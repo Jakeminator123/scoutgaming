@@ -4,7 +4,7 @@ import type {CompositionSettings} from '../../../../../../packages/presentation/
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
 import type {AiProposal} from '../../lib/ai-background.mjs';
 import {AI_PREVIEW_LAYOUTS, aiLandingWarning, aiPreviewLayout, type AiPreviewLayout, type AiPreviewMedia} from '../../lib/ai-proposal-preview.mjs';
-import {useScenePreviewMedia} from '../../lib/scene-preview-media.mjs';
+import {useScenePreviewMedia} from '../../lib/scenes/scene-preview-media.mjs';
 import {Badge} from '../ui/kit';
 
 export type AiProposalPreviewProps = {

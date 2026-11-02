@@ -18,7 +18,7 @@ import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
 import {isActiveDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
 import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
 import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
-import {createRoomRelease,ROOM_RELEASE_ACTION} from './room-release.mjs';
+import {createRoomRelease,ROOM_RELEASE_ACTION} from './rooms/room-release.mjs';
 import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
 import {adminAssignmentView,validateAdminAssignment,PARTNER_ASSIGNMENT_KEY} from './partner-assignment.mjs';
 import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';

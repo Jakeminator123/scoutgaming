@@ -7,9 +7,9 @@ import {createStudioClient} from './connected-studio.mjs';
 import {dealerCoverage} from './dealer-coverage.mjs';
 import {measureClipsInOrder,unmeasuredClips} from './media-timing.mjs';
 import {blockerView,BLOCKER_CODES} from './blocker-view.mjs';
-import {createPresentationRoomClient} from '../../../lib/presentation-room-client.mjs';
-import {createRoomGameConfigClient,ROOM_GAME_DEFAULTS} from '../../../lib/room-game-config-client.mjs';
-import {roomLimitProfiles} from '../../../lib/room-limit-profiles.mjs';
+import {createPresentationRoomClient} from '../../../lib/rooms/presentation-room-client.mjs';
+import {createRoomGameConfigClient,ROOM_GAME_DEFAULTS} from '../../../lib/rooms/room-game-config-client.mjs';
+import {roomLimitProfiles} from '../../../lib/rooms/room-limit-profiles.mjs';
 
 export const PAOW_DEALER_ID = 'paow';
 export const QUICK_CREATE_STEPS = Object.freeze([['miljo','Miljö'],['matning','Mät klipp'],['spelbord','Spelbord, tilldelning och spelinställningar']]);

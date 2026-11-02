@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState,useSyncExternalStore} from 'react';
-import {createRoomGameConfigController} from '../lib/room-game-config-client.mjs';
-import {roomLimitProfiles,roomLimitProfileNote,formatAmount} from '../lib/room-limit-profiles.mjs';
+import {createRoomGameConfigController} from '../lib/rooms/room-game-config-client.mjs';
+import {roomLimitProfiles,roomLimitProfileNote,formatAmount} from '../lib/rooms/room-limit-profiles.mjs';
 import {Button,Card} from '../client/admin/components/ui/kit';
 import {Field,fieldClass} from '../client/admin/components/ui/form';
 import {blockerView,runBlockerAction} from '../client/admin/lib/blocker-view.mjs';

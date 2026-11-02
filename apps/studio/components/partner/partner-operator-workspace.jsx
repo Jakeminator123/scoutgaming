@@ -7,7 +7,7 @@ import { Command } from 'cmdk';
 import { Toaster, toast } from 'sonner';
 import { ChartColumn, Check, LayoutDashboard, LifeBuoy, Plug, Search, Settings, Spade, Users, UsersRound } from 'lucide-react';
 import { studioHistory } from '../../lib/studio-history.mjs';
-import { availablePartnerRooms, initialPartnerRoomSelection, partnerRoomRequest, partnerRoomQuery } from '../../lib/partner-room-selection.mjs';
+import { availablePartnerRooms, initialPartnerRoomSelection, partnerRoomRequest, partnerRoomQuery } from '../../lib/rooms/partner-room-selection.mjs';
 import { PartnerOverview } from './views/overview.jsx';
 import { PartnerRoomWorkspace } from './views/rooms.jsx';
 import { PartnerPlayers } from './views/players.jsx';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
-import { createRoomGameConfigApi } from '../../apps/studio/lib/room-game-config-api.mjs';
+import { createRoomGameConfigApi } from '../../apps/studio/lib/rooms/room-game-config-api.mjs';
 import { createSharedTableProofReadout } from '../../apps/studio/lib/shared-table-proof-readout.mjs';
 import { cloudPresentationFixture } from '../../apps/studio/test/fixtures/cloud-presentation.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';

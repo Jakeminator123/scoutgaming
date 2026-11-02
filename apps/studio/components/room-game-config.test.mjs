@@ -11,7 +11,7 @@ const client=createRequire(new URL('../client/package.json',import.meta.url)),Re
 function load(url,controller,hooks=React){
  const module={exports:{}},local=createRequire(url);
  vm.runInNewContext(transformSync(readFileSync(url,'utf8'),{filename:fileURLToPath(url),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,
-  {module,exports:module.exports,require:name=>name==='../lib/room-game-config-client.mjs'?{createRoomGameConfigController:()=>controller}:name.endsWith('.css')?{default:{}}
+  {module,exports:module.exports,require:name=>name==='../lib/rooms/room-game-config-client.mjs'?{createRoomGameConfigController:()=>controller}:name.endsWith('.css')?{default:{}}
    :name==='react'?hooks:/^react\//.test(name)?client(name):/^\.\.?\//.test(name)&&!/\.[cm]?js$/.test(name)?load(new URL(name+'.tsx',url),controller,hooks):local(name)});
  return module.exports;
 }

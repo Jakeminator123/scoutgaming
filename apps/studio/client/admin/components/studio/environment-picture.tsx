@@ -3,8 +3,8 @@ import {ImageDown} from 'lucide-react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {validateProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
-import {useScenePreviewMedia} from '../../lib/scene-preview-media.mjs';
-import {exportSceneIllustration} from '../../lib/scene-export.mjs';
+import {useScenePreviewMedia} from '../../lib/scenes/scene-preview-media.mjs';
+import {exportSceneIllustration} from '../../lib/scenes/scene-export.mjs';
 import {Button} from '../ui/kit';
 import {Label,Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '../ui/form';
 

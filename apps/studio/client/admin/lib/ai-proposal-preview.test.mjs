@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 import {createSeedProject,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import {filmedTableTemplate} from '../../../lib/filmed-table-template.mjs';
-import {useScenePreviewMedia} from './scene-preview-media.mjs';
+import {useScenePreviewMedia} from './scenes/scene-preview-media.mjs';
 import * as preview from './ai-proposal-preview.mjs';
 
 // The real AiProposalPreview (ai-proposal-preview.tsx) with the real geometry and scene media; only the kit's
@@ -17,7 +17,7 @@ const h=React.createElement;
 const leaves={
   '../ui/kit':{Badge:({tone,children,title})=>h('span',{'data-badge':tone,title},children)},
   '../../lib/ai-proposal-preview.mjs':preview,
-  '../../lib/scene-preview-media.mjs':{useScenePreviewMedia},
+  '../../lib/scenes/scene-preview-media.mjs':{useScenePreviewMedia},
 };
 const module={exports:{}};
 runInNewContext(compiled,{module,exports:module.exports,require:name=>{if(name==='react'||name.startsWith('react/'))return require(name);if(Object.hasOwn(leaves,name))return leaves[name];throw Error('Unexpected import '+name);}});

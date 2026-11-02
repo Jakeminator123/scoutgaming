@@ -30,8 +30,8 @@ import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from '.
 import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
-import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './presentation-room-api.mjs';
-import { createRoomGameConfigApi } from './room-game-config-api.mjs';
+import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './rooms/presentation-room-api.mjs';
+import { createRoomGameConfigApi } from './rooms/room-game-config-api.mjs';
 import { resolveNativeRoomGameMaterial } from '../../../packages/presentation/server/native-room-game-material.mjs';
 import { createSharedTableProofReadout } from './shared-table-proof-readout.mjs';
 import { presentationCapabilitiesForVersion } from '../../../packages/presentation/capability-contract.mjs';

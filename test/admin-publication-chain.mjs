@@ -5,7 +5,7 @@ import {createServer} from 'node:http';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createPublicationChain, company, otherCompany, compositionId} from './fixtures/admin-publication-chain.mjs';
-import {createPresentationRoomClient, createPresentationRoomController} from '../apps/studio/lib/presentation-room-client.mjs';
+import {createPresentationRoomClient, createPresentationRoomController} from '../apps/studio/lib/rooms/presentation-room-client.mjs';
 import {readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';

@@ -10,12 +10,12 @@ import {createOperatorStore} from '../../packages/operators/server/operator-stor
 import {createOperatorPackageReader} from '../../services/game/storage/operator-package-reader.mjs';
 import {createStudioNativeAuth} from '../../packages/studio-access/studio-native-auth.mjs';
 import {createStudioAdminApi} from '../../apps/studio/lib/studio-admin-api.mjs';
-import {createPresentationRoomApi} from '../../apps/studio/lib/presentation-room-api.mjs';
+import {createPresentationRoomApi} from '../../apps/studio/lib/rooms/presentation-room-api.mjs';
 import {STANDARD_OPERATOR_ROLES} from '../../apps/studio/lib/operator-admin-api.mjs';
 import {handlePartnerAuth, partnerSessionDigest} from '../../apps/studio/lib/partner-session.mjs';
 import {partnerWorkspaceInitialData} from '../../apps/studio/lib/partner-data.mjs';
 import {resolveWorkspaceSurfacePath} from '../../packages/navigation/workspace-surfaces.mjs';
-import {partnerRoomRequest} from '../../apps/studio/lib/partner-room-selection.mjs';
+import {partnerRoomRequest} from '../../apps/studio/lib/rooms/partner-room-selection.mjs';
 import {createPublicOperatorRooms} from '../../services/game/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../services/game/public-operators.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';

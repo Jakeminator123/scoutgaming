@@ -1,29 +1,29 @@
-import * as savedGameDocumentContract from '../../../packages/studio-registry/server/document-contract.mjs';
+import * as savedGameDocumentContract from '../../../../packages/studio-registry/server/document-contract.mjs';
 
-import { operatorAuditContext } from './operator-audit-context.mjs';
+import { operatorAuditContext } from '../operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
-import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
-import { normalizeProject } from '../../../packages/presentation/contracts/studio-model.mjs';
-import { laneMaterialIds, validatePresentationPackage } from '../../../packages/presentation/contracts/presentation-layers.mjs';
-import { mergeFrozenDealerPlayback } from '../../../packages/presentation/contracts/frozen-dealer-playback.mjs';
+import { isPresentationRoomReadQuery } from '../studio-admin-contract.mjs';
+import { normalizeProject } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { laneMaterialIds, validatePresentationPackage } from '../../../../packages/presentation/contracts/presentation-layers.mjs';
+import { mergeFrozenDealerPlayback } from '../../../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
-import { gameLaneConfiguration } from '../../../packages/presentation/contracts/game-lanes.mjs';
-import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
-import { createOperatorStore } from '../../../packages/operators/server/operator-store.mjs';
-import { readPackagePresentation, withPackagePresentation } from '../../../packages/presentation/server/presentation-package.mjs';
-import { createSavedGamePolicy } from '../../../packages/presentation/server/saved-game-policy.mjs';
-import {isPresentationRoom, roomGame, roomPlayPath} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {packageRoomsFor,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
-import { resolveFrozenDealerIdle } from '../../../packages/presentation/server/frozen-dealer-idle.mjs';
+import { gameLaneConfiguration } from '../../../../packages/presentation/contracts/game-lanes.mjs';
+import {isGameLaneId} from '../../../../packages/presentation/contracts/game-lane-id.mjs';
+import { createOperatorStore } from '../../../../packages/operators/server/operator-store.mjs';
+import { readPackagePresentation, withPackagePresentation } from '../../../../packages/presentation/server/presentation-package.mjs';
+import { createSavedGamePolicy } from '../../../../packages/presentation/server/saved-game-policy.mjs';
+import {isPresentationRoom, roomGame, roomPlayPath} from '../../../../packages/presentation/contracts/presentation-room.mjs';
+import {packageRoomsFor,resolvePackageRoom} from '../../../../packages/presentation/server/package-rooms.mjs';
+import { resolveFrozenDealerIdle } from '../../../../packages/presentation/server/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
-  isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
-import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../../packages/studio-registry/server/document-contract.mjs';
-import { validatePresentationCapabilities } from '../../../packages/presentation/capability-contract.mjs';
-import { NATIVE_FILMED_PLANNING_MUTATION, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
-import {assertPresentationRoomMaterials} from '../../../packages/presentation/contracts/presentation-material-game.mjs';
-import {withoutOperatorMaterials} from '../../../packages/presentation/server/operator-material-merge.mjs';
-import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
-import {validateRoomGameConfig} from '../../../packages/presentation/contracts/room-game-config.mjs';
+  isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../../../packages/presentation/server/frozen-presentation-capture.mjs';
+import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../../../packages/studio-registry/server/document-contract.mjs';
+import { validatePresentationCapabilities } from '../../../../packages/presentation/capability-contract.mjs';
+import { NATIVE_FILMED_PLANNING_MUTATION, presentationPackageRequiresV29, presentationPackageRequiresV30, PRESENTATION_RUNTIME_UPDATE_REQUIRED } from '../presentation-runtime-readiness.mjs';
+import {assertPresentationRoomMaterials} from '../../../../packages/presentation/contracts/presentation-material-game.mjs';
+import {withoutOperatorMaterials} from '../../../../packages/presentation/server/operator-material-merge.mjs';
+import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from '../operator-material-publication.mjs';
+import {validateRoomGameConfig} from '../../../../packages/presentation/contracts/room-game-config.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 

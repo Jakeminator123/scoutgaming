@@ -12,7 +12,7 @@ import {rouletteReferencePreview} from './roulette/roulette-clip-map.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
 import {effectiveDealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 import {aiTableFitsTemplate} from './ai-background.mjs';
-import * as scenePreviewMedia from './scene-preview-media.mjs';
+import * as scenePreviewMedia from './scenes/scene-preview-media.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';

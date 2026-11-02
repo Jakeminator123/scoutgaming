@@ -53,8 +53,8 @@ Ett provkvitto gäller den provade versionen;
 en dokumentlänk är inget nytt godkännande av layout eller produktbeteende.
 
 Publicering, bolagsisolering, revisioner och sparade utkast är serverkontrakt.
-Följ [användarguiden](../docs/README.md), [publiceringsmodulen](../lib/room-release.mjs)
-och dess [beteendeprov](../test/room-release.test.mjs). Kvarvarande produktarbete
+Följ [användarguiden](../docs/README.md), [publiceringsmodulen](../lib/rooms/room-release.mjs)
+och dess [beteendeprov](../test/rooms/room-release.test.mjs). Kvarvarande produktarbete
 samlas i [körplanen](../../../docs/plans/organisation/KORPLAN-v2.md).
 
 Den som ändrar bygget, temat eller dessa kontrakt uppdaterar denna guide i samma

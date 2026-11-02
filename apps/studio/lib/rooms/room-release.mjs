@@ -15,31 +15,31 @@
 // journalrad som "Publicera granskat utkast". Utan rätten, eller när utkastet bygger på
 // ett äldre paket, stoppar det som förut med 409 studio_room_choices_draft_pending.
 import {createHash} from 'node:crypto';
-import {createOperatorStore} from '../../../packages/operators/server/operator-store.mjs';
-import {isAdministratorRole} from '../../../packages/studio-access/account-role.mjs';
-import {canonicalStudioJson,validateRevision,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../../packages/studio-registry/server/document-contract.mjs';
-import {validateRuntimeCatalogRecord} from '../../../packages/studio-registry/server/runtime-catalog.mjs';
-import {normalizeProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {isPresentationRoom,isRoomOperatorId,roomGame} from '../../../packages/presentation/contracts/presentation-room.mjs';
-import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
-import {captureFrozenPresentation,selectedRegisteredIdleDefaults,assertCapturedPresentationMedia,assertPublishedRoomBindings} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
-import {readPackagePresentation,resolvePackageRoomDealer,withPackagePresentation,publicPackageBranding} from '../../../packages/presentation/server/presentation-package.mjs';
-import {listPackageRooms,packageRoomsFor,resolvePackageRoom} from '../../../packages/presentation/server/package-rooms.mjs';
-import {resolveNativeRoomGameMaterial} from '../../../packages/presentation/server/native-room-game-material.mjs';
-import {isNativeRoomMaterial,nativeRoomMaterialVersion} from '../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
-import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial} from '../../../packages/presentation/contracts/room-game-config.mjs';
-import {recordedSpeechForVideo} from '../../../packages/presentation/contracts/recorded-speech.mjs';
-import {resolveRoomBranding} from '../../../packages/operators/contracts/branding.mjs';
-import {assertAiTablesFit} from './ai-table-publication-guard.mjs';
-import {presentationPackageRequiresV29,PRESENTATION_RUNTIME_UPDATE_REQUIRED,NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
-import {operatorAuditContext} from './operator-audit-context.mjs';
-import {cleanBrandingDraft,createPartnerBrandingApi} from './partner-branding-api.mjs';
-import {allowsWorkspaceResource,internalPartnerContext} from './partner-workspace-access.mjs';
-import {PARTNER_BRANDING_FIELDS,PARTNER_ROOM_BRANDING_FIELDS,publicEditableBranding} from '../../../packages/operators/contracts/branding.mjs';
+import {createOperatorStore} from '../../../../packages/operators/server/operator-store.mjs';
+import {isAdministratorRole} from '../../../../packages/studio-access/account-role.mjs';
+import {canonicalStudioJson,validateRevision,validateStudioScope,validateStudioMedia,StudioStorageError} from '../../../../packages/studio-registry/server/document-contract.mjs';
+import {validateRuntimeCatalogRecord} from '../../../../packages/studio-registry/server/runtime-catalog.mjs';
+import {normalizeProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
+import {isPresentationRoom,isRoomOperatorId,roomGame} from '../../../../packages/presentation/contracts/presentation-room.mjs';
+import {isGameLaneId} from '../../../../packages/presentation/contracts/game-lane-id.mjs';
+import {captureFrozenPresentation,selectedRegisteredIdleDefaults,assertCapturedPresentationMedia,assertPublishedRoomBindings} from '../../../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {readPackagePresentation,resolvePackageRoomDealer,withPackagePresentation,publicPackageBranding} from '../../../../packages/presentation/server/presentation-package.mjs';
+import {listPackageRooms,packageRoomsFor,resolvePackageRoom} from '../../../../packages/presentation/server/package-rooms.mjs';
+import {resolveNativeRoomGameMaterial} from '../../../../packages/presentation/server/native-room-game-material.mjs';
+import {isNativeRoomMaterial,nativeRoomMaterialVersion} from '../../../../packages/presentation/contracts/native-room-filmed-planning.mjs';
+import {validateRoomGameConfig,validateRoomGameDrafts,validateRoomGameMaterial} from '../../../../packages/presentation/contracts/room-game-config.mjs';
+import {recordedSpeechForVideo} from '../../../../packages/presentation/contracts/recorded-speech.mjs';
+import {resolveRoomBranding} from '../../../../packages/operators/contracts/branding.mjs';
+import {assertAiTablesFit} from '../ai-table-publication-guard.mjs';
+import {presentationPackageRequiresV29,PRESENTATION_RUNTIME_UPDATE_REQUIRED,NATIVE_FILMED_PLANNING_MUTATION} from '../presentation-runtime-readiness.mjs';
+import {operatorAuditContext} from '../operator-audit-context.mjs';
+import {cleanBrandingDraft,createPartnerBrandingApi} from '../partner-branding-api.mjs';
+import {allowsWorkspaceResource,internalPartnerContext} from '../partner-workspace-access.mjs';
+import {PARTNER_BRANDING_FIELDS,PARTNER_ROOM_BRANDING_FIELDS,publicEditableBranding} from '../../../../packages/operators/contracts/branding.mjs';
 import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
-import {isRoomReleaseReadQuery} from './studio-admin-contract.mjs';
-import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from './operator-material-publication.mjs';
-import {AI_ADOPT_ACTION,AiAdoptError,adoptLayerAssets,validateAdoptMaterials} from './ai-material-adoption.mjs';
+import {isRoomReleaseReadQuery} from '../studio-admin-contract.mjs';
+import {mergeOperatorMaterialsForPublication,operatorMaterialFingerprint,presentationFits,publicationRooms,readOperatorMaterialRows} from '../operator-material-publication.mjs';
+import {AI_ADOPT_ACTION,AiAdoptError,adoptLayerAssets,validateAdoptMaterials} from '../ai-material-adoption.mjs';
 
 export const ROOM_RELEASE_ACTION = 'publish-room';
 // Felkontraktet {error, code, step}: fasta koder och fasta steg, aldrig leverantörstext.

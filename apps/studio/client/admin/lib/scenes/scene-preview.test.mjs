@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {createSeedProject,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {defaultBackgroundRule} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {createSeedProject,defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {defaultBackgroundRule} from '../../../../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {useScenePreviewMedia} from './scene-preview-media.mjs';
 
 // The real ScenePreview (scene-preview.tsx) with the saved studio handed in, so it renders without reads. Only the
 // leaves are stubbed: SavedScenePreview and CompositionPreview show the props they receive, Empty/Note/Loading their text.
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
-const compiled=transformSync(readFileSync(new URL('../components/studio/scene-preview.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+const compiled=transformSync(readFileSync(new URL('../../components/studio/scene-preview.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 const h=React.createElement;
 const leaves={
   '../../../runtime/navigation':{__esModule:true,default:({href,children})=>h('a',{href},children)},
@@ -18,7 +18,7 @@ const leaves={
   '../ui/kit':{Loading:({label})=>h('p',{'data-loading':label})},
   '../../../../components/composition-preview':{CompositionPreview:props=>h('section',{'data-composition':[props.dealer?.url,props.background?.url,props.table?.url].map(value=>value??'none').join(' '),
     'data-autoplay':String(Boolean(props.autoplay&&props.loopDealer)),'data-background-playback':props.backgroundPlayback?props.backgroundAssets.map(row=>row.id).join(','):'none'})},
-  '../../lib/scene-preview-media.mjs':{useScenePreviewMedia},
+  '../../lib/scenes/scene-preview-media.mjs':{useScenePreviewMedia},
   './saved-scene-preview':{SavedScenePreview:props=>h('section',{'data-saved-scene':props.presentationLaneId,'data-revision':props.revision??'none','data-dealer':props.dealerId??'none','data-game':props.game,'data-active':String(props.active)})},
 };
 const module={exports:{}};

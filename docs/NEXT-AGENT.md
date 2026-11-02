@@ -23,6 +23,26 @@ stöder undermappar. Atlas visar dessa körbara samband. Spelkärna, produktkod,
 schema, molnresurser och mediebytes ändras inte. Faktisk verifiering och PR-head
 rapporteras i PR:en; MERGAGENT3 äger granskning/merge och CI-uppföljning.
 
+## Atlas: regler, konsumenter och provvägar 2 november
+
+[Atlas-guiden](../tools/system-map/README.md) beskriver den utökade vyn
+**Prov & kontroller**: spårade agentregler, hookar, GitHub-workflows och
+ignoreringsgränser med klickbara referenser och källrader. Vald fil visar
+konsumenter, beroenden och kända provregistreringar. Privata ignorerade filer
+ingår inte. Frånvaro av en kant bevisar inte att filen kan raderas.
+
+Riktade provkommandon kommer från det befintliga svitregistret. Kända
+skip-/todo-villkor och särskilda körmiljöer visas med källankare; missvisande
+Node-kommandon och helsvitsalternativ hålls tillbaka. Atlas kör inga tester
+och visar varken CI-resultat eller beteendetäckning. Oupplösta dynamiska
+villkor behöver fortfarande bedömas i källan och aktuell provmiljö.
+
+Käll- och oberoende buggranskning, 24 Pythonprov och strikta kartankare är
+verifierade. Den frysta UI-ändringen är även provad i browser på bred och
+smal skärm: kontrollrelationer, sök, provkrav, kommandoval och zoom/pan.
+Rums-/scenflyttarna och Atlas integreras tillsammans; exakt head och slutlig
+CI hör till integrations-PR:en. Ingen produktdata eller drift ändras.
+
 ## Leveranskontroller 2 november
 
 Ignoreringsgränserna beskrivs i [IDE-guiden](../START-HERE.md#byta-ide-eller-återuppta-arbete). Spelbyggkontexten utesluter nu lokala cacher, worktrees och Codex-tillstånd; dess explicita runtimeindata består. Sökundantaget för det aktiva importmanifestet låser inte implementationen. Inga Git- eller Cursor-undantag för privata filer har tagits bort.
@@ -56,6 +76,30 @@ separat. Ingen produktdata eller process i Render ändras av uppdraget.
 Nya agentworktrees ligger under `.worktrees/<uppdrag>`. [START-HERE](../START-HERE.md#byta-ide-eller-återuppta-arbete) beskriver det fristående [portable-workflows](../tools/portable-workflows.mjs): `list`, `record` och `resume` med explicit `--repo`. Git visar aktuell kodstatus; en privat överlämning i `.worktrees/.handoffs` bär uppdrag och nästa steg. `resume` läser bara valt uppdrag och varnar vid avvikande HEAD/branch, aktiv ägare eller saknad worktree. Claude och Cursor pekar till samma gemensamma instruktioner.
 
 Sex verkliga temporära Gitrepon provar ren/ändrad worktree, identitets- och ägarbyten, okänt metadataformat, sökvägsgränser och återupptagning från annan katalog utan ändringar av kod eller index. Dödhetsgranskning gäller aktuell main/preview och deras aktivt lästa fixerade refs; andra personers egna brancher lämnas orörda och låser inte mainstädning. Exakt huvud-/CI-bevis hör till PR:en; preview och driftacceptans samordnas separat.
+
+## Funktionsmapp för Admins scener 2 november
+
+Admins scenexport och förhandsvisningsmedia finns tillsammans med sina typer och
+sex befintliga beteendeprov i [admin/lib/scenes](../apps/studio/client/admin/lib/scenes/).
+Komponenternas importer, provens komponentläsning och fullsvitens registrering
+följer flytten. Kodinnehållet och importmålen är oförändrade efter normalisering
+av sökvägar. Riktade prov, typer och hookbevis anges i PR:en; CI och merge
+följs av samordnaren. Ingen produktdata, media eller drift ändras.
+
+## Rumsadaptrar och beteendeprov 2 november
+
+Rummets val, skapande, spelinställningar, insatsprofiler och publicering samlas
+i [`lib/rooms/`](../apps/studio/lib/rooms/), med fyra tillhörande typdeklarationer.
+Åtta befintliga rumsprov ligger i [`test/rooms/`](../apps/studio/test/rooms/)
+och hittas av Studios rekursiva testkommando. Konsumenternas importer och
+ordkontrollens konstruerade sökvägar följer flytten. Delade bolags- och
+livscykeladaptrar samt det motorbundna K04-provet ligger kvar.
+
+Lokalt är Studio-/Admintyper och testinventeringen verifierade; 37 käll-, typ-
+och testfiler har samma innehåll efter normalisering av sökvägar. Riktade
+beteendeprov, hook och exakt head redovisas i ändringens PR. Publika API:er,
+spelregler, scope, publiceringskontrakt och lagrade identiteter är oförändrade.
+CI och integration följs av samordnaren; ingen drift- eller dataacceptans ingår.
 
 ## Funktionsmappar för portal, roulette och drift 1 november
 

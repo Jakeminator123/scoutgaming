@@ -2,7 +2,7 @@ import {labUrl} from '../../../lib/lab-url.mjs';
 import {blockerView} from './blocker-view.mjs';
 
 // Spelbordets publicering i Admin (docs/plans/ADMIN-FORENKLING.md §7). Servern äger alla
-// kontroller (apps/studio/lib/room-release.mjs); här läses förhandsvisningen, kroppen byggs
+// kontroller (apps/studio/lib/rooms/room-release.mjs); här läses förhandsvisningen, kroppen byggs
 // exakt av den, kvittot kontrolleras och felkontraktet {error, code, step} översätts till
 // svenska. Klienten försöker aldrig igen automatiskt: varje nytt försök börjar med att
 // användaren läser in förhandsvisningen igen.

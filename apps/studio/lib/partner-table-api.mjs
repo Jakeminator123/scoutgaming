@@ -20,7 +20,7 @@ import { partnerOperatorContext, decidedPartnerContext, PARTNER_TABLE_CONFLICTS 
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { NATIVE_FILMED_PLANNING_MUTATION, wrapNativePresentationRepository } from './presentation-runtime-readiness.mjs';
 import { createNativePresentationMutationTransaction } from './studio-native-runtime.mjs';
-import { createRoomGameConfigApi } from './room-game-config-api.mjs';
+import { createRoomGameConfigApi } from './rooms/room-game-config-api.mjs';
 import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 
 function fail(statusCode, reason) {
