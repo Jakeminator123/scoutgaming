@@ -6,6 +6,7 @@ Literal imports are syntax references, never evidence of runtime execution.
 from __future__ import annotations
 
 from collections import Counter
+import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import posixpath
@@ -399,7 +400,12 @@ def build_graph(root, revision, manifest):
             else:
                 # Never export unresolved expression text, tokens, URLs or private paths.
                 unknown.append({"source": path, "line": ref["line"], "mode": ref["mode"], "reason": reason})
-    graphs, issues = semantic_graphs(root, manifest, sources, revision, dirty)
+    spec = importlib.util.spec_from_file_location("system_map_controls", Path(__file__).with_name("controls.py"))
+    controls_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(controls_module)
+    controls, control_texts = controls_module.build_controls(root, allowed, sources,
+        lambda path, line: proof_link(root, path, line, revision, dirty), {path for path in allowed if is_test(path)})
+    graphs, issues = semantic_graphs(root, manifest, {**sources, **control_texts}, revision, dirty)
     other_files = [{"id": path, "module": module_for(path), "extension": PurePosixPath(path).suffix or "shell/config",
                     "status": "samband ej analyserade", "dirty": path in dirty}
                    for path in sorted(allowed - set(sources))
@@ -407,6 +413,6 @@ def build_graph(root, revision, manifest):
     stats.update({"edges": len(edges), "external": external, "unknown": len(unknown), "otherFiles": len(other_files),
                   "semantic": sum(len(g["edges"]) for g in graphs), "stale": len(issues),
                   "tests": sum(n["test"] for n in nodes), "dirty": len(set(sources) & dirty)})
-    return {"nodes": nodes, "otherFiles": other_files, "edges": edges, "unknown": unknown, "graphs": graphs, "issues": issues,
-            "stats": stats, "revision": revision, "root": root.as_uri(),
+    return {"nodes": nodes, "otherFiles": other_files, "edges": edges, "unknown": unknown, "graphs": graphs, "issues": issues, "controls": controls,
+            "stats": stats, "revision": revision, "root": root.as_uri(), "dirtyFiles": sorted(dirty & allowed),
             "limits": "Statisk JS/TS-referensinventering, inte AST-, körnings- eller testtäckningsanalys. Kommentarer, strängar och mallsträngars innehåll hoppas över. require kan vara lokalt ombundet. JSONC, ärvda tsconfig-alias, villkorade exports och beräknade imports kan vara olösta. Frånvaro av kant betyder inte död kod."}

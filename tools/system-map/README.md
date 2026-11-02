@@ -27,6 +27,41 @@ antal samband och kräver inte att pensionerad implementation återinförs.
 
 ## Underlag och underhåll
 
+### Från vald koppling till prov och kontroll
+
+Välj en pil i **Kodkedjor** och öppna dess berörda filer. Filvyn visar
+direkta konsumenter, beroenden och testimporter. En import från ett prov är
+en sökingång; HTTP-, browser-, data- och byggvägar kan finnas utan sådan kant.
+Frånvaro i kartan betyder aldrig död kod eller saknad beteendetäckning.
+
+**Prov & kontroller** samlar befintliga provreferenser med spårade agentregler,
+Git-hookar, GitHub-workflows, utvalda leveransverktyg och ignoreringsfiler.
+Sök fungerar även på dessa filer. Välj fil eller pil för riktning och radbevis.
+Dokumenthänvisningar och literala sökvägar märks separat från JS/TS-importer;
+de bevisar inte exekvering, körordning eller fullständig kontrolltäckning.
+
+Provregistreringar läses ur `.githooks/pre-commit-full`. Endast kända former
+av `run_node_tests`, direkta `run_check … node <provfil>` och Python unittest
+discover blir kommandon. Registrerade globbar matchas mot tillåtna spårade
+provfiler. Ett riktat Node-kommando har samma runner men vald fil och två
+testarbetare; hela svitens befintliga kommando finns separat. Filnamn ensamt
+ger aldrig ett körkommando. Radbevis visar både registrering och, för Node
+test-runnern, dess definition. Ett prov som kontrollerar en registrering är
+ett annat bevis än registreringen själv.
+
+Kommandona kan markeras och kopieras. **Atlas kör inga kommandon.** Kontrollera
+paketversion, beroenden och isolerad provmiljö i svitens dokumentation före
+manuell körning. Ett framtida körgränssnitt behöver separat utformning för
+avgränsning, miljö, behörighet och resultat; den lokala HTML-filen har ingen
+sådan backend och visar inga påhittade provresultat.
+
+Ignorevyn visar regler i filordning och respektive verktygs innebörd, inte
+innehåll eller matchlistor från ignorerade filer. `.gitignore` styr normalt
+oregistrerade Gitfiler, `.ignore` textsökning, `.cursorignore` Cursors AI-åtkomst
+och `.dockerignore` byggkontext. Dessa är olika gränser och inga OS-behörigheter.
+Personliga `.codex`-/`.claude`-inställningar, `.env`, cache och privata arkiv
+inventeras inte. Det är alltså inte en karta över alla lokala agentinställningar.
+
 ### Leveranskontroller
 
 Atlas-grafen **Leverans och verifiering** följer dessa körbara samband:
@@ -87,6 +122,12 @@ normal uppdatering från main och ny CI vid paketöverlapp; en utebliven grafkan
   filer i arbetskopian används; nya ospårade filer ingår inte. `.ignore`,
   `.gitignore`, privata mappar och symlänkar utesluts före filinnehåll läses.
   Ändrade filer markeras och får inte länkar som hävdar oförändrad HEAD.
+- `controls.py`: avgränsad läsning av spårade kontrollfiler inom samma
+  sekretess-/ignoregräns. Agentregler (`AGENTS.md`, `CLAUDE.md`, Copilot och
+  `.cursor/rules/*.mdc`), `.githooks`, GitHub YAML och uttryckligen angivna
+  leveransverktyg analyseras för literala sökvägar. Samma underlag tillåter
+  handgranskade exakta ankare direkt i YAML och hookar. Ignorefiler exporterar
+  sina regler, övriga kontrollfiler bara sökväg/rad, aldrig källtextutdrag.
 - `template.html`, `style.css`, `app.js`: lokal vy. All data bäddas in med
   säker JSON-kodning; godtyckliga källtextutdrag och olösta uttryck exporteras
   inte. UI-text från dokument/manifest ska alltid vara escaped/textContent.
@@ -104,6 +145,8 @@ radnummer återanvänds inte som aktuella bevis.
 | Handgranskat samband | Import, anrop, HTTP/WS eller data med återfunna kodankare | Att anropet verkligen körs, aktuell flagga eller driftacceptans |
 | Automatisk JS/TS-referens | Import/export-from, literal `import()` och `require()` → fil | Full AST, bindning, transitive anrop, runtime- eller testtäckning |
 | Testområde | En test-/stödfil importerar en fil; `fixtures`/`helpers` märks stöd | Ett relevant beteendeprov, körbar testfil eller godkänt provresultat |
+| Kontrollreferens | Literal sökväg/dokumentlänk i utvald kontrollfil med fil/rad | Full shell-/YAML-semantik, aktiva GitHub-inställningar eller genomförd kontroll |
+| Provregistrering | Spårad provfil matchar känd registrering och runner i befintligt svitregister | Att provmiljön är redo, provet körts eller beteendet täcks |
 | Övrig kod/config | Sökbara spårade sökvägar för Python, SQL, shell, CSS, JSON, HTML, YAML, TOML och Docker | Analyserade samband för dessa språk |
 
 JS/TS-analysen omfattar `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`
@@ -126,7 +169,7 @@ Lägg inte till tester enbart för att öka kartans referensantal.
 ## Kontrollera en kartändring
 
 Kör Pythonproven ovan och generera mot aktuell arbetskopia. Öppna översikt,
-kodkedja, kodnät och prov/luckor; prova sök, filgranne, en riktad kant,
+kodkedja, kodnät och prov/kontroller; prova sök, filgranne, en riktad kant,
 relationstyp, zoom/pan och Anpassa. Kontrollera läsbarhet på smal skärm.
 Kontrollera även att SVG-ytan fyller kartans behållare: en sida utan
 horisontellt överflöde kan ändå få fel zoom om själva ritytan är för låg.

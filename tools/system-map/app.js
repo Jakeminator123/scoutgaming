@@ -3,6 +3,7 @@
   const data = JSON.parse(document.querySelector('#atlas-data').textContent);
   const $ = selector => document.querySelector(selector);
   const nodes = new Map(data.nodes.map(n => [n.id, n]));
+  const controlFiles = new Map(data.controls.files.map(n => [n.id, n]));
   const modules = new Map();
   const incoming = new Map(), outgoing = new Map();
   for (const n of data.nodes) {
@@ -16,7 +17,7 @@
     incoming.get(edge.target).push(edge);
   }
   const colors = ['#86abff', '#bd9df6', '#65d0c8', '#dfb77a', '#8dbcf2', '#e1a8ba'];
-  const typeNames = {import:'Import', call:'Anrop', http:'HTTP / WS', data:'Data', test:'Test/fixtur', document:'Dokumenterat ansvar'};
+  const typeNames = {import:'Import', call:'Anrop', http:'HTTP / WS', data:'Data', test:'Test/fixtur', document:'Dokumenterat ansvar', control:'Kontrollreferens'};
   const state = {view:'overview', chain:'team', focus:null, selected:null, filter:'all', graph:null, transform:{x:0,y:0,k:1}};
   let graphWidth = 1000, graphHeight = 720, graphBounds={x:0,y:0,width:1000,height:720};
   function el(tag, className, text) {
@@ -61,7 +62,7 @@
     }else p.append(el('span','',proof.path),el('small','','Kodankaret behöver översyn; ingen rad eller aktuellt bevis hävdas.'));
     return p;
   }
-  function proofFor(path,line){return {path,line,dirty:nodes.get(path)?.dirty,local:data.root+'/'+path.split('/').map(encodeURIComponent).join('/'),url:nodes.get(path)?.dirty?null:'https://github.com/Jakeminator123/scoutgaming/blob/'+data.revision+'/'+path.split('/').map(encodeURIComponent).join('/')+'#L'+line};}
+  function proofFor(path,line){const dirty=data.dirtyFiles.includes(path);return {path,line,dirty,local:data.root+'/'+path.split('/').map(encodeURIComponent).join('/'),url:dirty?null:'https://github.com/Jakeminator123/scoutgaming/blob/'+data.revision+'/'+path.split('/').map(encodeURIComponent).join('/')+'#L'+line};}
   function pagedList(parent, items, render, pageSize=18) {
     const box=el('div');parent.append(box);let count=0;
     const more=el('button','list-button');
@@ -72,6 +73,60 @@
     const tests=new Map();
     for(const path of paths)for(const edge of incoming.get(path)||[])if(edge.type==='test')tests.set(edge.source,edge);
     return [...tests.values()];
+  }
+  function openPath(path){
+    if(controlFiles.has(path))openControl(path);
+    else if(nodes.has(path))openFile(path);
+    else openUnparsed(data.otherFiles.find(f=>f.id===path)||{id:path,extension:'dokument'});
+  }
+  function commandBox(command,label){
+    const box=el('div','command-box');box.append(el('strong','',label));
+    const field=el('textarea','command-text');field.readOnly=true;field.value=command;field.rows=2;field.setAttribute('aria-label',label);
+    box.append(field,button('Markera kommando',()=>{field.focus();field.select();},'Kopiera med Ctrl+C / ⌘C'));
+    return box;
+  }
+  function appendCommands(d,path){
+    const commands=data.controls.commands.filter(c=>c.path===path);
+    if(!commands.length){if(nodes.get(path)?.test)d.append(note('Ingen körregistrering stöds för denna fil i det analyserade svitregistret. Filnamn och import är inte bevis för ett körbart prov.'));return;}
+    d.append(el('h3','','Registrerade provkommandon · '+commands.length),note('Kör från repots rot. Atlas kör ingenting. Kontrollera beroenden, isolerad provmiljö och eventuell databas enligt sviten. Importreferens bevisar inte beteendetäckning eller godkänt resultat.'));
+    for(const c of commands){
+      const block=el('section','detail-block');block.append(badge(c.suite+' / '+c.group),commandBox(c.command,c.mode==='python-discover'?'Befintlig Python-upptäckt':'Riktat prov från befintlig registrering'));
+      if(c.mode==='node-test')block.append(el('p','','Samma Node-runner, begränsad till vald fil och två testarbetare.'));
+      const full=el('details');full.append(el('summary','','Visa hela svitens kommando'),commandBox(c.suiteCommand,'Hela sviten · kan vara omfattande'));block.append(full,proofBox(c.proof));
+      if(c.runnerProof)block.append(proofBox(c.runnerProof));
+      d.append(block);
+    }
+  }
+  function appendControlReferences(d,path){
+    const refs=data.controls.edges.filter(e=>e.target===path);
+    if(!refs.length)return;
+    d.append(el('h3','','Refereras av regler / kontroller · '+refs.length));
+    pagedList(d,refs,e=>button(e.source,()=>openControl(e.source),e.kind+' · rad '+e.line),8);
+  }
+  function openControl(path){
+    state.view='network';state.focus=path;state.selected=path;
+    document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='network')));
+    $('#coverage').hidden=true;$('#canvas-wrap').hidden=false;$('#chain').hidden=true;$('#edge-filter').hidden=false;$('#back').hidden=false;
+    title('Regler och kontrollreferenser','Pilar går från refererande fil till angiven sökväg. Välj en pil för radbevis.','03 / SPÅRADE KONTROLLFILER');$('#crumb').textContent=path;
+    const all=data.controls.edges.filter(e=>e.source===path||e.target===path);
+    const neighbors=[...new Set(all.flatMap(e=>[e.source,e.target]))].filter(p=>p!==path),visible=neighbors.slice(0,36),present=new Set([path,...visible]);
+    const left=visible.filter(p=>all.some(e=>e.source===p&&e.target===path)),right=visible.filter(p=>!left.includes(p));
+    const node=(id,col,row)=>({id,label:id.split('/').at(-1),place:controlFiles.get(id)?.category||id,col,row});
+    setGraph({id:'controls',kind:'controls',nodes:[node(path,1,Math.max(0,(Math.max(left.length,right.length)-1)/2)),...left.map((p,i)=>node(p,0,i)),...right.map((p,i)=>node(p,2,i))],edges:all.filter(e=>present.has(e.source)&&present.has(e.target)),note:'Visar '+visible.length+' av '+neighbors.length+' grannar. Alla finns i detaljlistorna. Sökvägsreferenser bevisar inte körordning eller full täckning.'});
+    controlDetail(path);
+  }
+  function controlDetail(path){
+    const control=controlFiles.get(path),d=showDetail(path,control?.category||'REFERERAD FIL',control?.meaning||'Spårad sökväg i regler, kontrollkod eller provregister.');
+    d.append(proofBox(control?.proof||proofFor(path,1)));
+    if(nodes.has(path))d.append(button('Visa filens kodkonsumenter och testimporter',()=>openFile(path)));
+    if(control?.patterns){
+      d.append(note('Reglerna visas i filordning. Ingen matchlista eller privat fil läses. Negeringar, katalogkontext och andra ignorefiler kan påverka utfallet.'));
+      pagedList(d,control.patterns,p=>{const block=el('div','proof');block.append(el('code','',p.pattern),el('small','','rad '+p.line));return block;},20);
+    }
+    for(const [heading,refs,key] of [['Refereras av',data.controls.edges.filter(e=>e.target===path),'source'],['Refererar till',data.controls.edges.filter(e=>e.source===path),'target']]){
+      d.append(el('h3','',heading+' · '+refs.length));pagedList(d,refs,e=>button(e[key],()=>openControl(e[key]),e.kind+' · '+e.source+':'+e.line),10);
+    }
+    appendCommands(d,path);d.append(note(data.controls.limits));
   }
   function title(text,sub,eyebrow){$('#title').textContent=text;$('#subtitle').textContent=sub;$('#eyebrow').textContent=eyebrow;}
   function setView(view, reset=true){
@@ -138,6 +193,7 @@
     const d=showDetail(n.label,'FIL / '+n.module,path);
     d.append(badge(n.test?testLabel(path):'Produkt / verktyg'),badge(n.dirty?'Ändrad arbetskopia':'Spårad fil',n.dirty?'warn':''));
     d.append(proofBox(proofFor(path,1)));
+    appendCommands(d,path);appendControlReferences(d,path);
     const contracts=data.contracts.filter(c=>c.files.some(p=>path===p||path.startsWith(p+'/')));
     if(contracts.length){d.append(el('h3','','Dokumenterat ansvar'));for(const c of contracts)d.append(button(c.name,()=>openContract(c)));}
     const tests=relatedTests([path]);
@@ -169,24 +225,36 @@
     if(state.graph.kind==='groups'){openGroup(node.id);return;}
     if(state.graph.kind==='modules'){openModule(node.id);return;}
     if(state.graph.kind==='file'){fileDetail(node.id);return;}
+    if(state.graph.kind==='controls'){controlDetail(node.id);return;}
     const d=showDetail(node.label,'DEL I HANDGRANSKAD KEDJA',node.place);
     d.append(badge('Semantiskt samband','semantic'));
     const ins=state.graph.edges.filter(e=>e.target===node.id),outs=state.graph.edges.filter(e=>e.source===node.id);
     for(const [heading,list] of [['Konsumenter',ins],['Anropar / använder',outs]]){d.append(el('h3','',heading+' · '+list.length));for(const edge of list)d.append(button(edge.label,()=>selectEdge(edge),typeNames[edge.type]+' · '+(edge.status==='anchored'?'kodankare matchar':'behöver granskas')));}
     d.append(el('h3','','Filer i berörda kodbevis'));
-    pagedList(d,node.files||[],path=>button(path,()=>openFile(path),'Visa imports, konsumenter och testreferenser'),8);
+    pagedList(d,node.files||[],path=>button(path,()=>openPath(path),'Visa konsumenter, kontrollreferenser och prov'),8);
     d.append(note('Kodankaren stödjer den handskrivna tolkningen. Generatorn avgör inte anropssemantik, aktiva flaggor eller driftsstatus.'));
   }
   function selectEdge(edge){
     state.selected=edge.id;markSelection();
     const from=state.graph.nodes.find(n=>n.id===edge.source),to=state.graph.nodes.find(n=>n.id===edge.target);
     const d=showDetail(from.label+' → '+to.label,'RIKTAD RELATION',edge.explanation||edge.label);
+    if(edge.level==='control'){
+      d.append(badge(edge.kind),note(edge.kind==='Provregistrering'?'Testfilen matchar en uttrycklig registrering i befintlig svit. Det är inte ett provresultat.':'En literal sökväg eller dokumentlänk har återfunnits. Körning, ordning och semantik har inte verifierats.'));
+      for(const p of edge.evidence)d.append(proofBox(p));
+      d.append(button('Öppna refererande fil',()=>openControl(edge.source)),button('Öppna refererad fil',()=>openPath(edge.target)));
+      appendCommands(d,edge.target);return;
+    }
     d.append(badge(typeNames[edge.type]||edge.kind),badge(edge.level==='semantic'?'Handgranskad tolkning':'Statisk syntaxreferens',edge.level==='semantic'?'semantic':''));
     if(edge.conditional)d.append(badge('Villkorad väg','warn'));
     if(edge.status==='needs-review')d.append(note('Minst ett kodankare saknas eller är tvetydigt. Relationen måste granskas igen.','warn'));
     else if(edge.level==='semantic')d.append(note('Kodankaren matchar entydigt i aktuell arbetskopia. Detta verifierar ankaren, inte att sambandet körs.'));
     if(edge.level==='static')d.append(note('En import visar en källkodsreferens. Typimport, dynamisk import och require visas separat; körning och bindning har inte bevisats.'));
-    if(edge.evidence){d.append(el('h3','','Kodankare · '+edge.evidence.length));for(const p of edge.evidence)d.append(proofBox(p));}
+    if(edge.evidence){
+      d.append(el('h3','','Kodankare · '+edge.evidence.length));for(const p of edge.evidence)d.append(proofBox(p));
+      const paths=[...new Set(edge.evidence.map(p=>p.path))].filter(p=>nodes.has(p)||controlFiles.has(p));
+      d.append(el('h3','','Berörda filer och provreferenser'));
+      for(const path of paths)d.append(button(path,()=>openPath(path),controlFiles.has(path)?'Visa kontrollreferenser och provregistreringar':relatedTests([path]).length+' direkta referenser från testområdet · inte beteendetäckning'));
+    }
     if(edge.references){d.append(el('h3','','Filreferenser · '+edge.references.length));pagedList(d,edge.references,e=>{const block=el('div','detail-block');block.append(button(e.source+' → '+e.target,()=>openFile(e.source),e.mode+' · rad '+e.line),proofBox(proofFor(e.source,e.line)));return block;},10);}
     if(edge.line){d.append(proofBox(proofFor(edge.source,edge.line)),button('Öppna konsumenten',()=>openFile(edge.source)),button('Öppna beroendet',()=>openFile(edge.target)));}
   }
@@ -209,6 +277,16 @@
   function renderCoverage(){
     const c=$('#coverage');c.replaceChildren();
     c.append(note('Denna vy mäter referensinventeringen. Den mäter inte hur stor andel beteenden som testats, gått igenom CI eller accepterats i produkten.'));
+    c.append(el('h2','','Regler, hookar och CI'),el('p','',data.controls.limits));
+    const controls=el('div','coverage-grid');c.append(controls);
+    for(const category of [...new Set(data.controls.files.map(f=>f.category))]){
+      const files=data.controls.files.filter(f=>f.category===category),card=el('article','coverage-card');card.append(el('h3','',category+' · '+files.length));
+      pagedList(card,files,f=>button(f.id,()=>openControl(f.id),f.meaning||'Visa referenser och radbevis'),5);controls.append(card);
+    }
+    c.append(el('h3','','Provregister · '+new Set(data.controls.commands.map(c=>c.path)).size+' matchande filer'),el('p','','Kända registreringar i .githooks/pre-commit-full kan öppnas med radbevis och markerbara kommandon. Okända kommandon och dynamisk upptäckt kompletteras inte med gissningar.'));
+    const registry=el('details');registry.append(el('summary','','Bläddra bland registrerade prov'));c.append(registry);
+    pagedList(registry,[...new Set(data.controls.commands.map(c=>c.path))],p=>button(p,()=>openPath(p)),12);
+    c.append(el('h2','','Referenser per ansvar'));
     const grid=el('div','coverage-grid');c.append(grid);
     for(const contract of data.contracts){
       const files=data.nodes.filter(n=>!n.test&&contract.files.some(p=>n.id===p||n.id.startsWith(p+'/')));
@@ -308,11 +386,11 @@
     const q=value.trim().toLocaleLowerCase('sv'),box=$('#search-results');box.replaceChildren();box.hidden=!q;if(!q)return;
     const contracts=data.contracts.filter(c=>c.responsibility.toLocaleLowerCase('sv').includes(q));
     for(const c of contracts)box.append(button(c.name,()=>openContract(c),'Ansvarsområde'));
-    const found=[...data.nodes,...data.otherFiles].filter(n=>n.id.toLowerCase().includes(q));
+    const found=[...new Map([...data.nodes,...data.otherFiles,...data.controls.files].map(n=>[n.id,n])).values()].filter(n=>n.id.toLowerCase().includes(q));
     box.append(el('div','empty',found.length+' filer matchar · visar högst 60'));
-    for(const n of found.slice(0,60))box.append(button(n.id,()=>{if(nodes.has(n.id))openFile(n.id);else openUnparsed(n);box.hidden=true;},n.status?'Samband ej analyserade':n.test?testLabel(n.id):'Kodfil'));
+    for(const n of found.slice(0,60))box.append(button(n.id,()=>{openPath(n.id);box.hidden=true;},n.category|| (n.status?'Samband ej analyserade':n.test?testLabel(n.id):'Kodfil')));
   }
-  function openUnparsed(file){const d=showDetail(file.id,'INVENTERAD SÖKVÄG / '+file.extension,'Denna filtyp är med i filinventeringen. Importer, anrop och testkopplingar har inte analyserats.');d.append(badge('Samband ej analyserade','warn'),note('Frånvaro av kanter säger ingenting om användning eller provtäckning.','warn'));const a=el('a','','Öppna lokal fil');a.href=data.root+'/'+file.id.split('/').map(encodeURIComponent).join('/');a.target='_blank';a.rel='noopener';d.append(a);}
+  function openUnparsed(file){const d=showDetail(file.id,'INVENTERAD SÖKVÄG / '+file.extension,'Importer och anrop i denna filtyp har inte analyserats. Eventuella kontrollreferenser och uttryckliga provregistreringar visas separat.');d.append(badge('Kodsemantik ej analyserad','warn'),note('Frånvaro av kanter säger ingenting om användning eller provtäckning.','warn'));const a=el('a','','Öppna lokal fil');a.href=data.root+'/'+file.id.split('/').map(encodeURIComponent).join('/');a.target='_blank';a.rel='noopener';d.append(a);appendCommands(d,file.id);appendControlReferences(d,file.id);}
   for(const [number,label,warn] of [[data.stats.scanned,'inventerade JS/TS-filer'],[data.stats.edges,'statiska referenser'],[data.stats.semantic,'handgranskade samband'],[data.stats.unknown,'olösta referenser',true]]){const m=el('div','metric'+(warn?' warn':''));m.append(el('strong','',number.toLocaleString('sv')),el('span','',label));$('#metrics').append(m);}
   $('#status').textContent=(data.issues.length?data.issues.length+' kodankare behöver översyn · ':'')+data.generated+' · '+data.stats.tracked+' spårade filer · '+data.stats.excluded+' undantagna · '+data.stats.dirty+' ändrade kodfiler';
   new ResizeObserver(()=>fit()).observe($('#canvas-wrap'));

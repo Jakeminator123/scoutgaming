@@ -218,6 +218,70 @@ class GraphTests(Fixture):
     def build(self):
         return graph.build_graph(self.root, self.command("rev-parse", "HEAD"), self.root / "tools/system-map/relations.json")
 
+    def test_control_references_preserve_evidence_and_private_boundaries(self):
+        self.add({"AGENTS.md": "See `tools/ci-changes.mjs` and `.githooks/pre-commit-full`.\n",
+                  ".github/workflows/ci.yml": "run: node tools/ci-changes.mjs\n# node tools/hidden.mjs\n",
+                  ".githooks/pre-commit-full": "# registry\n",
+                  ".cursor/rules/repo.mdc": "Read `AGENTS.md`.\n",
+                  ".ignore": "tools/hidden.mjs\n",
+                  ".cursorignore": ".env*\n!.env.example\n/private/\n",
+                  ".codex/config.toml": 'secret = "PRIVATE_CODEX_BYTES"\n',
+                  ".claude/settings.json": '{"secret":"PRIVATE_CLAUDE_BYTES"}',
+                  "tools/ci-changes.mjs": "export const run = 1;\n",
+                  "tools/hidden.mjs": "IGNORED_PRIVATE_BYTES\n"})
+        data = self.build()
+        controls = data["controls"]
+        self.assertIn("AGENTS.md", {f["id"] for f in controls["files"]})
+        self.assertIn((".github/workflows/ci.yml", "tools/ci-changes.mjs", 1),
+                      {(e["source"], e["target"], e["line"]) for e in controls["edges"]})
+        self.assertIn(("AGENTS.md", ".githooks/pre-commit-full"), {(e["source"], e["target"]) for e in controls["edges"]})
+        rules = next(f for f in controls["files"] if f["id"] == ".cursorignore")
+        self.assertEqual([p["pattern"] for p in rules["patterns"]], [".env*", "!.env.example", "/private/"])
+        self.assertTrue(rules["proof"]["dirty"])
+        self.assertIsNone(rules["proof"]["url"])
+        encoded = json.dumps(data)
+        for marker in ["PRIVATE_CODEX_BYTES", "PRIVATE_CLAUDE_BYTES", "IGNORED_PRIVATE_BYTES", ".codex/config.toml"]:
+            self.assertNotIn(marker, encoded)
+        self.assertFalse(any(e["target"] == "tools/hidden.mjs" for e in controls["edges"]))
+
+    def test_registry_commands_require_known_runner_and_exact_safe_matching(self):
+        runner = 'run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"\n'
+        self.add({".githooks/pre-commit-full": runner +
+                  'run_node_tests studio ui "apps/ui/test/**/*.test.mjs"\n'
+                  'run_check access standalone 180 node test/standalone.mjs\n'
+                  'run_check contracts map 90 python -m unittest discover -s test/system-map -v\n'
+                  'run_check contracts tool 60 node tools/check.mjs\n'
+                  'run_node_tests bad unsafe "test/$(oops).mjs"\n',
+                  "apps/ui/test/a.test.mjs": "export {};\n", "apps/ui/test/nested/b.test.mjs": "export {};\n",
+                  "test/standalone.mjs": "export {};\n", "test/unregistered.mjs": "export {};\n",
+                  "test/system-map/test_fixture.py": "pass\n", "test/system-map/helper.py": "pass\n",
+                  "tools/check.mjs": "export {};\n"})
+        commands = self.build()["controls"]["commands"]
+        self.assertEqual({c["path"] for c in commands}, {"apps/ui/test/a.test.mjs", "apps/ui/test/nested/b.test.mjs", "test/standalone.mjs", "test/system-map/test_fixture.py"})
+        direct = next(c for c in commands if c["path"] == "apps/ui/test/a.test.mjs")
+        self.assertEqual(direct["command"], 'node --test --test-concurrency=2 --test-reporter=spec "apps/ui/test/a.test.mjs"')
+        self.assertEqual(direct["proof"]["line"], 2)
+        self.assertEqual(direct["runnerProof"]["line"], 1)
+        self.assertEqual(direct["suiteCommand"], "sh .githooks/pre-commit-full studio")
+        self.assertEqual(next(c for c in commands if c["path"] == "test/standalone.mjs")["command"], 'node "test/standalone.mjs"')
+        (self.root / ".githooks/pre-commit-full").write_text('run_node_tests studio ui "apps/ui/test/**/*.test.mjs"\n', encoding="utf-8")
+        self.assertEqual(self.build()["controls"]["commands"], [])
+
+    def test_semantic_control_anchors_use_actual_ci_and_hook_lines(self):
+        self.add({".github/workflows/ci.yml": "run: sh .githooks/pre-commit-full contracts\n",
+                  ".githooks/pre-commit-full": "run_check contracts map 60 python tools/system-map.py\n"})
+        relations = self.relation_fixture()
+        relations["graphs"][0]["edges"][0]["evidence"] = [
+            {"path": ".github/workflows/ci.yml", "match": "run: sh .githooks/pre-commit-full contracts"},
+            {"path": ".githooks/pre-commit-full", "match": "run_check contracts map 60 python tools/system-map.py"}]
+        self.write_relations(relations)
+        self.assertEqual(self.invoke("--strict-anchors")[0], 0)
+        edge = self.artifact_data()["graphs"][0]["edges"][0]
+        self.assertEqual(edge["status"], "anchored")
+        self.assertEqual([p["line"] for p in edge["evidence"]], [1, 1])
+        (self.root / ".github/workflows/ci.yml").write_text("changed\n", encoding="utf-8")
+        self.assertEqual(self.invoke("--strict-anchors")[0], 1)
+
     def test_parser_ignores_comments_strings_regex_and_nested_templates(self):
         source = r'''
 // import './not-comment.mjs';

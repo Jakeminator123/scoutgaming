@@ -962,6 +962,25 @@ code {
 }
 /* The initial canvas gets the full working area;
 details open on selection. */
+.command-box {
+  margin:12px 0;
+}
+.command-text {
+  display:block;
+  width:100%;
+  margin:8px 0;
+  padding:10px;
+  resize:vertical;
+  border:1px solid #465474;
+  border-radius:6px;
+  background:#111827;
+  color:#dbe7ff;
+  font:11px/1.6 ui-monospace,monospace;
+  overflow-wrap:anywhere;
+}
+.proof code {
+  overflow-wrap:anywhere;
+}
 .workspace {
   grid-template-columns:238px minmax(380px,1fr)
 }
