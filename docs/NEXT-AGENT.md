@@ -1,17 +1,9 @@
 # Nästa agent
 
-Aktuellt arbetsläge 2 november 2026, granskat mot `91b4e1888ea28c008b4ff25f827474a78f4f79db`.
+Aktuellt restarbete, uppdaterat 2 november 2026.
 Kanonisk checkout: `C:/Users/jakob/dev/scoutgaming`. Börja i [START-HERE](../START-HERE.md)
 och [AGENTS](../AGENTS.md); kontrollera färsk branch, HEAD och uppdragsägare.
 En daterad uppgift här är inte aktuell molnacceptans.
-
-## Pågående arbete
-
-Testerna grupperas efter funktion och dokumentationen kortas i en gemensam
-integration. Samordnaren äger PR, granskning och CI. Aktuell privat överlämning
-och flyttmanifest finns i `.cache/test-folders-completion-1102/`; respektive
-worktrees uppdrag registreras enligt [IDE-guiden](../START-HERE.md#byta-ide-eller-återuppta-arbete).
-Ta bort detta avsnitt när integrationen avslutas; skriv ingen leveranslogg här.
 
 ## Verkligt restarbete
 
