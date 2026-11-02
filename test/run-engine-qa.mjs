@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, posix } from 'node:path';
 import { assertCompleteRun, engineSuiteFiles, runEngineQa, tapSummary } from '../tools/run-engine-qa.mjs';
 import { sqliteImports } from '../tools/check-no-sqlite.mjs';
 import { ENGINE_QA_SKIP } from './fixtures/engine-qa.mjs';
@@ -11,11 +14,29 @@ test('the engine suite is the hook registry and every file runs only through the
   assert.equal(new Set(files).size, files.length);
   for (const file of files) {
     const source = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/fixtures\/engine-qa\.mjs'/, file);
+    const fixtureImport = /from ['"]([^'"]*\/fixtures\/engine-qa\.mjs)['"]/.exec(source);
+    assert.ok(fixtureImport, file);
+    assert.equal(posix.normalize(posix.join(posix.dirname(file), fixtureImport[1])), 'test/fixtures/engine-qa.mjs', file);
     assert.match(source, /skip: ?ENGINE_QA_SKIP/, file);
     assert.doesNotMatch(source, /CROUPIER_DATA_DIR|craig\.db|croupier\.db/, file);
     assert.deepEqual(sqliteImports(source, file), [], file);
   }
+});
+
+test('the engine registry accepts nested tests and rejects traversal, options and helpers', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'engine-suite-'));
+  const hook = join(directory, 'registry');
+  try {
+    const nested = (await engineSuiteFiles()).find(file => file.split('/').length > 2);
+    assert.ok(nested);
+    await writeFile(hook, `run_node_tests engine nested ${nested}\n`);
+    assert.deepEqual(await engineSuiteFiles(hook), [nested]);
+    for (const file of ['./blackjack/table-http.mjs', 'test/../test/blackjack/table-http.mjs', '/test/blackjack/table-http.mjs', '--help',
+      'test/fixtures/engine-qa.mjs', 'test/missing/suite.mjs']) {
+      await writeFile(hook, `run_node_tests engine invalid ${file}\n`);
+      await assert.rejects(engineSuiteFiles(hook), /engine_qa_suite_invalid/, file);
+    }
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
 test('a harness run counts only complete, unskipped TAP results', () => {

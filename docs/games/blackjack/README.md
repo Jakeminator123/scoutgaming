@@ -56,11 +56,11 @@ Nästa avveckling kräver att provspel och partnerflöden har ersättningar, att
 
 | Prov | Vad det faktiskt verifierar |
 | --- | --- |
-| [shoe-game](../../../test/shoe-game.mjs) | Nativekommandon, JSON-återläsning, handregelkompatibilitet, oförändrad svarform och skydd mot dubbel utbetalning. Registrerat i gameplay-sviten. |
-| [split-rules](../../../test/split-rules.mjs) | Fasta splitfall och seedad simulering genom kompatibilitetsmodulen och därmed samma handregler. Körs uttryckligen av `Game rules split check` i CI. |
-| [fuzz-blackjack](../../../test/fuzz-blackjack.mjs) | Den kvarvarande nativekommandovägen (`shoe-game.mjs`), inte V3:s funding-, outbox- eller låskontrakt. Inte ett statistiskt certifieringstest. |
-| [blackjack-core](../../../test/blackjack-core.mjs), [blackjack-sidebets](../../../test/blackjack-sidebets.mjs) | V3:s effekter, finansiering, dolda kort, skobevis och utbetalningstabell. Regressionsdata och beteendeorakel hör till `test/fixtures/blackjack/`; de är testunderlag, inte ytterligare en produktväg. |
-| [blackjack-table](../../../test/blackjack-table.mjs), [postgres-shared-table](../../../test/postgres-shared-table.mjs) | Delade bord, samtidighet och lagringskontrakt; riktig PostgreSQL körs via den isolerade CI-harnessen. |
-| [table-http](../../../test/table-http.mjs), [postgres-native-table](../../../test/postgres-native-table.mjs), [preview-table](../../../test/preview-table.mjs) | Fortfarande använda native- och provspelsadaptrar; behåll tills konsumenterna avvecklats. |
+| [shoe-game](../../../test/blackjack/shoe-game.mjs) | Nativekommandon, JSON-återläsning, handregelkompatibilitet, oförändrad svarform och skydd mot dubbel utbetalning. Registrerat i gameplay-sviten. |
+| [split-rules](../../../test/blackjack/split-rules.mjs) | Fasta splitfall och seedad simulering genom kompatibilitetsmodulen och därmed samma handregler. Körs uttryckligen av `Game rules split check` i CI. |
+| [fuzz-blackjack](../../../test/blackjack/fuzz-blackjack.mjs) | Den kvarvarande nativekommandovägen (`shoe-game.mjs`), inte V3:s funding-, outbox- eller låskontrakt. Inte ett statistiskt certifieringstest. |
+| [blackjack-core](../../../test/blackjack/blackjack-core.mjs), [blackjack-sidebets](../../../test/blackjack/blackjack-sidebets.mjs) | V3:s effekter, finansiering, dolda kort, skobevis och utbetalningstabell. Regressionsdata och beteendeorakel hör till `test/fixtures/blackjack/`; de är testunderlag, inte ytterligare en produktväg. |
+| [blackjack-table](../../../test/blackjack/blackjack-table.mjs), [postgres-shared-table](../../../test/blackjack/postgres-shared-table.mjs) | Delade bord, samtidighet och lagringskontrakt; riktig PostgreSQL körs via den isolerade CI-harnessen. |
+| [table-http](../../../test/blackjack/table-http.mjs), [postgres-native-table](../../../test/postgres-native-table.mjs), [preview-table](../../../test/preview-table.mjs) | Fortfarande använda native- och provspelsadaptrar; behåll tills konsumenterna avvecklats. |
 
 Databas- och webbläsaracceptans körs i CI eller isolerad preview, aldrig mot riktiga spelare. Att en testfil heter `native`, `local`, `Astrid` eller `lissabon` räcker inte för att radera den: följ aktiv konsument och beteende. Inga real-money- eller certifieringspåståenden följer av denna guide. Kortmått följer vald filmprofil; ändra dem inte globalt.
