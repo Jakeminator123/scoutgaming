@@ -44,8 +44,8 @@ Detta är kodrestarbete, inte en ny databas- eller driftkontroll.
 5. Leverera fungerande skapvägar före återstående migrering och kravhöjning: tolerant kod → godkänd migrering → obligatoriskt krav. `game-015` var ett planerat namn, ingen levererad migrering i denna bas. Ta bort toleranta grenar först efter readiness.
 6. Prova isolerat en bunden partners hand med atomiska plånboksrader och nativebolagsisolering. Fel bolag, okänt rum, förfalskad claim, rotation och återkallelse ska nekas utan sessionsläcka, även vid återanslutning/samtidiga kommandon. Återpröva den gamla #538-rapportens skillnad mellan främmande och okänt rum mot dagens kod.
 
-Befintliga relevanta prov: `test/api-key-operator-migration.mjs`,
-`test/studio-admin-accounts.mjs`, `test/partner-launch-route.mjs`,
+Befintliga relevanta prov: `test/storage/api-key-operator-migration.mjs`,
+`test/access/studio-admin-accounts.mjs`, `test/access/partner-launch-route.mjs`,
 `test/rooms/shared-room-access.mjs` och `test/rooms/shared-command-auth.mjs`.
 
 ## Data och medieavveckling

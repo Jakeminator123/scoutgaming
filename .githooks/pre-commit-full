@@ -31,15 +31,15 @@ run_node_tests() {
 run_check studio frontend-typecheck 180 node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.json --noEmit --incremental false
 # Discover Studio tests once, without a second hand-maintained registry.
 run_node_tests studio studio-tests "apps/studio/test/**/*.test.mjs" "apps/studio/components/**/*.test.mjs"
-run_node_tests studio admin-theme test/admin-tailwind.mjs test/ui-tokens.mjs
-run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
+run_node_tests studio admin-theme test/presentation/theme/admin-tailwind.mjs test/presentation/theme/ui-tokens.mjs
+run_node_tests admin dealer-clip-guide test/media/dealer-clip-guide.mjs
 run_node_tests admin clip-guide apps/studio/client/admin/lib/clip-guide.test.mjs
 run_node_tests admin dealer-filmed-profile-import apps/studio/client/admin/lib/dealer-filmed-profile.test.mjs
 run_node_tests admin saved-scene-preview apps/studio/client/admin/lib/scenes/saved-scene-preview.test.mjs apps/studio/client/admin/lib/scenes/scene-preview-media.test.mjs apps/studio/client/admin/lib/scenes/scene-preview.test.mjs apps/studio/client/admin/lib/ai-proposal-preview.test.mjs
 run_node_tests admin moving-drift-ui apps/studio/client/admin/lib/moving-drift-ui.test.mjs
-run_node_tests admin catalog apps/studio/client/lobby/lib/catalog.test.mjs apps/studio/client/lobby/components/lobby-provider.test.mjs apps/studio/client/admin/lib/dealer-artwork.test.mjs apps/studio/client/admin/lib/dealer-playback.test.mjs apps/studio/client/admin/lib/connected-studio.test.mjs apps/studio/client/admin/lib/studio-composition-panel.test.mjs apps/studio/client/admin/lib/studio-layout.test.mjs apps/studio/client/admin/lib/roulette/roulette-clip-map.test.mjs apps/studio/client/admin/lib/studio-policy.test.mjs apps/studio/client/admin/lib/studio-lifecycle.test.mjs apps/studio/client/admin/lib/studio-speech.test.mjs apps/studio/client/admin/lib/dealer-voice-profile.test.mjs apps/studio/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
+run_node_tests admin catalog apps/studio/client/lobby/lib/catalog.test.mjs apps/studio/client/lobby/components/lobby-provider.test.mjs apps/studio/client/admin/lib/dealer-artwork.test.mjs apps/studio/client/admin/lib/dealer-playback.test.mjs apps/studio/client/admin/lib/connected-studio.test.mjs apps/studio/client/admin/lib/studio-composition-panel.test.mjs apps/studio/client/admin/lib/studio-layout.test.mjs apps/studio/client/admin/lib/roulette/roulette-clip-map.test.mjs apps/studio/client/admin/lib/studio-policy.test.mjs apps/studio/client/admin/lib/studio-lifecycle.test.mjs apps/studio/client/admin/lib/studio-speech.test.mjs apps/studio/client/admin/lib/dealer-voice-profile.test.mjs apps/studio/lib/studio-speech-build-service.test.mjs test/operators/public-lobby.mjs
 run_node_tests admin dealer-import apps/studio/client/admin/lib/dealer-import.test.mjs apps/studio/client/admin/lib/clip-intake.test.mjs apps/studio/client/admin/lib/clip-intake-panel.test.mjs
-run_node_tests admin room-environment test/room-environment.mjs
+run_node_tests admin room-environment test/rooms/room-environment.mjs
 run_node_tests admin economy-journal apps/studio/client/admin/lib/economy-journal.test.mjs
 run_node_tests admin roulette-start-editor apps/studio/client/admin/lib/roulette/roulette-start-editor.test.mjs apps/studio/client/admin/lib/roulette/roulette-media-review.test.mjs apps/studio/client/admin/lib/roulette/roulette-idle-editor.test.mjs apps/studio/client/admin/lib/registered-material-library.test.mjs
 run_node_tests admin admin-routing apps/studio/client/runtime/admin-routing.test.mjs apps/studio/client/runtime/navigation.test.mjs
@@ -48,78 +48,78 @@ run_node_tests admin dealer-directory apps/studio/client/admin/lib/dealer-direct
 run_node_tests admin room-release apps/studio/client/admin/lib/room-release.test.mjs apps/studio/client/admin/lib/room-settings-warning.test.mjs apps/studio/client/admin/lib/media-timing.test.mjs apps/studio/client/admin/lib/room-quick-create.test.mjs apps/studio/client/admin/lib/blocker-view.test.mjs
 run_node_tests admin environment apps/studio/client/admin/lib/scenes/scene-cover.test.mjs apps/studio/client/admin/lib/scenes/scene-export.test.mjs apps/studio/client/admin/lib/scenes/scenes-page.test.mjs
 run_check contracts documentation-links 60 node tools/check-documentation.mjs
-run_node_tests contracts documentation-link-tests test/check-documentation.mjs
-run_node_tests contracts portable-workflows test/portable-workflows.mjs
+run_node_tests contracts documentation-link-tests test/delivery/check-documentation.mjs
+run_node_tests contracts portable-workflows test/delivery/portable-workflows.mjs
 run_check contracts system-map-tests 90 python -m unittest discover -s test/system-map -v
 run_check contracts system-map-anchors 60 python tools/system-map.py
-run_node_tests contracts shared-schema-prepare test/prepare-shared-schema.mjs test/prepare-lissabon-retirement.mjs
+run_node_tests contracts shared-schema-prepare test/storage/prepare-shared-schema.mjs test/storage/prepare-lissabon-retirement.mjs
 run_node_tests contracts shared-room-qa-entry test/rooms/shared-room-qa-context.mjs
-run_node_tests contracts merge-pr test/merge-pr.mjs
+run_node_tests contracts merge-pr test/delivery/merge-pr.mjs
 run_check contracts no-sqlite 60 node tools/check-no-sqlite.mjs
 run_check contracts repo-limits 60 node tools/check-repo-limits.mjs
-run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-no-sqlite.mjs test/check-repo-limits.mjs test/run-engine-qa.mjs test/check-orphan-tests.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
-run_node_tests contracts material-catalog test/material-catalog.mjs test/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
-run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
-run_node_tests contracts retention-archive test/retention-archive.mjs
-run_node_tests contracts partner-access-policy test/partner-access-policy.mjs test/operator-store.mjs test/admin-publication-chain.mjs
-run_node_tests contracts operator-appearance-api test/operator-appearance-api.mjs test/operator-appearance-boundary.mjs test/operator-appearance-integration.mjs test/partner-branding-postgres.mjs
-run_node_tests database moving-drift test/moving-drift-controller.mjs test/postgres-moving-drift.mjs test/moving-drift-executor.mjs test/moving-drift-observer.mjs test/moving-drift-diagnostics.mjs
-run_node_tests database studio-repository test/studio-repository.mjs test/package-room-authority.mjs test/studio-retained-bank.mjs test/studio-migrations.mjs test/check-migration-readiness.mjs test/postgres-speech-journal.mjs test/studio-postgres-integration.mjs test/partner-team-postgres.mjs test/studio-isolated-partner-qa.mjs
-run_node_tests database studio-game-policy test/studio-game-policy.mjs test/studio-media-runtime.mjs test/studio-game-authority.mjs test/studio-game-commands.mjs test/studio-admin-accounts.mjs test/studio-native-auth-actions.mjs test/studio-cutover-integration.mjs
-run_node_tests database speech-journal-runtime test/speech-journal-runtime.mjs test/speech-blob-artifacts.mjs test/studio-partner-epoch.mjs test/studio-lab-session.mjs
-run_node_tests database pglite-pool test/pglite-pool.mjs test/db-snapshot.mjs test/api-key-operator-migration.mjs test/player-operator-migration.mjs test/operator-materials-postgres.mjs test/republish-rooms.mjs
-run_node_tests database migration-ledgers test/migration-ledgers.mjs
-run_node_tests presentation registered-cloud-idle test/registered-cloud-idle.mjs test/registered-cloud-playback.mjs
-run_node_tests presentation managed-media-contract test/managed-media-contract.mjs test/frozen-dealer-idle.mjs test/native-room-game-material.mjs test/frozen-presentation-capture.mjs test/frozen-dealer-events.mjs test/frozen-dealer-presentation.mjs test/private-media-revalidation.mjs test/presentation-capability-contract.mjs test/presentation-capabilities.mjs test/presentation-package-compression.mjs test/studio-filmed-profile.mjs
+run_node_tests contracts precommit-checks test/delivery/precommit-checks.mjs test/delivery/regression-group.mjs test/delivery/check-no-sqlite.mjs test/delivery/check-repo-limits.mjs test/delivery/run-engine-qa.mjs test/delivery/check-orphan-tests.mjs test/delivery/security-status.mjs test/delivery/gitguardian-read.mjs test/delivery/test-credential-fixtures.mjs
+run_node_tests contracts material-catalog test/media/material-catalog.mjs test/presentation/runtime/presentation-material-game.mjs apps/studio/client/admin/lib/studio-context.test.mjs
+run_node_tests contracts browser-runtime-bindings test/delivery/browser-runtime-bindings.mjs
+run_node_tests contracts retention-archive test/delivery/retention-archive.mjs
+run_node_tests contracts partner-access-policy test/access/partner-access-policy.mjs test/operators/operator-store.mjs test/operators/admin-publication-chain.mjs
+run_node_tests contracts operator-appearance-api test/operators/operator-appearance-api.mjs test/operators/operator-appearance-boundary.mjs test/operators/operator-appearance-integration.mjs test/operators/partner-branding-postgres.mjs
+run_node_tests database moving-drift test/speech/moving/moving-drift-controller.mjs test/speech/moving/postgres-moving-drift.mjs test/speech/moving/moving-drift-executor.mjs test/speech/moving/moving-drift-observer.mjs test/speech/moving/moving-drift-diagnostics.mjs
+run_node_tests database studio-repository test/storage/studio-repository.mjs test/operators/package-room-authority.mjs test/media/studio-retained-bank.mjs test/storage/studio-migrations.mjs test/storage/check-migration-readiness.mjs test/speech/generated/postgres-speech-journal.mjs test/storage/studio-postgres-integration.mjs test/operators/partner-team-postgres.mjs test/delivery/studio-isolated-partner-qa.mjs
+run_node_tests database studio-game-policy test/rooms/studio-game-policy.mjs test/media/studio-media-runtime.mjs test/rooms/studio-game-authority.mjs test/rooms/studio-game-commands.mjs test/access/studio-admin-accounts.mjs test/access/studio-native-auth-actions.mjs test/rooms/studio-cutover-integration.mjs
+run_node_tests database speech-journal-runtime test/speech/generated/speech-journal-runtime.mjs test/speech/generated/speech-blob-artifacts.mjs test/access/studio-partner-epoch.mjs test/rooms/studio-lab-session.mjs
+run_node_tests database pglite-pool test/storage/pglite-pool.mjs test/storage/db-snapshot.mjs test/storage/api-key-operator-migration.mjs test/storage/player-operator-migration.mjs test/operators/operator-materials-postgres.mjs test/operators/republish-rooms.mjs
+run_node_tests database migration-ledgers test/storage/migration-ledgers.mjs
+run_node_tests presentation registered-cloud-idle test/presentation/runtime/registered-cloud-idle.mjs test/presentation/runtime/registered-cloud-playback.mjs
+run_node_tests presentation managed-media-contract test/media/managed-media-contract.mjs test/presentation/filmed/frozen-dealer-idle.mjs test/presentation/runtime/native-room-game-material.mjs test/presentation/filmed/frozen-presentation-capture.mjs test/presentation/filmed/frozen-dealer-events.mjs test/presentation/filmed/frozen-dealer-presentation.mjs test/media/private-media-revalidation.mjs test/presentation/runtime/presentation-capability-contract.mjs test/presentation/runtime/presentation-capabilities.mjs test/presentation/runtime/presentation-package-compression.mjs test/presentation/filmed/studio-filmed-profile.mjs
 run_node_tests presentation shared-room-channel test/rooms/shared-room-channel.mjs test/rooms/shared-room-upgrade.mjs test/rooms/shared-room-access.mjs test/rooms/shared-room-service.mjs test/rooms/shared-room-origins.mjs test/rooms/shared-room-client.mjs test/rooms/shared-room-command-contract.mjs test/rooms/shared-room-command.mjs test/rooms/shared-room-chat.mjs test/rooms/shared-room-http.mjs test/rooms/shared-room-command-service.mjs test/rooms/shared-room-entry.mjs test/rooms/shared-room-command-client.mjs test/rooms/shared-room-app.mjs test/rooms/shared-room-layout.mjs test/rooms/shared-room-shortcuts.mjs test/rooms/shared-room-browser.mjs test/rooms/shared-room-layout-browser.mjs test/rooms/shared-room-shortcuts-browser.mjs test/rooms/shared-room-presentation-access.mjs test/rooms/shared-room-presentation-api.mjs test/rooms/shared-room-filmed-steps.mjs test/rooms/shared-command-auth.mjs test/rooms/game-upgrade-dispatcher.mjs test/rooms/shared-room-presentation-speech.mjs
-run_node_tests presentation moving-speech-plan test/moving-speech-plan.mjs test/moving-speech-pcm.mjs test/moving-speech-frame-layer.mjs test/moving-speech-transport.mjs test/moving-speech-session.mjs test/moving-speech-budget.mjs test/moving-speech-player.mjs test/moving-speech-runtime.mjs test/moving-speech-bank-artifacts.mjs test/speech-startup.mjs test/moving-speech-runpod.mjs test/moving-speech-capacity.mjs test/moving-speech-platform-callback.mjs test/moving-speech-room-relay.mjs
-run_node_tests presentation moving-speech-bank test/moving-speech-bank.mjs test/moving-speech-sources.mjs test/build-moving-speech-bank.mjs
-run_node_tests presentation moving-speech-deal test/moving-speech-deal-plan.mjs test/moving-speech-idle-plan.mjs test/moving-speech-source-frames.mjs test/moving-speech-deal-integration.mjs
-run_node_tests presentation presentation-layers test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/layer-media-inspection.mjs test/composition-runtime.mjs test/registered-idle.mjs
-run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs test/composition-anchors.mjs test/scene-layout-publication.mjs
-run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs test/preview-table.mjs
-run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-partner.mjs test/partner-key-operator.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
-run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
-run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/partner-metadata.mjs
+run_node_tests presentation moving-speech-plan test/speech/moving/moving-speech-plan.mjs test/speech/moving/moving-speech-pcm.mjs test/speech/moving/moving-speech-frame-layer.mjs test/speech/moving/moving-speech-transport.mjs test/speech/moving/moving-speech-session.mjs test/speech/moving/moving-speech-budget.mjs test/speech/moving/moving-speech-player.mjs test/speech/moving/moving-speech-runtime.mjs test/speech/moving/moving-speech-bank-artifacts.mjs test/speech/generated/speech-startup.mjs test/speech/moving/moving-speech-runpod.mjs test/speech/moving/moving-speech-capacity.mjs test/speech/moving/moving-speech-platform-callback.mjs test/speech/moving/moving-speech-room-relay.mjs
+run_node_tests presentation moving-speech-bank test/speech/moving/moving-speech-bank.mjs test/speech/moving/moving-speech-sources.mjs test/speech/moving/build-moving-speech-bank.mjs
+run_node_tests presentation moving-speech-deal test/speech/moving/moving-speech-deal-plan.mjs test/speech/moving/moving-speech-idle-plan.mjs test/speech/moving/moving-speech-source-frames.mjs test/speech/moving/moving-speech-deal-integration.mjs
+run_node_tests presentation presentation-layers test/presentation/layout/presentation-layers.mjs test/rooms/presentation-rooms.mjs test/media/layer-asset-store.mjs test/media/layer-media-inspection.mjs test/presentation/layout/composition-runtime.mjs test/presentation/runtime/registered-idle.mjs
+run_node_tests presentation card-view test/presentation/layout/card-view.mjs test/presentation/layout/background-playback-policy.mjs test/presentation/layout/background-playback.mjs test/presentation/layout/game-overlay-layout.mjs test/presentation/layout/composition-anchors.mjs test/presentation/layout/scene-layout-publication.mjs
+run_node_tests presentation studio-preview test/presentation/preview/studio-preview.mjs test/presentation/preview/studio-preview-client.mjs test/presentation/preview/preview-table.mjs
+run_node_tests access game-lanes test/access/game-lanes.mjs test/access/game-entry-contract.mjs test/access/game-entry-partner.mjs test/access/partner-key-operator.mjs test/access/game-entry-operator.mjs test/rooms/v3-room-dealer-choices.mjs test/access/player-choices.mjs test/operators/operator-package-reader.mjs test/operators/public-operators.mjs test/operators/public-operator-rooms.mjs test/operators/public-operator-preview.mjs test/access/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
+run_node_tests access moving-speech-cloud-config test/delivery/cloud-config.mjs
+run_node_tests access speech-reply-library test/speech/chat/speech-reply-library.mjs test/speech/chat/speech-reply-repository.mjs test/operators/partner-metadata.mjs
 # Complete package sets, once per full run (including CI).
 run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
-run_node_tests access postgres-persistence test/postgres-persistence.mjs test/postgres-native-table.mjs
-run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs test/platform-room-socket.mjs test/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
-run_node_tests access media-layout test/media-layout.mjs test/media-blob-export.mjs
+run_node_tests access postgres-persistence test/storage/postgres-persistence.mjs test/storage/postgres-native-table.mjs
+run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/speech/moving/platform-moving-speech.mjs test/speech/generated/platform-native-websocket.mjs test/rooms/platform-room-socket.mjs test/rooms/platform-room-routing.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
+run_node_tests access media-layout test/media/media-layout.mjs test/media/media-blob-export.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
-run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
+run_node_tests access check-environment-variables test/delivery/check-environment-variables.mjs test/delivery/provider-profile.mjs
 run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-catalog.mjs --check
-run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
-run_check access player-auth 180 node test/player-auth.mjs
-run_node_tests access preview-session-cookie test/preview-session-cookie.mjs
-run_node_tests access player-accounts test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs apps/web/test/player-ui-build.mjs
-run_node_tests access runtime test/vercel-presentation-video-origin.mjs
-run_check access craig-login 180 node test/craig-login.mjs
-run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
-run_node_tests speech openclaw-chat-contract test/openclaw-chat-contract.mjs test/chat-decision-player.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
-run_node_tests speech dealer-camera test/dealer-camera.mjs test/dealer-camera-control.mjs test/dealer-camera-audio.mjs test/dealer-wake-word.mjs test/dealer-transcription.mjs test/dealer-chat-visibility.mjs test/microphone-openclaw-integration.mjs
-run_node_tests speech generated-speech-providers test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
-run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/server-shutdown.mjs
-run_node_tests speech player-probe test/player-probe.mjs
-run_node_tests gameplay factory-filmed-profile test/factory-filmed-profile.mjs
-run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/actor-edge-blend.mjs test/table-audio.mjs
-run_node_tests gameplay dealer-reach test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
-run_node_tests gameplay action-placement test/action-placement.mjs
-run_node_tests gameplay generations-api test/generations-api.mjs
-run_node_tests gameplay native-partner-events test/native-partner-events.mjs test/native-observation-publisher.mjs
-run_node_tests gameplay native-observation test/native-observation.mjs test/blackjack/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
+run_node_tests access runtime-media-catalog test/media/runtime-media-catalog.mjs test/media/runtime-media-import.mjs test/media/neon-runtime-catalog.mjs
+run_check access player-auth 180 node test/access/player-auth.mjs
+run_node_tests access preview-session-cookie test/access/preview-session-cookie.mjs
+run_node_tests access player-accounts test/delivery/backup-render-state.mjs test/access/account-credentials.mjs test/access/player-password.mjs test/access/player-signup.mjs test/access/player-history.mjs test/access/player-auth-limiter.mjs apps/web/test/player-ui-build.mjs
+run_node_tests access runtime test/media/vercel-presentation-video-origin.mjs
+run_check access craig-login 180 node test/access/craig-login.mjs
+run_node_tests speech build-index test/speech/playback/build-index.mjs test/speech/playback/speech-playback.mjs
+run_node_tests speech openclaw-chat-contract test/speech/chat/openclaw-chat-contract.mjs test/speech/chat/chat-decision-player.mjs test/speech/chat/chat-presentation-context.mjs test/speech/chat/registered-chat-context.mjs test/speech/playback/speech-package-contract.mjs test/speech/playback/speech-pose-gate.mjs test/speech/chat/chat-response.mjs
+run_node_tests speech dealer-camera test/speech/capture/dealer-camera.mjs test/speech/capture/dealer-camera-control.mjs test/speech/capture/dealer-camera-audio.mjs test/speech/capture/dealer-wake-word.mjs test/speech/capture/dealer-transcription.mjs test/speech/capture/dealer-chat-visibility.mjs test/speech/capture/microphone-openclaw-integration.mjs
+run_node_tests speech generated-speech-providers test/speech/generated/generated-speech-provider.mjs test/speech/generated/generated-speech.mjs test/speech/generated/generated-speech-chat.mjs test/speech/generated/generated-speech-player.mjs test/speech/generated/lab-speech-bridge.mjs test/speech/chat/player-chat-memory.mjs test/speech/chat/registered-chat-memory.mjs
+run_node_tests speech dealer-speech-reference test/speech/generated/dealer-speech-reference.mjs test/speech/generated/dealer-speech-runtime.mjs test/speech/moving/dealer-moving-speech-runtime.mjs test/speech/generated/generated-speech-session.mjs test/speech/generated/generated-speech-stream.mjs test/speech/generated/generated-speech-stream-player.mjs test/delivery/server-shutdown.mjs
+run_node_tests speech player-probe test/speech/chat/player-probe.mjs
+run_node_tests gameplay factory-filmed-profile test/presentation/filmed/factory-filmed-profile.mjs
+run_node_tests gameplay performance-contact test/presentation/runtime/performance-contact.mjs test/presentation/runtime/performance-player-source.mjs test/presentation/layout/actor-edge-blend.mjs test/presentation/runtime/table-audio.mjs
+run_node_tests gameplay dealer-reach test/presentation/layout/dealer-reach.mjs test/presentation/runtime/scene-join.mjs test/presentation/runtime/ready-motion.mjs
+run_node_tests gameplay action-placement test/presentation/layout/action-placement.mjs
+run_node_tests gameplay generations-api test/media/generations-api.mjs
+run_node_tests gameplay native-partner-events test/presentation/runtime/native-partner-events.mjs test/presentation/runtime/native-observation-publisher.mjs
+run_node_tests gameplay native-observation test/presentation/runtime/native-observation.mjs test/blackjack/shoe-game.mjs test/access/partner-launch-route.mjs test/presentation/runtime/dealer-version-switcher.mjs
 run_node_tests gameplay roulette test/roulette/roulette.mjs test/roulette/roulette-room.mjs test/roulette/roulette-room-http.mjs test/roulette/roulette-wheel.mjs test/roulette/roulette-start-contract.mjs test/roulette/roulette-publication.mjs test/roulette/roulette-postgres.mjs
 run_node_tests gameplay shared-blackjack test/blackjack/blackjack-core.mjs test/blackjack/blackjack-table.mjs test/blackjack/shared-table-command-authority.mjs test/blackjack/shared-table-runtime.mjs test/blackjack/shared-postgres-transaction.mjs test/blackjack/shared-table-client-snapshot.mjs test/blackjack/blackjack-presentation.mjs test/rooms/room-idle.mjs test/blackjack/table-player-actions.mjs test/blackjack/table-limit-profiles.mjs test/blackjack/table-state-recovery.mjs test/rooms/shared-room-overlap.mjs test/blackjack/shared-table-full.mjs test/blackjack/shared-table-settled.mjs test/rooms/shared-room-waiting.mjs
 run_node_tests gameplay fuzz-blackjack test/blackjack/fuzz-blackjack.mjs test/blackjack/blackjack-sidebets.mjs
-run_node_tests gameplay generation-media test/generation-media.mjs test/qa-process-guard.mjs
-run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
-run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/paow-filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-coverage.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
-run_node_tests gameplay local-presentation test/local-presentation.mjs test/idle-rotation.mjs test/local-card-overlay.mjs test/blackjack/blackjack-feedback.mjs test/verified-video-buffer.mjs test/abort-signals.mjs test/presentation-select-dealers.mjs
-run_node_tests gameplay player-results test/player-results.mjs
+run_node_tests gameplay generation-media test/media/generation-media.mjs test/delivery/qa-process-guard.mjs
+run_node_tests gameplay registered-idle-rules test/presentation/runtime/registered-idle-rules.mjs
+run_node_tests gameplay filmed-action-ownership test/presentation/filmed/filmed-action-ownership.mjs test/presentation/filmed/filmed-profile.mjs test/presentation/filmed/paow-filmed-profile.mjs test/presentation/filmed/filmed-deal-sequence.mjs test/presentation/filmed/filmed-deal-coverage.mjs test/presentation/filmed/filmed-deal-selection.mjs test/presentation/layout/filmed-table-projection.mjs test/speech/playback/recorded-speech.mjs test/speech/playback/recorded-speech-selection.mjs
+run_node_tests gameplay local-presentation test/presentation/runtime/local-presentation.mjs test/presentation/runtime/idle-rotation.mjs test/presentation/layout/local-card-overlay.mjs test/blackjack/blackjack-feedback.mjs test/presentation/runtime/verified-video-buffer.mjs test/presentation/runtime/abort-signals.mjs test/presentation/runtime/presentation-select-dealers.mjs
+run_node_tests gameplay player-results test/access/player-results.mjs
 # Real engine over HTTP on PostgreSQL. Without the harness these skip with a reason;
 # CI runs exactly this list through tools/run-engine-qa.mjs (owned TLS cluster), which
 # reads it from here and fails on any skip.
-run_node_tests engine engine-http test/engine-public-routes-http.mjs test/blackjack/table-http.mjs test/partner-launch-http.mjs test/cloud-admin-bootstrap.mjs test/vercel-frontend-origin.mjs test/game-entry-auth-http.mjs test/blackjack/blackjack-entry-http.mjs test/clip-mapping-runtime.mjs test/product-chat-http.mjs test/generated-speech-stream-http.mjs
+run_node_tests engine engine-http test/access/engine-public-routes-http.mjs test/blackjack/table-http.mjs test/access/partner-launch-http.mjs test/access/cloud-admin-bootstrap.mjs test/access/vercel-frontend-origin.mjs test/access/game-entry-auth-http.mjs test/blackjack/blackjack-entry-http.mjs test/presentation/filmed/clip-mapping-runtime.mjs test/speech/chat/product-chat-http.mjs test/speech/generated/generated-speech-stream-http.mjs
 # Pinned OpenClaw Gateway image on Linux Docker; CI runs it as its own job beside the regression legs.
 run_node_tests container gateway-container services/openclaw/lab/deploy/container/gateway-container.test.mjs

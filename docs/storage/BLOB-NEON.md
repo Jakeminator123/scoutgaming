@@ -132,7 +132,7 @@ medie-ID saknar en registerrad; andra dealers egna policies består. Återställ
 återaktiverar varken tal eller rum. Arkiverade och pending-original återförs inte
 till spelbara familjevarianter; deleted-poster ger inga bytes.
 
-"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealers/dealer-lifecycle.test.mjs`, `apps/studio/test/dealers/dealer-forge.test.mjs`, `test/studio-repository.mjs` och `test/speech-reply-repository.mjs`.
+"Inte vald i utkastet" är inget raderingsbevis. Blob och SQL är ingen gemensam transaktion: avbrutna uppladdningar och pending-raderingar måste kunna återupptas. Regressionsprov finns i `apps/studio/test/dealers/dealer-lifecycle.test.mjs`, `apps/studio/test/dealers/dealer-forge.test.mjs`, `test/storage/studio-repository.mjs` och `test/speech/chat/speech-reply-repository.mjs`.
 
 ## Avveckling av produktdata och original
 

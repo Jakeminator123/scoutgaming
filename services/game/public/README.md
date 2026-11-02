@@ -19,9 +19,9 @@ presentationsmodulerna används även från andra produktdelar.
 | `vendor/three/` | Versionsbundna Three.js-resurser som speluppspelning och kompositorer importerar direkt. De behövs i leveransen. |
 | `roulette/` | Spelklienten för roulette. |
 
-[Placeringsproven](../../../test/action-placement.mjs),
-[sittplatsproven](../../../test/game-overlay-layout.mjs) och
-[chattproven](../../../test/dealer-chat-visibility.mjs) importerar samma moduler
+[Placeringsproven](../../../test/presentation/layout/action-placement.mjs),
+[sittplatsproven](../../../test/presentation/layout/game-overlay-layout.mjs) och
+[chattproven](../../../test/speech/capture/dealer-chat-visibility.mjs) importerar samma moduler
 som klienten. De mäter mobilernas hinder, återupptagna ytterhänder, start/stängning
 och röstberedskap med DOM-fixturer. Det är kodprov, inte ny visuell driftacceptans.
 Modulerna levereras från den publika mappen; webbens importföljande byggsteg

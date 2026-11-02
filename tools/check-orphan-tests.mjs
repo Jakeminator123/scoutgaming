@@ -29,8 +29,12 @@ function toRel(abs, root) {
 
 function walk(absDir, out, root) {
   if (!existsSync(absDir)) return;
+  const inTestTree = toRel(absDir, root).split('/').some(part => part === 'test' || part === 'tests');
   for (const entry of readdirSync(absDir, { withFileTypes: true })) {
-    if (skippedDirectories.has(entry.name) || entry.name.startsWith('.')) continue;
+    // Product media bytes stay outside discovery; a media feature inside a test
+    // tree contains executable tests. Fixture folders remain excluded above it.
+    const mediaTests = inTestTree && entry.name === 'media';
+    if ((skippedDirectories.has(entry.name) && !mediaTests) || entry.name.startsWith('.')) continue;
     const abs = join(absDir, entry.name);
     // Dirent symlinks/junctions are not followed into another checkout or private data.
     if (entry.isDirectory()) walk(abs, out, root);

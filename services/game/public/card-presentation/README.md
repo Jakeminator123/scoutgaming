@@ -21,7 +21,7 @@ commit `0d12b7a559d328a333598b7e583b980e88d7925c` (Kevin review delivery).
   No game engine, wallet, provider, login or server code imported.
 - `calibration.mjs`: source manifest positions/dimensions plus the ten
   standard local MP4 SHA-256 hashes. Their Git blobs matched the source films;
-  `test/local-card-overlay.mjs` also checks actual bytes and the adapted
+  `test/presentation/layout/local-card-overlay.mjs` also checks actual bytes and the adapted
   source renderer regression cases.
 
 The product adapter is `../local-card-overlay.mjs`; it uses server snapshots
@@ -57,7 +57,7 @@ badge sizing from reference `f15b2af`. Both product card renderers now show
 soft hands as `7/17` and completed 21 as `21`. Labels only use presented cards;
 hidden hole cards remain excluded. Wider badges preserve the dealer fan's
 clearance. Card coordinates, measured contact frames and media are unchanged.
-`test/local-card-overlay.mjs` covers these display and hidden-card boundaries.
+`test/presentation/layout/local-card-overlay.mjs` covers these display and hidden-card boundaries.
 
 ## Regression coverage
 
@@ -69,7 +69,7 @@ reference is `test/fixtures/blackjack/regression.json`; duplicate executable eng
 and browser snapshots have been removed. Its source blob IDs and cryptographic
 digests are historical evidence, not requirements on the current state layout.
 
-`test/postgres-presentation-flow.mjs` exercises the coordinator, durable receiver,
+`test/presentation/runtime/postgres-presentation-flow.mjs` exercises the coordinator, durable receiver,
 restart/replay and exact media selection against a synthetic frozen native-film
 publication on the QA runner's isolated PostgreSQL cluster. Current publication
 uses the frozen package's registered dealer, filmed profile and per-media

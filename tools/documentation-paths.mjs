@@ -14,6 +14,7 @@ const guides = new Set([
   "apps/studio/client/README.md",
   "apps/studio/components/partner/README.md",
   "apps/studio/docs/README.md",
+  "apps/studio/test/README.md",
   "apps/web/README.md",
   "inbox/README.md",
   "packages/presentation/README.md",
@@ -25,7 +26,9 @@ const guides = new Set([
   "services/game/storage/README.md",
   "services/openclaw/README.md",
   "services/openclaw/lab/README.md",
-  "tools/media/README.md"
+  "test/README.md",
+  "tools/media/README.md",
+  "tools/system-map/README.md"
 ]);
 // Prose folders: every Markdown file under docs/ and apps/studio/docs/, and the cloud
 // runbooks directly in ops/cloud/; scripts or other files placed there stay strict.

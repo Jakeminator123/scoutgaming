@@ -3,7 +3,7 @@ import { presentationEvents } from './partner-presentation.mjs';
 
 // SQL-free table for the Admin rehearsal (Provspel): the wallet, shoe, receipt and
 // ledger steps of postgres-native-table.mjs, held in memory per preview session.
-// test/preview-table.mjs runs one script through both and requires equal results.
+// test/presentation/preview/preview-table.mjs runs one script through both and requires equal results.
 // A command works on a private copy that replaces the committed state only when it
 // returns, so a refused command changes nothing. It is synchronous: one JavaScript
 // turn is the lock, so no request can interleave and no mutex is needed.

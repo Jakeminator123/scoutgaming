@@ -70,26 +70,26 @@ jobs:
             .github/workflows/croupier.yml
             .github/actions/install-dependencies/action.yml
             .githooks/pre-commit-full
-            test/ci-changes.mjs
-            test/precommit-checks.mjs
+            test/delivery/ci-changes.mjs
+            test/delivery/precommit-checks.mjs
             tools/ci-changes.mjs
             tools/documentation-paths.mjs
             tools/precommit-checks.mjs
             tools/check-push-target.mjs
             tools/check-repo-limits.mjs
             tools/repo-limits-allowlist.json
-            test/check-repo-limits.mjs
+            test/delivery/check-repo-limits.mjs
       - name: Verify preinstalled Node 24
         run: node -e "if (process.versions.node.split('.')[0] !== '24') throw new Error('Preinstalled Node 24 is required')"
       - name: Verify CI selection and final gate
-        run: node --test test/ci-changes.mjs
+        run: node --test test/delivery/ci-changes.mjs
       - name: Classify the complete PR merge diff
         id: scope
         run: node tools/ci-changes.mjs
       # Repo growth: files over 1 MiB only via the shrinking allowlist, no new media binaries.
       - name: Repository size limits (shrinking allowlist)
         run: |
-          node --test --test-concurrency=2 test/check-repo-limits.mjs
+          node --test --test-concurrency=2 test/delivery/check-repo-limits.mjs
           node tools/check-repo-limits.mjs --ci
 
   # Prose-only PRs and every push to main (integration scope).
@@ -114,7 +114,7 @@ jobs:
           node tools/check-documentation.mjs
           python -m unittest discover -s test/system-map -v
           python tools/system-map.py
-          node --test --test-concurrency=2 test/check-environment-variables.mjs test/check-documentation.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs
+          node --test --test-concurrency=2 test/delivery/check-environment-variables.mjs test/delivery/check-documentation.mjs test/delivery/github-workflow.mjs test/delivery/precommit-checks.mjs test/delivery/inbox.mjs
           git diff --check HEAD^1 HEAD
       # PR caches are scoped to their own merge ref; only main-scoped entries are shared by
       # every PR. The regression no longer runs on push main, so this keeps the package-tree
@@ -271,7 +271,7 @@ jobs:
         if: ${{ !cancelled() && matrix.speech_node }}
         run: |
           npm --prefix apps/speech run build
-          node --test --test-concurrency=4 apps/web/test/platform-websocket.mjs test/platform-native-websocket.mjs test/platform-moving-speech.mjs
+          node --test --test-concurrency=4 apps/web/test/platform-websocket.mjs test/speech/generated/platform-native-websocket.mjs test/speech/moving/platform-moving-speech.mjs
       - uses: actions/setup-node@v7
         if: ${{ !cancelled() && matrix.speech_node }}
         with:
@@ -301,7 +301,7 @@ jobs:
         run: node test/blackjack/split-rules.mjs
       - name: Delivery policy and team inbox
         if: ${{ !cancelled() && matrix.policy }}
-        run: node --test --test-concurrency=4 test/github-workflow.mjs test/inbox.mjs
+        run: node --test --test-concurrency=4 test/delivery/github-workflow.mjs test/delivery/inbox.mjs
       - name: Save regression group timings
         continue-on-error: true
         timeout-minutes: 2

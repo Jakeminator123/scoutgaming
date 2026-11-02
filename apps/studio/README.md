@@ -74,7 +74,7 @@ npm --prefix apps/studio run dev:client   # bygger om klienten när källan änd
 | Projektschema, seed och validering | `packages/presentation/contracts/` (`schemas/`, `policies/`, `studio-model.mjs`) | `validateProject` och kontraktstester |
 | Mediefamiljer och standardfiler | `packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
 | Runtime-katalogens källor (utan presentationsbank sedan 2026-10-28) | `media/layout.json`, `media/blob-index.json`, `media/catalog/*.json` | `node tools/build-runtime-media-catalog.mjs --check` |
-| Uppmätta kortspår | `services/game/public/card-presentation/` | `test/local-card-overlay.mjs` i reporoten och browsergranskning |
+| Uppmätta kortspår | `services/game/public/card-presentation/` | `test/presentation/layout/local-card-overlay.mjs` i reporoten och browsergranskning |
 | Medieorkestrering och läsare | `packages/studio-registry/server/`; bindning i `packages/presentation/server/` | Paketens tester |
 | Director-, tal- och sociala kontrakt | `packages/director/`; Studios miljöläsning i `lib/director-settings.mjs` | `packages/director`-tester |
 | Adresser och bolagssluggar | `packages/navigation/` | Navigationstester |
