@@ -1,3 +1,4 @@
+import {handValue} from './blackjack.mjs';
 // Presentation only: consume server-issued returns, never calculate payouts.
 // Adapted from Kevin's positive-profit feedback at f15b2af.
 export function sideBetWin(hand) {
@@ -15,4 +16,18 @@ export function roundWin(hands) {
     && hand.cards.some(card => ['10', 'J', 'Q', 'K'].includes(card.r))
     && hand.result > hand.stake + (hand.insured ?? 0));
   return { profit, blackjack };
+}
+
+export function announceRound({live,dealer,anyPush,anyLose,voice,sfx,bjFlash}) {
+  const win=roundWin(live);
+  const dealerTotal = handValue(dealer).total;
+  const dealerBJ = dealer.length === 2 && dealerTotal === 21;
+  const allBusted = live.length > 0 && live.every(h => h.busted || handValue(h.cards).total > 21);
+  if (dealerBJ) voice.say('dealerblackjack', { force: true });
+  else if (win?.blackjack) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
+  else if (allBusted) { /* already voiced on the hit; never celebrate a dealer bust the player didn't beat */ }
+  else if (dealerTotal > 21 && win) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
+  else if (win) { sfx.play('win'); voice.say('win', { force: true }); }
+  else if (anyPush && !anyLose) voice.say('push', { force: true });
+  else voice.say('lose', { force: true });
 }

@@ -639,7 +639,7 @@ const server = createServer(async (req, res) => {
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
   const playerEntry=['/blackjack','/blackjack/','/roulette','/roulette/','/play/roulette','/play/roulette/'].includes(pathname);
-  if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs'].includes(pathname)
+  if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/round-controller.mjs','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs'].includes(pathname)
       && await rouletteDocument(req,res,{authenticated,guestPreview,resolveRoom:rouletteRoomAccess})) return;
   if (pathname === '/api/profile') {
     if (await handlePlayerSurface(req, res, pathname, {

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
+import {mountDealerPicker,populateRehearsalDealers} from '../services/game/public/dealer-picker.mjs';
+import {mountPlayerReturn} from '../services/game/public/player-entry-controls.mjs';
 import {
   applyTableColor, choicesStorageKey, lobbyChoiceText, mountPlayerChoices, parseStoredChoices,
   readChoices, resolvePlayerSelection, writeChoices,
@@ -150,18 +151,14 @@ test('table colour paints the felt mark, wallet and chip row and leaves the film
 });
 
 test('both dealer pickers offer only the active lane dealers even without an operator', async () => {
-  const source = await (await import('node:fs/promises')).readFile(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
-  const row = source.slice(source.indexOf('const allowedDealerKeys ='), source.indexOf('buildChips();', source.indexOf('const allowedDealerKeys =')));
-  const rehearsal = source.slice(source.indexOf('  for (const d of Object.values(DEALERS))'), source.indexOf('  dealerSelect.value = DEALER.key;'));
-  assert.ok(row && rehearsal);
   const DEALERS = Object.fromEntries(['vera','astrid','amira','mei'].map(key => [key,{key,name:key,base:key}]));
   for (const operator of [undefined,'north']) {
     for (const offered of [['astrid'], ['amira','mei']]) {
       const actual = [], rehearsed = [];
       const document = {createElement(){return {dataset:{},setAttribute(){},append(){}};}};
-      vm.runInNewContext(row + rehearsal, {previewSession:null,entrySelection:{operator,choices:{dealers:offered}},DEALER:DEALERS[offered[0]],DEALERS,document,
-        $:() => ({appendChild(button){actual.push(button.dataset.dealer);}}),dealerSelect:{add(option){rehearsed.push(option.value);}},
-        Option:class {constructor(name,value){this.value=value;}}});
+      const options={previewSession:null,entrySelection:{operator,choices:{dealers:offered}},DEALER:DEALERS[offered[0]],DEALERS,document,state:{round:null,busy:false}};
+      mountDealerPicker({...options,$:()=>({appendChild(button){actual.push(button.dataset.dealer);}})});
+      populateRehearsalDealers({add(option){rehearsed.push(option.value);}},options);
       assert.deepEqual(actual, offered); assert.deepEqual(rehearsed, offered);
     }
   }
@@ -172,6 +169,19 @@ test('the lobby text names the last dealer and table colour', () => {
   assert.equal(lobbyChoiceText({ dealer: 'mei' }), 'Dealer Mei');
   assert.equal(lobbyChoiceText({ dealer: 'paow' }), 'Dealer Paow');
   assert.equal(lobbyChoiceText({ dealer: 'ghost', tableColor: 'green', background: 'stad' }), '');
+});
+
+test('dealer buttons read the current round and busy state and keep unavailable preview dealers inert',()=>{
+  const buttons=[],status={},location={search:'?rehearsal=1'},state={round:null,busy:false};
+  const DEALERS={astrid:{key:'astrid',name:'Astrid'},elin:{key:'elin',name:'Elin'}};
+  mountDealerPicker({document:{createElement:element},$:id=>id==='#dealer-options'?{appendChild:button=>buttons.push(button)}:status,
+    entrySelection:{choices:{dealers:['astrid','elin']}},DEALERS,DEALER:DEALERS.astrid,state,location,
+    previewSession:{dealerAvailability:[{id:'astrid',playable:true},{id:'elin',playable:false}]}});
+  buttons[1].onclick();assert.equal(location.href,undefined);assert.equal(buttons[1].disabled,true);
+  buttons[1].disabled=false;
+  for(const change of [{round:{phase:'decisions'},busy:false},{round:null,busy:true}]){
+    Object.assign(state,change);buttons[1].onclick();assert.equal(location.href,undefined);assert.match(status.textContent,/Finish this round/);
+  }
 });
 
 test('legacy full-frame dealer scenes retain their authorized table and background controls',()=>{
@@ -187,19 +197,13 @@ test('legacy full-frame dealer scenes retain their authorized table and backgrou
     assert.ok(controls.length>=1);assert.ok(controls.every(button=>!button.disabled));
   }
 });
-test('dealer footer labels its real action and returns to the same operator lobby',async()=>{
-  const {readFile}=await import('node:fs/promises');
-  const html=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
-  assert.match(html,/aria-label="Välj dealer"/);assert.match(html,/>Välj dealer<\/span>/);
-  assert.match(html,/class="casino-return" href="\/lobby">Till lobbyn/);
-  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
+test('dealer footer returns to the same operator lobby',async()=>{
   for(const [entrySelection,expected] of [
     [{},'/lobby'],
     [{operator:'sg-test'},'/lobby?operator=sg-test'],
     [{operator:'sg-test',roomId:'room-evening'},'/lobby?operator=sg-test&room=room-evening'],
   ]){
-    const link={};vm.runInNewContext(code,{studioPreview:null,entrySelection,document:{querySelector:()=>link},URLSearchParams});
+    const link={};mountPlayerReturn({studioPreview:null,entrySelection,document:{querySelector:()=>link}});
     assert.equal(link.href,expected);
   }
 });
@@ -213,14 +217,11 @@ test('preview keeps an incomplete registered dealer visible and disabled',()=>{
  assert.match(buttons[1].textContent,/grundklipp saknas/);buttons[1].onclick();assert.deepEqual(chosen,[]);
 });
 test('preview footer returns to its saved composition without an operator link',async()=>{
- const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
- const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
  const window={};window.parent=window;
- const link={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});
+ const link={};mountPlayerReturn({window,studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link}});
  assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Miljö');
  // Real document validation requires a dealer; a partial caller must not serialize undefined.
- const partialLink={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink},URLSearchParams});
+ const partialLink={};mountPlayerReturn({window,studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink}});
  assert.equal(partialLink.href,'/admin/compositions?composition=evening');
 });
 

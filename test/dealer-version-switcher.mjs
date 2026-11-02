@@ -1,10 +1,7 @@
 import test,{beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
-import vm from 'node:vm';
+import {createDealerRehearsal,mountDealerRehearsal} from '../services/game/public/dealer-rehearsal.mjs';
 import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
-const appSource=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-const rehearsalSource=appSource.slice(appSource.indexOf('// Optional rehearsal'));
 let oldDocument,oldLocation;
 beforeEach(()=>{
  oldDocument=globalThis.document;oldLocation=globalThis.location;
@@ -40,29 +37,31 @@ test('only valid observer channels survive the dealer switch',()=>{
  assert.equal(url.searchParams.get('labObserverChannel'),channel);assert.equal(url.searchParams.has('launch'),false);
 });
 test('rehearsal dealer changes keep the same published context',()=>{
- const handler=rehearsalSource.match(/dealerSelect\.onchange = \(\) => \{[^\n]+\};/)?.[0];assert.ok(handler);
- const location={search:'?rehearsal=1&launch=private'},dealerSelect={value:'linnea'};
- vm.runInNewContext(handler+';dealerSelect.onchange();',{location,dealerSelect,dealerVersionPath});
+ const controls={};
+ const panel={addEventListener(){},querySelector:id=>controls[id]??=(id.includes('dealer')||id.includes('line')?{add(){},value:'linnea'}:{}),querySelectorAll:()=>Object.values(controls)};
+ const document={createElement:tag=>tag==='details'?panel:{}};
+ const location={search:'?rehearsal=1&launch=private'};
+ mountDealerRehearsal({document,$:()=>({appendChild(){}}),location,entrySelection:{choices:{dealers:['astrid','linnea']}},
+  DEALERS:{astrid:{key:'astrid',name:'Astrid'},linnea:{key:'linnea',name:'Linnea'}},DEALER:{key:'astrid'},VOICE_LINES:['goodluck'],LINES:{},
+  localPresentationEnabled:true,state:{round:null,busy:false},tableReady:Promise.resolve()});
+ controls['#rehearsal-dealer'].value='linnea';controls['#rehearsal-dealer'].onchange();
  const url=new URL(location.href,'https://game.invalid');assert.equal(url.searchParams.get('dealer'),'linnea');assert.equal(url.searchParams.get('table'),'room-north');
 });
 
-test('shared rehearsal describes its own playback path without consulting the legacy clip index',()=>{
-  const update=rehearsalSource.match(/const update = \(\) => \{[\s\S]*?\n  \};/)?.[0];
-  assert.ok(update);
+test('shared rehearsal describes its own playback path without consulting the legacy clip index',async()=>{
   const status={textContent:''};
-  vm.runInNewContext(`${update}; update();`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},bank:{goodluck:{text:'Good luck.'}},LINES:{},status});
+  const controller=rehearsal({status,bank:{goodluck:{text:'Good luck.'}}});await Promise.resolve();controller.update();
   assert.match(status.textContent,/Good luck.*shared Studio presentation/);
   assert.doesNotMatch(status.textContent,/matching clip missing|voice only/);
 });
 
 test('shared rehearsal requires a completed real playback result even when the speech queue swallows errors',async()=>{
-  const play=rehearsalSource.match(/const play = async \(\) => \{[\s\S]*?\n  \};/)?.[0];
-  assert.ok(play);
   for(const result of [true,false,undefined,'throw']){
     let calls=0;
-    const run=vm.runInNewContext(`${play}; play();`,{localPresentationEnabled:true,lineSelect:{value:'goodluck'},setMuted(){},astridSpeak:null,DEALER:{base:'dealers/astrid'},Audio:class{},bank:{},LINES:{},
+    const controller=rehearsal({
       async speechTurn(fn){try{await fn(new AbortController().signal);}catch{}},
       async playRecorded(id){assert.equal(id,'goodluck');calls++;if(result==='throw')throw new Error('fixture playback failed');return result;}});
+    const run=controller.play();
     if(result===true)assert.equal(await run,true);
     else await assert.rejects(run,/Shared Studio clip did not complete/);
     assert.equal(calls,1);
@@ -70,13 +69,12 @@ test('shared rehearsal requires a completed real playback result even when the s
 });
 
 test('shared rehearsal counts two completed clips and never counts a failed second play',async()=>{
-  const review=rehearsalSource.match(/const review = async count => \{[\s\S]*?\n  \};/)?.[0];
-  assert.ok(review);
   for(const failSecond of [false,true]){
     const controls=[{disabled:false},{disabled:false}],messages=[];let calls=0;
     const status={set textContent(value){messages.push(value);}};
-    await vm.runInNewContext(`${review}; review(2);`,{rehearsalInitialized:true,localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status,speaking:false,update(){},
-      async play(){calls++;if(failSecond&&calls===2)throw new Error('interrupted');return true;}});
+    const controller=rehearsal({panel:{querySelectorAll:()=>controls},status,
+      async playRecorded(){calls++;if(failSecond&&calls===2)throw new Error('interrupted');return true;}});
+    await Promise.resolve();await controller.review(2);
     assert.equal(calls,2);assert.ok(controls.every(control=>control.disabled===false));
     assert.ok(messages.some(message=>message.startsWith('1/2 completed')));
     if(failSecond){assert.match(messages.at(-1),/Playback failed: interrupted/);assert.ok(messages.every(message=>!message.startsWith('2/2 completed')));}
@@ -85,24 +83,39 @@ test('shared rehearsal counts two completed clips and never counts a failed seco
 });
 
 test('rehearsal cannot start before server-owned table initialization and stays disabled on failure',async()=>{
-  const review=rehearsalSource.match(/const review = async count => \{[\s\S]*?\n  \};/)?.[0];
-  const settle=rehearsalSource.match(/settleRehearsalInitialization = failed => \{[\s\S]*?\n  \};/)?.[0];
-  const bind=appSource.match(/tableReady\.then\(\(\) => settleRehearsalInitialization\?\.\(false\), \(\) => settleRehearsalInitialization\?\.\(true\)\);/)?.[0];
-  assert.ok(review&&settle&&bind);
   for(const failed of [false,true]){
     const controls=[{disabled:true},{disabled:true}];let plays=0,finish,fail;
     const tableReady=new Promise((resolve,reject)=>{finish=resolve;fail=reject;});
-    const context=vm.createContext({rehearsalInitialized:false,settleRehearsalInitialization:null,initialControls:controls,tableReady,
-      localPresentationEnabled:true,lineSelect:{value:'goodluck'},panel:{querySelectorAll:()=>controls},status:{textContent:''},speaking:false,
-      update(){},async play(){plays++;return true;}});
-    vm.runInContext(`${review}; ${settle}; ${bind};`,context);
-    await vm.runInContext('review(2)',context);
+    const status={textContent:''};
+    const controller=rehearsal({tableReady,panel:{querySelectorAll:()=>controls},status,async playRecorded(){plays++;return true;}});
+    await controller.review(2);
     assert.equal(plays,0);assert.ok(controls.every(control=>control.disabled));
     if(failed)fail(new Error('table init failed'));else finish();
     await tableReady.catch(()=>{});await Promise.resolve();
-    await vm.runInContext('review(2)',context);
+    await controller.review(2);
     assert.equal(plays,failed?0:2);
     assert.ok(controls.every(control=>control.disabled===failed));
-    if(failed)assert.match(context.status.textContent,/table could not start/);
+    if(failed)assert.match(status.textContent,/table could not start/);
+  }
+});
+
+function rehearsal(overrides={}){
+ const controls=[{disabled:true},{disabled:true}];
+ return createDealerRehearsal({panel:{querySelectorAll:()=>controls},lineSelect:{value:'goodluck'},status:{textContent:''},
+  bank:{},LINES:{},localPresentationEnabled:true,setMuted(){},state:{speaking:false},tableReady:Promise.resolve(),
+  speechTurn:fn=>fn(new AbortController().signal),playRecorded:async()=>true,...overrides});
+}
+
+test('closing rehearsal prevents late readiness and a completed first clip from starting another review',async()=>{
+  for(const duringPlayback of [false,true]){
+    let resolveReady,resolvePlay,plays=0;
+    const tableReady=new Promise(resolve=>{resolveReady=resolve;}),controls=[{disabled:true}],lineSelect={value:'goodluck'};
+    const controller=rehearsal({tableReady,lineSelect,panel:{querySelectorAll:()=>controls},
+      playRecorded:()=>{plays++;return new Promise(resolve=>{resolvePlay=resolve;});}});
+    if(duringPlayback){resolveReady();await tableReady;}
+    const review=controller.review(2);await Promise.resolve();
+    await controller.review(2);assert.equal(plays,duringPlayback?1:0,'a second review cannot overlap playback');
+    controller.close();resolveReady();resolvePlay?.(true);await review;await tableReady;
+    assert.equal(plays,duringPlayback?1:0);assert.equal(controls[0].disabled,true);assert.equal(lineSelect.onchange,null);
   }
 });

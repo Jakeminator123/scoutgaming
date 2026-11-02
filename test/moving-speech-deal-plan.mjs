@@ -5,9 +5,9 @@ import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contract
 import {PAOW_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-paow-c7138759.mjs';
 import {expandStudioFilmedProfile} from '../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {studioCopyProfile} from './fixtures/native-room-game-material.mjs';
-import {movingDealCard} from '../services/game/public/moving-speech-sequence.mjs';
-import {readFile} from 'node:fs/promises';
-import {runInNewContext} from 'node:vm';
+import {movingDealCard,createMovingDealPlayback} from '../services/game/public/moving-speech-sequence.mjs';
+import {createPlayerChatController} from '../services/game/public/player-chat-controller.mjs';
+import {createBlackjackTableClient} from '../services/game/public/blackjack-table-client.mjs';
 import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
 function fixture({takes=profile.takes,dealerId='dragan',frozen={}}={}){
@@ -53,23 +53,44 @@ test('sparse absolute box3 maps to live hand zero and never borrows another hand
   assert.throws(()=>movingDealCard(round,{to:'box',box:3,shoeDraw:2}),/card_unavailable/);
 });
 test('app sequence cursor advances exact source frames and commits each authoritative sparse-box draw once',async()=>{
-  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const source=app.slice(app.indexOf('function finishMovingDealStep('),app.indexOf('async function playChatDecision('));
   const sequence=prepareMovingDealPlan(fixture()),owned={version:7,lastFrame:-1,stepIndex:-1,completed:false,sequence};
   const moves=[],finished=[],placed=[],cards=[{shoeDraw:1,rank:'A'},{shoeDraw:3,rank:'K'}];
   const context={activeDealSpeech:owned,tableVersion:7,movingDealCard,round:{dealer:[{shoeDraw:2,rank:'7'}],live:()=>[{box:3,cards}]},
     localCards:{begin:(_video,event)=>event.shoeDraw,frame:(token,seconds)=>moves.push([token,seconds]),finish:(_t,draw)=>finished.push(draw)},
     $:()=> 'dealer',boxContainer:i=>{assert.equal(i,0);return 'box3';},dealCardTo:(container,card,event)=>placed.push({container,card,event}),updateBadge(){}};
-  runInNewContext(source+';this.frame=movingDealFrame;this.end=movingDealEnd',context);
-  for(let k=0;k<183;k++)context.frame(owned,sequence,k);
-  context.end(owned);context.end(owned);
+  const {movingDealFrame:frame,movingDealEnd:end}=createMovingDealPlayback({...context,state:context});
+  for(let k=0;k<183;k++)frame(owned,sequence,k);
+  end(owned);end(owned);
   assert.deepEqual(finished,[1,2,3,4]);assert.deepEqual(placed.map(p=>p.container),['box3','dealer','box3','dealer']);
   assert.equal(placed.at(-1).card,null);assert.deepEqual(moves.filter((_,k)=>[0,65,66,182].includes(k)),[[1,0],[1,65/24],[2,0],[4,38/24]]);
-  assert.throws(()=>context.frame(owned,sequence,0),/stale/);
+  assert.throws(()=>frame(owned,sequence,0),/stale/);
+  for(const change of [{tableVersion:8},{tableVersion:7,activeDealSpeech:{...owned}}]){
+    Object.assign(context,change);assert.throws(()=>frame(owned,sequence,182),/stale/);
+    assert.deepEqual(finished,[1,2,3,4],'a late frame must not commit to a replaced round or owner');
+  }
+});
+
+test('late chat responses after dealer, session or round replacement never enter playback and release request state',async()=>{
+  for(const change of [{dealerId:'elin'},{sessionRevision:'session-2'},{roundRevision:'8'}]){
+    let response,identity={dealerId:'astrid',sessionRevision:'session-1',roundRevision:'7'};
+    const input={value:'Hej'},send={},pendingChatReplies=new Map();let timers=0;
+    const gate=createSpeechPoseGate({initialState:{...identity,dealerPose:'unknown',actionOwner:'none',speechOwner:'none',visible:true,muted:false},
+      enqueue:()=>assert.fail('stale response cannot play'),onDisplay:()=>assert.fail('stale response cannot display')});
+    const state={chatBusy:false,chatHistory:[],speechPoseGate:gate};
+    const controller=createPlayerChatController({state,studioPreview:null,$:selector=>selector==='#chat-input'?input:send,
+      DEALER:{key:'astrid',name:'Astrid'},entrySelection:{},clientSessionRevision:'session-1',compactChat:()=>false,setChatStatus(){},
+      localPresentationEnabled:true,nativeObservation:{context:()=>({}),emit(){}},chatPlaybackDiagnostic:{begin(){},finish(){}},
+      poseIdentity:()=>identity,chatLog(){},pendingChatReplies,crypto:{randomUUID:()=> 'late-request'},
+      setInterval:()=>{timers++;return 1;},clearInterval:()=>{timers=0;},
+      apiFetch:()=>new Promise(resolve=>{response=resolve;})});
+    const sending=controller.sendChat({message:'Hej'});assert.equal(state.chatBusy,true);
+    identity={...identity,...change};gate.updateRendererState(identity,'identity-replaced');
+    response(Response.json({kind:'generatedText',requestId:'late-request',exactText:'Old response'}));
+    assert.equal(await sending,false);assert.equal(state.chatBusy,false);assert.equal(send.disabled,false);
+    assert.equal(pendingChatReplies.size,0);assert.equal(timers,0);assert.equal(input.value,'Hej');
+  }
 });
 test('muted or refused next-deal chat returns fallback and releases busy state without calling provider',async()=>{
-  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const source=app.slice(app.indexOf('async function sendChat('),app.indexOf("$('#gate-enter').onclick"));
   for(const muted of [true,false]){
     const identity={dealerId:'dragan',sessionRevision:2,roundRevision:7},input={value:'Hej'},send={disabled:false};let timers=0;
     const gate={...createSpeechPoseGate({enqueue:()=>assert.fail('no queue'),initialState:{...identity,dealerPose:'deal-action',actionOwner:'deal',speechOwner:'none',idlePresented:null,visible:true,muted}})};
@@ -80,16 +101,14 @@ test('muted or refused next-deal chat returns fallback and releases busy state w
       chatHistory:[],crypto:{randomUUID:()=> 'request-1'},chatPlaybackDiagnostic:{begin(){},finish(){}},poseIdentity:()=>identity,
       localPresentation:null,chatLog(){},speechPoseGate:gate,AbortController,pendingChatReplies:new Map(),
       refreshNextDealChat(){},chatFailureMessage:String,apiFetch:()=>assert.fail('no provider'),activeDealSpeech:null};
-    assert.equal(await runInNewContext(source+';sendChat({message:"Hej",dealSpeech:{version:7}})',context),false);
+    const {sendChat}=createPlayerChatController({...context,state:context});
+    assert.equal(await sendChat({message:'Hej',dealSpeech:{version:7}}),false);
     assert.equal(context.chatBusy,false);assert.equal(send.disabled,false);assert.equal(timers,0);assert.equal(context.pendingChatReplies.size,0);
     assert.equal(input.value,'Hej');
   }
 });
 
 async function dealClientFixture(error='moving_deal_speech_unavailable',status=409){
-  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
-  const source=app.slice(app.indexOf('async function api('),app.indexOf('async function prepareTable('))
-    +app.slice(app.indexOf('function refreshNextDealChat('),app.indexOf('function finishMovingDealStep('));
   const calls=[],states=[],toggle={checked:true},input={value:'Ulf Lundell är bra.'},cancel={hidden:false},buttons=[{disabled:false}];
   const context={player:{id:'player'},tableVersion:11,balance:1000,bets:[{main:5}],round:null,busy:true,
     movingSpeechAvailable:true,nextDealChat:{message:input.value},activeDealSpeech:null,
@@ -104,7 +123,8 @@ async function dealClientFixture(error='moving_deal_speech_unavailable',status=4
       const rejected=payload.movingSpeech!==undefined;
       return {ok:!rejected,status:rejected?status:200,json:async()=>rejected?{error}:{version:12,movingSpeechAvailable:false}};
     }};
-  runInNewContext(source,context);
+  const chat=createPlayerChatController({...context,state:context});
+  Object.assign(context,chat,createBlackjackTableClient({...context,...chat,state:context,apiFetch:(...args)=>context.apiFetch(...args)}));
   return {context,calls,states,toggle,input,buttons};
 }
 
