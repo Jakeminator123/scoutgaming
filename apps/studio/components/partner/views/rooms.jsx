@@ -5,7 +5,7 @@ import { ChevronRight, Plus, Spade } from 'lucide-react';
 import { PartnerAppearanceLoader, brandingApiBase } from '../../partner-appearance-loader.mjs';
 import { PartnerJournal } from '../../partner-journal-loader.mjs';
 import { loadPreviewMedia, choiceInitials, displayLabel } from '../../partner-preview-media.mjs';
-import { availablePartnerRooms, initialPartnerRoomSelection } from '../../../lib/partner-room-selection.mjs';
+import { availablePartnerRooms, initialPartnerRoomSelection } from '../../../lib/rooms/partner-room-selection.mjs';
 import { partnerLaneState } from '../../../lib/partner-package-view.mjs';
 import { resolveRoomBranding } from '../../../../../packages/operators/contracts/branding.mjs';
 import { workspaceSurfacePath } from '../../../../../packages/navigation/workspace-surfaces.mjs';

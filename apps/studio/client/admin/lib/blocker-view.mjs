@@ -80,7 +80,7 @@ for (const [alias, to] of [['studio_presentation_shared_dealer_conflict','studio
   ['studio_presentation_room_rejected','studio_presentation_game_lane_conflict'],['studio_presentation_room_binding_conflict','studio_presentation_game_lane_conflict'],
   ['studio_release_preview_stale','studio_conflict'],['studio_room_restore_blocked','studio_room_activation_blocked']]) views[alias] = views[to];
 
-// Skälen i studio_release_invalid (apps/studio/lib/room-release.mjs). ai_adopt_* kommer från "Använd i miljön
+// Skälen i studio_release_invalid (apps/studio/lib/rooms/room-release.mjs). ai_adopt_* kommer från "Använd i miljön
 // och i spelbordet" i AI-dialogen (apps/studio/lib/ai-material-adoption.mjs).
 const release = {
   studio_release_unchanged:views.studio_release_unchanged,

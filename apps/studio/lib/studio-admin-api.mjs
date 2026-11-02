@@ -1,8 +1,8 @@
 import {NATIVE_FILMED_PLANNING_MUTATION} from './presentation-runtime-readiness.mjs';
-import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './room-release.mjs';
+import {ROOM_RELEASE_ACTION,roomReleaseErrorBody} from './rooms/room-release.mjs';
 import {AI_ADOPT_ACTION} from './ai-material-adoption.mjs';
-import {presentationRoomMutationOptions} from './presentation-room-api.mjs';
-import {isRoomGameMaterialReason} from './room-game-config-api.mjs';
+import {presentationRoomMutationOptions} from './rooms/presentation-room-api.mjs';
+import {isRoomGameMaterialReason} from './rooms/room-game-config-api.mjs';
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
 import { validateStudioScope } from '../../../packages/studio-registry/server/document-contract.mjs';

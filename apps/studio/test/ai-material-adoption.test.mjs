@@ -18,7 +18,7 @@ import {defaultCompositionSettings} from '../../../packages/presentation/contrac
 import {readPackagePresentation} from '../../../packages/presentation/server/presentation-package.mjs';
 import {NATIVE_FILMED_PLANNING_MUTATION,wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {createOperatorPackageApi} from '../lib/operator-package-api.mjs';
-import {createRoomGameConfigApi} from '../lib/room-game-config-api.mjs';
+import {createRoomGameConfigApi} from '../lib/rooms/room-game-config-api.mjs';
 import {AI_ADOPT_ACTION,AiAdoptError,adoptLayerAssets,validateAdoptMaterials} from '../lib/ai-material-adoption.mjs';
 import {aiImageLabel,aiPlacementHash,aiTableMisfits} from '../lib/ai-image-contract.mjs';
 import {filmedTableFit} from '../lib/filmed-table-template.mjs';

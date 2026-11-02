@@ -1,4 +1,4 @@
-import {ROOM_LIMIT_PRESETS} from '../../../packages/presentation/contracts/room-game-config.mjs';
+import {ROOM_LIMIT_PRESETS} from '../../../../packages/presentation/contracts/room-game-config.mjs';
 
 // The three bet profiles as Admin shows them: a name and the engine's own numbers (read from
 // ROOM_LIMIT_PRESETS, never copied). Same game and rules; only stakes, chips and refill differ.

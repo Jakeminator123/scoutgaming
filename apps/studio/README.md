@@ -30,6 +30,12 @@ Motsvarande beteendeprov, inklusive dealergruppernas ägarskap och revisioner,
 finns i [`test/dealers/`](test/dealers/). Delade register- och presentationskontrakt
 ligger fortsatt i `packages/`.
 
+Rummets val, skapande, spelinställningar, insatsprofiler och publicering finns
+i [`lib/rooms/`](lib/rooms/), med klienternas typdeklarationer bredvid modulerna.
+[`test/rooms/`](test/rooms/) provar samma flöden samt rummets livscykel, behörighet,
+revisioner och rollback. Bolagets paket, gemensam livscykel och runtimekoppling
+ligger kvar i de delade adaptrarna; publika API-adresser är oförändrade.
+
 Partnerportalens inloggning, bolagslista, sessionsknappar och teamadapter ligger
 i [`components/partner/`](components/partner/README.md). Utseenderedigeraren och
 journaladaptern delas med Admin och ligger kvar direkt i `components/`.

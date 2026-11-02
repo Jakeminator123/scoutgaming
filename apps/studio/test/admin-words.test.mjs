@@ -73,7 +73,7 @@ export async function visibleTexts(source, fileName = 'file.tsx') {
 // klienterna vars meddelanden bara Admin visar (Spelinställningar, Nytt spelbord).
 const files = [...sourceFiles(join(studio, 'client', 'admin'), true), ...sourceFiles(join(studio, 'client', 'admin', 'lib'), false, /\.(?:mjs|ts)$/),
   ...sourceFiles(join(studio, 'app', 'admin'), true), ...sourceFiles(join(studio, 'components'), false),
-  join(studio, 'lib', 'room-game-config-client.mjs'), join(studio, 'lib', 'presentation-room-client.mjs')]
+  join(studio, 'lib', 'rooms', 'room-game-config-client.mjs'), join(studio, 'lib', 'rooms', 'presentation-room-client.mjs')]
   .filter(existsSync)
   .map(path => relative(repo, path).split('\\').join('/')).sort();
 

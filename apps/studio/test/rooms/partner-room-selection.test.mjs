@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {availablePartnerRooms,initialPartnerRoomSelection} from '../lib/partner-room-selection.mjs';
-import {partnerCopy,partnerNavigation} from '../components/partner/partner-copy.mjs';
-import {PARTNER_PERMISSIONS} from '../../../packages/studio-access/server/partner-access-policy.mjs';
-import {workspaceSurfacePath} from '../../../packages/navigation/workspace-surfaces.mjs';
-import {jsxRequire} from './fixtures/jsx-require.mjs';
+import {availablePartnerRooms,initialPartnerRoomSelection} from '../../lib/rooms/partner-room-selection.mjs';
+import {partnerCopy,partnerNavigation} from '../../components/partner/partner-copy.mjs';
+import {PARTNER_PERMISSIONS} from '../../../../packages/studio-access/server/partner-access-policy.mjs';
+import {workspaceSurfacePath} from '../../../../packages/navigation/workspace-surfaces.mjs';
+import {jsxRequire} from '../fixtures/jsx-require.mjs';
 const require=createRequire(import.meta.url);
-const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../components/partner/views/rooms.jsx');
+const {PartnerRoomWorkspace}=jsxRequire(import.meta.url)('../../components/partner/views/rooms.jsx');
 const operator={id:'north',slug:'north-casino',name:'North'};
 const snapshot={operator,tables:[
   {id:'main-room',name:'Main',operatorId:'north',status:'active'},
@@ -28,8 +28,8 @@ test('room deep links resolve exact registered ownership and active status witho
 // Spelbordets Historik läser publiceringarna (GET /journal?kind=publications) med reports.read,
 // inte med team.roles.assign: läsaren får historiken, en roll utan reports.read får den inte.
 test('the table history reads the publications with reports.read, not team.roles.assign',()=>{
-  const seen=[];const loader=require('../components/partner-appearance-loader.mjs');
-  const {PartnerRoomWorkspace:Rooms}=jsxRequire(import.meta.url,{'../../partner-appearance-loader.mjs':{...loader,PartnerAppearanceLoader:props=>{seen.push(props);return null;}}})('../components/partner/views/rooms.jsx');
+  const seen=[];const loader=require('../../components/partner-appearance-loader.mjs');
+  const {PartnerRoomWorkspace:Rooms}=jsxRequire(import.meta.url,{'../../partner-appearance-loader.mjs':{...loader,PartnerAppearanceLoader:props=>{seen.push(props);return null;}}})('../../components/partner/views/rooms.jsx');
   const history=permissions=>{seen.length=0;renderToStaticMarkup(React.createElement(Rooms,{snapshot:{...snapshot,permissions},copy:partnerCopy('sv'),language:'sv',initialRoomId:'main-room',apiBase:'/studio/api/partner/snapshot'}));return seen.at(-1).history;};
   const journal=history(['overview.read','tables.read','reports.read']);
   assert.equal(journal.props.kind,'publications');assert.equal(journal.props.operatorId,'north');assert.equal(journal.props.base,'/studio/api/partner');
@@ -62,7 +62,7 @@ test('controlled room selection renders the current scope instead of its origina
 });
 
 function sessionHarness({initialRoomId,initialRoomScope,path='/partner/north-casino/rooms?room=main-room',accessClass='internal-admin'}={}) {
-  const sourceUrl=new URL('../components/partner/partner-operator-workspace.jsx',import.meta.url);
+  const sourceUrl=new URL('../../components/partner/partner-operator-workspace.jsx',import.meta.url);
   const {transformSync}=require('next/dist/build/swc');
   const code=transformSync(require('node:fs').readFileSync(sourceUrl,'utf8'),{filename:'partner-operator-workspace.jsx',jsc:{parser:{syntax:'ecmascript',jsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
   const slots=[],effects=[],listeners=new Map(),entries=[{href:path,state:{consumer:'kept'}}];let cursor=0,index=0,queue=[],url=new URL(path,'https://partner.fixture.invalid');
@@ -170,7 +170,7 @@ test('cancelled cross-company history restores the selected room and dirty edito
 // Only the already-fetched package and media-preview boundary are fixtures.
 function AppearanceChoices(){return null;}
 function actualAppearance(session) {
-  const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../../../packages/presentation/contracts/studio-model.mjs');
+  const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../../../../packages/presentation/contracts/studio-model.mjs');
   const lane=defaultPresentationLane('astrid');lane.operatorAdjustable=['dealer'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','elin']};
   const initial={operatorId:'north',packageRevision:7,lanes:[lane.id],branding:{},adjustable:['dealer'],canConfigure:true,
     dealerChoices:{[lane.id]:['astrid','elin']},roomDealerChoices:{'main-room':['astrid','elin'],'vip-room':['astrid','elin']},
@@ -187,7 +187,7 @@ function actualAppearance(session) {
       require:key=>key==='react'?hooks:key.endsWith('.css')?{__esModule:true,default:{}}:key==='./appearance-choices'?{AppearanceChoices}:key==='./partner-appearance-preview'?{PartnerAppearancePreview:()=>null}:key.endsWith('.jsx')||key.endsWith('.tsx')&&key.startsWith('./')||key.endsWith('.mjs')&&key.startsWith('./')?jsxRequire(file,{react:hooks})(key):local(key)});
     return {render(props){cursor=0;return module.exports[name](props);},unmount(){for(const slot of slots)if(slot?.effect)slot.cleanup?.();}};
   };
-  const wrapper=mount('../components/partner/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
+  const wrapper=mount('../../components/partner/views/rooms.jsx','PartnerRoomWorkspace');let panel=null,mounts=0;
   const walk=tree=>!tree||typeof tree!=='object'?[]:[tree,...[tree.props?.children].flat(Infinity).flatMap(walk)];
   const render=()=>{
     const props=session.view().props;
@@ -195,7 +195,7 @@ function actualAppearance(session) {
       selection:props.roomSelection,onSelectionChange:props.onRoomSelectionChange,onDirtyChange:props.onAppearanceDirty});
     const loader=walk(tree).find(node=>node.type?.name==='PartnerAppearanceLoader');
     if(!loader){panel?.unmount();panel=null;return tree;}
-    if(!panel){panel=mount('../components/partner-appearance.tsx','PartnerAppearance');mounts++;}
+    if(!panel){panel=mount('../../components/partner-appearance.tsx','PartnerAppearance');mounts++;}
     return panel.render({...loader.props,initial});
   };
   const dealer=()=>walk(render()).find(node=>node.type===AppearanceChoices&&node.props.kind==='dealer');

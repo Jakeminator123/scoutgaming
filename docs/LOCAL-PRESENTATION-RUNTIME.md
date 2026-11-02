@@ -126,7 +126,7 @@ Spelinställningar (`room game config`, `packages/presentation/contracts/room-ga
 
 Tiderna är fasta: 20 s för insatser och 15 s per beslut.
 
-Flödet (`apps/studio/lib/room-game-config-api.mjs`, `GET`/`POST /studio/api/admin/room-game-config`):
+Flödet (`apps/studio/lib/rooms/room-game-config-api.mjs`, `GET`/`POST /studio/api/admin/room-game-config`):
 
 1. **Utkast.** `save-draft` sparar `{roomId, operatorId, revision: 'room-config-<uuid>', basePackageRevision, gameConfig}` i administrationsdokumentets `roomGameConfigs` (kräver v23) med revisionskontroll mot både dokument och paket.
 2. **Materialprov.** Servern härleder materialet ur det frysta paketet, inte ur Admins begäran: `{revision, dealerId, language, leadMs, cardMs, media: [{id, sha256}], film?}`. Varje medieport måste finnas fryst i paketet för rätt dealer, vara oförändrad i registret, inte arkiverad eller raderad, och en talad replik måste ha godkänd tagning för rätt språk och replik. Saknat material blockerar publiceringen med en namngiven orsak (`native_material_*`), aldrig med fixturtider eller ett annat språk. Talfria native-v2-planer med film, till exempel Hit och Split, får serverns sluttid från den exakt valda filmkedjan: hela bildrutor i naturlig hastighet, valda skotransitioner, öppningsmarginal och mellanrum. En talfri turväxling utan film, som Stand till nästa hand, öppnar nästa beslut direkt med hela beslutsfönstret. Planer med tal och äldre material behåller reservbudgeten `leadMs + draws * cardMs`. Redan committade planer behåller sina lagrade sluttider även vid återanslutning.
