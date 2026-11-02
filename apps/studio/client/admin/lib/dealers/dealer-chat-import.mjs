@@ -1,6 +1,6 @@
 import {applyImportProposals,importContentType,importFileError,importClassification,importRowError,planImportFiles} from './dealer-import.mjs';
-import {uploadNativeVideo} from '../../../lib/upload-native-video.mjs';
-import {uploadMediaBatch} from '../../../lib/media-upload-batch.mjs';
+import {uploadNativeVideo} from '../../../../lib/upload-native-video.mjs';
+import {uploadMediaBatch} from '../../../../lib/media-upload-batch.mjs';
 
 async function nativeRequest(path,options={}) {
   const response=await fetch(path,{...options,credentials:'same-origin',cache:'no-store',redirect:'error',headers:{accept:'application/json',...(options.body?{'content-type':'application/json'}:{})}});

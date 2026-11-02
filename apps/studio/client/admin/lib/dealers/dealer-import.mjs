@@ -1,9 +1,9 @@
-import { validateVideoMetadata } from '../../../../../packages/presentation/contracts/video-intake.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
-import { addDealer, validateProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import { MAX_DEALERS, isActiveDealerId } from '../../../../../packages/presentation/contracts/dealer-identity.mjs';
-import { CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses } from '../../../../../packages/presentation/contracts/clip-naming.mjs';
-export { labUrl } from '../../../lib/lab-url.mjs';
+import { validateVideoMetadata } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import { addDealer, validateProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import { MAX_DEALERS, isActiveDealerId } from '../../../../../../packages/presentation/contracts/dealer-identity.mjs';
+import { CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses } from '../../../../../../packages/presentation/contracts/clip-naming.mjs';
+export { labUrl } from '../../../../lib/lab-url.mjs';
 export { CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses };
 
 // Pose chains apply to deal, reveal and shoe transition videos only. The

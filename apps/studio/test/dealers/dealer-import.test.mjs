@@ -10,7 +10,7 @@ import {createStudioMediaApi} from '../../lib/studio-media-api.mjs';
 import {createStudioRepository} from '../../../../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from '../../../../test/fixtures/studio-memory-pool.mjs';
 import {seedSavedVideoProject} from '../fixtures/video-dealer-project.mjs';
-import {restoreIntakeNotes} from '../../client/admin/lib/clip-intake.mjs';
+import {restoreIntakeNotes} from '../../client/admin/lib/dealers/clip-intake.mjs';
 
 const origin = 'https://studio.example.invalid', scope = { environment: 'test', workspaceId: 'studio-test' };
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth', allowedOrigins: ['https://public.example.invalid', origin], publicHosts: ['public.example.invalid', 'studio.example.invalid'] };

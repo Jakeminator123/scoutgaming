@@ -2,7 +2,7 @@ import {useRef,useState} from 'react';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {filmedProfileFor} from '../../../../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import {nativeFilmedBankState} from '../../../../../../packages/presentation/contracts/filmed-bank-bindings.mjs';
-import {importDealerFilmedProfile,readFilmedProfileFile} from '../../lib/dealer-filmed-profile.mjs';
+import {importDealerFilmedProfile,readFilmedProfileFile} from '../../lib/dealers/dealer-filmed-profile.mjs';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import {Button,Footnote} from '../ui/kit';
 

@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {setTemplateDealers,dealerIdFromName} from './dealer-directory.mjs';
 import * as dealerDirectoryLib from './dealer-directory.mjs';
-import {lifecycleMessage} from './studio-lifecycle.mjs';
-import * as lifecycleActions from './lifecycle-actions.mjs';
-import {dealerArchivePlan,dealerRestorePlan,dealerDeletePlan} from './lifecycle-actions.mjs';
+import {lifecycleMessage} from '../studio-lifecycle.mjs';
+import * as lifecycleActions from '../lifecycle-actions.mjs';
+import {dealerArchivePlan,dealerRestorePlan,dealerDeletePlan} from '../lifecycle-actions.mjs';
 import * as dealerCoverage from './dealer-coverage.mjs';
-import * as navigation from '../../../../../packages/navigation/admin-navigation.mjs';
+import * as navigation from '../../../../../../packages/navigation/admin-navigation.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 // The kit's dialogs and buttons are function components; expand them so their texts and buttons are inspectable.
 const expand=node=>{while(node&&typeof node==='object'&&typeof node.type==='function')node=node.type(node.props);return node;};
@@ -24,7 +24,7 @@ const hub={
   Empty:({title,text})=>React.createElement('div',{role:'status'},React.createElement('h3',null,title),text),
   ActionMenu:({name,actions})=>React.createElement('span',{'aria-label':'Åtgärder för '+name},actions.map(a=>React.createElement('button',{key:a.id,type:'button','data-action':a.id,disabled:Boolean(a.disabled),onClick:a.onSelect},a.label))),
 };
-const tsx=name=>transformSync(readFileSync(new URL('../components/'+(name.includes('/')?name:'studio/'+name)+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+const tsx=name=>transformSync(readFileSync(new URL('../../components/'+(name.includes('/')?name:'studio/'+name)+'.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
 function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dragan') {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
   for(const dealer of additionalDealers){remote.project=addDealer(remote.project,dealer.id,dealer.label);remote.catalog.administration.dealers.push({id:dealer.id,name:dealer.label});}
@@ -59,7 +59,7 @@ function harness(restoreCompositions=[],additionalDealers=[],search='?dealer=dra
     if(name==='../ui/dialog')return dialogModule.exports;
     if(name==='../ui/kit')return kitModule.exports;
     if(name==='../ui/toast')return{toast:text=>toasts.push(text)};
-    if(name.includes('lib/dealer-directory'))return dealerDirectoryLib;
+    if(name.includes('lib/dealers/dealer-directory'))return dealerDirectoryLib;
     if(name.includes('lifecycle-actions'))return lifecycleActions;
     if(name.includes('studio-model'))return{addDealer};
     if(name.includes('connected-studio'))return{createStudioClient:()=>client};
@@ -298,7 +298,7 @@ test('dealer hub binds Taldrift to the shown dealer',()=>{
     if(name==='react')return {...React,useState:initial=>[initial,()=>{}],useEffect:()=>{}};
     if(name.includes('runtime/navigation'))return {__esModule:true,default:'a',useSearchParams:()=>new URLSearchParams()};
     if(name.endsWith('lib/admin-navigation'))return navigation;
-    if(name.endsWith('lib/dealer-coverage.mjs'))return dealerCoverage;
+    if(name.endsWith('lib/dealers/dealer-coverage.mjs'))return dealerCoverage;
     if(name==='../ui/hub')return {...hub,Note:({children})=>React.createElement('aside',null,children)};
     if(name==='../ui/kit')return {cn:(...parts)=>parts.join(' '),buttonVariants:()=>''};
     if(name==='./taldrift-panel')return {TaldriftPanel:'taldrift-fixture'};

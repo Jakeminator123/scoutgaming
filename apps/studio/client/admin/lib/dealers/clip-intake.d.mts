@@ -1,6 +1,6 @@
 import type { ClipPoses, ImportCatalog, ImportSlot } from './dealer-import.mjs';
-import type { ClipGroup } from './studio-layout.mjs';
-import type { VideoMetadata } from '../../../../../packages/presentation/contracts/video-intake.mjs';
+import type { ClipGroup } from '../studio-layout.mjs';
+import type { VideoMetadata } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
 import type { VideoInventory } from '../../../../../packages/presentation/contracts/media-inventory.mjs';
 export type IntakeNoteRepairPlan = {dealerId:string;candidates:{id:string;sha256:string;previous:VideoMetadata;notes:string}[];skipped:number};
 export type IntakeNoteRepairResult = {total:number;saved:number;conflicts:number;failed:number;remaining:number;inventory:VideoInventory|null};

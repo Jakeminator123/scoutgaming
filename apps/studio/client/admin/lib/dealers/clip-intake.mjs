@@ -4,8 +4,8 @@
 // folder paths are advice. Upload rights always come from the registered
 // catalogue through importClassification, never from a proposal.
 import { applyImportProposals, compatibleImportSlot, importContentType, importFileError, importRowError, slotAcceptsPoses, labUrl } from './dealer-import.mjs';
-import { validateVideoMetadata } from '../../../../../packages/presentation/contracts/video-intake.mjs';
-import { slotCaption } from './studio-layout.mjs';
+import { validateVideoMetadata } from '../../../../../../packages/presentation/contracts/video-intake.mjs';
+import { slotCaption } from '../studio-layout.mjs';
 
 export const INTAKE_DRAG_TYPE = 'application/x-scout-intake';
 export const INTAKE_PATH_LIMIT = 240;

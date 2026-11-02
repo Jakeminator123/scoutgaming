@@ -7,7 +7,7 @@ import { clipPoseChain } from '../../../../components/clip-pose-chain.mjs';
 import type { ClipSlot, VideoEntry } from '../../lib/connected-studio.mjs';
 import type { StudioClipUsage } from '../../lib/studio-policy.mjs';
 import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup, type ClipLibraryGroup } from '../../lib/studio-layout.mjs';
-import { INTAKE_DRAG_TYPE } from '../../lib/clip-intake.mjs';
+import { INTAKE_DRAG_TYPE } from '../../lib/dealers/clip-intake.mjs';
 import {registeredFilmedProfile} from '../../../../../../packages/presentation/contracts/filmed-profiles/registry.mjs';
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   filmedProfile?:{takes:{sha256:string}[]}|null;

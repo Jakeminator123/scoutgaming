@@ -6,7 +6,7 @@ import {HubPage,Card,Chip,Row,Empty,AsideLink} from '../ui/hub';
 import {buttonVariants,cn,formatNumber,Loading,plural,Stat} from '../ui/kit';
 import {ChartContainer,ChartTooltip,ChartTooltipContent} from '../ui/chart';
 import {createStudioClient,type Workspace} from '../../lib/connected-studio.mjs';
-import {dealerCoverage,dealerStill} from '../../lib/dealer-coverage.mjs';
+import {dealerCoverage,dealerStill} from '../../lib/dealers/dealer-coverage.mjs';
 import {journalType} from '../../lib/economy-journal.mjs';
 import {readAdminSession} from '../../lib/admin-session';
 import {createStudioAdminClient,studioAdminActor} from '../../../../components/studio-administration';

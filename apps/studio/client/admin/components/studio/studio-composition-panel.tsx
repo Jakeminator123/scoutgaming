@@ -15,7 +15,7 @@ import { BackgroundPlaybackEditor, LayerPlaybackEditor } from '../../../../compo
 import { effectiveDealerCompositing } from '../../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 import { useScenePreviewMedia } from '../../lib/scenes/scene-preview-media.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
-import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
+import { setTemplateDealers } from '../../lib/dealers/dealer-directory.mjs';
 
 export function StudioCompositionPanel({operatorId,operatorSlug,operatorName,localReferenceUrl,project,savedProject,inventory,room,compositionId,onSelect,game:requestedGame,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange,inEnvironment=false}:{inEnvironment?:boolean;operatorId?:string;operatorSlug?:string;operatorName?:string;localReferenceUrl?:string;project:StudioProject;savedProject:StudioProject|null;inventory:VideoInventory;room?:Room;compositionId?:string;onSelect?:(id:string)=>void;game?:'blackjack'|'roulette';dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table'|'illustration')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [selectedLayout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');

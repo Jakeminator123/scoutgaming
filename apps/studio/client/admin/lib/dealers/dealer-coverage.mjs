@@ -1,5 +1,5 @@
-import {clipSlots,currentClipId} from './connected-studio.mjs';
-import {NATIVE_ROOM_SPEECH_SLOTS} from '../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
+import {clipSlots,currentClipId} from '../connected-studio.mjs';
+import {NATIVE_ROOM_SPEECH_SLOTS} from '../../../../../../packages/presentation/contracts/native-room-game-budget.mjs';
 
 // What a dealer needs before publication (native-room-game-material.mjs:115-122): the whole deal bank,
 // idle and the ten speech slots. Counted from the project's lines[] and the media register, per slot.

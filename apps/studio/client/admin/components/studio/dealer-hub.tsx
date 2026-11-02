@@ -6,7 +6,7 @@ import {buttonVariants,cn,Footnote,plural,TechnicalDetails,textLinkClass} from '
 import {adminDealerTabs,adminDealerSteps} from '../../lib/admin-navigation';
 import type {Workspace} from '../../lib/connected-studio.mjs';
 import type {StudioProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
-import {dealerCoverage,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealer-coverage.mjs';
+import {dealerCoverage,dealerStill,dealerTemplates,dealerUses} from '../../lib/dealers/dealer-coverage.mjs';
 import {DealerAvatar} from './dealer-identity-portrait';
 import {WorkspaceTool} from './workspace-tools';
 import {TaldriftPanel} from './taldrift-panel';

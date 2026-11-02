@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFilmedProfileFile,importDealerFilmedProfile,MAX_FILMED_PROFILE_BYTES} from './dealer-filmed-profile.mjs';
-import {addDealer,createSeedProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {studioCopyProfile} from '../../../../../test/fixtures/native-room-game-material.mjs';
+import {addDealer,createSeedProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {studioCopyProfile} from '../../../../../../test/fixtures/native-room-game-material.mjs';
 
 test('profile file parsing bounds input and rejects missing take inventories',async()=>{
   let read=false;

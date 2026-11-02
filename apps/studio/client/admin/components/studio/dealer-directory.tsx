@@ -5,8 +5,8 @@ import type { DealerArchiveImpact } from '../../../../lib/dealers/dealer-archive
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
 import { createLifecycleClient, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';
 import { dealerArchivePlan, dealerDeletePlan, dealerRestorePlan } from '../../lib/lifecycle-actions.mjs';
-import { dealerCoverage, dealerStill, dealerTemplates, dealerUses } from '../../lib/dealer-coverage.mjs';
-import { dealerIdFromName } from '../../lib/dealer-directory.mjs';
+import { dealerCoverage, dealerStill, dealerTemplates, dealerUses } from '../../lib/dealers/dealer-coverage.mjs';
+import { dealerIdFromName } from '../../lib/dealers/dealer-directory.mjs';
 import Link, { navigate, useSearchParams } from '../../../runtime/navigation';
 import { ConfirmAcknowledgement, ConfirmDialog, Dialog, DialogSteps } from '../ui/dialog';
 import { DealerAvatar } from './dealer-identity-portrait';

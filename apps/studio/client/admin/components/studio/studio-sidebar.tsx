@@ -8,12 +8,12 @@ import {parseAdminPath} from '../../../runtime/admin-routing.mjs';
 import {AdminLogout} from './admin-logout';
 import {ThemeToggle} from './theme-toggle';
 import {readSharedWorkspace,subscribeSharedWorkspace} from '../../lib/connected-studio.mjs';
-import {adminMenuCounts} from '../../lib/dealer-coverage.mjs';
+import {adminMenuCounts} from '../../lib/dealers/dealer-coverage.mjs';
 
 const icons:Record<string,LucideIcon>={'/admin/dealers':Users,'/admin/scenes':LayoutDashboard,'/admin/companies':Building2,'/admin/system':Settings,'/admin/guide':CircleHelp};
 // A nav page marks the menu entry it belongs to, so exactly one entry is current.
 const menuHome:Record<string,string>={home:'/admin',dealers:'/admin/dealers',dealer:'/admin/dealers',scenes:'/admin/scenes',companies:'/admin/companies',company:'/admin/companies',room:'/admin/companies',system:'/admin/system',guide:'/admin/guide'};
-// What a counter next to a menu entry means; the numbers come from adminMenuCounts (lib/dealer-coverage.mjs).
+// What a counter next to a menu entry means; the numbers come from adminMenuCounts (lib/dealers/dealer-coverage.mjs).
 const countHints:Record<string,(n:number)=>string>={
   '/admin/dealers':n=>n===1?'1 dealer saknar klipp':`${n} dealers saknar klipp`,
   '/admin/companies':n=>n===1?'1 spelbord är inte spelbart':`${n} spelbord är inte spelbara`,

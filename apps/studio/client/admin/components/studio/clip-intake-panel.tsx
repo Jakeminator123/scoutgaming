@@ -4,9 +4,9 @@ import { Check, FolderOpen, GripVertical, RefreshCw, Upload, X } from 'lucide-re
 import { uploadNativeVideo } from '../../../../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../lib/media-upload-batch.mjs';
 import { labUrl, importClassification, importContentType, importErrorMessage, importRowPoses, slotAcceptsPoses, compatibleImportSlot,
-  CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses, type ImportCatalog } from '../../lib/dealer-import.mjs';
+  CLIP_POSE_VARIANTS, clipPosesForVariant, clipVariantForPoses, type ImportCatalog } from '../../lib/dealers/dealer-import.mjs';
 import { INTAKE_DRAG_TYPE, applyIntakeProposals, collectDroppedFiles, intakeConfidenceLabel, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles, validateIntakeNoteRepairs, restoreIntakeNotes,
-  type IntakeEntry, type IntakeProposal, type IntakeRow, type IntakeNoteRepairPlan, type IntakeNoteRepairResult } from '../../lib/clip-intake.mjs';
+  type IntakeEntry, type IntakeProposal, type IntakeRow, type IntakeNoteRepairPlan, type IntakeNoteRepairResult } from '../../lib/dealers/clip-intake.mjs';
 import type { ClipGroup } from '../../lib/studio-layout.mjs';
 import type { VideoInventory } from '../../lib/connected-studio.mjs';
 

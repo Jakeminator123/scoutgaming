@@ -5,7 +5,7 @@ import { RotateCcw, Layers, Users, Volume2, Upload } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { ConnectedClipCard, ConnectedClipDetails, ClipThumb, type CardNode } from './connected-clip-card';
 import { ClipIntakePanel, type ClipIntakeHandle } from './clip-intake-panel';
-import { collectDroppedFiles, type IntakeEntry } from '../../lib/clip-intake.mjs';
+import { collectDroppedFiles, type IntakeEntry } from '../../lib/dealers/clip-intake.mjs';
 import {filmedProfileFor} from '../../../../../../packages/presentation/contracts/filmed-profiles/studio-profile.mjs';
 import { DealerIdentityPortrait } from './dealer-identity-portrait';
 import { bindClip, bindNativeFilmedBank, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace, type VideoInventory } from '../../lib/connected-studio.mjs';

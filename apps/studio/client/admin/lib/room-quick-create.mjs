@@ -4,7 +4,7 @@
 // och en knapp (stopView).
 import {defaultPresentationLane} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {createStudioClient} from './connected-studio.mjs';
-import {dealerCoverage} from './dealer-coverage.mjs';
+import {dealerCoverage} from './dealers/dealer-coverage.mjs';
 import {measureClipsInOrder,unmeasuredClips} from './media-timing.mjs';
 import {blockerView,BLOCKER_CODES} from './blocker-view.mjs';
 import {createPresentationRoomClient} from '../../../lib/rooms/presentation-room-client.mjs';

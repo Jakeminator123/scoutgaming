@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import * as navigation from '../../../../packages/navigation/admin-navigation.mjs';
 import {createEmptyProject,addDealer} from '../../../../packages/presentation/contracts/studio-model.mjs';
-import * as coverage from '../../client/admin/lib/dealer-coverage.mjs';
+import * as coverage from '../../client/admin/lib/dealers/dealer-coverage.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
 
@@ -70,7 +70,7 @@ const workspace=()=>({inventory:{videos:[]},project:addDealer(addDealer(createEm
     operators:[{id:'north',name:'North',slug:'north',status:'active',archivedAt:null,packageRevision:1}],
     rooms:[room('open'),room('paused',{state:'pending',playable:false}),room('draft',{published:false,playable:false}),room('gone',{state:'archived',playable:false})]}}});
 const never=()=>({load:()=>new Promise(()=>{})});
-const stubs={'../../lib/connected-studio.mjs':{createStudioClient:never,readSharedWorkspace:()=>null,subscribeSharedWorkspace:()=>()=>{}},'../../lib/dealer-coverage.mjs':coverage};
+const stubs={'../../lib/connected-studio.mjs':{createStudioClient:never,readSharedWorkspace:()=>null,subscribeSharedWorkspace:()=>()=>{}},'../../lib/dealers/dealer-coverage.mjs':coverage};
 
 test('the menu counts dealers missing clips and spelbord that cannot be played, from the catalog',()=>{
   assert.deepEqual(coverage.adminMenuCounts(workspace()),{'/admin/dealers':2,'/admin/companies':2});
@@ -98,7 +98,7 @@ test('the menu counters follow the pages\' own reads and saves without loading a
   const file=new URL('../../client/admin/components/studio/studio-sidebar.tsx',import.meta.url),fileRequire=createRequire(file),module={exports:{}};
   runInNewContext(transformSync(readFileSync(file,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,AbortController,
     fetch:async url=>{own.push(String(url));throw Error('the menu requests nothing');},
-    require:name=>name==='react'?hooks:name.endsWith('lib/connected-studio.mjs')?spy:name.endsWith('lib/dealer-coverage.mjs')?coverage:name.endsWith('lib/admin-navigation')?navigation:
+    require:name=>name==='react'?hooks:name.endsWith('lib/connected-studio.mjs')?spy:name.endsWith('lib/dealers/dealer-coverage.mjs')?coverage:name.endsWith('lib/admin-navigation')?navigation:
       name==='./admin-logout'?{AdminLogout:()=>null}:name==='./theme-toggle'?{ThemeToggle:()=>null}:name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>'/admin'}:fileRequire(name)});
   const counts=()=>module.exports.StudioSidebar({}).props.counts;
   assert.deepEqual(counts(),{},'nothing read yet: no counters');

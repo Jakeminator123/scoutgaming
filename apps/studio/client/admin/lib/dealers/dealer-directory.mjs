@@ -1,5 +1,5 @@
-import {validateProject} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {isActiveDealerId} from '../../../../../packages/presentation/contracts/dealer-identity.mjs';
+import {validateProject} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import {isActiveDealerId} from '../../../../../../packages/presentation/contracts/dealer-identity.mjs';
 
 // A new dealer's id comes from its name: lower case a–z, 0–9 and hyphens (å, ä, ö → a, a, o), starting
 // with a letter, at most 40 characters, valid and free by the same rule addDealer checks (active dealers,

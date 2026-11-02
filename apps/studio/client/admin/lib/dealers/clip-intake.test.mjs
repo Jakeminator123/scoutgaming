@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applyIntakeProposals, collectDroppedFiles, intakeDescriptors, intakeDestination, intakeDropCheck, intakeRelativePath, intakeRole, intakeRowIssue, intakeSummary, intakeUploadRows, placeIntakeRow, planIntakeFiles, validateIntakeNoteRepairs, restoreIntakeNotes, INTAKE_DRAG_TYPE } from './clip-intake.mjs';
 import { importClassification } from './dealer-import.mjs';
-import { createSeedProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import { clipSlots } from './connected-studio.mjs';
-import { groupSlots } from './studio-layout.mjs';
+import { createSeedProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
+import { clipSlots } from '../connected-studio.mjs';
+import { groupSlots } from '../studio-layout.mjs';
 
 const catalog = { dealers: [{ id: 'paow', label: 'Paow' }], limits: { maxFiles: 30, maxFileBytes: 134217728 }, slots: [
   { id: 'idle.ready/', label: 'Grundloop', eventId: 'idle.ready', situation: '', kind: 'idle', category: 'idle' },

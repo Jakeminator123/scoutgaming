@@ -9,7 +9,7 @@ import * as settings from '../../../../../packages/presentation/contracts/compos
 import {layerAssetFitsGame,layerAssetPath} from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import {defaultLayerRule,selectableLayerBases} from '../../../../../packages/presentation/contracts/background-playback-policy.mjs';
 import {rouletteReferencePreview} from './roulette/roulette-clip-map.mjs';
-import {setTemplateDealers} from './dealer-directory.mjs';
+import {setTemplateDealers} from './dealers/dealer-directory.mjs';
 import {effectiveDealerCompositing} from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
 import {aiTableFitsTemplate} from './ai-background.mjs';
 import * as scenePreviewMedia from './scenes/scene-preview-media.mjs';

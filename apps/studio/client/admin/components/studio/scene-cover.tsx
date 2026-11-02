@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {Layers} from 'lucide-react';
 import type {LayerAsset,StudioLane} from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import {desktopSceneStill,stillRectPercent} from '../../../../../../packages/presentation/runtime/scene-still.mjs';
-import {suppliedDealerArtwork} from '../../lib/dealer-artwork.mjs';
+import {suppliedDealerArtwork} from '../../lib/dealers/dealer-artwork.mjs';
 
 const assetUrl=(id:string)=>'/studio/api/layer-assets/'+encodeURIComponent(id);
 const imageAsset=(assets:LayerAsset[],id:string|null|undefined,role:LayerAsset['role'])=>{const asset=id?assets.find(row=>row.id===id&&row.role===role):undefined;return asset?.contentType.startsWith('image/')?asset:undefined;};
