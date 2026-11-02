@@ -1,6 +1,9 @@
 # Talkedjan: dealer-generisk, Paow först
 
-Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att migreringen nått 100 %. Underlaget är [Paow-underlaget i Git](https://github.com/Jakeminator123/scoutgaming/blob/c0150add62fd9e4b39fd31a7e0127406ca860007/docs/plans/PAOW-LIPSYNC.md) (#528, proven och verifierat läge) och Jakobs beslut samma natt: behåll hela GPU- och talspåret och gör det lika för alla dealers. O03 är genomfört (#527); milstolpar som byggts markeras i planen. Se [TALKEDJA-RUNPOD](../media/TALKEDJA-RUNPOD.md) för daterat driftunderlag. Arbetet är pausat enligt Jakob. Vid återupptag gäller aktuell körplan och mergeordningen i AGENTS; daterade mätningar nedan är inte färsk molnstatus. Bara Jakob godkänner ljud och läppsynk.
+**Arbetet är pausat enligt Jakob.** Planen samlar återstående arbete enligt
+beslutet 28 oktober: behåll GPU- och talspåret och gör det lika för alla dealers.
+Vid återupptag gäller [körplanen](organisation/KORPLAN-v2.md) och mergeordningen
+i [AGENTS](../../AGENTS.md). Bara Jakob godkänner ljud och läppsynk.
 
 ## Målbild
 
@@ -10,48 +13,14 @@ Genomförandeplan för talkedjan efter O03, skriven 28 oktober 2026 efter att mi
 4. Ingen dealer är ett specialfall i kod: inga hårdkodade dealerlistor, ID eller budgetnamn.
 5. Dragan blir en dealer bland andra och byts aldrig ut i produktionen under arbetet.
 
-## Verifierat 30 oktober 2026, kl. 11:07–11:24
+## Underlag och acceptans
 
-Kontrollerna nedan är orkestratorns liveverifiering mot kodbas `638a138d07690cc1bfa50e790dd744db95b441c7`. De ersätter äldre antaganden om röståtkomst och driftberedskap; PR-sekvensen nedan är fortfarande en plan.
-
-| Del | Verifierat | Återstår |
-| --- | --- | --- |
-| ElevenLabs | Aktiv `ELEVENLABS_API_KEY` på Render når Jakob (`lMIZLGqZiWeEKgssOCKm`) och ABYDM (`PiGyGh3I6t288DXzqeDV`). Paow och Dragan ger `voice_not_found`; `ELEVEN_KEVIN` saknas. | Kevins uppgift om Impactwin respektive hans vanliga konto är rapporterad, inte verifierad via profil-API. Alla fyra ska samlas hos Kevin enligt Jakobs beslut; åtkomst till alla fyra måste verifieras före byte. |
-| Stillbildsendpoint | `zsudl8tmzcmiv1` gav health HTTP 200, noll workers och noll jobb. Inget GPU-jobb startades i denna kontroll. | Deployad image och protokoll är okända; health bevisar inte att endpointen tar produktens begäran eller levererar användbar läppsynk. |
-| Jakob 2 | Talprofilen är `preparation` med `video-frame`. Ordinarie referenstjänst verifierade registrerad Blob-SHA och tog ut PNG 1080×1920. Ett tvåsekunders Jakob-TTS-prov gav HTTP 200 och PCM 24 kHz. | Ingen läppsynk, spelacceptans eller godkänd talprofil följer av referens- eller ljudprovet. |
-| Delat spelbord | `generated-speech-stream` visas bara som text eftersom dess uppspelningsväg saknar `assertCurrent`; enbart `moving-speech-stream` får spelas. Chattens utsändning till alla deltagare gäller också enbart moving. | Stillbildsvägen behöver stöd för aktuell session/svar och avbrott samt gemensam distribution innan den kan godkännas vid bordet. Källor: `services/game/public/shared-room-presentation.mjs:51–54`, `services/game/shared-room-chat.mjs:229–238`. |
-| Adminspel | `/studio-preview` deklarerar `externalServices.ai=false` och `speech=false` (`services/game/studio-preview.mjs:198`). | Ett godkänt Adminspel provar därför inte nytt AI-tal. |
-| Rörligt tal | Moving är fortsatt av och Jakob 2 saknar bank. Ingen global konfiguration ändrades av verifieringen. | Bank, verifierad worker/protokollkedja och ljud-/bildacceptans krävs för det rörliga spåret. |
-
-## Kodavstämning 1 november 2026
-
-Bas `e3dbed2c17afe91deb81ff9b9e9d88264958d38f`. Tabellen ovan är ett
-daterat prov; den visar inte dagens provideråtkomst eller ny AV-acceptans.
-
-- T3:s banker och driftprofiler per dealer är införda (#549).
-- T5:s referensval finns i `studio-speech-panel.tsx`: `video-frame` och
-  `motion-video`. Rörligt tal kräver fortfarande en verifierad bank.
-- Valfri talstart är isolerad av `services/game/speech-startup.mjs`:
-  en gemensam avbrytbar femsekundersdeadline täcker bankläsningarna.
-  Förväntade konfigurations-/bankfel degraderar talet; obligatoriska databasfel,
-  programmeringsfel och oväntade filsystemfel ska fortfarande stoppa start.
-  Den äldre uppgiften att en saknad moving-bank alltid fäller spelet är
-  rättad genom TAL-02. Det innebär inte att talet är godkänt i drift.
-- Faktisk rumspublicering använder `resolveNativeRoomGameMaterial` i
-  `packages/presentation/server/native-room-game-material.mjs`, via
-  `apps/studio/lib/studio-native-runtime.mjs` och `room-release.mjs`.
-  Den binder fryst paket, registrerad filmprofil och media-id/hash/timing.
-  Den historiska K04-katalogen och revisionshjälparen är avvecklade;
-  den kvarvarande testkedjan använder detta publiceringskontrakt.
-- Callbackrättningen för produktionsmallen är kvitterad 30 oktober 16:46 UTC
-  i [miljöguiden](../operations/ENVIRONMENT-VARIABLES.md). Kör inte den historiska
-  fixern igen utan en aktuell felbild. Previews separata bindning måste
-  verifieras i sin egen miljö.
-
-Speloutboxen försörjer presentationen utan skrivport till kort, sko, saldo
-eller utbetalningar. Providerorkestrering och tal delar fortfarande
-motorns process; separat tjänst är kvarvarande T8, inte en förutsättning
-för den redan införda begränsningen av valfri talstart.
+[Fryst verifiering och kodavstämning 30 oktober–1 november](https://github.com/Jakeminator123/scoutgaming/blob/91b4e1888ea28c008b4ff25f827474a78f4f79db/docs/plans/TALKEDJA.md#verifierat-30-oktober-2026-kl-11071124)
+och [RunPod-underlaget](../media/TALKEDJA-RUNPOD.md) bär de daterade proven.
+De visar inte dagens provideråtkomst eller godkänd läppsynk. Jakob-2:s
+referens- och TTS-prov gav ingen spelacceptans; moving var av och banken saknades.
+Kontrakt för paket, filmprofil, media-id/hash/timing och uppspelning finns i
+[runtimeguiden](../media/PRESENTATION-RUNTIME.md).
 
 ## Återstående steg
 
@@ -62,24 +31,26 @@ bedöma efter verkliga konsumenter.
 
 ### T1. Paow talar via stillbild (spår 1, ännu inte verifierat)
 
-- **Syfte:** bevisa hela stillbildsvägen för vald dealer. Antagandet att enbart Admin-konfiguration räcker är inte verifierat; delat spelbord har kodspärrarna ovan.
-- **Görs:** Admin → Dealers → Paow → Röst och tal. Röst ur katalogen (`WZVEBKUreb9jAKojf0QF`; sv `eleven_v3` 0,5/0,85/speaker boost, en `eleven_multilingual_v2` 0,38/0,8/style 0,3), referens `video-frame` mot ett av Paows vilaklipp, `offsetMs` på vilorutan (helst samma ruta som Kevins `talk_base.png`), granska rutan, "Begär AI-tal", spara.
+- **Görs:** Admin → Dealers → Paow → Röst och tal. Välj röst och språkprofil ur [röstkatalogen](../../packages/presentation/contracts/dealer-voice-catalog.json), `video-frame` mot ett av Paows vilaklipp och `offsetMs` på vilorutan (helst samma ruta som Kevins `talk_base.png`). Granska rutan, "Begär AI-tal", spara.
+- **Delat bord:** enligt kodavstämningen saknar `generated-speech-stream` `assertCurrent` och visas därför bara som text. Gemensam distribution gäller också bara moving. Stillbildsvägen behöver aktuell session/svar, avbrott och distribution i `services/game/public/shared-room-presentation.mjs` och `services/game/shared-room-chat.mjs`; Admin-konfiguration ensam räcker inte som bevis.
 - **Underlag:** vid godkänt änd-till-änd-prov dokumenteras profilrevision, referensklippets ID och sha256, journalrad, reservation och GPU-tid i `docs/<datum>-TALKEDJA-T1-ACCEPTANCE.json`. Nödvändiga kodrättningar avgränsas efter de verifierade spärrarna; inget sådant kvitto finns i denna uppdatering.
 - **Förutsättningar:** aktiv nyckel måste nå vald röst. Den 30 oktober gav Paow `voice_not_found`; den befintliga endpointen `zsudl8tmzcmiv1` har ännu inte verifierad image/protokollkedja. Varken röst-ID, flaggor eller health HTTP 200 räcker som driftbevis.
-- **DDL:** inget behov fastställt. **Env:** inget ändrat; eventuell nyckeländring följer T7 och miljöförteckningen.
+- **Mandat:** inget DDL-behov fastställt; eventuell nyckeländring följer T7 och miljöförteckningen.
 - **Prov:** Dialogtest mot Paow: text → röst → läppsynk från stillbild. Kontrollera att sessionsjournalen tar svaret (`generated-speech-stream.mjs:239–243`: utan journal tas bara den gamla avataren emot) och att reservationen räknas mot `CROUPIER_SPEECH_RUNPOD_*`.
-- **Preview:** först efter verifierad provideruppsättning. `/studio-preview` har AI och tal avstängda och kan inte utgöra detta prov. Planens tidigare Dialogtest i produktion med Paow otilldelad till bolag är ingen redan utförd acceptans.
-- **Risk:** låg för spelet. Planens historiska uppgifter för `zsudl8tmzcmiv1` var min 0 och idle 5 s; dagens healthkontroll verifierar inte dessa inställningar eller svarstid. Kallstart, grön kant från padden i `dealer-speech-reference.mjs:89` och teckenkvot behöver bedömas i det faktiska provet.
+- **Preview:** först efter verifierad provideruppsättning. `/studio-preview` har AI och tal avstängda och kan inte utgöra detta prov. Ingen tidigare planerad produktionskörning är genomförd acceptans.
+- **Driftprov:** verifiera aktuella workerinställningar, kallstart, grön kant från padden i `dealer-speech-reference.mjs` och teckenkvot; gamla inställningar och health HTTP 200 bevisar inte svarstid.
 
 ### T2. Preview får verifierad taluppsättning
 
 Preview har daterade nyckel- och konfigurationskvitton i
-[ENVIRONMENT-VARIABLES](../operations/ENVIRONMENT-VARIABLES.md); den äldre uppgiften
+[miljöguiden](../operations/ENVIRONMENT-VARIABLES.md#verifierad-tal--och-miljöstatus-30-oktober-2026); den äldre uppgiften
 att alla talnycklar saknas ska inte användas. Kontrollera nuvarande
 miljöspecifik röst-, endpoint-, budget- och callbackbindning innan prov.
 Produktionens nycklar kopieras inte som genväg. Godkänt dealermaterial
 får ligga i preview-Blob enligt [START-HERE](../../START-HERE.md#preview).
 En konfigurationskontroll eller HTTP 200 är inte ett komplett talprov.
+Produktionens callbackrättning är redan kvitterad där; kör inte den
+historiska fixern igen utan en aktuell felbild.
 
 ### T3. Infört; återstående T3b
 
@@ -116,7 +87,7 @@ hårdkodade specialfall när de ersätts av dealerdata; avveckla Astrid enligt
 [körplanens datauppdrag](organisation/KORPLAN-v2.md#data-och-medieavveckling). Behåll behörighet, tids-/revisionsbindning och
 verifierad mediekomposition; ta bort rena testlås på pensionerat beteende.
 
-K04:s dealerlistor och timingdata hör till testfixturen
+K04:s produktkatalog och revisionshjälpare är avvecklade. Dealerlistor och timingdata hör till testfixturen
 `test/fixtures/blackjack/`. Att flytta eller städa den kräver ingen
 ompublicering av produktionsrum. Om ett faktiskt publicerat materialkontrakt
 ändras ska däremot dess paket, hash och konsumtion verifieras.
@@ -133,7 +104,7 @@ ompublicering av produktionsrum. Om ett faktiskt publicerat materialkontrakt
 ### T8. Taltjänsten ut ur motorn
 
 - **Riktning bekräftad 30 oktober:** v3 ska behålla spelregler, kort, sko, saldo och auktoritativ tid. Saknade gamla v2-variabler är inte fel i sig; gamla tjänster eller providerinställningar kopieras inte tillbaka för att fylla en lista.
-- **Nuläge:** speloutboxens presentationsadapter saknar skrivport till spelet, men talets journal, budget, TTS, RunPod-jobb, banker, drift och callback delar fortfarande v3-processen. `apps/speech` är ingress, inte en fristående arbetande taltjänst. Valfri bankläsning har nu en avbrytbar deadline och degradering enligt kodavstämningen ovan; obligatoriska startupfel förblir fatala. Logisk separation är därför verifierad, processisolering återstår.
+- **Nuläge:** speloutboxens presentationsadapter saknar skrivport till spelet, men talets journal, budget, TTS, RunPod-jobb, banker, drift och callback delar fortfarande v3-processen. `apps/speech` är ingress, inte en fristående arbetande taltjänst. `speech-startup.mjs` har redan gemensam avbrytbar femsekundersdeadline för valfria bankläsningar: förväntade konfigurations-/bankfel degraderar talet; obligatoriska databasfel, programmeringsfel och oväntade filsystemfel stoppar start. Processisolering återstår och är inte en förutsättning för den införda startbegränsningen.
 - **Gräns:** en separat Render-process äger befintliga talmoduler och providerhemligheter. Motorn behåller medlemskap, behörighet, runda och färskhetskontroll via ett smalt autentiserat kontrakt. Talhändelser får inte skriva spelutfall eller plånbok; sena eller felbundna medier ska avvisas även vid återanslutning.
 - **Plan före flytt:** namnge tjänsten (inte `croupier-speech`, som är en OpenClaw-roll), specificera jobbidentitet, avbrott/färskhet, journal/budget, bank- och driftägare, callback/origin samt hur `apps/speech` pekar om. Flytta därefter befintlig funktion i avgränsade leveranser, utan en parallell v2-implementation.
 - **Filer, sedan:** `services/game/generated-speech-*`, `moving-speech-*`, `dealer-speech-*`, `moving-drift-*`, berörda director-/gateway-adaptrar och `apps/speech`.
@@ -151,10 +122,9 @@ Det första skiljer senaste container-/proxyfelet HTTP 404 från tidigare
 Verifiera aktuellt läge före fortsättning. `.cache/elevenlabs-kevin-consolidation/`
 är förberedelseunderlag, inte en genomförd röstflytt.
 
-Kvar står T7:s verifierade röståtkomst och röstunderlag, bank/worker-
-protokoll och faktisk ljud-/bildacceptans, kostnadsram för GPU-prov samt
-beslut om eventuell produktionsaktivering eller varm worker. Redan
-godkända media i preview behöver inget nytt generellt godkännande.
+Kostnadsram för GPU-prov samt beslut om eventuell produktionsaktivering
+eller varm worker återstår. Redan godkända media i preview behöver inget
+nytt generellt godkännande.
 Ändra inga providerinställningar med endast en gammal inventering som stöd.
 
 T8 kräver ett konkret tjänstekontrakt före processflytten; eventuell DDL
