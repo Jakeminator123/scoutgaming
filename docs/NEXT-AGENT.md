@@ -23,6 +23,26 @@ stöder undermappar. Atlas visar dessa körbara samband. Spelkärna, produktkod,
 schema, molnresurser och mediebytes ändras inte. Faktisk verifiering och PR-head
 rapporteras i PR:en; MERGAGENT3 äger granskning/merge och CI-uppföljning.
 
+## Atlas: regler, konsumenter och provvägar 2 november
+
+[Atlas-guiden](../tools/system-map/README.md) beskriver den utökade vyn
+**Prov & kontroller**: spårade agentregler, hookar, GitHub-workflows och
+ignoreringsgränser med klickbara referenser och källrader. Vald fil visar
+konsumenter, beroenden och kända provregistreringar. Privata ignorerade filer
+ingår inte. Frånvaro av en kant bevisar inte att filen kan raderas.
+
+Riktade provkommandon kommer från det befintliga svitregistret. Kända
+skip-/todo-villkor och särskilda körmiljöer visas med källankare; missvisande
+Node-kommandon och helsvitsalternativ hålls tillbaka. Atlas kör inga tester
+och visar varken CI-resultat eller beteendetäckning. Oupplösta dynamiska
+villkor behöver fortfarande bedömas i källan och aktuell provmiljö.
+
+Käll- och oberoende buggranskning, 24 Pythonprov och strikta kartankare är
+verifierade. Den frysta UI-ändringen är även provad i browser på bred och
+smal skärm: kontrollrelationer, sök, provkrav, kommandoval och zoom/pan.
+Rums-/scenflyttarna och Atlas integreras tillsammans; exakt head och slutlig
+CI hör till integrations-PR:en. Ingen produktdata eller drift ändras.
+
 ## Leveranskontroller 2 november
 
 Ignoreringsgränserna beskrivs i [IDE-guiden](../START-HERE.md#byta-ide-eller-återuppta-arbete). Spelbyggkontexten utesluter nu lokala cacher, worktrees och Codex-tillstånd; dess explicita runtimeindata består. Sökundantaget för det aktiva importmanifestet låser inte implementationen. Inga Git- eller Cursor-undantag för privata filer har tagits bort.
