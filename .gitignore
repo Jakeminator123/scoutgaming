@@ -24,6 +24,7 @@ desktop.ini
 
 # Generated dependencies, build caches and local verification output.
 node_modules/
+/.pnpm-store/
 .next/
 .cache/
 coverage/

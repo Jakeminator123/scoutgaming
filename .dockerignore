@@ -7,6 +7,10 @@
 .git
 .github
 .githooks
+.cache
+.pnpm-store
+.worktrees
+.codex
 .claude
 .cursor
 .vercel
@@ -32,9 +36,8 @@ node_modules
 **/*.pfx
 
 # Not runtime inputs: media bytes come from Blob, registers from Neon, and
-# Studio, documentation, tests and migration notes are never copied.
+# Studio, documentation and tests are never copied.
 media
 docs
 test
 apps
-migrering
