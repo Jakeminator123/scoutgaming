@@ -166,18 +166,24 @@ radnummer återanvänds inte som aktuella bevis.
 | Testområde | En test-/stödfil importerar en fil; `fixtures`/`helpers` märks stöd | Ett relevant beteendeprov, körbar testfil eller godkänt provresultat |
 | Kontrollreferens | Literal sökväg/dokumentlänk i utvald kontrollfil med fil/rad | Full shell-/YAML-semantik, aktiva GitHub-inställningar eller genomförd kontroll |
 | Provregistrering | Spårad provfil matchar känd registrering och runner i befintligt svitregister | Att provmiljön är redo, provet körts eller beteendet täcks |
-| Övrig kod/config | Sökbara spårade sökvägar för Python, SQL, shell, CSS, JSON, HTML, YAML, TOML och Docker | Analyserade samband för dessa språk |
+| Övrig kod/config och filtrerade importmål | Spårade sökvägar, bortvalsorsak och inkommande import från analyserad JS/TS | Lästa bytes, analyserade utgående samband eller runtimeanvändning för målfilen |
 
 JS/TS-analysen omfattar `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`
 och `.cts` under `apps/`, `packages/`, `services/`, `test/`, `tools/`, `ops/`.
 Filer över 1 MB, binära och icke UTF-8-filer hoppas över och räknas.
 Övrig kod/config inventeras som sökvägar utan att innehållet analyseras.
-Dokument, binära tillgångar och privata mappar är inte ett kodindex.
+`.ignore` filtrerar innehållsanalys, inte spårad existens: ett importerat
+JSON-manifest kan visas som nod med inkommande kant och bortvalsorsak utan
+att dess bytes läses. Samma innehållsfilter gäller alias-/paketkonfiguration
+och kontrollfiler. Git-ignorerade filer, privata mappar, ospårade filer och
+symlänkar undantas fortsatt från kartan. Binära importmål kan visas med
+enbart spårad sökväg. GEMINI och Windsurfs spårade regler ingår i Agentregler;
+det bevisar inte att en viss agentsession faktiskt har läst dem.
 
 Parsern hoppar över kommentarer, strängar, regex och mallsträngars innehåll.
 Detta är avsiktligt en begränsad lexikal inventering, inte en JS-kompilator.
 Beräknade imports, escapes, URL-specifikationer, JSONC/ärvda tsconfig-alias,
-villkorade paketexports och mål utanför språkomfånget kan förbli olösta.
+villkorade paketexports och mål utanför den tillåtna inventeringen kan förbli olösta.
 `require` kan vara ombundet lokalt. Externa/inbyggda paket räknas separat.
 Frånvaro av statisk kant betyder **aldrig död kod**.
 

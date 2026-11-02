@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[2] / "tools/system-map.py"
 spec = importlib.util.spec_from_file_location("system_map", SCRIPT)
@@ -223,6 +224,8 @@ class GraphTests(Fixture):
                   ".github/workflows/ci.yml": "run: node tools/ci-changes.mjs\n# node tools/hidden.mjs\n",
                   ".githooks/pre-commit-full": "# registry\n",
                   ".cursor/rules/repo.mdc": "Read `AGENTS.md`.\n",
+                  "GEMINI.md": "Read `AGENTS.md`.\n",
+                  ".windsurf/rules/scoutgaming.md": "Read `AGENTS.md`.\n",
                   ".ignore": "tools/hidden.mjs\n",
                   ".cursorignore": ".env*\n!.env.example\n/private/\n",
                   ".codex/config.toml": 'secret = "PRIVATE_CODEX_BYTES"\n',
@@ -232,6 +235,9 @@ class GraphTests(Fixture):
         data = self.build()
         controls = data["controls"]
         self.assertIn("AGENTS.md", {f["id"] for f in controls["files"]})
+        for path in ["GEMINI.md", ".windsurf/rules/scoutgaming.md"]:
+            self.assertEqual(next(f for f in controls["files"] if f["id"] == path)["category"], "Agentregler")
+            self.assertIn((path, "AGENTS.md"), {(e["source"], e["target"]) for e in controls["edges"]})
         self.assertIn((".github/workflows/ci.yml", "tools/ci-changes.mjs", 1),
                       {(e["source"], e["target"], e["line"]) for e in controls["edges"]})
         self.assertIn(("AGENTS.md", ".githooks/pre-commit-full"), {(e["source"], e["target"]) for e in controls["edges"]})
@@ -382,10 +388,38 @@ await import(`./${choice}.mjs`);
         self.assertNotIn("secret.invalid", json.dumps(data))
         self.assertTrue(next(n for n in data["nodes"] if n["id"] == "apps/ui/main.ts")["dirty"])
 
-    def test_private_ignored_untracked_and_oversize_files_never_enter_inventory(self):
+    def test_ignored_import_targets_keep_nodes_and_edges_without_content_reads(self):
+        hidden = {"apps/ui/manifest.json": '{"secret":"PRIVATE_RESOURCE_BYTES"}',
+                  "apps/ui/hidden.mjs": "import './SENSITIVE.mjs';",
+                  "apps/ui/tsconfig.json": '{"compilerOptions":{"paths":{"@/*":["./*"]}}}',
+                  "packages/hidden/package.json": '{"name":"@private/package"}',
+                  "GEMINI.md": "PRIVATE_RULE_BYTES"}
+        self.add({**hidden, ".ignore": "\n".join('/' + path for path in hidden) + "\n",
+                  "apps/ui/main.mjs": "import value from './manifest.json' with {type:'json'};\nimport './hidden.mjs';\nimport '@/manifest.json';"})
+        read_text = Path.read_text
+        def checked_read(path, *args, **kwargs):
+            self.assertNotIn(path, {self.root / name for name in hidden}, "filtered content must never be read")
+            return read_text(path, *args, **kwargs)
+        with patch.object(Path, "read_text", checked_read):
+            status, _, error = self.invoke()
+        self.assertEqual(status, 0, error)
+        data = self.artifact_data()
+        for path in ["apps/ui/manifest.json", "apps/ui/hidden.mjs"]:
+            node = next(n for n in data["nodes"] if n["id"] == path)
+            self.assertEqual(node["analysis"], "metadata")
+            self.assertIn(".ignore", node["status"])
+            self.assertIsNone(node["lines"])
+        self.assertEqual([(e["source"], e["target"], e["line"]) for e in data["edges"]],
+                         [("apps/ui/main.mjs", "apps/ui/manifest.json", 1), ("apps/ui/main.mjs", "apps/ui/hidden.mjs", 2)])
+        self.assertEqual(data["unknown"][0]["reason"], "olöst alias")
+        self.assertNotIn("GEMINI.md", {f["id"] for f in data["controls"]["files"]})
+        for marker in ["PRIVATE_RESOURCE_BYTES", "PRIVATE_RULE_BYTES", "SENSITIVE.mjs", "@private/package"]:
+            self.assertNotIn(marker, json.dumps(data))
+
+    def test_content_filters_keep_metadata_but_private_and_untracked_paths_stay_hidden(self):
         self.add({".ignore": "/apps/private/\n", ".gitignore": "/apps/ignored/\n",
                   "apps/private/secret.mjs": "import './SENSITIVE.mjs';",
-                  "apps/ui/main.mjs": "import './visible.mjs';",
+                  "apps/ui/main.mjs": "import './visible.mjs';\nimport '../ignored/secret.mjs';\nimport '../../random-stuff-jakob/jakob-docs/arkiv/private.mjs';",
                   "apps/ui/visible.mjs": "export const visible=1;",
                   "apps/ui/large.mjs": "x" * (graph.MAX_BYTES + 1),
                   "random-stuff-jakob/jakob-docs/arkiv/private.mjs": "PRIVATE"})
@@ -397,7 +431,11 @@ await import(`./${choice}.mjs`);
         paths = {n["id"] for n in data["nodes"]}
         self.assertIn("apps/ui/visible.mjs", paths)
         self.assertTrue(all("private" not in p and "ignored" not in p and "untracked" not in p and "large" not in p for p in paths))
-        self.assertEqual(data["stats"]["skipped"], {"över 1 MB": 1})
+        self.assertEqual(data["stats"]["skipped"], {"innehåll undantaget av .ignore": 1, "över 1 MB": 1})
+        metadata = {f["id"]: f for f in data["otherFiles"]}
+        self.assertIn(".ignore", metadata["apps/private/secret.mjs"]["status"])
+        for path in ["apps/ignored/secret.mjs", "apps/ui/untracked.mjs", "random-stuff-jakob/jakob-docs/arkiv/private.mjs"]:
+            self.assertNotIn(path, json.dumps(data))
         self.assertNotIn("SENSITIVE", json.dumps(data))
 
     def test_symlink_cannot_read_outside_source(self):

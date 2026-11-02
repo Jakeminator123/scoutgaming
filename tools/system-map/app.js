@@ -166,14 +166,14 @@
     $('#crumb').textContent='Kodnät / '+scope;$('#back').hidden=false;setGraph(moduleGraph(scope));
   }
   function openModule(module){
-    const files=modules.get(module)||[];const d=showDetail(module,'MODUL / KODANSVAR',files.length+' inventerade JS/TS-filer. Modulnamnet anger kodgrupp; dokumenterade ansvarsgränser finns till vänster.');
+    const files=modules.get(module)||[];const d=showDetail(module,'MODUL / KODANSVAR',files.length+' kodfiler och refererade resurser. Modulnamnet anger kodgrupp; dokumenterade ansvarsgränser finns till vänster.');
     d.append(badge(files.filter(n=>n.test).length+' testfiler'));
     const links=data.edges.filter(e=>nodes.get(e.source).module===module&&nodes.get(e.target).module!==module);
     d.append(badge(links.length+' referenser ut'));
     const consumers=[...new Set(data.edges.filter(e=>nodes.get(e.target).module===module&&nodes.get(e.source).module!==module).map(e=>nodes.get(e.source).module))];
     if(consumers.length){d.append(el('h3','','Konsumeras av moduler · '+consumers.length));pagedList(d,consumers,m=>button(m,()=>openModule(m)),8);}
     d.append(el('h3','','Filer · öppna närmaste samband'));
-    pagedList(d,files,(n)=>button(n.id,()=>openFile(n.id),n.test?testLabel(n.id):n.lines+' rader'+(n.dirty?' · ändrad arbetskopia':'')));
+    pagedList(d,files,(n)=>button(n.id,()=>openFile(n.id),n.status||(n.test?testLabel(n.id):n.lines+' rader'+(n.dirty?' · ändrad arbetskopia':''))));
     d.append(note('Ingen statisk kant är inte bevis för att en fil saknar konsument.'));
   }
   function openFile(path){
@@ -195,7 +195,8 @@
     const n=nodes.get(path),ins=incoming.get(path)||[],outs=outgoing.get(path)||[];
     const d=showDetail(n.label,'FIL / '+n.module,path);
     d.append(badge(n.test?testLabel(path):'Produkt / verktyg'),badge(n.dirty?'Ändrad arbetskopia':'Spårad fil',n.dirty?'warn':''));
-    d.append(proofBox(proofFor(path,1)));
+    if(n.analysis==='metadata')d.append(note(n.status+' · Endast spårad sökväg. Innehåll och utgående samband har inte analyserats.','warn'));
+    else d.append(proofBox(proofFor(path,1)));
     appendCommands(d,path);appendControlReferences(d,path);
     const contracts=data.contracts.filter(c=>c.files.some(p=>path===p||path.startsWith(p+'/')));
     if(contracts.length){d.append(el('h3','','Dokumenterat ansvar'));for(const c of contracts)d.append(button(c.name,()=>openContract(c)));}
@@ -272,7 +273,7 @@
   function showLimits(){
     const d=showDetail('Vad underlaget säger','INVENTERING OCH BEGRÄNSNINGAR',data.limits);
     d.append(note('Frånvaro av en kant betyder aldrig att koden är död. Testreferenser är inte testtäckning eller ett godkänt resultat.','warn'));
-    for(const text of ['Git-spårade, icke ignorerade JS/TS-filer under apps, packages, services, test, tools och ops läses. .ignore, .gitignore, privata mappar och symlänkar respekteras.','Filer större än 1 MB och icke UTF-8 hoppas över. JSON-, CSS-, Python-, HTML-, SQL- och genererade resursreferenser analyseras inte som kod.','Parsern känner igen vanliga import/export-from, import() med literal och require(). Mallsträngarnas interpolationer analyseras inte. Den verifierar inte namnens bindning.','Handgranskade kodankare är exakta, entydiga radmatchningar. En matchande rad garanterar inte att den semantiska beskrivningen fortfarande är korrekt.','Utdata innehåller sökvägar och radnummer, inga godtyckliga källtextutdrag eller innehållet i olösta uttryck. Externa paket räknas, men expanderas inte.'])d.append(el('p','',text));
+    for(const text of ['Git-spårade JS/TS-filer under apps, packages, services, test, tools och ops kan läsas. .ignore filtrerar innehåll; spårade importmål kan fortfarande visas med bortvalsorsak. Git-ignorerade filer, privata mappar och symlänkar undantas från kartan.','Filer större än 1 MB och icke UTF-8 hoppas över. Refererade resurser kan visas som noder utan innehållsanalys; inkommande kant belägger bara konsumentens import.','Parsern känner igen vanliga import/export-from, import() med literal och require(). Mallsträngarnas interpolationer analyseras inte. Den verifierar inte namnens bindning.','Handgranskade kodankare är exakta, entydiga radmatchningar. En matchande rad garanterar inte att den semantiska beskrivningen fortfarande är korrekt.','Utdata innehåller sökvägar och radnummer, inga godtyckliga källtextutdrag eller innehållet i olösta uttryck. Externa paket räknas, men expanderas inte.'])d.append(el('p','',text));
     const block=el('div','detail-block');block.append(el('h3','','Snapshot'),el('p','',data.revision),el('p','',data.generated),el('p','',data.stats.dirty+' inventerade kodfiler ändrade efter HEAD'+(data.sourceDirty?' · START-HERE ändrad':'')));d.append(block);
     for(const [reason,count] of Object.entries(data.stats.skipped))d.append(badge(count+' '+reason,'warn'));
     d.append(button('Öppna prov och luckor',()=>setView('coverage')));
@@ -300,7 +301,7 @@
       card.append(button('Granska ansvar och provkrav',()=>openContract(contract)));grid.append(card);
     }
     c.append(el('h3','','Andra spårade kod- och konfigurationsfiler · '+data.otherFiles.length));
-    c.append(el('p','','Sökbara till filnivå. Python, SQL, shell, CSS, JSON, HTML och konfiguration inventeras med sökväg; deras samband analyseras inte.'));
+    c.append(el('p','','Sökbara till filnivå. Filtrerade källor och övriga filtyper visar bortvalsorsak. Innehållet analyseras inte; inkommande importer från analyserad JS/TS kan ändå visas.'));
     const extensionCounts=new Map();for(const f of data.otherFiles)extensionCounts.set(f.extension,(extensionCounts.get(f.extension)||0)+1);
     for(const [extension,count] of extensionCounts)c.append(badge(count+' '+extension));
     const reasonCounts=new Map();for(const u of data.unknown)reasonCounts.set(u.reason,(reasonCounts.get(u.reason)||0)+1);
@@ -391,9 +392,9 @@
     for(const c of contracts)box.append(button(c.name,()=>openContract(c),'Ansvarsområde'));
     const found=[...new Map([...data.nodes,...data.otherFiles,...data.controls.files].map(n=>[n.id,n])).values()].filter(n=>n.id.toLowerCase().includes(q));
     box.append(el('div','empty',found.length+' filer matchar · visar högst 60'));
-    for(const n of found.slice(0,60))box.append(button(n.id,()=>{openPath(n.id);box.hidden=true;},n.category|| (n.status?'Samband ej analyserade':n.test?testLabel(n.id):'Kodfil')));
+    for(const n of found.slice(0,60))box.append(button(n.id,()=>{openPath(n.id);box.hidden=true;},n.category||n.status||(n.test?testLabel(n.id):'Kodfil')));
   }
-  function openUnparsed(file){const d=showDetail(file.id,'INVENTERAD SÖKVÄG / '+file.extension,'Importer och anrop i denna filtyp har inte analyserats. Eventuella kontrollreferenser och uttryckliga provregistreringar visas separat.');d.append(badge('Kodsemantik ej analyserad','warn'),note('Frånvaro av kanter säger ingenting om användning eller provtäckning.','warn'));const a=el('a','','Öppna lokal fil');a.href=data.root+'/'+file.id.split('/').map(encodeURIComponent).join('/');a.target='_blank';a.rel='noopener';d.append(a);appendCommands(d,file.id);appendControlReferences(d,file.id);}
+  function openUnparsed(file){const d=showDetail(file.id,'INVENTERAD SÖKVÄG / '+file.extension,'Importer och anrop i filen har inte analyserats. Eventuella kontrollreferenser och uttryckliga provregistreringar visas separat.');d.append(badge(file.status||'Kodsemantik ej analyserad','warn'),note('Frånvaro av kanter säger ingenting om användning eller provtäckning.','warn'));const a=el('a','','Öppna lokal fil');a.href=data.root+'/'+file.id.split('/').map(encodeURIComponent).join('/');a.target='_blank';a.rel='noopener';d.append(a);appendCommands(d,file.id);appendControlReferences(d,file.id);}
   for(const [number,label,warn] of [[data.stats.scanned,'inventerade JS/TS-filer'],[data.stats.edges,'statiska referenser'],[data.stats.semantic,'handgranskade samband'],[data.stats.unknown,'olösta referenser',true]]){const m=el('div','metric'+(warn?' warn':''));m.append(el('strong','',number.toLocaleString('sv')),el('span','',label));$('#metrics').append(m);}
   $('#status').textContent=(data.issues.length?data.issues.length+' kodankare behöver översyn · ':'')+data.generated+' · '+data.stats.tracked+' spårade filer · '+data.stats.excluded+' undantagna · '+data.stats.dirty+' ändrade kodfiler';
   new ResizeObserver(()=>fit()).observe($('#canvas-wrap'));
