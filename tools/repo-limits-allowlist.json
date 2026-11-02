@@ -95,19 +95,9 @@
     "reason": "Statisk webbtillgång som fanns på main när grinden infördes (2026-10-28); komprimera eller flytta till Blob"
   },
   {
-    "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png",
-    "maxBytes": 1628428,
-    "reason": "Fanns på main när grinden infördes (2026-10-28)"
-  },
-  {
-    "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.yuv",
-    "maxBytes": 3110400,
-    "reason": "Fanns på main när grinden infördes (2026-10-28)"
-  },
-  {
-    "path": "services/astrid-gpu-worker/assets/talk_base.yuv",
-    "maxBytes": 3110400,
-    "reason": "Fanns på main när grinden infördes (2026-10-28)"
+    "path": "services/astrid-gpu-worker/assets/astrid_spel2x/talk_base.png.xz",
+    "maxBytes": 1473524,
+    "reason": "Befintlig avatar-PNG förlustfritt packad: 1628428 → 1473524 byte. Dockerbygget återställer och hashverifierar originalet; ersätter det tidigare större undantaget."
   },
   {
     "path": "services/game/public/roulette/assets/roulette-bord.png",

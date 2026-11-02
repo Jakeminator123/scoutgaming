@@ -2,6 +2,7 @@
 # gissar "text" och skulle köra CRLF-konvertering på den. Då förstörs planet
 # och bakgrunden i de genererade klippen slutar matcha stillbilden.
 *.yuv   binary
+*.xz    binary
 *.png   binary
 *.jpg   binary
 *.mp4   binary
