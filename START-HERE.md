@@ -102,6 +102,15 @@ Samma Git-worktree kan öppnas i Claude, Codex, Cursor eller valfri IDE. Git vis
 
 Ignoreringsfilerna har olika uppgifter: `.gitignore` håller ospårade lokala filer utanför vanliga Git-tillägg men tar inte bort redan spårade filer. `.ignore` minskar sökbrus; inventera spårad kod med `git ls-files` eller `git ls-tree` och följ konsumenter med `git grep`. [Cursors `.cursorignore`](https://cursor.com/docs/reference/ignore-file) begränsar dess AI-åtkomst, men är ingen OS-behörighet för terminal eller MCP. [Dockers `.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) styr separat vad byggkontexten får innehålla; rotens spelbygge utesluter även `.cache`, `.pnpm-store`, `.worktrees` och `.codex`. pnpm-cachen är också Git-ignorerad i repots gemensamma regler, oberoende av datorns `.git/info/exclude`. Att radera en ignorerad lokal fil ändrar inte GitHub; genererade cacher kan återskapas av verktygen.
 
+| Plats och skapare | Livslängd och ansvar |
+| --- | --- |
+| `.cache`: verktyg, tester och uppdragets agent | Genererad karta/provutdata kan återskapas; handoffs och fel-/driftbevis kan vara unika. Uppdragsägaren städar egna förbrukade arbetsfiler och byggen vid avslut, men behåller underlag som fortfarande behövs. |
+| `.pnpm-store`, om pnpm konfigurerats dit | Återanvändbar paketcache, skild från appens installerade `node_modules`. Behåll mellan uppdrag; rutinradering behövs inte. Samordna eventuell städning med aktiva användare. |
+| `.worktrees/<uppdrag>`: uppdragets agent/verktyg | Arbetskopian behålls tills ägare, HEAD, merge och osparade ändringar kontrollerats enligt [AGENTS](AGENTS.md#lokala-resurser-och-privat-material). Följ inte junctions till delade beroenden vid städning. |
+| `.worktrees/.handoffs`: `portable-workflows record` | Privat uppdragsstatus med ägare, scope och nästa steg. Uppdatera samma överlämning; behåll den medan uppdraget behöver återupptas eller lämnas över. Ospårat innehåll återställs inte av Git. |
+
+Ange särskilda resurser i befintligt uppdragsunderlag. [Retentionpolicyn](tools/retention-policy.json) används av [arkivverktyget](tools/retention-archive.mjs) för uttryckligen angivna `history`/`observations`; den städar inte dessa tre mappar automatiskt. Inget mappnamn eller en viss ålder visar i sig att innehållet är förbrukat.
+
 Kör från valfri katalog, med huvudcheckoutens absoluta sökväg som `--repo`:
 
 ```powershell
